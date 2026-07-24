@@ -1,0 +1,95 @@
+---
+pagetitle: "jmadkour.org — Statistique & économétrie"
+page-layout: full
+toc: false
+---
+
+::: {.hero}
+# La statistique et l'économétrie, à [manipuler]{style="color:#3aa0e6"}.
+
+Cours complets, formules soignées en LaTeX, visualisations interactives et **code exécutable dans le navigateur**. Conçu pour comprendre vraiment.
+
+$$\bar{x}=\frac{1}{n}\sum_{i=1}^{n}x_i \qquad E(X)=\sum_i p_i x_i \qquad \hat{y}=b_0+b_1 x$$
+
+[Explorer les cours](licence.qmd){.btn .btn-primary role="button"}
+[Le parcours recherche](doctorat.qmd){.btn .btn-outline-primary role="button"}
+:::
+
+## Manipuler, pas seulement lire
+
+Réglez les curseurs, rééchantillonnez, et observez la droite des moindres carrés se recalculer en direct. C'est le genre de composant que l'on retrouvera dans chaque chapitre.
+
+```{=html}
+<div style="background:var(--bs-card-bg,#13303d);border:1px solid var(--bs-border-color,#20455a);border-radius:16px;padding:20px;display:grid;grid-template-columns:1fr 1.3fr;gap:22px;align-items:center" id="olsbox">
+  <div>
+    <div id="eq" style="font-size:16px;margin-bottom:12px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin:8px 0"><label style="min-width:110px;font-size:14px">pente vraie β₁</label><input type="range" id="s1" min="-2" max="3" step="0.1" value="1.2" style="flex:1"><output id="o1">1.2</output></div>
+    <div style="display:flex;align-items:center;gap:10px;margin:8px 0"><label style="min-width:110px;font-size:14px">bruit σ</label><input type="range" id="s2" min="0" max="4" step="0.1" value="1.5" style="flex:1"><output id="o2">1.5</output></div>
+    <button class="btn btn-sm btn-outline-primary" onclick="olsResample()">↻ nouvel échantillon</button>
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:80px"><div style="font-size:12px;opacity:.7">pente b₁</div><div style="font-size:22px;font-weight:800" id="b1">–</div></div>
+      <div style="flex:1;min-width:80px"><div style="font-size:12px;opacity:.7">ordonnée b₀</div><div style="font-size:22px;font-weight:800" id="b0">–</div></div>
+      <div style="flex:1;min-width:80px"><div style="font-size:12px;opacity:.7">R²</div><div style="font-size:22px;font-weight:800" id="r2">–</div></div>
+    </div>
+  </div>
+  <div style="position:relative;height:280px"><canvas id="plot"></canvas></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+(function(){
+var B0=2,N=40,XMAX=10,s1=document.getElementById('s1'),s2=document.getElementById('s2'),
+o1=document.getElementById('o1'),o2=document.getElementById('o2'),pts=[],chart;
+function g(){var u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function samp(){var b1=+s1.value,s=+s2.value;pts=[];for(var i=0;i<N;i++){var x=Math.random()*XMAX;pts.push({x:x,y:B0+b1*x+s*g()});}}
+function ols(){var n=pts.length,sx=0,sy=0,i;for(i=0;i<n;i++){sx+=pts[i].x;sy+=pts[i].y;}var mx=sx/n,my=sy/n,sxy=0,sxx=0,syy=0;
+for(i=0;i<n;i++){var dx=pts[i].x-mx,dy=pts[i].y-my;sxy+=dx*dy;sxx+=dx*dx;syy+=dy*dy;}var b1=sxy/sxx,b0=my-b1*mx,e=0;
+for(i=0;i<n;i++){var r=pts[i].y-(b0+b1*pts[i].x);e+=r*r;}return{b1:b1,b0:b0,r2:1-e/syy};}
+function draw(){var f=ols(),bt=+s1.value;
+document.getElementById('b1').textContent=f.b1.toFixed(2);document.getElementById('b0').textContent=f.b0.toFixed(2);
+document.getElementById('r2').textContent=f.r2.toFixed(2);
+if(window.katex)katex.render("\\hat{y}="+f.b0.toFixed(2)+(f.b1>=0?"+":"")+f.b1.toFixed(2)+"x",document.getElementById('eq'),{throwOnError:false});
+var ds=[{type:'scatter',data:pts,pointRadius:4,backgroundColor:'#3aa0e6'},
+{type:'line',data:[{x:0,y:f.b0},{x:XMAX,y:f.b0+f.b1*XMAX}],borderColor:'#e8873b',borderWidth:3,pointRadius:0},
+{type:'line',data:[{x:0,y:B0},{x:XMAX,y:B0+bt*XMAX}],borderColor:'#9db4c0',borderDash:[6,4],borderWidth:1.5,pointRadius:0}];
+if(!chart){chart=new Chart(document.getElementById('plot'),{data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:XMAX,ticks:{color:'#9db4c0'},grid:{color:'rgba(157,180,192,.15)'}},y:{min:-6,max:28,ticks:{color:'#9db4c0'},grid:{color:'rgba(157,180,192,.15)'}}}}});}else{chart.data.datasets=ds;chart.update();}}
+window.olsResample=function(){samp();draw();};
+s1.oninput=function(){o1.value=(+s1.value).toFixed(1);samp();draw();};
+s2.oninput=function(){o2.value=(+s2.value).toFixed(1);samp();draw();};
+samp();draw();
+})();
+</script>
+```
+
+## Trois parcours
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-4}
+::: {.track-card}
+### Licence {style="margin-top:0"}
+Sept cours de fondations, de la statistique descriptive à l'introduction à l'économétrie.
+
+[Voir le parcours →](licence.qmd)
+:::
+:::
+
+::: {.g-col-12 .g-col-md-4}
+::: {.track-card}
+### Master {style="margin-top:0"}
+Économétrie appliquée (Wooldridge), économétrie financière et séries temporelles.
+
+[Voir le parcours →](master.qmd)
+:::
+:::
+
+::: {.g-col-12 .g-col-md-4}
+::: {.track-card}
+### Doctorat · Recherche {style="margin-top:0"}
+Publications, résultats d'articles interactifs et codes reproductibles.
+
+[Voir le parcours →](doctorat.qmd)
+:::
+:::
+
+:::
