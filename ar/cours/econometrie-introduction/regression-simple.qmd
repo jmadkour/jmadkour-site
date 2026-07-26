@@ -1,0 +1,99 @@
+---
+lang: ar
+title: "Régression linéaire simple"
+sidebar: econometrie-ar
+---
+```{=html}
+<script>document.documentElement.setAttribute("dir","rtl");</script>
+```
+
+
+## Le modèle
+
+La régression linéaire simple modélise une variable $y$ (à expliquer) par une variable $x$ (explicative) :
+
+$$ y = \beta_0 + \beta_1 x + \varepsilon, \qquad E(y \mid x) = \beta_0 + \beta_1 x. $$
+
+Le coefficient $\beta_1$ est l'**effet marginal** de $x$ sur $y$ : la variation moyenne de $y$ quand $x$ augmente d'une unité.
+
+## L'estimation par les moindres carrés
+
+On choisit $b_0, b_1$ qui **minimisent** la somme des carrés des résidus $\sum (y_i - \hat{y}_i)^2$. La solution :
+
+$$ b_1 = \frac{\sum (x_i-\bar{x})(y_i-\bar{y})}{\sum (x_i-\bar{x})^2} = \frac{s_{xy}}{s_x^2}, \qquad b_0 = \bar{y} - b_1 \bar{x}. $$
+
+La qualité de l'ajustement se mesure par le coefficient de détermination :
+
+$$ R^2 = \frac{SSR}{SST} = 1 - \frac{SSE}{SST} \in [0,1]. $$
+
+## À vous de jouer
+
+Réglez la pente vraie et le bruit, rééchantillonnez, et observez la droite estimée (orange) approcher la droite vraie (pointillés), ainsi que les coefficients et le $R^2$.
+
+```{=html}
+<div style="background:var(--bs-card-bg,#13303d);border:1px solid var(--bs-border-color,#20455a);border-radius:16px;padding:20px;margin:1rem 0">
+  <div style="display:flex;align-items:center;gap:10px;margin:8px 0"><label style="min-width:110px;font-size:14px">pente vraie β₁</label><input type="range" id="rs1" min="-2" max="3" step="0.1" value="1.2" style="flex:1"><output id="ro1">1.2</output></div>
+  <div style="display:flex;align-items:center;gap:10px;margin:8px 0"><label style="min-width:110px;font-size:14px">bruit σ</label><input type="range" id="rs2" min="0" max="4" step="0.1" value="1.5" style="flex:1"><output id="ro2">1.5</output></div>
+  <button class="btn btn-sm btn-outline-primary" onclick="rReSample()">↻ nouvel échantillon</button>
+  <div style="display:flex;gap:10px;margin:12px 0;flex-wrap:wrap">
+    <div style="flex:1;min-width:80px"><div style="font-size:12px;opacity:.7">b₁</div><div style="font-size:22px;font-weight:800" id="rb1">–</div></div>
+    <div style="flex:1;min-width:80px"><div style="font-size:12px;opacity:.7">b₀</div><div style="font-size:22px;font-weight:800" id="rb0">–</div></div>
+    <div style="flex:1;min-width:80px"><div style="font-size:12px;opacity:.7">R²</div><div style="font-size:22px;font-weight:800" id="rr2">–</div></div>
+  </div>
+  <div style="position:relative;height:300px"><canvas id="rplot"></canvas></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+(function(){var B0=2,N=40,X=10,s1=document.getElementById('rs1'),s2=document.getElementById('rs2'),
+o1=document.getElementById('ro1'),o2=document.getElementById('ro2'),p=[],c;
+function g(){var u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function sa(){var b=+s1.value,s=+s2.value;p=[];for(var i=0;i<N;i++){var x=Math.random()*X;p.push({x:x,y:B0+b*x+s*g()});}}
+function o(){var n=p.length,sx=0,sy=0,i;for(i=0;i<n;i++){sx+=p[i].x;sy+=p[i].y;}var mx=sx/n,my=sy/n,a=0,b=0,d=0;
+for(i=0;i<n;i++){var u=p[i].x-mx,w=p[i].y-my;a+=u*w;b+=u*u;d+=w*w;}var b1=a/b,b0=my-b1*mx,e=0;
+for(i=0;i<n;i++){var r=p[i].y-(b0+b1*p[i].x);e+=r*r;}return{b1:b1,b0:b0,r2:1-e/d};}
+function dr(){var f=o(),t=+s1.value;document.getElementById('rb1').textContent=f.b1.toFixed(2);
+document.getElementById('rb0').textContent=f.b0.toFixed(2);document.getElementById('rr2').textContent=f.r2.toFixed(2);
+var ds=[{type:'scatter',data:p,pointRadius:4,backgroundColor:'#3aa0e6'},
+{type:'line',data:[{x:0,y:f.b0},{x:X,y:f.b0+f.b1*X}],borderColor:'#e8873b',borderWidth:3,pointRadius:0},
+{type:'line',data:[{x:0,y:B0},{x:X,y:B0+t*X}],borderColor:'#9db4c0',borderDash:[6,4],borderWidth:1.5,pointRadius:0}];
+if(!c){c=new Chart(document.getElementById('rplot'),{data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:X,ticks:{color:'#9db4c0'},grid:{color:'rgba(157,180,192,.15)'}},y:{min:-6,max:28,ticks:{color:'#9db4c0'},grid:{color:'rgba(157,180,192,.15)'}}}}});}else{c.data.datasets=ds;c.update();}}
+window.rReSample=function(){sa();dr();};
+s1.oninput=function(){o1.value=(+s1.value).toFixed(1);sa();dr();};
+s2.oninput=function(){o2.value=(+s2.value).toFixed(1);sa();dr();};sa();dr();})();
+</script>
+```
+
+## Le faire en R
+
+Le même calcul avec la fonction `lm()` — la brique de base de toute l'économétrie :
+
+```r
+set.seed(1)
+n <- 40
+x <- runif(n, 0, 10)
+y <- 2 + 1.2 * x + rnorm(n, sd = 1.5)
+
+modele <- lm(y ~ x)
+summary(modele)          # coefficients, R², tests
+plot(x, y); abline(modele, col = "orange", lwd = 2)
+```
+
+::: {.callout-note collapse="true"}
+## Rendre ce code exécutable dans le navigateur (WebR)
+Ce bloc affiche le code. Pour que l'étudiant l'**exécute en ligne** (sans installer R) :
+
+1. installez l'extension une fois : `quarto add coatless-templates/quarto-webr` ;
+2. ajoutez `webr: {}` et `filters: [webr]` à l'en-tête de cette page ;
+3. remplacez la clôture ```` ```r ```` par ```` ```{webr-r} ````.
+
+Le même principe avec **Pyodide** (`quarto add coatless-templates/quarto-pyodide`) permet d'exécuter du **Python** en ligne.
+:::
+
+## Diapositives & vidéo
+
+::: {.callout-tip}
+Le chapitre correspondant du cours de statistique inclut des **diapositives** (téléchargeables en PDF) et une **vidéo courte**. Elles seront intégrées ici — par exemple :
+
+- diapositives : `chapitre12.pdf`
+- vidéo : lien YouTube intégré via `{{< video ... >}}`.
+:::
