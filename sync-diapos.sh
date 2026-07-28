@@ -7,6 +7,7 @@
 SLIDES="$HOME/Documents/stats-eco-cours/cours-statistiques"
 SLIDES2="$HOME/Documents/stats-eco-cours/cours-analyse-mathematique"
 SLIDES3="$HOME/Documents/stats-eco-cours/cours-algebre-lineaire"
+SLIDES4="$HOME/Documents/stats-eco-cours/cours-econometrie-financiere"
 SITE="$HOME/Documents/jmadkour-site"
 
 one () {  # $1=numéro  $2=cours  $3=slug
@@ -45,6 +46,18 @@ three () {  # $1=numéro  $2=cours  $3=slug   (projet cours-algebre-lineaire)
   fi
 }
 
+four () {  # $1=numéro  $2=cours  $3=slug   (projet cours-econometrie-financiere)
+  local n=$1 c=$2 s=$3
+  ( cd "$SLIDES4" && quarto render "chapitre$n.qmd" --to revealjs )
+  cp "$SLIDES4/chapitre$n.html" "$SITE/cours/$c/slides/$s.html"
+  if ( cd "$SLIDES4" && quarto render "chapitre$n.qmd" --to beamer ) >/dev/null 2>&1; then
+    cp "$SLIDES4/chapitre$n.pdf" "$SITE/cours/$c/slides/$s.pdf"
+    echo "   [econometrie-financiere] chapitre $n : HTML + PDF ✓"
+  else
+    echo "   [econometrie-financiere] chapitre $n : HTML ✓  (PDF conservé — LaTeX indisponible)"
+  fi
+}
+
 echo "Génération et copie des diapositives…"
 one 1  statistique-descriptive    donnees-et-statistiques
 one 2  statistique-descriptive    tableaux-et-graphiques
@@ -71,4 +84,10 @@ three 4 algebre-lineaire          inversion-matrices
 three 5 algebre-lineaire          systemes-lineaires
 three 6 algebre-lineaire          diagonalisation
 three 7 algebre-lineaire          formes-quadratiques
+four 1  econometrie-financiere    modeles-factoriels
+four 2  econometrie-financiere    composantes-principales
+four 3  econometrie-financiere    volatilite-correlation-classiques
+four 4  econometrie-financiere    modeles-garch
+four 5  econometrie-financiere    series-temporelles-cointegration
+four 6  econometrie-financiere    copules
 echo "Terminé. Vérifiez :  cd \"$SITE\" && quarto preview"
