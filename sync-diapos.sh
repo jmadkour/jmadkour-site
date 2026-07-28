@@ -6,6 +6,7 @@
 # Usage :  bash sync-diapos.sh
 SLIDES="$HOME/Documents/stats-eco-cours/cours-statistiques"
 SLIDES2="$HOME/Documents/stats-eco-cours/cours-analyse-mathematique"
+SLIDES3="$HOME/Documents/stats-eco-cours/cours-algebre-lineaire"
 SITE="$HOME/Documents/jmadkour-site"
 
 one () {  # $1=numéro  $2=cours  $3=slug
@@ -32,6 +33,18 @@ two () {  # $1=numéro  $2=cours  $3=slug   (projet cours-analyse-mathematique)
   fi
 }
 
+three () {  # $1=numéro  $2=cours  $3=slug   (projet cours-algebre-lineaire)
+  local n=$1 c=$2 s=$3
+  ( cd "$SLIDES3" && quarto render "chapitre$n.qmd" --to revealjs )
+  cp "$SLIDES3/chapitre$n.html" "$SITE/cours/$c/slides/$s.html"
+  if ( cd "$SLIDES3" && quarto render "chapitre$n.qmd" --to beamer ) >/dev/null 2>&1; then
+    cp "$SLIDES3/chapitre$n.pdf" "$SITE/cours/$c/slides/$s.pdf"
+    echo "   [algebre-lineaire] chapitre $n : HTML + PDF ✓"
+  else
+    echo "   [algebre-lineaire] chapitre $n : HTML ✓  (PDF conservé — LaTeX indisponible)"
+  fi
+}
+
 echo "Génération et copie des diapositives…"
 one 1  statistique-descriptive    donnees-et-statistiques
 one 2  statistique-descriptive    tableaux-et-graphiques
@@ -51,4 +64,11 @@ two 2  analyse-mathematique       fonctions-une-variable
 two 3  analyse-mathematique       optimisation-une-variable
 two 4  analyse-mathematique       fonctions-plusieurs-variables
 two 5  analyse-mathematique       optimisation-plusieurs-variables
+three 1 algebre-lineaire          operations-matrices
+three 2 algebre-lineaire          matrices-particulieres
+three 3 algebre-lineaire          trace-determinant-rang
+three 4 algebre-lineaire          inversion-matrices
+three 5 algebre-lineaire          systemes-lineaires
+three 6 algebre-lineaire          diagonalisation
+three 7 algebre-lineaire          formes-quadratiques
 echo "Terminé. Vérifiez :  cd \"$SITE\" && quarto preview"
