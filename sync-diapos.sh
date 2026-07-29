@@ -90,4 +90,6 @@ four 3  econometrie-financiere    volatilite-correlation-classiques
 four 4  econometrie-financiere    modeles-garch
 four 5  econometrie-financiere    series-temporelles-cointegration
 four 6  econometrie-financiere    copules
+four 7  econometrie-financiere    modeles-avances
+four 8  econometrie-financiere    prevision-evaluation
 echo "Terminé. Vérifiez :  cd \"$SITE\" && quarto preview"
