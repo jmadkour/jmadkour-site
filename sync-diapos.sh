@@ -61,15 +61,15 @@ four () {  # $1=numéro  $2=cours  $3=slug   (projet cours-econometrie-financier
   fi
 }
 
-five () {  # $1=numéro  $2=cours  $3=slug   (projet cours-econometrie-avancee)
-  local n=$1 c=$2 s=$3
-  ( cd "$SLIDES5" && quarto render "chapitre$n.qmd" --to revealjs )
-  cp "$SLIDES5/chapitre$n.html" "$SITE/cours/$c/slides/$s.html"
-  if ( cd "$SLIDES5" && quarto render "chapitre$n.qmd" --to beamer ) >/dev/null 2>&1; then
-    cp "$SLIDES5/chapitre$n.pdf" "$SITE/cours/$c/slides/$s.pdf"
-    echo "   [econometrie-avancee] chapitre $n : HTML + PDF ✓"
+five () {  # $1=source (ex: chapitre11 ou annexeB)  $2=cours  $3=slug   (projet cours-econometrie-avancee)
+  local src=$1 c=$2 s=$3
+  ( cd "$SLIDES5" && quarto render "$src.qmd" --to revealjs )
+  cp "$SLIDES5/$src.html" "$SITE/cours/$c/slides/$s.html"
+  if ( cd "$SLIDES5" && quarto render "$src.qmd" --to beamer ) >/dev/null 2>&1; then
+    cp "$SLIDES5/$src.pdf" "$SITE/cours/$c/slides/$s.pdf"
+    echo "   [econometrie-avancee] $src : HTML + PDF ✓"
   else
-    echo "   [econometrie-avancee] chapitre $n : HTML ✓  (PDF conservé — LaTeX indisponible)"
+    echo "   [econometrie-avancee] $src : HTML ✓  (PDF conservé — LaTeX indisponible)"
   fi
 }
 
@@ -136,26 +136,32 @@ four 5  econometrie-financiere    series-temporelles-cointegration
 four 6  econometrie-financiere    copules
 four 7  econometrie-financiere    modeles-avances
 four 8  econometrie-financiere    prevision-evaluation
-five 1  econometrie-avancee       nature-econometrie
-five 2  econometrie-avancee       regression-simple
-five 3  econometrie-avancee       regression-multiple-estimation
-five 4  econometrie-avancee       regression-multiple-inference
-five 5  econometrie-avancee       proprietes-asymptotiques
-five 6  econometrie-avancee       regression-multiple-approfondissements
-five 7  econometrie-avancee       variables-qualitatives
-five 8  econometrie-avancee       heteroscedasticite
-five 9  econometrie-avancee       specification-donnees
-five 10 econometrie-avancee       series-temporelles
-five 11 econometrie-avancee       rappels-probabilite
-five 12 econometrie-avancee       rappels-statistique-mathematique
-five 13 econometrie-avancee       rappels-algebre-matricielle
-five 14 econometrie-avancee       regression-matricielle
-five 15 econometrie-avancee       equations-simultanees
-five 16 econometrie-avancee       variables-dependantes-limitees
-five 17 econometrie-avancee       series-temporelles-avancees
-five 18 econometrie-avancee       projet-empirique
-five 19 econometrie-avancee       outils-mathematiques
+five chapitre1  econometrie-avancee   nature-econometrie
+five chapitre2  econometrie-avancee   regression-simple
+five chapitre3  econometrie-avancee   regression-multiple-estimation
+five chapitre4  econometrie-avancee   regression-multiple-inference
+five chapitre5  econometrie-avancee   proprietes-asymptotiques
+five chapitre6  econometrie-avancee   regression-multiple-approfondissements
+five chapitre7  econometrie-avancee   variables-qualitatives
+five chapitre8  econometrie-avancee   heteroscedasticite
+five chapitre9  econometrie-avancee   specification-donnees
+five chapitre10 econometrie-avancee   series-temporelles
+five chapitre11 econometrie-avancee   series-temporelles-approfondissements
+five chapitre12 econometrie-avancee   autocorrelation-heteroscedasticite
+five chapitre13 econometrie-avancee   panel-simple
+five chapitre14 econometrie-avancee   panel-avance
+five chapitre15 econometrie-avancee   variables-instrumentales
+five chapitre16 econometrie-avancee   equations-simultanees
+five chapitre17 econometrie-avancee   variables-dependantes-limitees
+five chapitre18 econometrie-avancee   series-temporelles-avancees
+five chapitre19 econometrie-avancee   projet-empirique
+five annexeA    econometrie-avancee   outils-mathematiques
+five annexeB    econometrie-avancee   rappels-probabilite
+five annexeC    econometrie-avancee   rappels-statistique-mathematique
+five annexeD    econometrie-avancee   rappels-algebre-matricielle
+five annexeE    econometrie-avancee   regression-matricielle
 six 1   value-at-risk             var-autres-mesures-risque
+six 2   value-at-risk             var-lineaire-parametrique
 six 3   value-at-risk             simulation-historique
 six 4   value-at-risk             var-monte-carlo
 six 5   value-at-risk             var-portefeuille-options
