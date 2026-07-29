@@ -8,6 +8,7 @@ SLIDES="$HOME/Documents/stats-eco-cours/cours-statistiques"
 SLIDES2="$HOME/Documents/stats-eco-cours/cours-analyse-mathematique"
 SLIDES3="$HOME/Documents/stats-eco-cours/cours-algebre-lineaire"
 SLIDES4="$HOME/Documents/stats-eco-cours/cours-econometrie-financiere"
+SLIDES5="$HOME/Documents/stats-eco-cours/cours-econometrie-avancee"
 SITE="$HOME/Documents/jmadkour-site"
 
 one () {  # $1=numéro  $2=cours  $3=slug
@@ -58,6 +59,18 @@ four () {  # $1=numéro  $2=cours  $3=slug   (projet cours-econometrie-financier
   fi
 }
 
+five () {  # $1=numéro  $2=cours  $3=slug   (projet cours-econometrie-avancee)
+  local n=$1 c=$2 s=$3
+  ( cd "$SLIDES5" && quarto render "chapitre$n.qmd" --to revealjs )
+  cp "$SLIDES5/chapitre$n.html" "$SITE/cours/$c/slides/$s.html"
+  if ( cd "$SLIDES5" && quarto render "chapitre$n.qmd" --to beamer ) >/dev/null 2>&1; then
+    cp "$SLIDES5/chapitre$n.pdf" "$SITE/cours/$c/slides/$s.pdf"
+    echo "   [econometrie-avancee] chapitre $n : HTML + PDF ✓"
+  else
+    echo "   [econometrie-avancee] chapitre $n : HTML ✓  (PDF conservé — LaTeX indisponible)"
+  fi
+}
+
 echo "Génération et copie des diapositives…"
 one 1  statistique-descriptive    donnees-et-statistiques
 one 2  statistique-descriptive    tableaux-et-graphiques
@@ -92,4 +105,9 @@ four 5  econometrie-financiere    series-temporelles-cointegration
 four 6  econometrie-financiere    copules
 four 7  econometrie-financiere    modeles-avances
 four 8  econometrie-financiere    prevision-evaluation
+five 1  econometrie-avancee       nature-econometrie
+five 2  econometrie-avancee       regression-simple
+five 3  econometrie-avancee       regression-multiple-estimation
+five 4  econometrie-avancee       regression-multiple-inference
+five 5  econometrie-avancee       proprietes-asymptotiques
 echo "Terminé. Vérifiez :  cd \"$SITE\" && quarto preview"
