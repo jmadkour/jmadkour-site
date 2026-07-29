@@ -10,6 +10,7 @@ SLIDES3="$HOME/Documents/stats-eco-cours/cours-algebre-lineaire"
 SLIDES4="$HOME/Documents/stats-eco-cours/cours-econometrie-financiere"
 SLIDES5="$HOME/Documents/stats-eco-cours/cours-econometrie-avancee"
 SLIDES6="$HOME/Documents/stats-eco-cours/cours-value-at-risk"
+SLIDES7="$HOME/Documents/stats-eco-cours/cours-analyse-donnees"
 SITE="$HOME/Documents/jmadkour-site"
 
 one () {  # $1=numéro  $2=cours  $3=slug
@@ -84,7 +85,24 @@ six () {  # $1=numéro  $2=cours  $3=slug   (projet cours-value-at-risk)
   fi
 }
 
+seven () {  # $1=numéro  $2=cours  $3=slug   (projet cours-analyse-donnees)
+  local n=$1 c=$2 s=$3
+  ( cd "$SLIDES7" && quarto render "chapitre$n.qmd" --to revealjs )
+  cp "$SLIDES7/chapitre$n.html" "$SITE/cours/$c/slides/$s.html"
+  if ( cd "$SLIDES7" && quarto render "chapitre$n.qmd" --to beamer ) >/dev/null 2>&1; then
+    cp "$SLIDES7/chapitre$n.pdf" "$SITE/cours/$c/slides/$s.pdf"
+    echo "   [analyse-donnees] chapitre $n : HTML + PDF ✓"
+  else
+    echo "   [analyse-donnees] chapitre $n : HTML ✓  (PDF conservé — LaTeX indisponible)"
+  fi
+}
+
 echo "Génération et copie des diapositives…"
+seven 1 analyse-donnees            description-statistique
+seven 2 analyse-donnees            analyse-composantes-principales
+seven 3 analyse-donnees            analyse-factorielle-discriminante
+seven 4 analyse-donnees            positionnement-multidimensionnel
+seven 5 analyse-donnees            classification
 one 1  statistique-descriptive    donnees-et-statistiques
 one 2  statistique-descriptive    tableaux-et-graphiques
 one 3  statistique-descriptive    methodes-numeriques
