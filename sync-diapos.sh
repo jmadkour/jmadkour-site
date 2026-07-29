@@ -119,4 +119,9 @@ five 11 econometrie-avancee       rappels-probabilite
 five 12 econometrie-avancee       rappels-statistique-mathematique
 five 13 econometrie-avancee       rappels-algebre-matricielle
 five 14 econometrie-avancee       regression-matricielle
+five 15 econometrie-avancee       equations-simultanees
+five 16 econometrie-avancee       variables-dependantes-limitees
+five 17 econometrie-avancee       series-temporelles-avancees
+five 18 econometrie-avancee       projet-empirique
+five 19 econometrie-avancee       outils-mathematiques
 echo "Terminé. Vérifiez :  cd \"$SITE\" && quarto preview"
