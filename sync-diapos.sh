@@ -110,4 +110,13 @@ five 2  econometrie-avancee       regression-simple
 five 3  econometrie-avancee       regression-multiple-estimation
 five 4  econometrie-avancee       regression-multiple-inference
 five 5  econometrie-avancee       proprietes-asymptotiques
+five 6  econometrie-avancee       regression-multiple-approfondissements
+five 7  econometrie-avancee       variables-qualitatives
+five 8  econometrie-avancee       heteroscedasticite
+five 9  econometrie-avancee       specification-donnees
+five 10 econometrie-avancee       series-temporelles
+five 11 econometrie-avancee       rappels-probabilite
+five 12 econometrie-avancee       rappels-statistique-mathematique
+five 13 econometrie-avancee       rappels-algebre-matricielle
+five 14 econometrie-avancee       regression-matricielle
 echo "Terminé. Vérifiez :  cd \"$SITE\" && quarto preview"
