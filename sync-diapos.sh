@@ -9,6 +9,7 @@ SLIDES2="$HOME/Documents/stats-eco-cours/cours-analyse-mathematique"
 SLIDES3="$HOME/Documents/stats-eco-cours/cours-algebre-lineaire"
 SLIDES4="$HOME/Documents/stats-eco-cours/cours-econometrie-financiere"
 SLIDES5="$HOME/Documents/stats-eco-cours/cours-econometrie-avancee"
+SLIDES6="$HOME/Documents/stats-eco-cours/cours-value-at-risk"
 SITE="$HOME/Documents/jmadkour-site"
 
 one () {  # $1=numéro  $2=cours  $3=slug
@@ -71,6 +72,18 @@ five () {  # $1=numéro  $2=cours  $3=slug   (projet cours-econometrie-avancee)
   fi
 }
 
+six () {  # $1=numéro  $2=cours  $3=slug   (projet cours-value-at-risk)
+  local n=$1 c=$2 s=$3
+  ( cd "$SLIDES6" && quarto render "chapitre$n.qmd" --to revealjs )
+  cp "$SLIDES6/chapitre$n.html" "$SITE/cours/$c/slides/$s.html"
+  if ( cd "$SLIDES6" && quarto render "chapitre$n.qmd" --to beamer ) >/dev/null 2>&1; then
+    cp "$SLIDES6/chapitre$n.pdf" "$SITE/cours/$c/slides/$s.pdf"
+    echo "   [value-at-risk] chapitre $n : HTML + PDF ✓"
+  else
+    echo "   [value-at-risk] chapitre $n : HTML ✓  (PDF conservé — LaTeX indisponible)"
+  fi
+}
+
 echo "Génération et copie des diapositives…"
 one 1  statistique-descriptive    donnees-et-statistiques
 one 2  statistique-descriptive    tableaux-et-graphiques
@@ -124,4 +137,11 @@ five 16 econometrie-avancee       variables-dependantes-limitees
 five 17 econometrie-avancee       series-temporelles-avancees
 five 18 econometrie-avancee       projet-empirique
 five 19 econometrie-avancee       outils-mathematiques
+six 1   value-at-risk             var-autres-mesures-risque
+six 3   value-at-risk             simulation-historique
+six 4   value-at-risk             var-monte-carlo
+six 5   value-at-risk             var-portefeuille-options
+six 6   value-at-risk             risque-modele
+six 7   value-at-risk             scenarios-stress-testing
+six 8   value-at-risk             allocation-capital
 echo "Terminé. Vérifiez :  cd \"$SITE\" && quarto preview"
