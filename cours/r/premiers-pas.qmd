@@ -1,0 +1,154 @@
+---
+title: "Premiers pas en R"
+subtitle: "Outils — R, chapitre 1"
+sidebar: r
+format: live-html
+---
+
+Chaque bloc gris ci-dessous est un **éditeur**. Modifiez le code, cliquez sur *Run Code*, observez. Le premier bloc met quelques secondes à démarrer, le temps que R se charge dans le navigateur.
+
+## Calculer
+
+```{webr}
+2 + 3 * 4
+```
+
+Les opérateurs usuels sont `+`, `-`, `*`, `/`, `^` pour la puissance et `%%` pour le reste.
+
+```{webr}
+2^10        # puissance
+17 / 5      # division
+17 %/% 5    # division entiere
+17 %% 5     # reste
+```
+
+## Stocker une valeur
+
+En R, l'affectation s'écrit traditionnellement `<-`, même si `=` fonctionne aussi.
+
+```{webr}
+prix <- 98.0
+coupon <- 1.75
+prix_final <- 98.5
+
+rendement <- (prix_final - prix + coupon) / prix
+rendement
+```
+
+Vous venez de calculer le rendement réalisé semestriel du chapitre 11 du cours *Modèles d'évaluation et de risque*.
+
+## Le vecteur, structure fondamentale
+
+C'est ici que R se distingue de Python : sa brique de base n'est pas le nombre isolé mais le **vecteur**. Les opérations s'appliquent d'office à tous les éléments.
+
+```{webr}
+taux <- c(0.007, 0.012, 0.016, 0.020)
+
+taux * 100        # conversion en pourcentage : aucune boucle
+```
+
+::: {.callout-tip}
+### Ce que la vectorisation change
+
+Là où Python demanderait une boucle, R applique l'opération à l'ensemble du vecteur. Le code est plus court, plus lisible et bien plus rapide. C'est le réflexe à acquérir en premier.
+:::
+
+```{webr}
+# facteurs d'actualisation a partir de taux a terme semestriels
+facteurs <- cumprod(1 / (1 + taux / 2))
+facteurs
+```
+
+Ces quatre nombres sont exactement ceux du chapitre 11 : 0,9965, 0,9906, 0,9827 et 0,9730.
+
+## Décrire
+
+Les fonctions statistiques de base sont immédiates.
+
+```{webr}
+rendements <- c(2.3, -1.1, 0.8, 3.4, -2.7, 1.9, 0.4, -0.6)
+
+mean(rendements)
+sd(rendements)
+median(rendements)
+summary(rendements)
+```
+
+## Sélectionner
+
+L'indexation par **condition** est l'un des grands conforts de R.
+
+```{webr}
+rendements[rendements < 0]        # les seances de baisse
+length(rendements[rendements < 0])
+```
+
+::: {.callout-warning}
+### L'erreur classique
+
+R indexe à partir de **1**, non de 0 comme Python. `rendements[1]` renvoie le premier élément. `rendements[0]` renvoie un vecteur vide — sans message d'erreur, ce qui est plus déroutant qu'une erreur franche.
+:::
+
+```{webr}
+rendements[1]
+rendements[0]
+```
+
+## Un premier graphique
+
+```{webr}
+x <- seq(0, 30, by = 0.5)
+courbe <- 0.02 + 0.02 * (1 - exp(-x / 8))
+
+plot(x, courbe * 100, type = "l", lwd = 2, col = "#2f7ea8",
+     xlab = "Maturite (annees)", ylab = "Taux (%)",
+     main = "Une courbe des taux croissante")
+grid()
+```
+
+Changez le `8` du dénominateur : plus il est petit, plus la courbe s'aplatit tôt.
+
+## Réutiliser
+
+```{webr}
+valeur_actuelle <- function(flux, taux, annees) {
+  flux / (1 + taux)^annees
+}
+
+valeur_actuelle(1000, 0.04, 5)
+valeur_actuelle(1000, 0.06, 5)
+```
+
+Et parce que R est vectorisé, la fonction accepte d'emblée plusieurs maturités :
+
+```{webr}
+valeur_actuelle(1000, 0.04, 1:10)
+```
+
+## À vous
+
+Écrivez une fonction `prix_obligation(coupon, taux, n)` donnant le prix d'une obligation de nominal 100 versant `coupon` pendant `n` années. Tirez parti de la vectorisation.
+
+```{webr}
+#| exercise: prix_obligation
+prix_obligation <- function(coupon, taux, n) {
+  # a completer
+}
+
+prix_obligation(5, 0.04, 3)
+```
+
+::: {.callout-note collapse="true"}
+### Une solution possible
+
+```r
+prix_obligation <- function(coupon, taux, n) {
+  dates <- 1:n
+  flux <- rep(coupon, n)
+  flux[n] <- flux[n] + 100
+  sum(flux / (1 + taux)^dates)
+}
+```
+
+Pour un coupon de 5 %, un taux de 4 % et trois ans : 102,78. L'obligation cote **au-dessus du pair** puisque son coupon dépasse le taux du marché. Notez l'absence de boucle — `sum` opère sur le vecteur entier.
+:::
