@@ -307,12 +307,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Doctorat</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../../outils.html"> 
-<span class="menu-text">Outils</span></a>
-  </li>  
-  <li class="nav-item">
     <a class="nav-link" href="../../recherche.html"> 
 <span class="menu-text">Publications</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../outils.html"> 
+<span class="menu-text">Outils</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="../../about.html"> 
@@ -661,18 +661,15 @@ for annee in range(1, 6):
      Consoles interactives de jmadkour.org
      - Python : Pyodide (CDN officiel)
      - R      : webR (CDN officiel), sortie texte et graphiques
-     - LaTeX  : KaTeX, formules composées en direct
-     - Octave : bouton d'ouverture vers Octave Online
-     Aucun moteur n'est chargé tant que l'étudiant n'a pas cliqué.
+     - LaTeX  : KaTeX, formules composees en direct
+     - Octave / MATLAB : ouverture vers Octave Online ou MATLAB Online
+     Aucun moteur n'est charge tant que l'etudiant n'a pas clique.
      ===================================================================== -->
 
 <style>
   .jm-run {
     border: 1px solid var(--bs-border-color, #2a4a5c);
-    border-radius: 12px;
-    overflow: hidden;
-    margin: 1.4rem 0;
-    background: var(--bs-body-bg, transparent);
+    border-radius: 12px; overflow: hidden; margin: 1.4rem 0;
   }
   .jm-run-head {
     display: flex; align-items: center; gap: .6rem;
@@ -683,43 +680,44 @@ for annee in range(1, 6):
   }
   .jm-run-lang { font-weight: 700; letter-spacing: .02em; }
   .jm-run-title { opacity: .75; }
-  .jm-run-status { margin-left: auto; opacity: .7; font-style: italic; }
+  .jm-run-status { margin-left: auto; opacity: .85; font-style: italic; }
   .jm-run-code {
     width: 100%; border: 0; outline: 0; resize: vertical;
-    padding: .85rem; min-height: 3rem;
-    font-family: var(--bs-font-monospace, ui-monospace, "Cascadia Code", Consolas, monospace);
+    padding: .85rem; min-height: 3rem; display: block;
+    font-family: var(--bs-font-monospace, ui-monospace, Consolas, monospace);
     font-size: .88rem; line-height: 1.55;
-    background: transparent; color: inherit; display: block;
-    tab-size: 4;
+    background: transparent; color: inherit; tab-size: 4;
   }
   .jm-run-bar {
-    display: flex; gap: .5rem; flex-wrap: wrap;
+    display: flex; gap: .5rem; flex-wrap: wrap; align-items: center;
     padding: .5rem .85rem; border-top: 1px solid rgba(127,127,127,.25);
   }
-  .jm-run button {
-    font-size: .82rem; font-weight: 600; cursor: pointer;
-    padding: .3rem .8rem; border-radius: 999px;
+  .jm-run-bar button, .jm-run-bar a.jm-btn {
+    font-size: .82rem; font-weight: 600; cursor: pointer; text-decoration: none;
+    padding: .3rem .8rem; border-radius: 999px; line-height: 1.6;
     border: 1px solid var(--bs-primary, #2f7ea8);
     background: var(--bs-primary, #2f7ea8); color: #fff;
   }
-  .jm-run button.jm-ghost { background: transparent; color: var(--bs-primary, #2f7ea8); }
-  .jm-run button:hover { opacity: .85; }
-  .jm-run button:disabled { opacity: .45; cursor: progress; }
+  .jm-run-bar button.jm-ghost, .jm-run-bar a.jm-btn.jm-ghost {
+    background: transparent; color: var(--bs-primary, #2f7ea8);
+  }
+  .jm-run-bar button:hover, .jm-run-bar a.jm-btn:hover { opacity: .85; }
+  .jm-run-bar button.jm-busy { opacity: .7; cursor: progress; }
   .jm-run-out {
     margin: 0; padding: .8rem .85rem; white-space: pre-wrap; word-break: break-word;
     font-family: var(--bs-font-monospace, ui-monospace, Consolas, monospace);
     font-size: .84rem; line-height: 1.5;
     border-top: 1px solid rgba(127,127,127,.25);
     background: rgba(127,127,127,.06);
-    max-height: 22rem; overflow: auto;
+    max-height: 24rem; overflow: auto;
   }
   .jm-run-out:empty { display: none; }
-  .jm-run-out .jm-err { color: #d9534f; }
+  .jm-run-out .jm-err  { color: #d9534f; }
+  .jm-run-out .jm-info { opacity: .7; font-style: italic; }
   .jm-run-plot { display: block; max-width: 100%; margin: .5rem auto; }
   .jm-run-plot[hidden] { display: none; }
 
-  /* --- editeur de formules --- */
-  .jm-tex { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .jm-tex { display: grid; grid-template-columns: 1fr 1fr; }
   @media (max-width: 700px) { .jm-tex { grid-template-columns: 1fr; } }
   .jm-tex textarea {
     border: 0; outline: 0; resize: vertical; padding: .85rem; min-height: 5rem;
@@ -745,21 +743,24 @@ for annee in range(1, 6):
   var WEBR_URL    = "https://webr.r-wasm.org/latest/webr.mjs";
   var KATEX_JS    = "https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js";
   var KATEX_CSS   = "https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css";
+  var GH_REPO     = "jmadkour/jmadkour-site";
 
-  /* ---------- utilitaires ---------- */
+  /* Les moteurs WebAssembly se telechargent depuis un CDN : impossible
+     depuis un fichier ouvert en local (protocole file://). */
+  var HORS_LIGNE = (location.protocol === "file:");
 
   function loadScript(src) {
     return new Promise(function (ok, ko) {
       var s = document.createElement("script");
-      s.src = src; s.onload = ok; s.onerror = function () { ko(new Error(src)); };
+      s.src = src; s.onload = ok;
+      s.onerror = function () { ko(new Error("téléchargement impossible : " + src)); };
       document.head.appendChild(s);
     });
   }
 
   function loadCss(href) {
     var l = document.createElement("link");
-    l.rel = "stylesheet"; l.href = href;
-    document.head.appendChild(l);
+    l.rel = "stylesheet"; l.href = href; document.head.appendChild(l);
   }
 
   function autosize(ta) {
@@ -767,7 +768,6 @@ for annee in range(1, 6):
     ta.style.height = (ta.scrollHeight + 4) + "px";
   }
 
-  /* Tabulation dans la zone de code plutot que changement de focus */
   function tabSupport(ta) {
     ta.addEventListener("keydown", function (e) {
       if (e.key !== "Tab") return;
@@ -778,51 +778,48 @@ for annee in range(1, 6):
     });
   }
 
-  /* ---------- moteur Python ---------- */
+  /* ---------------- moteurs ---------------- */
 
   var pyPromise = null;
-  function getPython(status) {
-    if (pyPromise) return pyPromise;
-    status("démarrage de Python…");
-    pyPromise = loadScript(PYODIDE_URL)
-      .then(function () { return loadPyodide(); });
+  function getPython() {
+    if (!pyPromise) {
+      pyPromise = loadScript(PYODIDE_URL).then(function () { return loadPyodide(); });
+    }
     return pyPromise;
   }
 
-  /* ---------- moteur R ---------- */
-
   var rPromise = null;
-  function getR(status) {
-    if (rPromise) return rPromise;
-    status("démarrage de R…");
-    rPromise = import(WEBR_URL).then(function (mod) {
-      var webR = new mod.WebR();
-      return webR.init().then(function () { return webR; });
-    });
+  function getR() {
+    if (!rPromise) {
+      rPromise = import(WEBR_URL).then(function (mod) {
+        var webR = new mod.WebR();
+        return webR.init().then(function () { return webR; });
+      });
+    }
     return rPromise;
   }
 
-  /* ---------- construction d'une console ---------- */
+  /* ---------------- console executable ---------------- */
 
   function buildConsole(node) {
-    var engine = node.dataset.engine;          // "python" | "r"
-    var label  = engine === "r" ? "R" : "Python";
+    var engine = node.dataset.engine;
+    var estR   = (engine === "r");
+    var label  = estR ? "R" : "Python";
     var source = node.textContent.replace(/^\n+|\s+$/g, "");
-    var title  = node.dataset.title || "";
 
     node.textContent = "";
     node.classList.add("jm-run");
 
     var head = document.createElement("div");
     head.className = "jm-run-head";
-    head.innerHTML = '<span class="jm-run-lang">' + label + '</span>' +
-                     '<span class="jm-run-title">' + title + '</span>' +
+    head.innerHTML = '<span class="jm-run-lang"></span>' +
+                     '<span class="jm-run-title"></span>' +
                      '<span class="jm-run-status"></span>';
+    head.querySelector(".jm-run-lang").textContent  = label;
+    head.querySelector(".jm-run-title").textContent = node.dataset.title || "";
 
     var ta = document.createElement("textarea");
-    ta.className = "jm-run-code";
-    ta.spellcheck = false;
-    ta.value = source;
+    ta.className = "jm-run-code"; ta.spellcheck = false; ta.value = source;
 
     var bar = document.createElement("div");
     bar.className = "jm-run-bar";
@@ -836,16 +833,15 @@ for annee in range(1, 6):
     out.className = "jm-run-out";
     var plot = document.createElement("canvas");
     plot.className = "jm-run-plot"; plot.hidden = true;
-    plot.width = 700; plot.height = 480;
 
     node.appendChild(head); node.appendChild(ta); node.appendChild(bar);
     node.appendChild(out); node.appendChild(plot);
 
     var statusEl = head.querySelector(".jm-run-status");
     function status(t) { statusEl.textContent = t || ""; }
-    function write(text, isErr) {
+    function write(text, cls) {
       var span = document.createElement("span");
-      if (isErr) span.className = "jm-err";
+      if (cls) span.className = cls;
       span.textContent = text + "\n";
       out.appendChild(span);
       out.scrollTop = out.scrollHeight;
@@ -860,36 +856,61 @@ for annee in range(1, 6):
       out.textContent = ""; plot.hidden = true; status("");
     });
 
+    var pret = false;   /* le moteur a-t-il deja ete charge ? */
+
     go.addEventListener("click", function () {
       out.textContent = ""; plot.hidden = true;
+
+      if (HORS_LIGNE) {
+        write("Cette page est ouverte depuis un fichier local (file://).", "jm-err");
+        write("Les navigateurs interdisent alors le téléchargement du moteur " +
+              label + ".\nOuvrez la page depuis un serveur — « quarto preview » " +
+              "en local, ou le site publié — et le bouton fonctionnera.", "jm-info");
+        return;
+      }
+
+      go.classList.add("jm-busy");
       go.disabled = true;
-      var job = engine === "r" ? runR(ta.value) : runPy(ta.value);
-      job.catch(function (e) { write(String(e && e.message ? e.message : e), true); })
-         .then(function () { go.disabled = false; status(""); });
+
+      if (!pret) {
+        go.textContent = "⏳ Chargement de " + label + "…";
+        status("premier lancement, patientez");
+        write("Téléchargement de " + label + " (environ " +
+              (estR ? "20" : "10") + " s au premier lancement)…", "jm-info");
+      } else {
+        go.textContent = "⏳ Exécution…";
+      }
+
+      var job = estR ? runR(ta.value) : runPy(ta.value);
+      job.catch(function (e) {
+        write(String(e && e.message ? e.message : e), "jm-err");
+      }).then(function () {
+        pret = true;
+        go.classList.remove("jm-busy");
+        go.disabled = false;
+        go.textContent = "▶ Exécuter";
+        status("");
+      });
     });
 
-    /* --- exécution Python --- */
     function runPy(code) {
-      return getPython(status).then(function (py) {
+      return getPython().then(function (py) {
+        if (!pret) { out.textContent = ""; }
         status("exécution…");
-        py.setStdout({ batched: function (s) { write(s, false); } });
-        py.setStderr({ batched: function (s) { write(s, true); } });
+        py.setStdout({ batched: function (s) { write(s, null); } });
+        py.setStderr({ batched: function (s) { write(s, "jm-err"); } });
         var res;
-        try {
-          res = py.runPython(code);
-        } catch (err) {
-          write(String(err), true);
-          return;
-        }
+        try { res = py.runPython(code); }
+        catch (err) { write(String(err), "jm-err"); return; }
         if (res !== undefined && res !== null) {
-          write(typeof res === "object" && res.toString ? res.toString() : String(res), false);
+          write(res.toString ? res.toString() : String(res), null);
         }
       });
     }
 
-    /* --- exécution R --- */
     function runR(code) {
-      return getR(status).then(function (webR) {
+      return getR().then(function (webR) {
+        if (!pret) { out.textContent = ""; }
         status("exécution…");
         return new webR.Shelter().then(function (shelter) {
           return shelter.captureR(code, {
@@ -899,7 +920,7 @@ for annee in range(1, 6):
             captureGraphics: true
           }).then(function (cap) {
             cap.output.forEach(function (o) {
-              write(o.data, o.type === "stderr");
+              write(o.data, o.type === "stderr" ? "jm-err" : null);
             });
             if (cap.images && cap.images.length) {
               var img = cap.images[cap.images.length - 1];
@@ -907,22 +928,20 @@ for annee in range(1, 6):
               plot.getContext("2d").drawImage(img, 0, 0);
               plot.hidden = false;
             }
-          }).then(function () { shelter.purge(); },
-                  function (e) { shelter.purge(); throw e; });
+            shelter.purge();
+          }, function (e) { shelter.purge(); throw e; });
         });
       });
     }
   }
 
-  /* ---------- editeur de formules LaTeX ---------- */
+  /* ---------------- editeur de formules ---------------- */
 
   var katexReady = null;
   function getKatex() {
     if (katexReady) return katexReady;
-    /* Quarto charge deja KaTeX quand html-math-method vaut katex :
-       on le reutilise plutot que d'en telecharger une seconde copie. */
     if (window.katex && typeof window.katex.render === "function") {
-      katexReady = Promise.resolve();
+      katexReady = Promise.resolve();       /* deja charge par Quarto */
       return katexReady;
     }
     loadCss(KATEX_CSS);
@@ -937,8 +956,9 @@ for annee in range(1, 6):
 
     var head = document.createElement("div");
     head.className = "jm-run-head";
-    head.innerHTML = '<span class="jm-run-lang">LaTeX</span>' +
-                     '<span class="jm-run-title">' + (node.dataset.title || "tapez, la formule se compose à droite") + '</span>';
+    head.innerHTML = '<span class="jm-run-lang">LaTeX</span><span class="jm-run-title"></span>';
+    head.querySelector(".jm-run-title").textContent =
+      node.dataset.title || "tapez à gauche, la formule se compose à droite";
 
     var grid = document.createElement("div");
     grid.className = "jm-tex";
@@ -947,7 +967,6 @@ for annee in range(1, 6):
     var res = document.createElement("div");
     res.className = "jm-tex-out";
     grid.appendChild(ta); grid.appendChild(res);
-
     node.appendChild(head); node.appendChild(grid);
 
     tabSupport(ta);
@@ -959,45 +978,63 @@ for annee in range(1, 6):
         try {
           katex.render(ta.value, res, { displayMode: true, throwOnError: true });
         } catch (e) {
-          res.innerHTML = '<span class="jm-err">' + String(e.message || e) + "</span>";
+          res.innerHTML = "";
+          var s = document.createElement("span");
+          s.className = "jm-err";
+          s.textContent = String(e.message || e);
+          res.appendChild(s);
         }
+      }).catch(function () {
+        res.textContent = "KaTeX n'a pas pu être chargé.";
       });
     }
     ta.addEventListener("input", render);
     render();
   }
 
-  /* ---------- bouton Octave Online ---------- */
+  /* ---------------- Octave / MATLAB ---------------- */
 
   function buildOctave(node) {
-    var pre = node.querySelector("pre, code");
+    var pre  = node.querySelector("pre, code");
     var code = (pre ? pre.textContent : node.textContent).replace(/\s+$/, "");
+    var file = node.dataset.file || "";
+
     var bar = document.createElement("div");
     bar.className = "jm-run-bar";
-    bar.style.border = "0";
-    bar.style.padding = ".4rem 0 0";
+    bar.style.cssText = "border:0;padding:.5rem 0 0";
 
     var copy = document.createElement("button");
-    copy.type = "button"; copy.textContent = "⧉ Copier le code";
+    copy.type = "button"; copy.className = "jm-ghost";
+    copy.textContent = "⧉ Copier";
     copy.addEventListener("click", function () {
       navigator.clipboard.writeText(code).then(function () {
         copy.textContent = "✓ Copié";
-        setTimeout(function () { copy.textContent = "⧉ Copier le code"; }, 1800);
+        setTimeout(function () { copy.textContent = "⧉ Copier"; }, 1800);
       });
     });
+    bar.appendChild(copy);
 
-    var open = document.createElement("a");
-    open.href = "https://octave-online.net/";
-    open.target = "_blank"; open.rel = "noopener";
-    open.textContent = "▶ Ouvrir Octave Online";
-    open.style.cssText = "font-size:.82rem;font-weight:600;text-decoration:none;" +
-      "padding:.3rem .8rem;border-radius:999px;background:var(--bs-primary,#2f7ea8);color:#fff";
+    if (file) {
+      var mat = document.createElement("a");
+      mat.className = "jm-btn";
+      mat.href = "https://matlab.mathworks.com/open/github/v1?repo=" +
+                 GH_REPO + "&file=matlab/" + file;
+      mat.target = "_blank"; mat.rel = "noopener";
+      mat.textContent = "▶ Ouvrir dans MATLAB Online";
+      bar.appendChild(mat);
+    }
 
-    bar.appendChild(copy); bar.appendChild(open);
+    var oct = document.createElement("a");
+    oct.className = "jm-btn jm-ghost";
+    oct.href = "https://octave-online.net/";
+    oct.target = "_blank"; oct.rel = "noopener";
+    oct.textContent = "▶ Octave Online";
+    bar.appendChild(oct);
+
     node.appendChild(bar);
   }
 
-  /* ---------- initialisation ---------- */
+  /* ---------------- initialisation ---------------- */
 
   function init() {
     document.querySelectorAll("[data-console]").forEach(buildConsole);
