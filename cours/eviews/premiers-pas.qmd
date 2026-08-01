@@ -4,131 +4,184 @@ subtitle: "Outils — EViews, chapitre 1"
 sidebar: eviews
 ---
 
-Ce chapitre parcourt le cycle complet d'une séance de travail : créer l'espace de travail, importer des données, les décrire, estimer une première régression et lire sa sortie.
+EViews est le seul outil de cette rubrique qui ne s'exécute pas dans le navigateur : c'est un logiciel propriétaire, à interface graphique. Ce chapitre le montre donc **en images**, écran par écran.
 
-## L'espace de travail
+Bonne nouvelle : c'est aussi celui qui demande le moins d'apprentissage. Une régression s'y estime en quatre clics. Toute la difficulté est ailleurs — dans la **lecture** des résultats.
 
-Tout commence par un **workfile**, qui contient les séries, les équations et les résultats.
+```{=html}
+<style>
+  .jm-shot {
+    border: 2px dashed var(--bs-border-color, #6b8391);
+    border-radius: 10px; padding: 1.4rem 1rem; margin: 1.1rem 0;
+    text-align: center; opacity: .75; font-size: .88rem;
+  }
+  .jm-shot strong { display: block; margin-bottom: .25rem; opacity: 1; }
+</style>
+```
+
+# L'espace de travail
+
+Tout part d'un **workfile**, le classeur qui contiendra les séries, les équations et les résultats.
 
 > **File → New → Workfile**
 
-Trois structures possibles :
+```{=html}
+<div class="jm-shot"><strong>Capture 1 — la fenêtre « Workfile Create »</strong>
+Montrer la liste déroulante <em>Workfile structure type</em> ouverte, avec les trois choix visibles.</div>
+```
 
-| Structure | Usage |
+Trois structures, et le choix n'est pas anodin :
+
+| Structure | Quand l'utiliser |
 |---|---|
-| *Unstructured / Undated* | données en coupe transversale — un individu par ligne |
-| *Dated – regular frequency* | séries temporelles — annuel, trimestriel, mensuel, quotidien |
-| *Balanced Panel* | données de panel — individus × périodes |
-
-Pour une série mensuelle de janvier 2015 à décembre 2024 : *Dated – regular frequency*, fréquence **Monthly**, début `2015M01`, fin `2024M12`.
+| *Unstructured / Undated* | une observation par individu — enquête, échantillon de ménages |
+| *Dated – regular frequency* | une observation par date — PIB trimestriel, prix mensuels |
+| *Balanced Panel* | des individus **suivis** dans le temps — régions sur dix ans |
 
 ::: {.callout-warning}
-### L'erreur classique
+### L'erreur qui coûte une séance de TD
 
-Déclarer les données comme *Undated* alors qu'elles sont temporelles. EViews accepte, mais **tous les outils de séries temporelles deviennent inaccessibles** : ni test de racine unitaire, ni ARIMA, ni décalages. Il faut alors recréer le workfile.
+Déclarer des données temporelles en *Undated*. EViews accepte sans broncher, puis **tous les outils de séries temporelles disparaissent des menus** : ni test de racine unitaire, ni ARIMA, ni variables retardées. Il faut alors recréer le workfile depuis le début.
+
+Avant tout import : demandez-vous si vos lignes sont des **individus** ou des **dates**.
 :::
 
-## Importer des données
+# Importer ses données
 
 > **File → Import → Import from file**
 
-EViews lit Excel, CSV et texte. Points de vigilance :
+```{=html}
+<div class="jm-shot"><strong>Capture 2 — l'assistant d'import, étape d'aperçu</strong>
+Montrer le tableau d'aperçu avec les noms de colonnes correctement détectés en en-tête.</div>
+```
 
-- la **première ligne** doit contenir les noms de variables, sans espace ni accent ;
-- le **séparateur décimal** doit être le point, non la virgule — c'est la cause la plus fréquente de séries importées comme du texte ;
-- les valeurs manquantes se notent `NA`.
+Trois points de vigilance, dans l'ordre où ils font échouer un import :
 
-Après import, un double-clic sur une série l'ouvre en tableau. Un nom de série apparaissant en **bleu** signale une série numérique ; en **noir**, il s'agit d'un objet texte, et l'import a échoué.
+1. **Les noms de variables** occupent la première ligne, sans espace ni accent. `taux_chomage` passe, `Taux de chômage` non.
+2. **Le séparateur décimal** doit être le point. Une virgule décimale fait importer la série comme du **texte** — c'est la panne la plus fréquente, et la plus silencieuse.
+3. **Les valeurs manquantes** s'écrivent `NA`, jamais une cellule contenant un tiret ou un espace.
 
-## Décrire
+::: {.callout-tip}
+### Le test qui prend deux secondes
 
-Sélectionnez une série, puis :
+Après l'import, regardez la couleur des noms de séries dans le workfile. **Bleu** : série numérique, tout va bien. **Noir** : c'est un objet texte, l'import a échoué. Ce coup d'œil vous épargnera une heure de perplexité.
+:::
+
+# Regarder avant de calculer
+
+Double-cliquez sur une série, puis :
 
 > **View → Descriptive Statistics & Tests → Histogram and Stats**
 
-```
-      RENDEMENT
- Mean           0.550000
- Median         0.600000
- Maximum        3.400000
- Minimum       -2.700000
- Std. Dev.      1.990276
- Skewness      -0.087233
- Kurtosis       1.892374
- Jarque-Bera    0.428061
- Probability    0.807277
- Observations           8
+```{=html}
+<div class="jm-shot"><strong>Capture 3 — histogramme et statistiques descriptives</strong>
+Montrer la fenêtre entière : histogramme à gauche, tableau des statistiques à droite.</div>
 ```
 
-Les deux dernières lignes portent le test de **Jarque-Bera** : sous l'hypothèse nulle, la série est normale. Une probabilité de 0,81 étant largement supérieure à 0,05, la normalité n'est pas rejetée — sans surprise sur huit observations, où le test n'a presque aucune puissance.
+Vous obtenez l'histogramme et, à côté, les statistiques usuelles. Trois lignes méritent votre attention avant toute chose :
 
-Pour plusieurs séries à la fois : sélection multiple, clic droit, **Open → as Group**, puis **View → Descriptive Stats** ou **Correlations**.
+- **Mean** et **Median** — si elles s'écartent nettement, la distribution est asymétrique, ce qui est la règle pour des revenus ou des patrimoines ;
+- **Skewness** et **Kurtosis** — asymétrie et épaisseur des queues ;
+- **Jarque-Bera** et sa **Probability** — le test de normalité. Une probabilité supérieure à 0,05 signifie qu'on ne rejette pas la normalité.
 
-## Estimer une régression
+::: {.callout-note}
+### Ce que « ne pas rejeter » veut dire
+
+Ne pas rejeter la normalité n'est pas la démontrer. Sur un petit échantillon, le test manque de puissance : il ne rejette presque jamais, faute d'information. Sur un très grand échantillon, il rejette presque toujours, la moindre irrégularité devenant détectable.
+
+Un test ne remplace jamais le coup d'œil sur l'histogramme.
+:::
+
+Pour croiser plusieurs séries : sélection multiple, clic droit, **Open → as Group**, puis **View → Correlations**.
+
+```{=html}
+<div class="jm-shot"><strong>Capture 4 — matrice de corrélations d'un groupe</strong>
+Montrer la matrice pour trois ou quatre variables.</div>
+```
+
+# Estimer une régression
 
 > **Quick → Estimate Equation**
 
-Dans la fenêtre de spécification, on écrit la liste des variables — variable expliquée d'abord, `c` désignant la constante :
-
-```
-y c x1 x2
-```
-
-La sortie se présente ainsi :
-
-```
-Dependent Variable: Y
-Method: Least Squares
-Sample: 1 100
-Included observations: 100
-
-Variable       Coefficient   Std. Error   t-Statistic   Prob.
-C                 0.512340     0.204118      2.510      0.0138
-X1                1.874200     0.093471     20.051      0.0000
-X2               -0.320150     0.145983     -2.193      0.0307
-
-R-squared            0.812         Mean dependent var     4.2130
-Adjusted R-squared   0.808         S.D. dependent var     2.1044
-S.E. of regression   0.921         Akaike info criterion  2.7013
-Sum squared resid   82.310         Schwarz criterion      2.7795
-Log likelihood     -132.06         F-statistic           209.42
-Durbin-Watson stat   1.943         Prob(F-statistic)      0.0000
+```{=html}
+<div class="jm-shot"><strong>Capture 5 — la boîte de spécification</strong>
+Montrer le champ de spécification rempli, avec la méthode « LS — Least Squares » sélectionnée.</div>
 ```
 
-## Lire la sortie
+Dans le champ de spécification, on écrit simplement la liste des variables — l'expliquée d'abord, `c` désignant la constante :
 
-Dans l'ordre où il faut regarder :
+```
+chomage c pib_hab education
+```
 
-1. **Prob.** de chaque coefficient — la probabilité critique du test de nullité. Inférieure à 0,05, le coefficient est significatif au seuil de 5 %.
-2. **Prob(F-statistic)** — significativité conjointe. Un modèle dont aucun coefficient n'est individuellement significatif peut l'être conjointement, en cas de multicolinéarité.
-3. **R-squared** et sa version ajustée — la part de variance expliquée. Le $R^2$ ordinaire augmente mécaniquement avec le nombre de régresseurs ; seul l'**ajusté** permet de comparer des modèles de tailles différentes.
-4. **Durbin-Watson** — autocorrélation d'ordre un des résidus. Une valeur voisine de 2 est rassurante, en dessous de 1,5 elle ne l'est plus.
+Pas de signe égal, pas de formule. EViews comprend que la première variable est celle qu'on explique.
 
-::: {.callout-warning}
-### Le piège du R²
+```{=html}
+<div class="jm-shot"><strong>Capture 6 — la sortie de régression complète</strong>
+Montrer la fenêtre de résultats entière, du bandeau « Dependent Variable » jusqu'au Durbin-Watson.</div>
+```
 
-Un $R^2$ élevé ne valide pas un modèle. Deux séries **non stationnaires** et sans aucun lien produisent couramment un $R^2$ de 0,9 assorti d'un Durbin-Watson très bas : c'est la **régression fallacieuse**. Un $R^2$ supérieur au Durbin-Watson doit déclencher un test de racine unitaire avant toute interprétation.
+# Lire la sortie, dans le bon ordre
+
+C'est ici que se joue la compétence. Quatre chiffres, à regarder dans cet ordre précis.
+
+**1. La colonne `Prob.`** — pour chaque variable, la probabilité que son vrai coefficient soit nul. En dessous de 0,05, la variable est significative au seuil de 5 %.
+
+**2. `Prob(F-statistic)`** — la significativité de l'ensemble. Il arrive qu'aucune variable ne soit individuellement significative alors que le modèle l'est globalement : signe classique de **multicolinéarité**, deux variables se disputant le même pouvoir explicatif.
+
+**3. `Adjusted R-squared`** — la part de variance expliquée, corrigée du nombre de variables. Le $R^2$ ordinaire augmente mécaniquement dès qu'on ajoute une variable, même sans rapport : seul l'ajusté permet de comparer deux modèles.
+
+**4. `Durbin-Watson stat`** — l'autocorrélation des résidus. Autour de 2, tout va bien. En dessous de 1,5, les résidus se ressemblent d'une période à l'autre et les probabilités affichées deviennent trompeuses.
+
+::: {.callout-important}
+### Le piège du beau R²
+
+Un $R^2$ de 0,95 ne valide rien. Deux séries **non stationnaires** et totalement étrangères l'une à l'autre — la population du Maroc et le prix du cuivre — produisent couramment un $R^2$ superbe assorti d'un Durbin-Watson très bas. C'est la **régression fallacieuse**.
+
+La règle de survie : **si le $R^2$ dépasse le Durbin-Watson, ne lisez pas les coefficients**. Testez d'abord la stationnarité, par `View → Unit Root Test` sur chaque série.
 :::
 
-## La fenêtre de commandes
+```{=html}
+<div class="jm-shot"><strong>Capture 7 — un test de racine unitaire (ADF)</strong>
+Montrer la sortie du test augmenté de Dickey-Fuller sur une série en niveau.</div>
+```
 
-Le bandeau supérieur accepte des commandes tapées, plus rapides que les menus et — surtout — **conservables**.
+# Taper plutôt que cliquer
+
+Le bandeau supérieur accepte des commandes. C'est plus rapide que les menus, et surtout **conservable**.
 
 ```
-ls y c x1 x2          ' moindres carres ordinaires
-genr lny = log(y)     ' creer une variable transformee
-scat x1 y             ' nuage de points
-uroot x1              ' test de racine unitaire
+ls chomage c pib_hab           ' moindres carres ordinaires
+genr lpib = log(pib_hab)       ' creer une variable transformee
+scat pib_hab chomage           ' nuage de points
+uroot pib_hab                  ' test de racine unitaire
+freeze(tab1) equation01        ' figer un resultat pour l'exporter
 ```
 
 L'apostrophe introduit un commentaire.
 
 ::: {.callout-tip}
-### Prenez cette habitude dès maintenant
+### L'habitude qui vous sauvera une soutenance
 
-Consignez vos commandes dans un fichier programme — **File → New → Program**, extension `.prg`. Vous pourrez rejouer toute l'analyse après correction d'une donnée, ce qu'aucune séquence de clics ne permet. C'est le premier pas vers la reproductibilité, et cela vous évitera de tout refaire à la main la veille d'une soutenance.
+Consignez vos commandes dans un fichier programme — **File → New → Program**, extension `.prg`. Le jour où vous découvrez une erreur dans vos données, vous corrigez le fichier source et relancez le programme : toute l'analyse se refait seule.
+
+Avec des clics, il faut tout recommencer à la main. C'est exactement le genre de découverte qu'on fait la veille d'une soutenance.
 :::
 
-## À vous
+# Où EViews s'arrête
 
-À partir d'un fichier Excel de votre choix : créez le workfile à la bonne fréquence, importez les données, vérifiez que toutes les séries s'affichent en bleu, produisez les statistiques descriptives, puis estimez une régression simple. Notez les quatre indicateurs ci-dessus avant toute interprétation économique.
+Ce qui fait sa force fait aussi sa limite : **une analyse conduite à la souris n'est pas reproductible**. Personne, pas même vous six mois plus tard, ne peut refaire exactement la même suite d'opérations.
+
+Dès le mémoire de master, deux voies s'ouvrent : les programmes `.prg` d'EViews, ou le passage à [R](../r/index.qmd) et [Python](../python/index.qmd), où l'analyse **est** le script. La [page Publications](../../recherche.qmd) de ce site s'engage précisément sur cette exigence.
+
+# À vous
+
+Prenez un fichier Excel de votre choix — le HCP en diffuse en accès libre.
+
+1. Créez le workfile à la bonne structure ;
+2. Importez, et vérifiez que **toutes** les séries s'affichent en bleu ;
+3. Produisez l'histogramme de la variable qui vous intéresse ;
+4. Estimez une régression simple ;
+5. Notez les quatre indicateurs ci-dessus **avant** toute interprétation économique.
+
+Le chapitre suivant sera entièrement consacré à cette lecture des sorties, cas par cas.

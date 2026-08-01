@@ -1,0 +1,355 @@
+<!-- =====================================================================
+     Consoles interactives de jmadkour.org
+     - Python : Pyodide (CDN officiel)
+     - R      : webR (CDN officiel), sortie texte et graphiques
+     - LaTeX  : KaTeX, formules composées en direct
+     - Octave : bouton d'ouverture vers Octave Online
+     Aucun moteur n'est chargé tant que l'étudiant n'a pas cliqué.
+     ===================================================================== -->
+
+<style>
+  .jm-run {
+    border: 1px solid var(--bs-border-color, #2a4a5c);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 1.4rem 0;
+    background: var(--bs-body-bg, transparent);
+  }
+  .jm-run-head {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .45rem .85rem;
+    background: rgba(127,127,127,.10);
+    border-bottom: 1px solid var(--bs-border-color, #2a4a5c);
+    font-size: .82rem;
+  }
+  .jm-run-lang { font-weight: 700; letter-spacing: .02em; }
+  .jm-run-title { opacity: .75; }
+  .jm-run-status { margin-left: auto; opacity: .7; font-style: italic; }
+  .jm-run-code {
+    width: 100%; border: 0; outline: 0; resize: vertical;
+    padding: .85rem; min-height: 3rem;
+    font-family: var(--bs-font-monospace, ui-monospace, "Cascadia Code", Consolas, monospace);
+    font-size: .88rem; line-height: 1.55;
+    background: transparent; color: inherit; display: block;
+    tab-size: 4;
+  }
+  .jm-run-bar {
+    display: flex; gap: .5rem; flex-wrap: wrap;
+    padding: .5rem .85rem; border-top: 1px solid rgba(127,127,127,.25);
+  }
+  .jm-run button {
+    font-size: .82rem; font-weight: 600; cursor: pointer;
+    padding: .3rem .8rem; border-radius: 999px;
+    border: 1px solid var(--bs-primary, #2f7ea8);
+    background: var(--bs-primary, #2f7ea8); color: #fff;
+  }
+  .jm-run button.jm-ghost { background: transparent; color: var(--bs-primary, #2f7ea8); }
+  .jm-run button:hover { opacity: .85; }
+  .jm-run button:disabled { opacity: .45; cursor: progress; }
+  .jm-run-out {
+    margin: 0; padding: .8rem .85rem; white-space: pre-wrap; word-break: break-word;
+    font-family: var(--bs-font-monospace, ui-monospace, Consolas, monospace);
+    font-size: .84rem; line-height: 1.5;
+    border-top: 1px solid rgba(127,127,127,.25);
+    background: rgba(127,127,127,.06);
+    max-height: 22rem; overflow: auto;
+  }
+  .jm-run-out:empty { display: none; }
+  .jm-run-out .jm-err { color: #d9534f; }
+  .jm-run-plot { display: block; max-width: 100%; margin: .5rem auto; }
+  .jm-run-plot[hidden] { display: none; }
+
+  /* --- editeur de formules --- */
+  .jm-tex { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  @media (max-width: 700px) { .jm-tex { grid-template-columns: 1fr; } }
+  .jm-tex textarea {
+    border: 0; outline: 0; resize: vertical; padding: .85rem; min-height: 5rem;
+    font-family: var(--bs-font-monospace, ui-monospace, Consolas, monospace);
+    font-size: .88rem; background: transparent; color: inherit; width: 100%;
+  }
+  .jm-tex-out {
+    padding: .85rem; border-left: 1px solid rgba(127,127,127,.25);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 5rem; overflow-x: auto; font-size: 1.05rem;
+  }
+  @media (max-width: 700px) {
+    .jm-tex-out { border-left: 0; border-top: 1px solid rgba(127,127,127,.25); }
+  }
+  .jm-tex-out .jm-err { color: #d9534f; font-size: .8rem; font-family: monospace; }
+</style>
+
+<script>
+(function () {
+  "use strict";
+
+  var PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v314.0.3/full/pyodide.js";
+  var WEBR_URL    = "https://webr.r-wasm.org/latest/webr.mjs";
+  var KATEX_JS    = "https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js";
+  var KATEX_CSS   = "https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css";
+
+  /* ---------- utilitaires ---------- */
+
+  function loadScript(src) {
+    return new Promise(function (ok, ko) {
+      var s = document.createElement("script");
+      s.src = src; s.onload = ok; s.onerror = function () { ko(new Error(src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function loadCss(href) {
+    var l = document.createElement("link");
+    l.rel = "stylesheet"; l.href = href;
+    document.head.appendChild(l);
+  }
+
+  function autosize(ta) {
+    ta.style.height = "auto";
+    ta.style.height = (ta.scrollHeight + 4) + "px";
+  }
+
+  /* Tabulation dans la zone de code plutot que changement de focus */
+  function tabSupport(ta) {
+    ta.addEventListener("keydown", function (e) {
+      if (e.key !== "Tab") return;
+      e.preventDefault();
+      var s = ta.selectionStart, en = ta.selectionEnd;
+      ta.value = ta.value.slice(0, s) + "    " + ta.value.slice(en);
+      ta.selectionStart = ta.selectionEnd = s + 4;
+    });
+  }
+
+  /* ---------- moteur Python ---------- */
+
+  var pyPromise = null;
+  function getPython(status) {
+    if (pyPromise) return pyPromise;
+    status("démarrage de Python…");
+    pyPromise = loadScript(PYODIDE_URL)
+      .then(function () { return loadPyodide(); });
+    return pyPromise;
+  }
+
+  /* ---------- moteur R ---------- */
+
+  var rPromise = null;
+  function getR(status) {
+    if (rPromise) return rPromise;
+    status("démarrage de R…");
+    rPromise = import(WEBR_URL).then(function (mod) {
+      var webR = new mod.WebR();
+      return webR.init().then(function () { return webR; });
+    });
+    return rPromise;
+  }
+
+  /* ---------- construction d'une console ---------- */
+
+  function buildConsole(node) {
+    var engine = node.dataset.engine;          // "python" | "r"
+    var label  = engine === "r" ? "R" : "Python";
+    var source = node.textContent.replace(/^\n+|\s+$/g, "");
+    var title  = node.dataset.title || "";
+
+    node.textContent = "";
+    node.classList.add("jm-run");
+
+    var head = document.createElement("div");
+    head.className = "jm-run-head";
+    head.innerHTML = '<span class="jm-run-lang">' + label + '</span>' +
+                     '<span class="jm-run-title">' + title + '</span>' +
+                     '<span class="jm-run-status"></span>';
+
+    var ta = document.createElement("textarea");
+    ta.className = "jm-run-code";
+    ta.spellcheck = false;
+    ta.value = source;
+
+    var bar = document.createElement("div");
+    bar.className = "jm-run-bar";
+    var go = document.createElement("button");
+    go.type = "button"; go.textContent = "▶ Exécuter";
+    var reset = document.createElement("button");
+    reset.type = "button"; reset.className = "jm-ghost"; reset.textContent = "↺ Réinitialiser";
+    bar.appendChild(go); bar.appendChild(reset);
+
+    var out = document.createElement("pre");
+    out.className = "jm-run-out";
+    var plot = document.createElement("canvas");
+    plot.className = "jm-run-plot"; plot.hidden = true;
+    plot.width = 700; plot.height = 480;
+
+    node.appendChild(head); node.appendChild(ta); node.appendChild(bar);
+    node.appendChild(out); node.appendChild(plot);
+
+    var statusEl = head.querySelector(".jm-run-status");
+    function status(t) { statusEl.textContent = t || ""; }
+    function write(text, isErr) {
+      var span = document.createElement("span");
+      if (isErr) span.className = "jm-err";
+      span.textContent = text + "\n";
+      out.appendChild(span);
+      out.scrollTop = out.scrollHeight;
+    }
+
+    tabSupport(ta);
+    autosize(ta);
+    ta.addEventListener("input", function () { autosize(ta); });
+
+    reset.addEventListener("click", function () {
+      ta.value = source; autosize(ta);
+      out.textContent = ""; plot.hidden = true; status("");
+    });
+
+    go.addEventListener("click", function () {
+      out.textContent = ""; plot.hidden = true;
+      go.disabled = true;
+      var job = engine === "r" ? runR(ta.value) : runPy(ta.value);
+      job.catch(function (e) { write(String(e && e.message ? e.message : e), true); })
+         .then(function () { go.disabled = false; status(""); });
+    });
+
+    /* --- exécution Python --- */
+    function runPy(code) {
+      return getPython(status).then(function (py) {
+        status("exécution…");
+        py.setStdout({ batched: function (s) { write(s, false); } });
+        py.setStderr({ batched: function (s) { write(s, true); } });
+        var res;
+        try {
+          res = py.runPython(code);
+        } catch (err) {
+          write(String(err), true);
+          return;
+        }
+        if (res !== undefined && res !== null) {
+          write(typeof res === "object" && res.toString ? res.toString() : String(res), false);
+        }
+      });
+    }
+
+    /* --- exécution R --- */
+    function runR(code) {
+      return getR(status).then(function (webR) {
+        status("exécution…");
+        return new webR.Shelter().then(function (shelter) {
+          return shelter.captureR(code, {
+            withAutoprint: true,
+            captureStreams: true,
+            captureConditions: false,
+            captureGraphics: true
+          }).then(function (cap) {
+            cap.output.forEach(function (o) {
+              write(o.data, o.type === "stderr");
+            });
+            if (cap.images && cap.images.length) {
+              var img = cap.images[cap.images.length - 1];
+              plot.width = img.width; plot.height = img.height;
+              plot.getContext("2d").drawImage(img, 0, 0);
+              plot.hidden = false;
+            }
+          }).then(function () { shelter.purge(); },
+                  function (e) { shelter.purge(); throw e; });
+        });
+      });
+    }
+  }
+
+  /* ---------- editeur de formules LaTeX ---------- */
+
+  var katexReady = null;
+  function getKatex() {
+    if (katexReady) return katexReady;
+    /* Quarto charge deja KaTeX quand html-math-method vaut katex :
+       on le reutilise plutot que d'en telecharger une seconde copie. */
+    if (window.katex && typeof window.katex.render === "function") {
+      katexReady = Promise.resolve();
+      return katexReady;
+    }
+    loadCss(KATEX_CSS);
+    katexReady = loadScript(KATEX_JS);
+    return katexReady;
+  }
+
+  function buildTex(node) {
+    var source = node.textContent.replace(/^\n+|\s+$/g, "");
+    node.textContent = "";
+    node.classList.add("jm-run");
+
+    var head = document.createElement("div");
+    head.className = "jm-run-head";
+    head.innerHTML = '<span class="jm-run-lang">LaTeX</span>' +
+                     '<span class="jm-run-title">' + (node.dataset.title || "tapez, la formule se compose à droite") + '</span>';
+
+    var grid = document.createElement("div");
+    grid.className = "jm-tex";
+    var ta = document.createElement("textarea");
+    ta.spellcheck = false; ta.value = source;
+    var res = document.createElement("div");
+    res.className = "jm-tex-out";
+    grid.appendChild(ta); grid.appendChild(res);
+
+    node.appendChild(head); node.appendChild(grid);
+
+    tabSupport(ta);
+    autosize(ta);
+
+    function render() {
+      autosize(ta);
+      getKatex().then(function () {
+        try {
+          katex.render(ta.value, res, { displayMode: true, throwOnError: true });
+        } catch (e) {
+          res.innerHTML = '<span class="jm-err">' + String(e.message || e) + "</span>";
+        }
+      });
+    }
+    ta.addEventListener("input", render);
+    render();
+  }
+
+  /* ---------- bouton Octave Online ---------- */
+
+  function buildOctave(node) {
+    var pre = node.querySelector("pre, code");
+    var code = (pre ? pre.textContent : node.textContent).replace(/\s+$/, "");
+    var bar = document.createElement("div");
+    bar.className = "jm-run-bar";
+    bar.style.border = "0";
+    bar.style.padding = ".4rem 0 0";
+
+    var copy = document.createElement("button");
+    copy.type = "button"; copy.textContent = "⧉ Copier le code";
+    copy.addEventListener("click", function () {
+      navigator.clipboard.writeText(code).then(function () {
+        copy.textContent = "✓ Copié";
+        setTimeout(function () { copy.textContent = "⧉ Copier le code"; }, 1800);
+      });
+    });
+
+    var open = document.createElement("a");
+    open.href = "https://octave-online.net/";
+    open.target = "_blank"; open.rel = "noopener";
+    open.textContent = "▶ Ouvrir Octave Online";
+    open.style.cssText = "font-size:.82rem;font-weight:600;text-decoration:none;" +
+      "padding:.3rem .8rem;border-radius:999px;background:var(--bs-primary,#2f7ea8);color:#fff";
+
+    bar.appendChild(copy); bar.appendChild(open);
+    node.appendChild(bar);
+  }
+
+  /* ---------- initialisation ---------- */
+
+  function init() {
+    document.querySelectorAll("[data-console]").forEach(buildConsole);
+    document.querySelectorAll("[data-tex]").forEach(buildTex);
+    document.querySelectorAll("[data-octave]").forEach(buildOctave);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>

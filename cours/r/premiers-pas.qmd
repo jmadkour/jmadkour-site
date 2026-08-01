@@ -2,153 +2,194 @@
 title: "Premiers pas en R"
 subtitle: "Outils — R, chapitre 1"
 sidebar: r
-format: live-html
+include-after-body: ../../_includes/console.html
 ---
 
-Chaque bloc gris ci-dessous est un **éditeur**. Modifiez le code, cliquez sur *Run Code*, observez. Le premier bloc met quelques secondes à démarrer, le temps que R se charge dans le navigateur.
+Rien à installer ici non plus. Chaque encadré est une **console R** : modifiez, exécutez, observez. Le premier lancement prend une quinzaine de secondes, le temps que R se charge dans votre navigateur.
 
-## Calculer
+R a été conçu par des statisticiens. Sa logique diffère de celle de Python sur un point, et ce point change tout.
 
-```{webr}
-2 + 3 * 4
+# Une différence de nature
+
+Demandez à R le taux de chômage de huit régions.
+
+```{=html}
+<div data-console data-engine="r" data-title="un vecteur, pas un nombre">
+chomage <- c(9.2, 12.4, 7.8, 15.1, 10.6, 8.3, 13.9, 11.2)
+chomage
+</div>
 ```
 
-Les opérateurs usuels sont `+`, `-`, `*`, `/`, `^` pour la puissance et `%%` pour le reste.
+`c(...)` — pour *combine* — assemble un **vecteur**. Le `[1]` en début de ligne n'est pas une valeur : c'est le numéro du premier élément affiché. Et `<-` est le signe d'affectation traditionnel en R.
 
-```{webr}
-2^10        # puissance
-17 / 5      # division
-17 %/% 5    # division entiere
-17 %% 5     # reste
+Maintenant, la particularité :
+
+```{=html}
+<div data-console data-engine="r" data-title="une opération sur huit valeurs à la fois">
+chomage <- c(9.2, 12.4, 7.8, 15.1, 10.6, 8.3, 13.9, 11.2)
+
+chomage - 2      # une baisse uniforme de 2 points
+chomage / 100    # en proportion plutot qu'en pourcentage
+</div>
 ```
 
-## Stocker une valeur
+Aucune boucle. En R, l'opération s'applique **d'office à toutes les valeurs**. C'est ce qu'on appelle la vectorisation, et c'est le réflexe à acquérir en premier : si vous écrivez une boucle en R, demandez-vous d'abord s'il existe une façon vectorisée de faire.
 
-En R, l'affectation s'écrit traditionnellement `<-`, même si `=` fonctionne aussi.
+# Décrire une série en une ligne
 
-```{webr}
-prix <- 98.0
-coupon <- 1.75
-prix_final <- 98.5
+```{=html}
+<div data-console data-engine="r" data-title="les statistiques descriptives">
+chomage <- c(9.2, 12.4, 7.8, 15.1, 10.6, 8.3, 13.9, 11.2)
 
-rendement <- (prix_final - prix + coupon) / prix
-rendement
+mean(chomage)      # moyenne
+median(chomage)    # mediane
+sd(chomage)        # ecart-type
+summary(chomage)   # tout d'un coup
+</div>
 ```
 
-Vous venez de calculer le rendement réalisé semestriel du chapitre 11 du cours *Modèles d'évaluation et de risque*.
+`summary` donne le minimum, les quartiles, la médiane, la moyenne et le maximum. En une commande, vous avez l'essentiel de ce qu'un rapport statistique présente sur une variable.
 
-## Le vecteur, structure fondamentale
+::: {.callout-note}
+### Moyenne ou médiane ?
 
-C'est ici que R se distingue de Python : sa brique de base n'est pas le nombre isolé mais le **vecteur**. Les opérations s'appliquent d'office à tous les éléments.
-
-```{webr}
-taux <- c(0.007, 0.012, 0.016, 0.020)
-
-taux * 100        # conversion en pourcentage : aucune boucle
-```
-
-::: {.callout-tip}
-### Ce que la vectorisation change
-
-Là où Python demanderait une boucle, R applique l'opération à l'ensemble du vecteur. Le code est plus court, plus lisible et bien plus rapide. C'est le réflexe à acquérir en premier.
+Ici les deux sont proches, autour de 11. Sur des **revenus**, elles s'écartent beaucoup : quelques très hauts revenus tirent la moyenne vers le haut sans déplacer la médiane. C'est pourquoi on parle de *revenu médian* et non de revenu moyen quand on veut décrire le ménage typique.
 :::
 
-```{webr}
-# facteurs d'actualisation a partir de taux a terme semestriels
-facteurs <- cumprod(1 / (1 + taux / 2))
-facteurs
+# Poser une question aux données
+
+```{=html}
+<div data-console data-engine="r" data-title="filtrer par condition">
+regions <- c("Tanger", "Oriental", "Casablanca", "Draa", "Fes", "Rabat", "Souss", "Marrakech")
+chomage <- c(9.2, 12.4, 7.8, 15.1, 10.6, 8.3, 13.9, 11.2)
+
+# quelles regions depassent 12 % ?
+regions[chomage > 12]
+
+# combien sont-elles ?
+sum(chomage > 12)
+
+# la region la plus touchee
+regions[which.max(chomage)]
+</div>
 ```
 
-Ces quatre nombres sont exactement ceux du chapitre 11 : 0,9965, 0,9906, 0,9827 et 0,9730.
-
-## Décrire
-
-Les fonctions statistiques de base sont immédiates.
-
-```{webr}
-rendements <- c(2.3, -1.1, 0.8, 3.4, -2.7, 1.9, 0.4, -0.6)
-
-mean(rendements)
-sd(rendements)
-median(rendements)
-summary(rendements)
-```
-
-## Sélectionner
-
-L'indexation par **condition** est l'un des grands conforts de R.
-
-```{webr}
-rendements[rendements < 0]        # les seances de baisse
-length(rendements[rendements < 0])
-```
+La condition `chomage > 12` produit une suite de vrai/faux, et les crochets ne retiennent que les positions vraies. `sum` compte les « vrai », puisqu'ils valent 1. C'est une façon très directe d'interroger des données.
 
 ::: {.callout-warning}
-### L'erreur classique
+### On compte à partir de un
 
-R indexe à partir de **1**, non de 0 comme Python. `rendements[1]` renvoie le premier élément. `rendements[0]` renvoie un vecteur vide — sans message d'erreur, ce qui est plus déroutant qu'une erreur franche.
+Contrairement à Python, `chomage[1]` est bien la **première** valeur. Mais `chomage[0]` ne provoque pas d'erreur : R renvoie un vecteur vide, silencieusement. Une erreur franche vaut mieux qu'un silence — méfiez-vous de celui-là.
 :::
 
-```{webr}
-rendements[1]
-rendements[0]
+# Un graphique en trois lignes
+
+```{=html}
+<div data-console data-engine="r" data-title="graphique en barres">
+regions <- c("Tanger", "Oriental", "Casa", "Draa", "Fes", "Rabat", "Souss", "Marrakech")
+chomage <- c(9.2, 12.4, 7.8, 15.1, 10.6, 8.3, 13.9, 11.2)
+
+barplot(chomage, names.arg = regions, las = 2,
+        col = "#2f7ea8", border = NA,
+        main = "Taux de chomage par region", ylab = "%")
+abline(h = mean(chomage), lty = 2, col = "#E08000", lwd = 2)
+</div>
 ```
 
-## Un premier graphique
+La ligne orange marque la moyenne nationale. `las = 2` bascule les étiquettes à la verticale, `abline` ajoute une droite horizontale. Voilà l'atout de R : produire une figure présentable sans configuration préalable.
 
-```{webr}
-x <- seq(0, 30, by = 0.5)
-courbe <- 0.02 + 0.02 * (1 - exp(-x / 8))
+::: {.callout-tip}
+**Essayez** : remplacez `barplot` par `boxplot(chomage)`. La boîte à moustaches montre la dispersion plutôt que les valeurs individuelles — utile quand les régions sont nombreuses.
+:::
 
-plot(x, courbe * 100, type = "l", lwd = 2, col = "#2f7ea8",
-     xlab = "Maturite (annees)", ylab = "Taux (%)",
-     main = "Une courbe des taux croissante")
-grid()
+# Un tableau de données
+
+En pratique, on ne travaille pas sur des vecteurs isolés mais sur des **tableaux**, une ligne par observation.
+
+```{=html}
+<div data-console data-engine="r" data-title="créer et interroger un tableau">
+donnees <- data.frame(
+  region   = c("Tanger", "Oriental", "Casablanca", "Draa"),
+  chomage  = c(9.2, 12.4, 7.8, 15.1),
+  pib_hab  = c(38000, 21000, 52000, 16000)
+)
+
+donnees
+
+# trier du plus fort chomage au plus faible
+donnees[order(-donnees$chomage), ]
+</div>
 ```
 
-Changez le `8` du dénominateur : plus il est petit, plus la courbe s'aplatit tôt.
+Le `$` désigne une colonne : `donnees$chomage`. C'est la structure que R utilise partout, et celle que produit la lecture d'un fichier Excel ou CSV.
 
-## Réutiliser
+# La question qui intéresse l'économiste
 
-```{webr}
-valeur_actuelle <- function(flux, taux, annees) {
-  flux / (1 + taux)^annees
-}
+Le chômage est-il lié au niveau de richesse ?
 
-valeur_actuelle(1000, 0.04, 5)
-valeur_actuelle(1000, 0.06, 5)
+```{=html}
+<div data-console data-engine="r" data-title="corrélation et régression">
+chomage <- c(9.2, 12.4, 7.8, 15.1, 10.6, 8.3, 13.9, 11.2)
+pib_hab <- c(38000, 21000, 52000, 16000, 27000, 45000, 19000, 30000)
+
+# lien entre les deux series, entre -1 et +1
+cor(chomage, pib_hab)
+
+# la droite qui resume ce lien
+modele <- lm(chomage ~ pib_hab)
+summary(modele)
+</div>
 ```
 
-Et parce que R est vectorisé, la fonction accepte d'emblée plusieurs maturités :
+Une corrélation de $-0{,}95$ : les régions les plus riches ont nettement moins de chômage. La fonction `lm` — *linear model* — ajuste la droite, et `summary` en donne le détail.
 
-```{webr}
-valeur_actuelle(1000, 0.04, 1:10)
-```
+::: {.callout-important}
+### Ce que ce résultat ne dit pas
 
-## À vous
+La corrélation mesure une **association**, jamais une **causalité**. Le PIB par habitant ne « cause » pas la baisse du chômage : les deux dépendent probablement de facteurs communs — structure productive, niveau d'éducation, accès aux marchés. Toute votre formation en économétrie consistera à démêler ce que cette droite ne démêle pas. Vous en trouverez le traitement complet dans le cours d'[économétrie](../econometrie-introduction/index.qmd).
+:::
 
-Écrivez une fonction `prix_obligation(coupon, taux, n)` donnant le prix d'une obligation de nominal 100 versant `coupon` pendant `n` années. Tirez parti de la vectorisation.
+::: {.callout-tip}
+**Essayez** : ajoutez `plot(pib_hab, chomage, pch = 19, col = "#2f7ea8")` puis `abline(modele, col = "#E08000", lwd = 2)`. Vous verrez le nuage de points et la droite ajustée.
+:::
 
-```{webr}
-#| exercise: prix_obligation
-prix_obligation <- function(coupon, taux, n) {
-  # a completer
-}
+# À vous
 
-prix_obligation(5, 0.04, 3)
+Voici le PIB du Maroc sur cinq années, en milliards de dirhams. Calculez le taux de croissance annuel.
+
+```{=html}
+<div data-console data-engine="r" data-title="à compléter">
+pib <- c(1250, 1310, 1385, 1450, 1520)
+
+# indication : diff() donne les ecarts successifs,
+# et head(pib, -1) donne le vecteur prive de sa derniere valeur
+
+croissance <- ...
+round(croissance, 2)
+</div>
 ```
 
 ::: {.callout-note collapse="true"}
-### Une solution possible
+### La solution
 
 ```r
-prix_obligation <- function(coupon, taux, n) {
-  dates <- 1:n
-  flux <- rep(coupon, n)
-  flux[n] <- flux[n] + 100
-  sum(flux / (1 + taux)^dates)
-}
+croissance <- diff(pib) / head(pib, -1) * 100
 ```
 
-Pour un coupon de 5 %, un taux de 4 % et trois ans : 102,78. L'obligation cote **au-dessus du pair** puisque son coupon dépasse le taux du marché. Notez l'absence de boucle — `sum` opère sur le vecteur entier.
+On obtient 4,80 — 5,73 — 4,69 — 4,83. Quatre taux pour cinq années : c'est normal, un taux de croissance se calcule **entre** deux dates.
+
+Remarquez qu'il n'y a aucune boucle. `diff` et la division opèrent sur les vecteurs entiers : c'est la vectorisation du début de chapitre, appliquée à un vrai problème.
 :::
+
+# Ce qu'il faut retenir
+
+| Notion | À quoi ça sert |
+|---|---|
+| `c(...)` | assembler un vecteur |
+| `mean`, `sd`, `summary` | décrire une série |
+| `x[condition]` | ne garder que les valeurs qui remplissent un critère |
+| `data.frame` | un tableau, une ligne par observation |
+| `plot`, `barplot` | produire une figure sans configuration |
+| `lm` | ajuster une droite entre deux variables |
+
+Le chapitre suivant abordera **dplyr**, qui rend la manipulation des tableaux presque aussi lisible qu'une phrase.

@@ -1,16 +1,27 @@
 ---
-title: "Premiers pas en MATLAB"
-subtitle: "Outils — MATLAB, chapitre 1"
+title: "Premiers pas en Octave"
+subtitle: "Outils — MATLAB / Octave, chapitre 1"
 sidebar: matlab
+include-after-body: ../../_includes/console.html
 ---
 
-Recopiez chaque bloc dans la fenêtre de commande de MATLAB — ou d'Octave. Le résultat attendu est indiqué en dessous.
+MATLAB est un logiciel payant. **GNU Octave** en est l'équivalent libre et gratuit : la syntaxe est la même à quelques détails près, et tout ce que vous apprenez ici se transpose directement.
 
-## Créer une matrice
+Sous chaque bloc de code, deux boutons : *Copier* place le code dans votre presse-papiers, *Ouvrir Octave Online* lance une session dans un nouvel onglet. Collez, appuyez sur Entrée, comparez avec le résultat annoncé.
 
-Les crochets délimitent la matrice, l'espace sépare les colonnes, le point-virgule les lignes.
+::: {.callout-note appearance="simple"}
+### À quoi sert cet outil, concrètement
 
-```matlab
+Dès qu'un problème économique s'écrit sous forme de **tableau de nombres** — un système d'équations, un portefeuille d'actifs, une matrice d'échanges entre secteurs — Octave le résout en une ligne. C'est sa raison d'être.
+:::
+
+# Un tableau de nombres
+
+```{=html}
+<div data-octave>
+```
+
+```octave
 A = [1 2 3; 4 5 6; 7 8 10]
 ```
 
@@ -21,153 +32,267 @@ A =
      7     8    10
 ```
 
-Deux raccourcis constamment utiles :
-
-```matlab
-v = 0:0.5:2        % suite reguliere
-I = eye(3)         % matrice identite
-Z = zeros(2, 3)    % matrice nulle
+```{=html}
+</div>
 ```
 
-```
-v =
-         0    0.5000    1.0000    1.5000    2.0000
-```
+Les crochets ouvrent le tableau, l'**espace** sépare les colonnes, le **point-virgule** change de ligne. Rien de plus.
 
 ::: {.callout-tip}
-Le point-virgule en **fin de ligne** supprime l'affichage du résultat. Indispensable dès qu'on manipule de grandes matrices — l'oublier fait défiler des milliers de lignes.
+Un point-virgule **en fin de ligne** empêche l'affichage du résultat. Indispensable dès que le tableau devient grand : `A = [1 2 3];` calcule sans rien afficher.
 :::
 
-## Indexer
+# Résoudre un équilibre de marché
 
-MATLAB indexe à partir de **1**, comme R et contrairement à Python.
+L'offre et la demande de deux biens qui se substituent l'un à l'autre. Deux équations, deux inconnues — le genre de système qu'on résout à la main en cinq minutes et qu'Octave traite en une ligne.
 
-```matlab
-A(2, 3)        % ligne 2, colonne 3
-A(:, 2)        % toute la colonne 2
-A(1:2, :)      % les deux premieres lignes
-A(end, end)    % dernier element
+$$\begin{aligned}
+2P_1 + P_2 &= 100 \\
+P_1 + 3P_2 &= 150
+\end{aligned}$$
+
+```{=html}
+<div data-octave>
+```
+
+```octave
+A = [2 1; 1 3];
+b = [100; 150];
+
+P = A \ b
 ```
 
 ```
-ans =
-     6
+P =
+   30.000
+   40.000
 ```
 
-Le mot-clé `end` désigne le dernier indice : `A(end, :)` extrait la dernière ligne sans qu'on ait à connaître la taille de `A`.
+```{=html}
+</div>
+```
 
-## Les deux multiplications
+Le prix d'équilibre du premier bien est 30, celui du second 40.
 
-C'est la distinction la plus importante du langage, et la source d'erreur la plus fréquente.
+::: {.callout-important}
+### La barre oblique inversée
 
-```matlab
+`A \ b` se lit « résoudre le système ». C'est la commande signature d'Octave et de MATLAB.
+
+On pourrait écrire `inv(A) * b` — même résultat, mais **plus lent et numériquement moins fiable**. La règle vaut dans tous les langages : on ne calcule jamais l'inverse d'une matrice pour résoudre un système. Ni en Python, ni en R, ni ici.
+:::
+
+# Les deux multiplications
+
+C'est la seule vraie difficulté du langage, et la source d'erreur la plus fréquente.
+
+```{=html}
+<div data-octave>
+```
+
+```octave
 B = [1 2; 3 4];
 C = [5 6; 7 8];
 
-B * C          % produit matriciel
-B .* C         % produit element par element
+B * C      % produit matriciel : lignes fois colonnes
+B .* C     % terme a terme : chaque case avec sa correspondante
 ```
 
 ```
-ans =                    ans =
-    19    22                  5    12
-    43    50                 21    32
+ans =           ans =
+   19   22          5   12
+   43   50         21   32
+```
+
+```{=html}
+</div>
 ```
 
 ::: {.callout-warning}
-### L'erreur classique
+### Le point change tout
 
-Le **point** devant l'opérateur signifie « élément par élément ». `B*C`, `B/C` et `B^2` sont des opérations matricielles ; `B.*C`, `B./C` et `B.^2` s'appliquent terme à terme. Confondre les deux produit un résultat faux **sans message d'erreur** lorsque les dimensions se trouvent compatibles.
+Le **point** devant l'opérateur signifie « terme à terme ». Sans point, c'est l'opération matricielle.
+
+Le danger : quand les dimensions se trouvent compatibles, Octave calcule sans broncher et vous rend un résultat **faux sans aucun message d'erreur**. Prenez l'habitude de vous demander, à chaque multiplication, laquelle des deux vous voulez.
+
+Le `%` introduit un commentaire, comme le `#` de Python.
 :::
 
-## Résoudre un système
+# Un portefeuille en trois lignes
 
-L'opérateur antislash est la signature de MATLAB. Pour résoudre $Ax = b$ :
+Voici où l'écriture matricielle devient payante. Un portefeuille de trois actifs : des poids, des rendements espérés, une matrice de covariances.
 
-```matlab
-A = [2 1; 1 3];
-b = [5; 10];
+```{=html}
+<div data-octave>
+```
 
-x = A \ b
+```octave
+w = [0.5; 0.3; 0.2];              % poids du portefeuille
+r = [0.08; 0.12; 0.05];           % rendements esperes
+
+S = [0.040  0.012  0.005;         % matrice de covariances
+     0.012  0.090  0.008;
+     0.005  0.008  0.020];
+
+rendement = w' * r
+variance  = w' * S * w
+risque    = sqrt(variance)
 ```
 
 ```
-x =
-    1.0000
-    3.0000
+rendement = 0.086000
+variance  = 0.024460
+risque    = 0.156397
 ```
 
-::: {.callout-important}
-### N'inversez jamais la matrice
+```{=html}
+</div>
+```
 
-`x = inv(A) * b` donne le même résultat mais est plus lent et **numériquement moins stable**. L'antislash choisit lui-même l'algorithme adapté à la structure de `A`. C'est vrai dans tous les langages : `numpy.linalg.solve` plutôt que `inv`, `solve()` plutôt que `solve(A) %*% b` en R.
+Un rendement espéré de 8,6 % pour un risque de 15,6 %. L'apostrophe `'` **transpose** : elle bascule le vecteur colonne en ligne pour que la multiplication ait un sens.
+
+::: {.callout-note}
+### Ce que vous venez d'écrire
+
+`w' * S * w` est la formule de la variance d'un portefeuille — celle du chapitre 5 du cours *Fondements de la gestion des risques*. Trois symboles remplacent une double somme sur tous les couples d'actifs. C'est exactement pour cela que la notation matricielle s'est imposée en finance.
 :::
 
-## Une application : les moindres carrés
+::: {.callout-tip}
+**Essayez** : mettez tout dans le deuxième actif (`w = [0; 1; 0]`). Le rendement monte à 12 %, mais le risque bondit à 30 %. Puis revenez au portefeuille de départ : son risque de 15,6 % tombe **en dessous** de la moyenne pondérée des risques individuels, qui vaut 21,8 %. Vous venez de retrouver l'effet de diversification, sans une seule formule.
+:::
 
-L'estimateur des MCO $\hat{\beta} = (X'X)^{-1}X'y$ s'écrit en une ligne, sans jamais inverser quoi que ce soit.
+# Extraire, mesurer, décrire
 
-```matlab
-X = [ones(5,1) [1; 2; 3; 4; 5]];    % constante + regresseur
-y = [2.1; 3.9; 6.2; 7.8; 10.1];
+```{=html}
+<div data-octave>
+```
 
-beta = X \ y
+```octave
+chomage = [9.2 12.4 7.8 15.1 10.6 8.3 13.9 11.2];
+
+mean(chomage)              % moyenne
+std(chomage)               % ecart-type
+max(chomage)               % maximum
+sum(chomage > 12)          % combien depassent 12 %
+chomage(chomage > 12)      % lesquelles
+```
+
+```
+ans = 11.062
+ans = 2.6219
+ans = 15.100
+ans = 3
+ans =
+   12.400   15.100   13.900
+```
+
+```{=html}
+</div>
+```
+
+Comme R, Octave indexe **à partir de 1** et accepte le filtrage par condition. Le vocabulaire diffère, la logique est la même.
+
+# Une régression sans bibliothèque
+
+```{=html}
+<div data-octave>
+```
+
+```octave
+pib_hab = [38 21 52 16 27 45 19 30]';        % en milliers
+chomage = [9.2 12.4 7.8 15.1 10.6 8.3 13.9 11.2]';
+
+X = [ones(8,1) pib_hab];      % colonne de 1 pour la constante
+beta = X \ chomage
 ```
 
 ```
 beta =
-    0.0300
-    1.9900
+   17.0535
+   -0.1933
 ```
 
-L'ordonnée à l'origine vaut 0,03 et la pente 1,99 — les données ayant été construites autour de $y = 2x$.
-
-## Fonctions statistiques
-
-```matlab
-r = [2.3 -1.1 0.8 3.4 -2.7 1.9 0.4 -0.6];
-
-mean(r)
-std(r)
-min(r)
-sum(r < 0)      % nombre de seances de baisse
+```{=html}
+</div>
 ```
 
+Une constante de 17,05 et une pente de $-0{,}19$ : chaque millier de dirhams de PIB par habitant s'accompagne d'une baisse de 0,19 point de chômage.
+
+Vous venez d'estimer une régression par moindres carrés **sans aucune bibliothèque statistique** — juste la résolution d'un système. C'est ce que fait, sous le capot, la fonction `lm` de R.
+
+::: {.callout-important}
+Association n'est pas causalité. Cette droite décrit un lien constaté sur huit régions, elle n'explique rien. Le cours d'[économétrie](../econometrie-introduction/index.qmd) est entièrement consacré à cette distinction.
+:::
+
+# Un graphique
+
+```{=html}
+<div data-octave>
 ```
-ans =    0.5500
-ans =    1.9903
-ans =   -2.7000
-ans =         3
-```
 
-## Un premier graphique
+```octave
+pib_hab = [38 21 52 16 27 45 19 30];
+chomage = [9.2 12.4 7.8 15.1 10.6 8.3 13.9 11.2];
 
-```matlab
-x = 0:0.5:30;
-courbe = 0.02 + 0.02 * (1 - exp(-x / 8));
-
-plot(x, courbe * 100, 'LineWidth', 2)
-xlabel('Maturite (annees)')
-ylabel('Taux (%)')
-title('Une courbe des taux croissante')
+plot(pib_hab, chomage, 'o', 'MarkerSize', 8)
+xlabel('PIB par habitant (milliers de DH)')
+ylabel('Taux de chomage (%)')
+title('Richesse et chomage par region')
 grid on
 ```
 
-## À vous
-
-Écrivez une fonction `prix_obligation(coupon, taux, n)` renvoyant le prix d'une obligation de nominal 100. Enregistrez-la dans un fichier `prix_obligation.m` — MATLAB exige que le nom du fichier corresponde à celui de la fonction.
-
-::: {.callout-note collapse="true"}
-### Une solution possible
-
-```matlab
-function p = prix_obligation(coupon, taux, n)
-    dates = 1:n;
-    flux = coupon * ones(1, n);
-    flux(n) = flux(n) + 100;
-    p = sum(flux ./ (1 + taux).^dates);
-end
+```{=html}
+</div>
 ```
 
-`prix_obligation(5, 0.04, 3)` renvoie **102.7751**. Notez les deux points : `./` et `.^` sont bien les opérations terme à terme, `flux` et `dates` étant des vecteurs.
+Octave Online affiche la figure dans le panneau de droite.
+
+# À vous
+
+Trois secteurs échangent entre eux. Combien chacun doit-il produire pour satisfaire une demande finale donnée ?
+
+```{=html}
+<div data-octave>
+```
+
+```octave
+% part des consommations intermediaires
+A = [0.2 0.3 0.1;
+     0.1 0.2 0.3;
+     0.2 0.1 0.2];
+
+d = [100; 150; 80];    % demande finale
+
+% a completer : production totale x telle que x = A*x + d
+x = ...
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```octave
+x = (eye(3) - A) \ d
+```
+
+On obtient environ 261, 296 et 202. `eye(3)` est la matrice identité d'ordre 3.
+
+Vous venez de résoudre un **modèle entrées-sorties de Leontief**, qui a valu à son auteur le prix Nobel d'économie en 1973. Toute la difficulté tenait à réécrire $x = Ax + d$ sous la forme $(I - A)x = d$ — une ligne de code une fois l'idée trouvée.
 :::
+
+# Ce qu'il faut retenir
+
+| Objectif | Code |
+|---|---|
+| Créer un tableau | `[1 2; 3 4]` |
+| Résoudre un système | `A \ b` |
+| Produit matriciel / terme à terme | `A * B` / `A .* B` |
+| Transposer | `A'` |
+| Matrice identité | `eye(n)` |
+| Filtrer | `x(x > seuil)` |
+| Ne pas afficher | point-virgule en fin de ligne |
+
+Le chapitre suivant traitera des scripts et des fonctions, pour enchaîner ces commandes plutôt que les taper une à une.
