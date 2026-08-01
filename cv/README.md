@@ -26,11 +26,20 @@ Une seule modification, deux résultats. Le CV et le site ne peuvent plus diverg
 python cv/build.py
 ```
 
-3. Produire le PDF :
+3. Produire le PDF — **trois passes**, ce n'est pas une précaution inutile :
 
 ```bash
-cd cv && xelatex CV_Jaouad_Madkour.tex && cd ..
+cd cv
+xelatex CV_Jaouad_Madkour.tex
+xelatex CV_Jaouad_Madkour.tex
+xelatex CV_Jaouad_Madkour.tex
+cd ..
 ```
+
+Le bandeau bleu est posé par TikZ en `remember picture, overlay`, et les
+rubriques sont des `longtable`. Les deux mécanismes écrivent des repères dans
+le fichier `.aux` et ne les relisent qu'à la passe suivante. **Une seule passe
+produit un CV sans bandeau et mal paginé.**
 
 4. Vérifier, puis publier :
 
@@ -98,7 +107,7 @@ Le générateur a été validé par un aller-retour : les données ont été ext
 `.tex` d'origine, puis réémises depuis `cv.yml`. Le PDF obtenu est **textuellement
 identique** à celui compilé depuis le fichier initial.
 
-## Prérequis, à installer une seule fois
+## Prérequis
 
 **PyYAML**, que lit le générateur :
 
@@ -106,23 +115,33 @@ identique** à celui compilé depuis le fichier initial.
 pip install pyyaml
 ```
 
-**Les polices Liberation**, qu'utilise la mise en page. Sans elles, XeLaTeX
-s'arrête sur `The font "Liberation Serif" cannot be found`.
+C'est tout. **Aucune police à installer** : voir ci-dessous.
 
-Téléchargez-les sur
-<https://github.com/liberationfonts/liberation-fonts/releases>, décompressez,
-sélectionnez tous les fichiers `.ttf`, clic droit, **Installer pour tous les
-utilisateurs**. Il faut au minimum `LiberationSerif-*` et `LiberationSans-*`.
+## Les polices
 
-Vérification :
+Le dossier `cv/fonts/` contient les quatre fichiers de **Liberation Serif**
+(licence SIL OFL, redistribuable). `modele.tex` les charge par leur chemin,
+avec l'option `Path=fonts/` de fontspec. Le CV a donc exactement le même aspect
+sur n'importe quelle machine, sans installation système et sans repli silencieux
+vers une autre police.
 
-```bash
-fc-list | findstr /i liberation
-```
+Le sans empattement — le bandeau, les titres de rubrique, les dates — est
+**Latin Modern Sans**, présente dans toute distribution LaTeX.
+
+### Pourquoi ce n'est pas Liberation Sans
+
+Le fichier `.tex` d'origine demandait Liberation Sans. Il ne l'a jamais obtenue.
+`\newfontfamily\sffamily{Liberation Sans}` échouait, la commande `\sffamily`
+étant déjà définie ; et Liberation Sans n'était pas installée sur la machine de
+compilation. Tout le sans empattement retombait donc sur Latin Modern Sans.
+
+C'est cet accident qui donne au CV son aspect caractéristique. Il est désormais
+inscrit explicitement dans `modele.tex`, et ne dépend plus de rien.
 
 ## Note sur le moteur LaTeX
 
-Le PDF d'origine avait été produit avec **LuaTeX**, mais l'en-tête du fichier
-indiquait XeLaTeX. Les deux fonctionnent. Une correction a été nécessaire :
-`\newfontfamily\sffamily` redéfinissait une commande existante et a été remplacé
-par `\renewfontfamily`. La compilation ne produit désormais aucune erreur.
+Le PDF d'origine avait été produit avec **LuaTeX**. `modele.tex` est compilé ici
+avec **XeLaTeX**, qui donne un résultat identique — à une réserve près, corrigée :
+LuaTeX espaçait les lignes des rubriques de 21,1 pt, XeLaTeX de 14,2 pt. Le
+`\arraystretch` de l'environnement `cvlist` rétablit ce pas quel que soit le
+moteur.
