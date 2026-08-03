@@ -10,15 +10,16 @@
 #
 #    export STATICRYPT_PASSWORD="le-mot-de-passe"
 #    quarto render
-#    ./scripts/protect-doctorat.sh
+#    bash scripts/protect-doctorat.sh
 #    npx serve _site      # ou tout autre serveur local, pour prévisualiser
 #
 #  Prérequis : Node.js (pour `npx staticrypt`) et la variable d'environnement
 #  STATICRYPT_PASSWORD (secret GitHub Actions en CI, export local pour un
 #  test manuel).
 #
-#  Usage : ./scripts/protect-doctorat.sh [chemin_vers_site]
-#  (par défaut : _site)
+#  Usage : bash scripts/protect-doctorat.sh [chemin_vers_site]
+#  (par défaut : _site). Invoquer via "bash" plutôt que "./..." évite tout
+#  problème lié au bit exécutable perdu lors d'un commit depuis Windows.
 # =====================================================================
 set -euo pipefail
 
