@@ -60,6 +60,48 @@ Puis, dans une page : ajoutez `filters: [webr]` à l'en-tête et écrivez des bl
 > Astuce contenu léger : gardez les **vidéos sur YouTube** (intégrées, non stockées)
 > et optimisez les images — le site reste très en dessous de la limite de 1 Go.
 
+## Protection par mot de passe du parcours Doctorat
+
+Le parcours Doctorat (`doctorat.qmd` et les neuf cours listés dedans, sous
+`cours/`) est chiffré par mot de passe avec [staticrypt](https://github.com/robinmoisson/staticrypt),
+qui chiffre les pages HTML côté client (AES) — aucune page ni diapositive ne
+sort en clair de la chaîne de publication. Le reste du site (Licence, Master,
+Informatique, etc.) n'est pas concerné.
+
+**Mise en place (une seule fois) :** dans le dépôt GitHub, allez dans
+**Settings → Secrets and variables → Actions → New repository secret**, et
+créez un secret nommé `STATICRYPT_PASSWORD` avec le mot de passe à distribuer
+aux étudiants du Doctorat. C'est tout — le pipeline s'occupe du reste à chaque
+publication.
+
+**Comment ça marche :**
+
+1. Le workflow rend le site (`quarto render`) sans le publier.
+2. `scripts/protect-doctorat.sh` retire les pages Doctorat de l'index de
+   recherche (`search.json`) et du plan du site (`sitemap.xml`), ajoute des
+   règles `Disallow` dans `robots.txt`, puis chiffre chaque page HTML du
+   parcours avec le mot de passe du secret `STATICRYPT_PASSWORD`.
+3. Le site (désormais protégé) est publié sur `gh-pages`.
+
+Pour changer le mot de passe : modifiez simplement la valeur du secret
+`STATICRYPT_PASSWORD`, puis relancez le workflow (`Actions` → *Publier le
+site* → *Run workflow*, ou un nouveau `git push`).
+
+Pour prévisualiser le résultat en local avant de pousser :
+
+```bash
+export STATICRYPT_PASSWORD="le-mot-de-passe"
+quarto render
+./scripts/protect-doctorat.sh
+npx serve _site   # ou tout autre serveur statique local
+```
+
+**Limite connue :** staticrypt ne chiffre que le HTML. Les PDF des
+diapositives (`cours/<dossier>/slides/*.pdf`) ne sont donc pas chiffrés — ils
+ne sont plus référencés nulle part en clair (recherche, plan du site, pages
+HTML désormais protégées), mais un lien direct vers un PDF, s'il était deviné
+ou partagé, resterait accessible sans mot de passe.
+
 ## Structure
 
 ```
@@ -75,5 +117,7 @@ jmadkour-site/
 │       ├── index.qmd
 │       └── regression-simple.qmd   chapitre interactif (démo + code R)
 ├── CNAME                jmadkour.org
-└── .github/workflows/publish.yml   déploiement automatique
+├── scripts/
+│   └── protect-doctorat.sh   chiffrement du parcours Doctorat (staticrypt)
+└── .github/workflows/publish.yml   déploiement automatique (render → protection → publication)
 ```
