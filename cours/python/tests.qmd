@@ -1,0 +1,320 @@
+---
+title: "Les tests"
+subtitle: "Informatique — Python, chapitre 5"
+sidebar: python
+include-after-body: ../../_includes/console.html
+---
+
+Un programme qui exécute toujours les mêmes instructions ne décide rien. Le **test** introduit la bifurcation : selon qu'une condition est vraie ou fausse, le code prend une voie ou l'autre.
+
+Le chapitre précédent en a déjà employé un ; celui-ci en fait le tour, avec les subtilités qui rendent Python à la fois commode et parfois déroutant.
+
+# 5.1 `if`, `elif`, `else`
+
+## 5.1.1 La forme complète
+
+```{=html}
+<div data-console data-engine="python" data-title="deux points, puis indentation">
+x = 12
+
+if x > 10:
+    print("grand")
+else:
+    print("petit")
+</div>
+```
+
+Même syntaxe que la boucle : deux points en fin de ligne, décalage de quatre espaces pour le bloc.
+
+```{=html}
+<div data-console data-engine="python" data-title="autant de elif que nécessaire">
+note = 14
+
+if note >= 16:
+    mention = "tres bien"
+elif note >= 14:
+    mention = "bien"
+elif note >= 10:
+    mention = "passable"
+else:
+    mention = "insuffisant"
+
+print(mention)
+</div>
+```
+
+`elif` contracte *else if*. Les conditions sont évaluées **dans l'ordre**, et la première vraie l'emporte — les suivantes ne sont même pas examinées.
+
+::: {.callout-warning}
+### L'ordre des conditions n'est pas indifférent
+
+```python
+if note >= 10:
+    mention = "passable"
+elif note >= 16:          # jamais atteint
+    mention = "tres bien"
+```
+
+Une note de 18 déclenche la première condition et s'arrête là. La seconde est inaccessible.
+
+Ordonnez toujours du **plus restrictif au plus général**. Aucune erreur ne sera signalée : le programme fonctionnera, en donnant des résultats faux.
+:::
+
+## 5.1.2 Le test sur une seule ligne
+
+```{=html}
+<div data-console data-engine="python" data-title="l'expression conditionnelle">
+note = 12
+
+mention = "admis" if note >= 10 else "ajourne"
+print(mention)
+</div>
+```
+
+Cette écriture — appelée *expression conditionnelle* — se lit comme une phrase française : « admis si la note dépasse 10, sinon ajourné ». Elle s'emploie très bien dans une compréhension de liste.
+
+```{=html}
+<div data-console data-engine="python" data-title="combinée à une compréhension">
+notes = [12, 8, 15, 6, 17]
+
+resultats = ["admis" if n >= 10 else "ajourne" for n in notes]
+print(resultats)
+</div>
+```
+
+Réservez-la aux cas à deux issues. Avec trois branches ou plus, le `if / elif / else` classique reste plus lisible.
+
+# 5.2 Les conditions
+
+## 5.2.1 Les comparaisons
+
+```{=html}
+<div data-console data-engine="python" data-title="six opérateurs">
+x = 7
+
+print(x > 5)      # strictement superieur
+print(x >= 7)     # superieur ou egal
+print(x == 7)     # egal : DEUX signes
+print(x != 7)     # different
+</div>
+```
+
+## 5.2.2 Les comparaisons enchaînées
+
+```{=html}
+<div data-console data-engine="python" data-title="une particularité de Python">
+x = 7
+
+print(5 < x < 10)          # se lit comme en mathematiques
+print(0 <= x <= 100)
+</div>
+```
+
+Peu de langages le permettent. En R ou en C, il faudrait écrire `x > 5 and x < 10`. Profitez-en : c'est plus lisible.
+
+## 5.2.3 Combiner
+
+```{=html}
+<div data-console data-engine="python" data-title="and, or, not — en toutes lettres">
+x = 7
+region = "Nord"
+
+print(x > 5 and region == "Nord")
+print(x > 10 or region == "Nord")
+print(not (x > 10))
+</div>
+```
+
+Python écrit `and`, `or`, `not` en mots — pas `&&`, `||`, `!` comme la plupart des langages. Les symboles `&` et `|` existent mais désignent des opérations sur les bits, et sur les tableaux NumPy du chapitre 8.
+
+## 5.2.4 L'appartenance
+
+```{=html}
+<div data-console data-engine="python" data-title="in, l'opérateur le plus lisible">
+region = "Centre"
+notes = [12, 8, 15]
+
+print(region in ["Nord", "Centre"])
+print("chomage" in "taux_chomage_2023")
+print(12 in notes)
+print(20 not in notes)
+</div>
+```
+
+`in` remplace avantageusement une longue chaîne de `or`. Il fonctionne sur les chaînes, les listes, les tuples et les dictionnaires.
+
+# 5.3 Ce que Python considère comme faux
+
+C'est la particularité la plus surprenante du langage pour qui vient d'ailleurs.
+
+```{=html}
+<div data-console data-engine="python" data-title="toutes ces valeurs sont « fausses »">
+print(bool(0))          # zero
+print(bool(0.0))
+print(bool(""))         # chaine vide
+print(bool([]))         # liste vide
+print(bool({}))         # dictionnaire vide
+print(bool(None))
+</div>
+```
+
+```{=html}
+<div data-console data-engine="python" data-title="et toutes celles-ci sont « vraies »">
+print(bool(1))
+print(bool(-3))         # meme negatif
+print(bool("0"))        # le TEXTE zero n'est pas vide
+print(bool([0]))        # une liste contenant zero n'est pas vide
+</div>
+```
+
+::: {.callout-important}
+### Le piège de la chaîne `"0"`
+
+`bool("0")` vaut **`True`** : la chaîne contient un caractère, elle n'est donc pas vide.
+
+Cela compte dès qu'on lit un fichier, où toute valeur arrive sous forme de texte. Un `if valeur:` sur une colonne lue d'un CSV traitera `"0"` comme vrai. Convertissez d'abord : `if float(valeur):`.
+:::
+
+Cette règle permet une écriture très courante :
+
+```{=html}
+<div data-console data-engine="python" data-title="tester si une liste est vide">
+resultats = []
+
+if not resultats:
+    print("aucun resultat")
+
+if resultats:
+    print("il y a des resultats")
+</div>
+```
+
+`if not resultats:` se lit « si la liste est vide ». C'est l'écriture idiomatique, préférée à `if len(resultats) == 0:`.
+
+# 5.4 `None` et le test d'identité
+
+```{=html}
+<div data-console data-engine="python" data-title="is, et non ==">
+x = None
+
+print(x is None)          # la bonne ecriture
+print(x is not None)
+</div>
+```
+
+::: {.callout-warning}
+### `is` compare l'identité, `==` compare la valeur
+
+Pour `None`, `True` et `False`, employez **toujours** `is` :
+
+```python
+if x is None:        # correct
+if x == None:        # fonctionne, mais deconseille
+```
+
+Sur d'autres objets, `is` peut surprendre : deux listes de contenu identique sont égales (`==`) mais ne sont pas le même objet (`is`). C'est le prolongement direct du piège de la copie vu au chapitre 3.
+
+```python
+a = [1, 2]
+b = [1, 2]
+print(a == b)      # True  : meme contenu
+print(a is b)      # False : deux objets distincts
+```
+:::
+
+# 5.5 Le test des nombres à virgule
+
+Le chapitre 1 l'avait annoncé ; il faut y revenir, car c'est dans un `if` que le problème se manifeste.
+
+```{=html}
+<div data-console data-engine="python" data-title="pourquoi ce test échoue">
+a = 0.1 + 0.2
+
+print(a == 0.3)                    # False
+print(abs(a - 0.3) < 1e-9)         # True : la bonne facon
+</div>
+```
+
+Ne testez jamais l'égalité de deux nombres à virgule par `==`. Comparez leur **écart à une tolérance**. La règle vaut dans tous les langages ; elle est simplement plus visible en Python, qui affiche la valeur exacte.
+
+# 5.6 Un exemple complet
+
+```{=html}
+<div data-console data-engine="python" data-title="valider des données avant de les traiter">
+observations = [
+    ("Tanger", 45.2, 11.2),
+    ("Rabat", None, 8.4),
+    ("Fes", 38.7, None),
+    ("Agadir", -5.0, 9.7),
+]
+
+valides = []
+
+for ville, pib, chomage in observations:
+    if pib is None or chomage is None:
+        print(f"{ville:<10} ignoree : donnee manquante")
+    elif pib <= 0:
+        print(f"{ville:<10} ignoree : PIB invalide ({pib})")
+    else:
+        valides.append((ville, pib, chomage))
+
+print(f"\n{len(valides)} observation(s) retenue(s)")
+for v in valides:
+    print(v)
+</div>
+```
+
+Remarquez l'ordre : on écarte d'abord les valeurs manquantes, **avant** de tester `pib <= 0`. L'inverse déclencherait une erreur, puisqu'on ne peut pas comparer `None` à un nombre. C'est le cas le plus fréquent où l'ordre des conditions n'est pas seulement une question de justesse, mais de survie du programme.
+
+# À vous
+
+Écrivez un test qui classe une ville selon deux critères : PIB par habitant et taux de chômage, en signalant les données manquantes.
+
+```{=html}
+<div data-console data-engine="python" data-title="à compléter">
+pib_hab = 32.5
+chomage = 9.2
+
+# a completer
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```python
+if pib_hab is None or chomage is None:
+    statut = "donnees incompletes"
+elif pib_hab > 30 and chomage < 10:
+    statut = "situation favorable"
+elif pib_hab > 30 or chomage < 10:
+    statut = "situation mixte"
+else:
+    statut = "situation difficile"
+
+print(f"PIB/hab {pib_hab}, chomage {chomage} % -> {statut}")
+```
+
+Le test des manquantes vient **en premier** : sans lui, la comparaison `pib_hab > 30` sur un `None` provoquerait `TypeError`.
+
+Notez aussi l'ordre des deux conditions centrales : `and` avant `or`. Inversés, toute situation favorable serait classée « mixte ».
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `if / elif / else` | bifurquer — première condition vraie l'emporte |
+| ordre des conditions | du plus restrictif au plus général |
+| `a if cond else b` | test sur une ligne, pour deux issues |
+| `==`, `!=`, `>=` | comparer |
+| `5 < x < 10` | comparaison enchaînée, propre à Python |
+| `and`, `or`, `not` | en toutes lettres, pas `&&` `\|\|` `!` |
+| `in`, `not in` | appartenance — le plus lisible |
+| `0`, `""`, `[]`, `{}`, `None` | tout cela vaut **faux** |
+| `"0"`, `[0]` | tout cela vaut **vrai** |
+| `if not liste:` | tester qu'une liste est vide |
+| `x is None` | jamais `x == None` |
+| `abs(a - b) < 1e-9` | comparer des nombres à virgule |
+
+Le chapitre suivant apprend à **nommer** un ensemble d'instructions pour le réutiliser : la fonction.

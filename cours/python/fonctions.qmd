@@ -1,0 +1,342 @@
+---
+title: "Les fonctions"
+subtitle: "Informatique — Python, chapitre 6"
+sidebar: python
+include-after-body: ../../_includes/console.html
+---
+
+Un calcul écrit trois fois dans un script devra être corrigé trois fois. Écrit **une** fois dans une fonction, il se corrige en un seul endroit et s'appelle partout.
+
+La fonction n'est pas seulement une commodité : c'est l'outil qui permet de découper un problème en morceaux compréhensibles séparément. C'est le chapitre qui sépare l'usage occasionnel du langage de sa pratique sérieuse.
+
+# 6.1 Définir et appeler
+
+## 6.1.1 La forme minimale
+
+```{=html}
+<div data-console data-engine="python" data-title="def, deux points, indentation">
+def taux_croissance(debut, fin):
+    return (fin - debut) / debut * 100
+
+print(taux_croissance(100, 112))
+print(taux_croissance(45, 51))
+</div>
+```
+
+`def` déclare, les parenthèses listent les **paramètres**, les deux points et l'indentation délimitent le corps, et `return` renvoie le résultat.
+
+## 6.1.2 `return` n'est pas `print`
+
+```{=html}
+<div data-console data-engine="python" data-title="la distinction fondamentale">
+def avec_return(x):
+    return x * 2
+
+def avec_print(x):
+    print(x * 2)
+
+a = avec_return(5)
+b = avec_print(5)
+
+print(f"a vaut {a}")
+print(f"b vaut {b}")
+</div>
+```
+
+::: {.callout-important}
+### La confusion la plus coûteuse du chapitre
+
+`print` **affiche** à l'écran. `return` **renvoie** une valeur utilisable.
+
+Une fonction sans `return` renvoie `None`. Le résultat s'affiche donc bien lors de l'appel, mais il est impossible de le réutiliser : ni de le stocker, ni de le sommer, ni de le passer à une autre fonction.
+
+Une fonction de calcul doit **toujours** renvoyer. Réservez `print` à l'affichage final.
+:::
+
+## 6.1.3 `return` interrompt la fonction
+
+```{=html}
+<div data-console data-engine="python" data-title="rien ne s'exécute après">
+def signe(x):
+    if x > 0:
+        return "positif"
+    if x < 0:
+        return "negatif"
+    return "nul"
+
+print(signe(5), signe(-3), signe(0))
+</div>
+```
+
+Dès qu'un `return` s'exécute, la fonction s'arrête. On peut donc en placer plusieurs, sans `else` — une écriture souvent plus lisible que les branches imbriquées.
+
+## 6.1.4 Renvoyer plusieurs valeurs
+
+```{=html}
+<div data-console data-engine="python" data-title="une virgule suffit">
+def resume(v):
+    return min(v), max(v), sum(v) / len(v)
+
+mini, maxi, moyenne = resume([4, 8, 15, 16, 23])
+print(f"min {mini}, max {maxi}, moyenne {moyenne:.2f}")
+</div>
+```
+
+Python renvoie en réalité un tuple, que l'affectation multiple du chapitre 3 décompose aussitôt. C'est bien plus commode que dans la plupart des langages.
+
+# 6.2 Les arguments
+
+## 6.2.1 Position ou nom
+
+```{=html}
+<div data-console data-engine="python" data-title="deux façons d'appeler">
+def croissance(debut, fin):
+    return (fin - debut) / debut * 100
+
+print(croissance(100, 112))                  # par position
+print(croissance(debut=100, fin=112))        # par nom
+print(croissance(fin=112, debut=100))        # l'ordre n'importe plus
+</div>
+```
+
+Nommer les arguments rend l'appel auto-documenté. Sur une fonction à cinq paramètres, c'est indispensable.
+
+## 6.2.2 Les valeurs par défaut
+
+```{=html}
+<div data-console data-engine="python" data-title="un paramètre facultatif">
+def arrondi_pct(x, decimales=1, symbole=True):
+    valeur = round(x * 100, decimales)
+    return f"{valeur} %" if symbole else valeur
+
+print(arrondi_pct(0.0734))
+print(arrondi_pct(0.0734, decimales=3))
+print(arrondi_pct(0.0734, symbole=False))
+</div>
+```
+
+Les paramètres **sans** défaut d'abord, ceux **avec** défaut ensuite. L'inverse provoque une erreur de syntaxe.
+
+::: {.callout-important}
+### Ne mettez jamais une liste comme valeur par défaut
+
+```python
+def ajouter(x, liste=[]):        # PIEGE
+    liste.append(x)
+    return liste
+
+print(ajouter(1))     # [1]
+print(ajouter(2))     # [1, 2]  au lieu de [2] !
+```
+
+La valeur par défaut est créée **une seule fois**, à la définition de la fonction, et non à chaque appel. La même liste est donc réutilisée et s'accumule.
+
+La parade est un idiome à connaître :
+
+```python
+def ajouter(x, liste=None):
+    if liste is None:
+        liste = []
+    liste.append(x)
+    return liste
+```
+
+Ce piège figure dans tous les entretiens d'embauche Python, parce qu'il révèle si l'on a compris quand le code est évalué.
+:::
+
+# 6.3 La portée des variables
+
+```{=html}
+<div data-console data-engine="python" data-title="ce qui se passe dedans reste dedans">
+x = 10
+
+def f():
+    x = 99          # une variable LOCALE, sans rapport
+    return x
+
+print(f())      # 99
+print(x)        # toujours 10
+</div>
+```
+
+Une variable créée dans une fonction est **locale** : elle disparaît à la sortie. C'est une garantie : appeler une fonction ne peut pas modifier vos variables à votre insu.
+
+```{=html}
+<div data-console data-engine="python" data-title="lire est possible, écrire ne l'est pas">
+seuil = 10
+
+def teste(x):
+    return x > seuil       # lecture de l'exterieur : autorisee
+
+print(teste(15))
+</div>
+```
+
+::: {.callout-warning}
+### Une fonction ne doit dépendre que de ses paramètres
+
+La fonction ci-dessus fonctionne… tant que `seuil` existe. Copiée dans un autre script, elle échoue ou, pire, utilise un autre `seuil` sans le signaler.
+
+Écrivez plutôt :
+
+```python
+def teste(x, seuil=10):
+    return x > seuil
+```
+
+Tout ce dont la fonction a besoin doit entrer par la porte. C'est la règle qui rend une fonction testable, réutilisable et déplaçable.
+:::
+
+## 6.3.1 L'exception des objets modifiables
+
+```{=html}
+<div data-console data-engine="python" data-title="attention : la liste, elle, peut changer">
+def ajoute_zero(liste):
+    liste.append(0)         # modifie la liste d'origine
+
+v = [1, 2, 3]
+ajoute_zero(v)
+print(v)                    # [1, 2, 3, 0]
+</div>
+```
+
+Un nombre ou une chaîne passés à une fonction sont protégés. Une **liste** ne l'est pas : la fonction reçoit une référence au même objet, comme lors de la copie du chapitre 3.
+
+Si vous ne voulez pas modifier l'original, copiez en entrant : `liste = liste.copy()`.
+
+# 6.4 Documenter
+
+```{=html}
+<div data-console data-engine="python" data-title="la docstring">
+def taux_croissance(debut, fin):
+    """Calcule le taux de croissance en pourcentage.
+
+    debut : valeur initiale (non nulle)
+    fin   : valeur finale
+    renvoie : le taux, en pourcentage
+    """
+    return (fin - debut) / debut * 100
+
+print(taux_croissance.__doc__)
+help(taux_croissance)
+</div>
+```
+
+La **docstring** est une chaîne en triple guillemets placée juste après le `def`. Elle n'est pas un commentaire : Python la conserve, `help()` l'affiche, et les éditeurs la montrent au survol.
+
+Prenez l'habitude d'en écrire une dès que la fonction dépasse trois lignes. Le premier lecteur de votre code sera vous-même, dans six mois.
+
+# 6.5 Les fonctions anonymes
+
+```{=html}
+<div data-console data-engine="python" data-title="lambda : une fonction sans nom">
+carre = lambda x: x ** 2
+print(carre(5))
+
+villes = [("Tanger", 45.2), ("Rabat", 62.1), ("Fes", 38.7)]
+tri = sorted(villes, key=lambda v: v[1], reverse=True)
+print(tri)
+</div>
+```
+
+`lambda` définit une fonction d'une seule expression, sans nom. Son usage légitime est celui-ci : passer un petit critère à `sorted`, `map` ou `filter`.
+
+::: {.callout-tip}
+### N'affectez pas une lambda à un nom
+
+```python
+carre = lambda x: x ** 2        # deconseille
+def carre(x): return x ** 2     # preferable
+```
+
+Si vous donnez un nom à la fonction, autant utiliser `def` : le message d'erreur sera plus clair, et une docstring devient possible.
+
+`lambda` est fait pour les fonctions qu'on écrit **à l'endroit où on les utilise**, et nulle part ailleurs.
+:::
+
+# 6.6 Un exemple complet
+
+```{=html}
+<div data-console data-engine="python" data-title="découper un traitement en fonctions">
+def moyenne(v):
+    """Moyenne arithmetique d'une liste non vide."""
+    if not v:
+        return None
+    return sum(v) / len(v)
+
+def ecart_type(v):
+    """Ecart-type corrige (division par n-1)."""
+    n = len(v)
+    if n < 2:
+        return None
+    m = moyenne(v)
+    return (sum((x - m) ** 2 for x in v) / (n - 1)) ** 0.5
+
+def decrire(v, nom="serie"):
+    """Affiche un resume et renvoie un tuple (n, moyenne, ecart-type)."""
+    m, s = moyenne(v), ecart_type(v)
+    print(f"{nom} : n={len(v)}, moyenne={m:.2f}, ecart-type={s:.2f}")
+    return len(v), m, s
+
+notes = [12, 8, 15, 6, 17, 11, 14, 9]
+decrire(notes, nom="notes")
+</div>
+```
+
+Trois fonctions courtes valent mieux qu'une longue : chacune fait une chose, se teste seule, et `ecart_type` réutilise `moyenne` sans la réécrire.
+
+Notez `if not v: return None` : la protection contre la liste vide, écrite avec l'idiome du chapitre 5.
+
+# À vous
+
+Écrivez une fonction `mention` qui renvoie la mention correspondant à une note, avec un seuil de réussite paramétrable, puis appliquez-la à une liste.
+
+```{=html}
+<div data-console data-engine="python" data-title="à compléter">
+notes = [17, 12, 8, 15, 10]
+
+# a completer
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```python
+def mention(note, seuil=10):
+    """Renvoie la mention d'une note, selon un seuil de reussite."""
+    if note >= 16:
+        return "tres bien"
+    if note >= 14:
+        return "bien"
+    if note >= seuil:
+        return "passable"
+    return "insuffisant"
+
+for n in notes:
+    print(f"{n:>3} : {mention(n)}")
+
+# avec un seuil different
+print([mention(n, seuil=12) for n in notes])
+```
+
+Les `return` successifs sans `else` — l'écriture vue en 6.1.3 — évitent quatre niveaux d'imbrication. Et le paramètre `seuil` rend la fonction réutilisable pour un autre barème.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `def f(x):` | définir une fonction |
+| `return` | renvoyer une valeur — **jamais** confondre avec `print` |
+| plusieurs `return` | le premier exécuté arrête la fonction |
+| `return a, b, c` | renvoyer plusieurs valeurs (un tuple) |
+| `f(debut=100)` | appeler en nommant les arguments |
+| `def f(x, n=1)` | valeur par défaut — sans défaut d'abord |
+| `def f(x, liste=None)` | **jamais** une liste comme valeur par défaut |
+| variable locale | disparaît à la sortie de la fonction |
+| liste passée en argument | peut être modifiée — copiez si besoin |
+| `"""..."""` | docstring, affichée par `help()` |
+| `lambda x: x ** 2` | fonction anonyme, pour `sorted(key=...)` |
+
+Le chapitre suivant clôt la première partie avec deux outils indispensables au travail réel : les **dictionnaires** et la lecture de **fichiers**.

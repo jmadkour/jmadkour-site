@@ -1,0 +1,343 @@
+---
+title: "Dictionnaires et fichiers"
+subtitle: "Informatique — Python, chapitre 7"
+sidebar: python
+include-after-body: ../../_includes/console.html
+---
+
+Ce chapitre clôt la première partie du cours avec les deux outils qui manquent encore pour un travail réel : le **dictionnaire**, qui associe une clé à une valeur, et la lecture de **fichiers**, qui fait entrer de vraies données dans le programme.
+
+# 7.1 Le dictionnaire
+
+## 7.1.1 Créer et consulter
+
+Une liste retrouve ses éléments par position. Un dictionnaire les retrouve par **clé** — un nom, un code, une date.
+
+```{=html}
+<div data-console data-engine="python" data-title="des accolades, et des couples clé : valeur">
+pib = {"Tanger": 45.2, "Rabat": 62.1, "Fes": 38.7}
+
+print(pib)
+print(pib["Rabat"])
+print(len(pib))
+</div>
+```
+
+## 7.1.2 Ajouter, modifier, supprimer
+
+```{=html}
+<div data-console data-engine="python" data-title="il suffit de nommer la clé">
+pib = {"Tanger": 45.2, "Rabat": 62.1}
+
+pib["Agadir"] = 29.3         # ajouter
+pib["Tanger"] = 46.0         # modifier : meme ecriture
+print(pib)
+
+del pib["Rabat"]             # supprimer
+print(pib)
+</div>
+```
+
+Une clé absente est créée, une clé existante est écrasée : la même écriture fait les deux, sans avertissement.
+
+## 7.1.3 La clé qui n'existe pas
+
+```{=html}
+<div data-console data-engine="python" data-title="get évite l'erreur">
+pib = {"Tanger": 45.2, "Rabat": 62.1}
+
+print("Fes" in pib)              # tester d'abord
+print(pib.get("Fes"))            # None au lieu d'une erreur
+print(pib.get("Fes", 0))         # une valeur par defaut
+# print(pib["Fes"])              # KeyError
+</div>
+```
+
+::: {.callout-tip}
+### `get` plutôt que les crochets
+
+Sur des données réelles, une clé manquante est la règle, pas l'exception. `pib["Fes"]` interrompt le programme ; `pib.get("Fes", 0)` renvoie une valeur de repli et poursuit.
+
+Réservez les crochets aux cas où l'absence de la clé serait une véritable anomalie, qui doit s'arrêter bruyamment.
+:::
+
+## 7.1.4 Parcourir
+
+```{=html}
+<div data-console data-engine="python" data-title="trois façons de boucler">
+pib = {"Tanger": 45.2, "Rabat": 62.1, "Fes": 38.7}
+
+for ville in pib:                       # les cles
+    print(ville)
+
+print("---")
+for valeur in pib.values():             # les valeurs
+    print(valeur)
+
+print("---")
+for ville, valeur in pib.items():       # les deux
+    print(f"{ville:<8} {valeur:>6.1f}")
+</div>
+```
+
+`items()` est de loin le plus utile : il décompose chaque couple en deux variables, comme le `zip` du chapitre 4.
+
+## 7.1.5 Ce qui peut servir de clé
+
+```{=html}
+<div data-console data-engine="python" data-title="clés valides et invalides">
+d = {
+    "texte": 1,
+    42: 2,
+    (2023, "T1"): 3,        # un tuple : valide
+}
+print(d[(2023, "T1")])
+
+# d[[1, 2]] = 4             # TypeError : une liste ne peut pas etre cle
+</div>
+```
+
+Une clé doit être **immuable** : chaîne, nombre, tuple. Une liste ne le peut pas, puisqu'elle changerait après avoir servi de clé. Le tuple `(année, trimestre)` est une clé composée très commode pour des données de panel.
+
+## 7.1.6 Compter avec un dictionnaire
+
+C'est l'usage le plus fréquent, et celui qui remplace avantageusement une boucle imbriquée.
+
+```{=html}
+<div data-console data-engine="python" data-title="les effectifs d'une variable qualitative">
+regions = ["Nord", "Centre", "Nord", "Sud", "Centre", "Nord"]
+
+effectifs = {}
+for r in regions:
+    effectifs[r] = effectifs.get(r, 0) + 1
+
+print(effectifs)
+</div>
+```
+
+`effectifs.get(r, 0) + 1` se lit : « la valeur actuelle, ou zéro si la clé est nouvelle, plus un ». Trois lignes qui produisent l'équivalent du `table()` de R.
+
+```{=html}
+<div data-console data-engine="python" data-title="la version toute faite">
+from collections import Counter
+
+regions = ["Nord", "Centre", "Nord", "Sud", "Centre", "Nord"]
+
+c = Counter(regions)
+print(c)
+print(c.most_common(2))
+</div>
+```
+
+## 7.1.7 Un dictionnaire de dictionnaires
+
+```{=html}
+<div data-console data-engine="python" data-title="structurer des données à plusieurs variables">
+villes = {
+    "Tanger": {"pib": 45.2, "chomage": 11.2, "region": "Nord"},
+    "Rabat":  {"pib": 62.1, "chomage": 8.4,  "region": "Centre"},
+}
+
+print(villes["Rabat"]["pib"])
+
+for nom, info in villes.items():
+    print(f"{nom:<8} PIB {info['pib']:>6.1f}  chomage {info['chomage']:>5.1f}")
+</div>
+```
+
+Attention aux guillemets dans une f-string : `{info['pib']}` utilise des apostrophes à l'intérieur des guillemets doubles. Mélanger les deux provoquerait une erreur de syntaxe.
+
+# 7.2 Les fichiers
+
+::: {.callout-note appearance="simple" icon="false"}
+### Une console sans disque dur
+
+Python fonctionne ici dans votre navigateur : il n'a pas accès à vos fichiers. Les commandes de cette section sont donc **à recopier chez vous**. Le mécanisme reste identique.
+:::
+
+## 7.2.1 Lire
+
+```python
+with open("donnees.txt", "r", encoding="utf-8") as f:
+    contenu = f.read()
+
+print(contenu)
+```
+
+::: {.callout-important}
+### Toujours `with`
+
+```python
+f = open("donnees.txt")       # a eviter
+contenu = f.read()
+f.close()                     # facile a oublier
+```
+
+Le bloc `with` **ferme le fichier automatiquement**, y compris si une erreur survient au milieu. Un fichier laissé ouvert peut rester verrouillé ou perdre les dernières écritures.
+
+C'est une règle sans exception : on ouvre un fichier avec `with`.
+:::
+
+```python
+# ligne par ligne, sans tout charger en memoire
+with open("donnees.txt", "r", encoding="utf-8") as f:
+    for ligne in f:
+        print(ligne.strip())
+```
+
+La seconde forme est celle à employer sur un gros fichier : elle ne charge qu'une ligne à la fois. Le `.strip()` retire le retour à la ligne final.
+
+## 7.2.2 Écrire
+
+```python
+with open("resultats.txt", "w", encoding="utf-8") as f:
+    f.write("premiere ligne\n")
+    f.write("deuxieme ligne\n")
+```
+
+| Mode | Effet |
+|---|---|
+| `"r"` | lecture (par défaut) |
+| `"w"` | écriture — **efface** le fichier existant |
+| `"a"` | ajout à la fin, sans effacer |
+| `"x"` | création — échoue si le fichier existe |
+
+::: {.callout-warning}
+### `"w"` efface sans demander
+
+Ouvrir en mode `"w"` un fichier existant le vide instantanément, avant même la première écriture. Il n'y a ni confirmation, ni corbeille.
+
+Sur un fichier de données, utilisez `"a"`, ou `"x"` qui refuse d'écraser.
+:::
+
+## 7.2.3 Toujours préciser l'encodage
+
+`encoding="utf-8"` n'est pas facultatif. Sans lui, Python emploie l'encodage par défaut du système — différent sous Windows et sous Linux —, et vos accents deviennent illisibles chez le lecteur suivant.
+
+# 7.3 Le format CSV
+
+## 7.3.1 À la main
+
+Avec le `split` du chapitre 2, un CSV se lit sans aucune bibliothèque.
+
+```{=html}
+<div data-console data-engine="python" data-title="le mécanisme, simulé sur un texte">
+texte = """ville;pib;chomage
+Tanger;45.2;11.2
+Rabat;62.1;8.4
+Fes;38.7;13.1"""
+
+lignes = texte.split("\n")
+entetes = lignes[0].split(";")
+print(entetes)
+
+donnees = []
+for ligne in lignes[1:]:
+    champs = ligne.split(";")
+    donnees.append({
+        "ville": champs[0],
+        "pib": float(champs[1]),
+        "chomage": float(champs[2]),
+    })
+
+for d in donnees:
+    print(f"{d['ville']:<8} {d['pib']:>6.1f}")
+</div>
+```
+
+Chaque ligne devient un dictionnaire : c'est exactement la structure que pandas construira automatiquement au chapitre 9.
+
+Notez les `float(...)` : tout ce qui sort d'un fichier est du **texte**, même quand cela ressemble à un nombre.
+
+## 7.3.2 Avec le module `csv`
+
+```python
+import csv
+
+with open("donnees.csv", "r", encoding="utf-8") as f:
+    lecteur = csv.DictReader(f, delimiter=";")
+    donnees = [ligne for ligne in lecteur]
+
+print(donnees[0])
+```
+
+`DictReader` fait le travail précédent, et gère en plus les cas que le `split` manuel casse : un champ contenant lui-même un point-virgule, entouré de guillemets.
+
+```python
+with open("sortie.csv", "w", encoding="utf-8", newline="") as f:
+    champs = ["ville", "pib", "chomage"]
+    ecrivain = csv.DictWriter(f, fieldnames=champs, delimiter=";")
+    ecrivain.writeheader()
+    ecrivain.writerows(donnees)
+```
+
+L'argument `newline=""` évite les lignes vides intercalées sous Windows.
+
+::: {.callout-tip}
+### Quand passer à pandas
+
+Le module `csv` convient pour parcourir un fichier ligne à ligne, ou en filtrer une partie sans tout charger.
+
+Dès qu'il s'agit de calculer, croiser ou regrouper, `pandas.read_csv()` fait en une ligne ce que ce chapitre fait en quinze — et bien plus vite. C'est l'objet du chapitre 9.
+:::
+
+# À vous
+
+À partir du texte simulant un CSV, calculez le PIB total et la liste des villes dont le chômage dépasse 10 %.
+
+```{=html}
+<div data-console data-engine="python" data-title="à compléter">
+texte = """ville;pib;chomage
+Tanger;45.2;11.2
+Rabat;62.1;8.4
+Fes;38.7;13.1
+Agadir;29.3;9.7"""
+
+# a completer
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```python
+lignes = texte.split("\n")[1:]        # on saute l'en-tete
+
+donnees = []
+for ligne in lignes:
+    ville, pib, chomage = ligne.split(";")
+    donnees.append({"ville": ville,
+                    "pib": float(pib),
+                    "chomage": float(chomage)})
+
+total = sum(d["pib"] for d in donnees)
+print(f"PIB total : {total:.1f}")
+
+fort = [d["ville"] for d in donnees if d["chomage"] > 10]
+print("Chomage eleve :", ", ".join(fort))
+```
+
+`ville, pib, chomage = ligne.split(";")` décompose les trois champs en une ligne — l'affectation multiple du chapitre 3.
+
+Les deux dernières instructions sont des compréhensions : l'une somme, l'autre filtre. Tout le chapitre 3 se retrouve ici.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `{"cle": valeur}` | créer un dictionnaire |
+| `d["cle"]` | consulter — erreur si absente |
+| `d.get("cle", defaut)` | consulter sans risque |
+| `d["nouvelle"] = x` | ajouter ou modifier |
+| `"cle" in d` | tester la présence |
+| `d.items()`, `d.keys()`, `d.values()` | parcourir |
+| `d[k] = d.get(k, 0) + 1` | compter les effectifs |
+| `Counter(liste)` | la version toute faite |
+| clé immuable | chaîne, nombre, tuple — jamais une liste |
+| `with open(...) as f:` | ouvrir un fichier — ferme automatiquement |
+| `"r"`, `"w"`, `"a"`, `"x"` | lire, écraser, ajouter, créer |
+| `encoding="utf-8"` | à ne jamais omettre |
+| `csv.DictReader` | lire un CSV proprement |
+
+La première partie du cours s'achève : vous connaissez le langage. La seconde l'emploie au calcul scientifique, en commençant par **NumPy** — qui apporte enfin à Python la vectorisation qui lui manque.

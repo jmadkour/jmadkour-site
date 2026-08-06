@@ -1,0 +1,334 @@
+---
+title: "pandas"
+subtitle: "Informatique — Python, chapitre 9"
+sidebar: python
+include-after-body: ../../_includes/console.html
+---
+
+NumPy calcule vite, mais ses tableaux n'ont ni noms de colonnes ni types mêlés : impossible d'y loger une enquête où voisinent des villes, des régions et des taux.
+
+**pandas** comble ce manque. Son `DataFrame` est l'exact équivalent du *data frame* de R — lignes d'observations, colonnes de variables, chacune avec son type. C'est l'outil que vous emploierez le plus souvent pour un travail empirique en Python.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des blocs à recopier
+
+pandas n'est pas disponible dans la console de ce site. Les blocs sont à recopier dans Anaconda ou Google Colab.
+
+```python
+import pandas as pd
+import numpy as np
+```
+
+`pd` est la convention universelle, comme `np` pour NumPy.
+:::
+
+# 9.1 Le DataFrame
+
+## 9.1.1 Construire
+
+```python
+d = pd.DataFrame({
+    "ville":   ["Tanger", "Rabat", "Fes", "Agadir"],
+    "region":  ["Nord", "Centre", "Centre", "Sud"],
+    "pib":     [45.2, 62.1, 38.7, 29.3],
+    "chomage": [11.2, 8.4, 13.1, 9.7],
+})
+print(d)
+```
+
+Un dictionnaire dont chaque valeur est une liste : les clés deviennent les noms de colonnes. C'est le prolongement direct du chapitre 7.
+
+## 9.1.2 Regarder avant de calculer
+
+```python
+print(d.shape)         # (lignes, colonnes)
+print(d.columns)       # les noms
+print(d.dtypes)        # le type de chaque colonne
+print(d.head(2))       # les premieres lignes
+print(d.info())        # types ET valeurs manquantes
+print(d.describe())    # un resume statistique
+```
+
+::: {.callout-tip}
+### `info()` d'abord
+
+Devant tout fichier importé, `d.info()` est la première commande à taper. Elle donne en une sortie le nombre de lignes, le type de chaque colonne et le nombre de valeurs **non nulles**.
+
+Une colonne annoncée `object` alors qu'elle devrait être numérique signale presque toujours un problème de séparateur décimal — le même symptôme qu'en R.
+:::
+
+# 9.2 Importer
+
+```python
+d = pd.read_csv("donnees.csv")                       # cas standard
+d = pd.read_csv("donnees.csv", sep=";", decimal=",") # CSV francais
+d = pd.read_excel("donnees.xlsx", sheet_name="2023")
+```
+
+Les arguments les plus utiles :
+
+| Argument | Rôle |
+|---|---|
+| `sep=";"` | séparateur de colonnes |
+| `decimal=","` | séparateur décimal |
+| `encoding="utf-8"` | encodage — `"latin1"` pour un export Excel Windows |
+| `na_values=["", ".", "NA"]` | ce qui vaut « manquant » |
+| `skiprows=3` | ignorer des lignes d'en-tête |
+| `usecols=["ville", "pib"]` | ne lire que certaines colonnes |
+| `parse_dates=["date"]` | convertir en dates |
+
+```python
+d.to_csv("resultats.csv", index=False, sep=";", decimal=",")
+d.to_excel("resultats.xlsx", index=False)
+```
+
+::: {.callout-warning}
+### `index=False`, toujours
+
+Sans cet argument, pandas écrit une première colonne sans nom contenant 0, 1, 2… Relu dans Excel, le tableau est décalé.
+
+C'est l'équivalent exact du `row.names = FALSE` de R, et l'oubli a les mêmes conséquences.
+:::
+
+# 9.3 Extraire
+
+## 9.3.1 Les colonnes
+
+```python
+print(d["pib"])                  # une colonne : une Series
+print(d[["ville", "pib"]])       # plusieurs : un DataFrame
+print(d.pib)                     # fonctionne, mais fragile
+```
+
+Une colonne isolée est une **Series** — un tableau NumPy doté d'étiquettes. Toutes les opérations du chapitre 8 s'y appliquent.
+
+La notation `d.pib` échoue si le nom contient un espace ou coïncide avec une méthode existante. Préférez les crochets.
+
+## 9.3.2 `loc` et `iloc`
+
+```python
+print(d.loc[0, "ville"])         # par ETIQUETTE
+print(d.loc[0:2, ["ville", "pib"]])
+
+print(d.iloc[0, 0])              # par POSITION
+print(d.iloc[0:2, 0:2])
+```
+
+::: {.callout-important}
+### La différence qui déroute tout le monde
+
+`loc` travaille sur les **étiquettes**, `iloc` sur les **positions**.
+
+Et surtout : `loc[0:2]` inclut la ligne 2 — trois lignes —, tandis que `iloc[0:2]` l'exclut — deux lignes. Les tranches par étiquette incluent la borne de fin, celles par position ne l'incluent pas.
+
+C'est incohérent, c'est admis comme tel, et c'est une source d'erreurs discrètes. Dans le doute, vérifiez par `.shape`.
+:::
+
+# 9.4 Filtrer
+
+```python
+print(d[d["pib"] > 40])
+print(d[(d["pib"] > 35) & (d["chomage"] < 12)])
+print(d[d["region"].isin(["Nord", "Centre"])])
+print(d[d["ville"].str.startswith("T")])
+```
+
+Les règles de NumPy s'appliquent : `&` et `|`, et **parenthèses obligatoires** autour de chaque condition.
+
+`.str` donne accès aux méthodes de chaîne du chapitre 2, appliquées à toute la colonne : `.str.lower()`, `.str.strip()`, `.str.contains("...")`.
+
+```python
+print(d.query("pib > 40 and region == 'Centre'"))
+```
+
+`query` accepte une condition écrite en toutes lettres. Plus lisible, mais moins souple.
+
+# 9.5 Créer et modifier
+
+```python
+d["pib_hab"] = d["pib"] / d["population"]
+d["log_pib"] = np.log(d["pib"])
+
+d["taille"] = np.where(d["pib"] > 40, "grande", "petite")
+
+d["categorie"] = pd.cut(d["chomage"],
+                        bins=[0, 9, 12, 100],
+                        labels=["faible", "moyen", "eleve"])
+```
+
+`pd.cut` découpe une variable continue en classes — l'équivalent d'un recodage en tranches, très utile pour croiser ensuite.
+
+```python
+d = d.rename(columns={"pib": "pib_mrd"})
+d = d.drop(columns=["temp"])
+d = d.sort_values("pib_mrd", ascending=False)
+```
+
+::: {.callout-warning}
+### `SettingWithCopyWarning`
+
+```python
+sous = d[d["pib"] > 40]
+sous["nouvelle"] = 1          # declenche l'avertissement
+```
+
+pandas ne sait pas si `sous` est une copie ou une vue sur `d` : la modification pourrait ou non se répercuter.
+
+La parade est simple : `sous = d[d["pib"] > 40].copy()`. Cet avertissement n'est pas décoratif — il signale un comportement réellement indéterminé.
+:::
+
+# 9.6 Les valeurs manquantes
+
+```python
+print(d.isna().sum())            # combien par colonne
+print(d.dropna())                # supprimer les lignes incompletes
+print(d.dropna(subset=["pib"]))  # seulement si pib manque
+print(d.fillna(0))               # remplacer
+d["pib"] = d["pib"].fillna(d["pib"].mean())   # par la moyenne
+```
+
+pandas note `NaN` ce que R note `NA`. Contrairement à R, les fonctions d'agrégation **ignorent les manquantes par défaut** : `d["pib"].mean()` calcule sans se plaindre.
+
+::: {.callout-important}
+### Un défaut commode mais dangereux
+
+R refuse de calculer une moyenne en présence de `NA`, obligeant à écrire `na.rm = TRUE` en connaissance de cause. pandas calcule silencieusement sur les valeurs disponibles.
+
+C'est plus fluide, et plus risqué : une colonne à 40 % de manquantes livre une moyenne parfaitement présentable. Commencez toujours par `d.isna().sum()`.
+:::
+
+# 9.7 Grouper et agréger
+
+C'est le cœur de pandas.
+
+```python
+print(d.groupby("region")["pib"].mean())
+
+print(d.groupby("region").agg(
+    n=("ville", "count"),
+    pib_moyen=("pib", "mean"),
+    pib_total=("pib", "sum"),
+    chomage_moyen=("chomage", "mean"),
+).reset_index())
+```
+
+Une ligne par région, plusieurs statistiques par ligne — l'équivalent du `group_by` + `summarise` de dplyr.
+
+`reset_index()` remet la variable de groupement en colonne ordinaire ; sans lui, elle reste en index, ce qui gêne les traitements suivants.
+
+```python
+d["ecart"] = d["pib"] - d.groupby("region")["pib"].transform("mean")
+```
+
+`transform` conserve **toutes les lignes** en y ajoutant la statistique de groupe. C'est le calcul du *within* en économétrie de panel — le même que le `group_by` + `mutate` de dplyr.
+
+```python
+print(pd.crosstab(d["region"], d["taille"]))
+print(d.pivot_table(values="pib", index="region",
+                    columns="taille", aggfunc="mean"))
+```
+
+# 9.8 Assembler
+
+```python
+pd.concat([d1, d2], ignore_index=True)          # empiler
+pd.merge(d, pop, on="ville", how="left")        # apparier
+```
+
+| `how` | Effet |
+|---|---|
+| `"left"` | garde toutes les lignes de gauche — le choix par défaut |
+| `"inner"` | seulement les correspondances |
+| `"outer"` | tout, des deux côtés |
+
+::: {.callout-tip}
+### Vérifiez toujours après un `merge`
+
+```python
+avant = len(d)
+d = pd.merge(d, pop, on="ville", how="left", indicator=True)
+print(d["_merge"].value_counts())
+```
+
+L'argument `indicator=True` ajoute une colonne indiquant, pour chaque ligne, si l'appariement a réussi. Les `left_only` révèlent immédiatement les clés qui n'ont pas trouvé de correspondance — majuscules, espaces, accents.
+
+Et comparez `len(d)` avant et après : un nombre de lignes qui **augmente** signale des doublons dans la clé de droite.
+:::
+
+# 9.9 Un enchaînement complet
+
+```python
+resultat = (
+    d
+    .dropna(subset=["chomage"])
+    .assign(pib_hab=lambda x: x["pib"] / x["population"])
+    .query("pib_hab > 20")
+    .groupby("region")
+    .agg(n=("ville", "count"),
+         pib_hab=("pib_hab", "mean"),
+         chomage=("chomage", "mean"))
+    .reset_index()
+    .sort_values("pib_hab", ascending=False)
+)
+print(resultat)
+```
+
+Les parenthèses englobantes permettent d'écrire une méthode par ligne, dans l'ordre du raisonnement — l'équivalent du pipe `|>` de dplyr. `assign` crée une colonne au fil de la chaîne, `lambda x:` désignant le tableau à cette étape.
+
+# À vous
+
+À partir d'un tableau de villes, produisez un résumé par région trié par PIB par habitant décroissant, en écartant les observations incomplètes.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```python
+import pandas as pd
+
+d = pd.DataFrame({
+    "ville":      ["Tanger", "Rabat", "Fes", "Agadir", "Oujda"],
+    "region":     ["Nord", "Centre", "Centre", "Sud", "Nord"],
+    "pib":        [45.2, 62.1, 38.7, 29.3, None],
+    "population": [1.2, 1.9, 1.1, 0.9, 0.6],
+    "chomage":    [11.2, 8.4, 13.1, 9.7, 14.0],
+})
+
+print(d.isna().sum())        # toujours commencer par la
+
+resume = (
+    d
+    .dropna(subset=["pib"])
+    .assign(pib_hab=lambda x: x["pib"] / x["population"])
+    .groupby("region")
+    .agg(n=("ville", "count"),
+         pib_hab=("pib_hab", "mean"),
+         chomage=("chomage", "mean"))
+    .reset_index()
+    .sort_values("pib_hab", ascending=False)
+)
+print(resume)
+```
+
+Sans le `dropna`, Oujda serait comptée dans `n` mais absente du calcul de `pib_hab` — un effectif incohérent avec les moyennes affichées. C'est exactement le risque que crée le traitement silencieux des manquantes.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `import pandas as pd` | la convention |
+| `pd.DataFrame({...})` | construire à partir d'un dictionnaire |
+| `info`, `describe`, `head`, `dtypes` | inspecter avant de calculer |
+| `pd.read_csv(sep=, decimal=, na_values=)` | importer |
+| `to_csv(..., index=False)` | exporter proprement |
+| `d["col"]`, `d[["a", "b"]]` | une colonne, plusieurs colonnes |
+| `loc` / `iloc` | par étiquette (fin **incluse**) / par position (fin exclue) |
+| `d[(c1) & (c2)]` | filtrer — parenthèses obligatoires |
+| `.str.lower()`, `.isin()` | méthodes de chaîne, appartenance |
+| `.copy()` | contre le `SettingWithCopyWarning` |
+| `isna().sum()`, `dropna`, `fillna` | les valeurs manquantes |
+| `groupby().agg()` | une ligne par groupe |
+| `groupby().transform()` | statistique de groupe, toutes lignes gardées |
+| `merge(..., indicator=True)` | apparier et vérifier |
+
+Le dernier chapitre met en images ce que celui-ci a calculé : **Matplotlib**, et les graphiques que pandas produit directement.

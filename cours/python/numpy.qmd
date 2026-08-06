@@ -1,0 +1,330 @@
+---
+title: "NumPy"
+subtitle: "Informatique — Python, chapitre 8"
+sidebar: python
+include-after-body: ../../_includes/console.html
+---
+
+Le chapitre 3 l'avait annoncé : une liste Python ne se multiplie pas. `[1, 2, 3] * 2` ne double pas les valeurs, il répète la liste. Pour calculer, il faut une structure conçue pour cela — c'est le **tableau NumPy**, et il apporte à Python exactement ce que le vecteur donne à R.
+
+NumPy est la fondation de tout le calcul scientifique en Python : pandas, Matplotlib, scikit-learn et statsmodels reposent tous sur lui.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des blocs à recopier
+
+NumPy n'est pas fourni avec Python et n'est pas disponible dans la console de ce site. Les blocs de ce chapitre sont à recopier dans Anaconda, Google Colab ou tout environnement Python scientifique.
+
+```python
+import numpy as np
+```
+
+L'abréviation `np` est une convention universelle : tout le code Python du monde l'emploie. Ne la changez pas.
+:::
+
+# 8.1 Le tableau
+
+## 8.1.1 Créer
+
+```python
+import numpy as np
+
+v = np.array([4, 8, 15, 16, 23, 42])
+print(v)
+print(type(v))
+print(v.dtype)      # int64 : le type des elements
+print(v.shape)      # (6,) : la forme
+```
+
+| Fonction | Résultat |
+|---|---|
+| `np.array([1, 2, 3])` | à partir d'une liste |
+| `np.zeros(5)` | cinq zéros |
+| `np.ones((2, 3))` | matrice 2×3 de uns |
+| `np.arange(0, 10, 2)` | comme `range`, mais en tableau |
+| `np.linspace(0, 1, 5)` | cinq valeurs régulières **bornes comprises** |
+| `np.eye(3)` | matrice identité |
+
+```python
+print(np.arange(0, 10, 2))       # [0 2 4 6 8]     fin exclue
+print(np.linspace(0, 1, 5))      # [0. 0.25 0.5 0.75 1.]  fin incluse
+```
+
+::: {.callout-warning}
+### `arange` exclut la fin, `linspace` l'inclut
+
+`np.arange(0, 1, 0.25)` donne quatre valeurs — 1 n'y est pas.
+`np.linspace(0, 1, 5)` donne cinq valeurs — 1 y est.
+
+`arange` prend un **pas**, `linspace` un **nombre de points**. Sur des nombres à virgule, préférez `linspace` : `arange` peut produire un élément de trop ou de moins à cause des arrondis.
+:::
+
+## 8.1.2 Un seul type par tableau
+
+```python
+a = np.array([1, 2, 3])
+print(a.dtype)               # int64
+
+b = np.array([1, 2, 3.5])
+print(b.dtype)               # float64 : tout converti
+
+c = np.array([1, "deux"])
+print(c.dtype)               # <U21 : tout converti en texte
+```
+
+C'est le prix de la rapidité : un tableau homogène occupe une zone mémoire continue, ce qui permet au processeur de calculer par blocs. Une liste Python, hétérogène, ne le permet pas.
+
+# 8.2 La vectorisation
+
+C'est la raison d'être de NumPy.
+
+```python
+v = np.array([4, 8, 15, 16, 23, 42])
+
+print(v * 2)          # chaque valeur doublee
+print(v + 100)
+print(v ** 2)
+print(np.sqrt(v))
+print(np.log(v))
+```
+
+Comparez à ce qu'exigeait le chapitre 3 :
+
+```python
+liste = [4, 8, 15, 16]
+doubles = [x * 2 for x in liste]       # compréhension obligatoire
+
+v = np.array(liste)
+doubles = v * 2                        # NumPy
+```
+
+::: {.callout-tip}
+### Ce n'est pas qu'une question d'écriture
+
+Sur un million de valeurs, la compréhension prend environ une seconde, l'opération NumPy quelques millisecondes — un facteur cent au moins.
+
+La raison : la boucle NumPy s'exécute en C, dans du code compilé, sans repasser par l'interpréteur Python à chaque élément.
+
+**Règle** : si vous écrivez une boucle sur un tableau NumPy, il existe presque toujours une opération vectorisée qui la remplace.
+:::
+
+## 8.2.1 Opérer entre deux tableaux
+
+```python
+a = np.array([1, 2, 3])
+b = np.array([10, 20, 30])
+
+print(a + b)         # element par element
+print(a * b)         # PRODUIT TERME A TERME, pas matriciel
+print(a @ b)         # produit scalaire : 140
+```
+
+::: {.callout-important}
+### `*` n'est pas le produit matriciel
+
+Pour deux matrices, `A * B` multiplie **terme à terme**, et `A @ B` effectue le produit matriciel. C'est l'inverse de MATLAB, où `*` est matriciel et `.*` terme à terme.
+
+Cette différence est la première source d'erreurs pour qui passe de MATLAB à Python — et elle est silencieuse quand les dimensions se trouvent compatibles.
+:::
+
+# 8.3 Extraire et filtrer
+
+## 8.3.1 Par position
+
+Les règles sont celles des listes : indices à partir de 0, tranches à borne de fin exclue.
+
+```python
+v = np.array([4, 8, 15, 16, 23, 42])
+
+print(v[0], v[-1])
+print(v[1:4])
+print(v[::2])
+```
+
+## 8.3.2 Par condition
+
+C'est ici que NumPy rejoint enfin R.
+
+```python
+v = np.array([4, 8, 15, 16, 23, 42])
+
+print(v > 15)              # un tableau de True/False
+print(v[v > 15])           # on ne garde que les positions vraies
+print(v[(v > 10) & (v < 30)])
+print(np.sum(v > 15))      # combien
+print(np.mean(v > 15))     # quelle proportion
+```
+
+::: {.callout-warning}
+### Ici, `&` et `|` — et les parenthèses sont obligatoires
+
+Sur des tableaux NumPy, on écrit `&`, `|` et `~`, **pas** `and`, `or`, `not` du chapitre 5. Ces derniers exigent une valeur unique et déclenchent une erreur sur un tableau.
+
+Et chaque condition doit être parenthésée : `(v > 10) & (v < 30)`. Sans les parenthèses, la priorité des opérateurs produit un résultat incompréhensible.
+:::
+
+## 8.3.3 Remplacer
+
+```python
+v = np.array([4, 8, 15, 16, 23, 42])
+
+v[v > 20] = 0                          # affecter par condition
+print(v)
+
+x = np.array([1.0, -2.0, 3.0])
+print(np.where(x < 0, 0, x))           # remplacer sans modifier
+```
+
+`np.where(condition, si_vrai, si_faux)` est l'équivalent vectorisé de l'expression conditionnelle du chapitre 5 — et du `ifelse` de R.
+
+# 8.4 Les matrices
+
+```python
+m = np.array([[1, 2, 3],
+              [4, 5, 6]])
+
+print(m.shape)        # (2, 3) : 2 lignes, 3 colonnes
+print(m[0, 1])        # ligne 0, colonne 1
+print(m[0, :])        # toute la ligne 0
+print(m[:, 1])        # toute la colonne 1
+print(m.T)            # transposee
+```
+
+La virgule sépare les dimensions, comme les crochets d'un tableau R.
+
+```python
+print(m.sum())            # somme de tout
+print(m.sum(axis=0))      # somme par COLONNE
+print(m.sum(axis=1))      # somme par LIGNE
+```
+
+::: {.callout-important}
+### L'axe, la source d'erreur la plus tenace
+
+`axis=0` parcourt les **lignes** et produit donc un résultat **par colonne**. `axis=1` fait l'inverse.
+
+Le moyen mnémotechnique : `axis` désigne la dimension qui **disparaît**. Un tableau de forme `(2, 3)` sommé sur `axis=0` devient de forme `(3,)` — la première dimension a été supprimée.
+
+Vérifiez toujours par `.shape` plutôt que de deviner.
+:::
+
+## 8.4.1 Algèbre linéaire
+
+```python
+A = np.array([[2, 1],
+              [1, 3]])
+b = np.array([5, 10])
+
+print(np.linalg.det(A))        # determinant
+print(np.linalg.inv(A))        # inverse
+print(np.linalg.solve(A, b))   # resoudre Ax = b
+print(np.linalg.eig(A))        # valeurs et vecteurs propres
+```
+
+::: {.callout-tip}
+### `solve` plutôt que `inv`
+
+Pour résoudre $Ax = b$, n'écrivez pas `inv(A) @ b` mais `np.linalg.solve(A, b)` : c'est plus rapide et numériquement plus stable.
+
+La règle vaut aussi pour l'estimateur des MCO $\hat\beta = (X'X)^{-1}X'y$ : en pratique on résout le système plutôt qu'on n'inverse la matrice.
+:::
+
+# 8.5 Statistiques et hasard
+
+```python
+v = np.array([4, 8, 15, 16, 23, 42])
+
+print(v.mean(), np.median(v))
+print(v.std())               # ecart-type, division par n
+print(v.std(ddof=1))         # division par n-1, comme R
+print(np.percentile(v, [25, 50, 75]))
+print(np.corrcoef(v, v * 2 + 1))
+```
+
+::: {.callout-warning}
+### `std` divise par $n$, pas par $n-1$
+
+C'est l'inverse de R, dont `sd` est corrigé par défaut.
+
+Pour l'écart-type d'échantillon — celui qu'emploie l'inférence — écrivez `v.std(ddof=1)`. L'oubli passe inaperçu sur de grands échantillons et fausse tout sur de petits.
+:::
+
+```python
+rng = np.random.default_rng(seed=123)
+
+print(rng.normal(0, 1, 5))         # loi normale
+print(rng.uniform(0, 1, 5))        # loi uniforme
+print(rng.integers(1, 7, 10))      # des lancers de de
+print(rng.choice([1, 2, 3], size=5, replace=True))
+```
+
+`default_rng(seed=...)` est la façon moderne de fixer la graine. Comme le `set.seed` de R, elle rend toute simulation reproductible — condition d'un travail sérieux.
+
+# 8.6 Un exemple : les MCO à la main
+
+```python
+rng = np.random.default_rng(seed=42)
+
+n = 100
+x = rng.normal(0, 1, n)
+e = rng.normal(0, 0.5, n)
+y = 2 + 1.5 * x + e
+
+X = np.column_stack([np.ones(n), x])       # constante + x
+
+beta = np.linalg.solve(X.T @ X, X.T @ y)   # (X'X)^-1 X'y
+print(f"constante {beta[0]:.3f}, pente {beta[1]:.3f}")
+
+residus = y - X @ beta
+sigma2 = residus @ residus / (n - 2)
+var_beta = sigma2 * np.linalg.inv(X.T @ X)
+print(f"ecart-type de la pente : {np.sqrt(var_beta[1, 1]):.4f}")
+```
+
+Toute la formule des moindres carrés tient en trois lignes, dans une écriture presque identique à sa notation mathématique. C'est ce qui rend NumPy irremplaçable en économétrie : on peut coder un estimateur directement depuis sa définition.
+
+# À vous
+
+Simulez 1 000 tirages d'une loi normale de moyenne 50 et d'écart-type 8. Calculez la moyenne, l'écart-type corrigé, la proportion de valeurs supérieures à 60, et remplacez les valeurs négatives par zéro.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```python
+import numpy as np
+
+rng = np.random.default_rng(seed=99)
+x = rng.normal(50, 8, 1000)
+
+print(f"moyenne      : {x.mean():.2f}")
+print(f"ecart-type   : {x.std(ddof=1):.2f}")
+print(f"P(X > 60)    : {np.mean(x > 60):.1%}")
+
+x = np.where(x < 0, 0, x)
+print(f"minimum      : {x.min():.2f}")
+```
+
+`np.mean(x > 60)` calcule directement la proportion : la condition produit des `True`/`False`, qui valent 1 et 0. Le même raccourci qu'en R.
+
+Comparez avec la valeur théorique : $P(X > 60) = 1 - \Phi(1{,}25) \approx 10{,}6\,\%$.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `import numpy as np` | la convention universelle |
+| `np.array`, `np.zeros`, `np.ones`, `np.eye` | créer |
+| `np.arange` / `np.linspace` | pas / nombre de points — fin exclue / incluse |
+| `.shape`, `.dtype` | forme et type — à vérifier constamment |
+| `v * 2`, `np.sqrt(v)` | vectorisation : cent fois plus rapide qu'une boucle |
+| `a * b` / `a @ b` | terme à terme / produit matriciel |
+| `v[v > 15]` | filtrer par condition |
+| `(c1) & (c2)` | combiner — parenthèses obligatoires, pas `and` |
+| `np.where(cond, a, b)` | le `ifelse` vectorisé |
+| `m[0, :]`, `m[:, 1]` | ligne, colonne |
+| `axis=0` / `axis=1` | par colonne / par ligne |
+| `np.linalg.solve` | résoudre — mieux que `inv` |
+| `v.std(ddof=1)` | écart-type corrigé |
+| `np.random.default_rng(seed=)` | simulation reproductible |
+
+Le chapitre suivant construit sur NumPy la structure qui manque encore : le **tableau de données** de pandas, avec ses colonnes nommées et ses types mêlés.

@@ -1,0 +1,322 @@
+---
+title: "Matplotlib"
+subtitle: "Informatique — Python, chapitre 10"
+sidebar: python
+include-after-body: ../../_includes/console.html
+---
+
+Dernier chapitre du cours. Après avoir manipulé, calculé et agrégé, il reste à montrer. **Matplotlib** est la bibliothèque graphique de référence en Python : tout le reste — pandas, seaborn, scikit-learn — s'appuie sur elle.
+
+Elle demande un peu plus de gestes que les graphiques de R, mais offre en contrepartie un contrôle total sur chaque élément de la figure.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des blocs à recopier
+
+Matplotlib n'est pas disponible dans la console de ce site, qui n'affiche que du texte. Les blocs sont à recopier dans Anaconda, Jupyter ou Google Colab.
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+```
+
+`plt` est la convention universelle.
+:::
+
+# 10.1 Figure et axes
+
+## 10.1.1 Les deux écritures
+
+```python
+# ecriture rapide, dite "pyplot"
+plt.plot(x, y)
+plt.show()
+
+# ecriture explicite, dite "orientee objet"
+fig, ax = plt.subplots()
+ax.plot(x, y)
+plt.show()
+```
+
+::: {.callout-important}
+### Adoptez la seconde dès le début
+
+La première écriture agit sur une figure « courante » implicite. Elle suffit pour un essai, mais devient ingérable dès qu'il y a plusieurs panneaux.
+
+La seconde nomme les objets : `fig` est la feuille, `ax` la zone de tracé. Toutes les méthodes s'appliquent à `ax`, et l'on sait toujours de quel panneau on parle.
+
+C'est l'écriture employée dans toute la documentation moderne. Prenez-la tout de suite ; désapprendre l'autre coûte plus cher.
+:::
+
+## 10.1.2 La figure minimale
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+rng = np.random.default_rng(42)
+x = rng.normal(0, 1, 60)
+y = 1.5 * x + rng.normal(0, 1, 60)
+
+fig, ax = plt.subplots(figsize=(7, 4.5))
+ax.scatter(x, y, s=40, alpha=0.7, color="#2f7ea8")
+ax.set_xlabel("variable explicative")
+ax.set_ylabel("variable expliquee")
+ax.set_title("Relation entre x et y")
+ax.grid(alpha=0.3)
+plt.show()
+```
+
+`figsize` est en **pouces**. Pour un article sur une colonne, `(6.5, 4)` correspond à une page A4 avec marges.
+
+# 10.2 Les tracés courants
+
+| Méthode | Figure |
+|---|---|
+| `ax.plot(x, y)` | ligne — séries temporelles |
+| `ax.scatter(x, y)` | nuage de points |
+| `ax.bar(cat, val)` | barres verticales |
+| `ax.barh(cat, val)` | barres horizontales |
+| `ax.hist(x, bins=30)` | histogramme |
+| `ax.boxplot([a, b, c])` | boîtes à moustaches |
+| `ax.axhline(0)`, `ax.axvline(0)` | ligne de repère |
+
+## 10.2.1 Superposer
+
+```python
+fig, ax = plt.subplots(figsize=(7, 4.5))
+
+ax.scatter(x, y, s=35, alpha=0.6, color="#8fa8b8", label="observations")
+
+beta = np.polyfit(x, y, 1)
+grille = np.linspace(x.min(), x.max(), 100)
+ax.plot(grille, np.polyval(beta, grille),
+        color="#c8542f", lw=2, label="ajustement lineaire")
+
+ax.legend()
+ax.set_title("Nuage et droite des moindres carres")
+plt.show()
+```
+
+L'argument `label` de chaque tracé alimente `ax.legend()`. Sans `label`, l'élément n'apparaît pas dans la légende.
+
+`np.polyfit(x, y, 1)` ajuste un polynôme de degré 1 : c'est la droite des MCO, calculée par NumPy.
+
+## 10.2.2 Histogramme et densité
+
+```python
+fig, ax = plt.subplots(figsize=(7, 4.5))
+
+x = rng.normal(50, 8, 500)
+ax.hist(x, bins=25, density=True, color="#cfe0ea",
+        edgecolor="white", label="observations")
+
+grille = np.linspace(x.min(), x.max(), 200)
+densite = np.exp(-0.5 * ((grille - 50) / 8) ** 2) / (8 * np.sqrt(2 * np.pi))
+ax.plot(grille, densite, color="#c8542f", lw=2, label="densite theorique")
+
+ax.legend()
+ax.set_xlabel("valeur")
+plt.show()
+```
+
+`density=True` passe des effectifs à la densité — indispensable pour superposer une courbe théorique, exactement comme le `freq = FALSE` de R.
+
+# 10.3 Plusieurs panneaux
+
+```python
+fig, axes = plt.subplots(2, 2, figsize=(10, 7))
+
+x = rng.normal(0, 1, 300)
+
+axes[0, 0].hist(x, bins=25, color="#cfe0ea", edgecolor="white")
+axes[0, 0].set_title("Histogramme")
+
+axes[0, 1].boxplot(x)
+axes[0, 1].set_title("Boite a moustaches")
+
+axes[1, 0].plot(np.cumsum(x), color="#2f7ea8")
+axes[1, 0].set_title("Somme cumulee")
+
+axes[1, 1].scatter(x[:-1], x[1:], s=12, alpha=0.5)
+axes[1, 1].set_title("Autocorrelation d'ordre 1")
+
+fig.suptitle("Quatre vues d'une meme serie", fontsize=14)
+fig.tight_layout()
+plt.show()
+```
+
+`axes` est une grille : `axes[ligne, colonne]`. Avec une seule ligne, c'est un simple tableau `axes[0]`, `axes[1]`.
+
+::: {.callout-tip}
+### `tight_layout()` à la fin
+
+Sans lui, les titres et les étiquettes d'axes se chevauchent dès qu'il y a plusieurs panneaux.
+
+Prenez l'habitude de terminer toute figure à panneaux multiples par `fig.tight_layout()`. C'est le réglage le plus rentable de Matplotlib.
+:::
+
+# 10.4 Habiller
+
+```python
+ax.set_xlabel("PIB (milliards)", fontsize=11)
+ax.set_ylabel("Chomage (%)")
+ax.set_title("Titre", fontsize=13, fontweight="bold")
+ax.set_xlim(0, 100)
+ax.set_ylim(bottom=0)
+ax.legend(loc="upper right", frameon=False)
+ax.grid(alpha=0.3, linestyle="--")
+ax.spines[["top", "right"]].set_visible(False)
+```
+
+La dernière ligne retire le cadre supérieur et droit — un geste simple qui allège nettement une figure destinée à publication.
+
+## 10.4.1 Les couleurs
+
+```python
+couleurs = plt.cm.viridis(np.linspace(0, 1, 5))
+
+for i, c in enumerate(couleurs):
+    ax.plot(x, y + i, color=c, label=f"groupe {i}")
+```
+
+Les palettes `viridis`, `plasma` et `cividis` sont conçues pour rester lisibles en noir et blanc et pour les daltoniens. Évitez l'ancienne palette `jet`, qui crée des contrastes trompeurs.
+
+::: {.callout-tip}
+### La règle du chapitre R vaut ici aussi
+
+Ne codez jamais une information par la seule couleur. Doublez-la par un style de trait (`linestyle`) ou une forme de marqueur (`marker`) :
+
+```python
+ax.plot(x, y1, color="#2f7ea8", linestyle="-",  marker="o", label="A")
+ax.plot(x, y2, color="#c8542f", linestyle="--", marker="s", label="B")
+```
+:::
+
+## 10.4.2 Un style global
+
+```python
+plt.style.use("seaborn-v0_8-whitegrid")
+plt.rcParams["figure.figsize"] = (7, 4.5)
+plt.rcParams["font.size"] = 11
+```
+
+Placées en tête de script, ces lignes s'appliquent à toutes les figures — plus simple que de répéter les réglages.
+
+# 10.5 Les graphiques de pandas
+
+pandas appelle Matplotlib directement, ce qui raccourcit beaucoup l'écriture.
+
+```python
+d.plot(x="pib", y="chomage", kind="scatter")
+d["pib"].plot(kind="hist", bins=20)
+d.groupby("region")["pib"].mean().plot(kind="barh")
+d.set_index("annee")["pib"].plot()          # serie temporelle
+```
+
+Et l'on récupère l'objet `ax` pour continuer à la main :
+
+```python
+ax = d.groupby("region")["pib"].mean().sort_values().plot(
+    kind="barh", color="#2f7ea8", figsize=(7, 4))
+ax.set_xlabel("PIB moyen (milliards)")
+ax.set_ylabel("")
+ax.spines[["top", "right"]].set_visible(False)
+plt.tight_layout()
+plt.show()
+```
+
+::: {.callout-tip}
+### Trier avant de tracer un diagramme en barres
+
+`.sort_values()` avant `.plot()` classe les barres par valeur plutôt que par ordre alphabétique. Combiné à `barh`, qui laisse la place d'écrire les libellés à l'horizontale, c'est presque toujours la présentation la plus lisible.
+
+Le même conseil que pour `reorder()` et `coord_flip()` en R.
+:::
+
+# 10.6 Enregistrer
+
+```python
+fig.savefig("figure.png", dpi=300, bbox_inches="tight")
+fig.savefig("figure.pdf", bbox_inches="tight")
+```
+
+| Format | Usage |
+|---|---|
+| PNG, `dpi=300` | site web, présentation |
+| PDF | article, mémoire — vectoriel, ne pixelise jamais |
+| SVG | web vectoriel |
+
+::: {.callout-warning}
+### `bbox_inches="tight"` et l'ordre des appels
+
+Sans `bbox_inches="tight"`, les étiquettes d'axes débordent souvent hors du fichier enregistré.
+
+Et surtout : appelez `savefig` **avant** `plt.show()`. Après l'affichage, la figure est vidée et le fichier enregistré serait blanc. C'est l'erreur la plus fréquente de ce chapitre.
+:::
+
+# À vous
+
+Simulez une régression, tracez le nuage de points avec sa droite d'ajustement, habillez la figure et enregistrez-la en PDF.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(2024)
+x = rng.normal(0, 1, 80)
+y = 2 + 1.5 * x + rng.normal(0, 0.8, 80)
+
+beta = np.polyfit(x, y, 1)
+grille = np.linspace(x.min(), x.max(), 100)
+
+fig, ax = plt.subplots(figsize=(7, 4.5))
+ax.scatter(x, y, s=35, alpha=0.6, color="#8fa8b8", label="observations")
+ax.plot(grille, np.polyval(beta, grille), color="#c8542f", lw=2,
+        label=f"y = {beta[1]:.2f} + {beta[0]:.2f} x")
+
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+ax.set_title("Ajustement lineaire par les moindres carres")
+ax.legend(frameon=False)
+ax.grid(alpha=0.3)
+ax.spines[["top", "right"]].set_visible(False)
+
+fig.tight_layout()
+fig.savefig("regression.pdf", bbox_inches="tight")
+plt.show()
+```
+
+L'équation estimée apparaît directement dans la légende, grâce à la f-string du chapitre 2. Attention à l'ordre de `np.polyfit` : il renvoie la **pente d'abord**, la constante ensuite.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `import matplotlib.pyplot as plt` | la convention |
+| `fig, ax = plt.subplots()` | l'écriture à adopter — explicite |
+| `ax.scatter`, `ax.plot`, `ax.hist`, `ax.bar` | les tracés courants |
+| `label=` + `ax.legend()` | la légende |
+| `density=True` | histogramme en densité |
+| `plt.subplots(2, 2)` | grille de panneaux — `axes[i, j]` |
+| `fig.tight_layout()` | contre les chevauchements |
+| `ax.set_xlabel`, `set_title`, `set_xlim` | habiller |
+| `ax.spines[["top","right"]].set_visible(False)` | alléger le cadre |
+| `plt.cm.viridis` | palette lisible par tous |
+| `d.plot(kind=...)` | les graphiques directs de pandas |
+| `fig.savefig(..., bbox_inches="tight")` | enregistrer — **avant** `plt.show()` |
+
+# La suite
+
+Ce chapitre clôt le cours. Vous savez écrire du Python, manipuler des données, calculer et représenter — l'essentiel de ce qu'exige un travail empirique.
+
+Trois directions pour aller plus loin :
+
+- **statsmodels** — la régression avec tableaux de résultats et tests, dans l'esprit de `lm` en R ;
+- **scikit-learn** — l'apprentissage automatique, du plus simple au plus élaboré ;
+- **seaborn** — une surcouche de Matplotlib qui produit en une ligne les figures statistiques courantes.
+
+Tous s'appuient sur NumPy, pandas et Matplotlib, c'est-à-dire sur ce que vous venez d'apprendre.

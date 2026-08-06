@@ -1,0 +1,338 @@
+---
+title: "Les boucles"
+subtitle: "Informatique — Python, chapitre 4"
+sidebar: python
+include-after-body: ../../_includes/console.html
+---
+
+Répéter un traitement est la raison d'être d'un programme. Une opération appliquée à dix mille observations ne s'écrit pas dix mille fois : elle s'écrit une fois, dans une boucle.
+
+Python en propose deux — `for` quand on sait combien de tours, `while` quand on ne le sait pas — et introduit ici une règle de syntaxe qui le distingue de tous les langages vus jusqu'à présent : l'**indentation**.
+
+# 4.1 La boucle `for`
+
+## 4.1.1 Parcourir une liste
+
+```{=html}
+<div data-console data-engine="python" data-title="deux points, puis un décalage">
+villes = ["Tanger", "Rabat", "Fes"]
+
+for v in villes:
+    print(v)
+</div>
+```
+
+Trois éléments obligatoires : le mot `for`, les **deux points** en fin de ligne, et le **décalage** de la ligne suivante.
+
+::: {.callout-important}
+### L'indentation n'est pas une question de style
+
+Python n'a ni accolades ni `end`. C'est le **décalage** qui délimite le bloc à répéter.
+
+```python
+for v in villes:
+    print(v)          # dans la boucle
+print("fini")         # hors de la boucle : execute une seule fois
+```
+
+Un décalage oublié provoque `IndentationError`. Un décalage mal placé ne provoque **rien du tout** — le code s'exécute, mais pas comme vous le pensiez.
+
+La convention universelle est de **quatre espaces**. N'utilisez jamais de tabulations : mêlées à des espaces, elles produisent des erreurs incompréhensibles.
+:::
+
+## 4.1.2 Parcourir des nombres avec `range`
+
+```{=html}
+<div data-console data-engine="python" data-title="range(debut, fin, pas)">
+for i in range(5):
+    print(i)
+</div>
+```
+
+`range(5)` produit 0, 1, 2, 3, 4 — **cinq** valeurs, à partir de 0, et 5 n'y est pas. C'est la même convention que les tranches du chapitre 2.
+
+```{=html}
+<div data-console data-engine="python" data-title="les trois formes">
+print(list(range(5)))          # de 0 a 4
+print(list(range(2, 8)))       # de 2 a 7
+print(list(range(0, 20, 5)))   # de 0 a 19, par pas de 5
+print(list(range(10, 0, -1)))  # a rebours
+</div>
+```
+
+`range` ne crée pas la liste : il fabrique les valeurs une à une, à la demande. C'est pourquoi `range(1000000)` est instantané et ne consomme aucune mémoire. `list(...)` sert seulement à le rendre visible.
+
+## 4.1.3 Accumuler un résultat
+
+```{=html}
+<div data-console data-engine="python" data-title="préparer le contenant, puis le remplir">
+notes = [12, 8, 15, 6, 17]
+
+total = 0
+for n in notes:
+    total = total + n
+
+print(total)
+print(total / len(notes))
+</div>
+```
+
+Le motif est toujours le même : initialiser avant la boucle, cumuler dedans, utiliser après.
+
+```{=html}
+<div data-console data-engine="python" data-title="construire une liste">
+notes = [12, 8, 15, 6, 17]
+
+mentions = []
+for n in notes:
+    mentions.append("admis" if n >= 10 else "ajourne")
+
+print(mentions)
+</div>
+```
+
+# 4.2 Les compagnons indispensables de `for`
+
+## 4.2.1 `enumerate` : la position et la valeur
+
+```{=html}
+<div data-console data-engine="python" data-title="quand on a besoin de l'indice">
+villes = ["Tanger", "Rabat", "Fes"]
+
+for i, v in enumerate(villes):
+    print(f"{i} : {v}")
+
+for i, v in enumerate(villes, start=1):     # numeroter a partir de 1
+    print(f"{i}. {v}")
+</div>
+```
+
+::: {.callout-tip}
+### N'écrivez pas `for i in range(len(v))`
+
+```python
+for i in range(len(villes)):        # a eviter
+    print(i, villes[i])
+
+for i, v in enumerate(villes):      # preferable
+    print(i, v)
+```
+
+La seconde forme est plus courte, plus lisible, et supprime tout risque d'erreur d'indice. C'est l'une des marques d'un code Python idiomatique.
+:::
+
+## 4.2.2 `zip` : parcourir deux listes en parallèle
+
+```{=html}
+<div data-console data-engine="python" data-title="apparier deux listes">
+villes = ["Tanger", "Rabat", "Fes"]
+pib = [45.2, 62.1, 38.7]
+
+for v, p in zip(villes, pib):
+    print(f"{v:<8} {p:>6.1f}")
+</div>
+```
+
+`zip` s'arrête à la plus courte des deux listes, sans avertissement. Vérifiez que les longueurs correspondent.
+
+## 4.2.3 Parcourir une chaîne, un dictionnaire
+
+```{=html}
+<div data-console data-engine="python" data-title="tout ce qui est parcourable">
+for c in "abc":
+    print(c)
+
+for x in (1, 2, 3):        # un tuple
+    print(x)
+</div>
+```
+
+Toute structure contenant des éléments se parcourt de la même façon. Les dictionnaires du chapitre 7 également.
+
+# 4.3 La boucle `while`
+
+```{=html}
+<div data-console data-engine="python" data-title="répéter tant qu'une condition tient">
+capital = 1000
+annees = 0
+
+while capital < 2000:
+    capital = capital * 1.07
+    annees = annees + 1
+
+print(f"{annees} annees, capital final {capital:.2f}")
+</div>
+```
+
+`while` convient quand le nombre de tours dépend du calcul lui-même — ici, le temps de doublement à 7 %.
+
+::: {.callout-warning}
+### La boucle qui ne s'arrête jamais
+
+```python
+i = 0
+while i < 10:
+    print(i)          # i n'augmente jamais
+```
+
+Si la condition ne devient jamais fausse, la boucle tourne indéfiniment et fige le navigateur ou la console.
+
+Avant d'exécuter un `while`, vérifiez qu'une ligne à l'intérieur **fait progresser** la condition vers sa fin. En cas de blocage dans un terminal, `Ctrl + C` interrompt.
+:::
+
+# 4.4 Sortir ou passer
+
+```{=html}
+<div data-console data-engine="python" data-title="break et continue">
+v = [4, 8, 15, 16, 23, 42]
+
+for x in v:
+    if x > 15:
+        break          # on quitte la boucle
+    print(x)
+
+print("---")
+
+for x in v:
+    if x % 2 == 0:
+        continue       # on passe au tour suivant
+    print(x)           # n'affiche que les impairs
+</div>
+```
+
+`break` **quitte** la boucle, `continue` **saute** au tour suivant. Le premier sert typiquement à s'arrêter dès qu'on a trouvé ce qu'on cherchait.
+
+# 4.5 Les boucles imbriquées
+
+```{=html}
+<div data-console data-engine="python" data-title="une boucle dans une boucle">
+for i in range(1, 4):
+    for j in range(1, 4):
+        print(f"{i} x {j} = {i*j}", end="   ")
+    print()            # retour a la ligne apres chaque i
+</div>
+```
+
+Chaque niveau ajoute un décalage. L'argument `end=""` de `print` empêche le retour à la ligne automatique.
+
+::: {.callout-warning}
+### Le coût explose vite
+
+Deux boucles imbriquées sur 1 000 éléments font un **million** de tours. Trois en font un milliard.
+
+Sur des données de taille réelle, une boucle imbriquée est presque toujours le signe qu'il faut une autre approche — un dictionnaire (chapitre 7) ou une opération vectorisée NumPy (chapitre 8).
+:::
+
+# 4.6 Boucle ou compréhension ?
+
+Le chapitre précédent a introduit les compréhensions. Voici comment choisir.
+
+```{=html}
+<div data-console data-engine="python" data-title="strictement équivalents">
+v = [4, 8, 15, 16]
+
+carres = []
+for x in v:
+    carres.append(x ** 2)
+
+carres_bis = [x ** 2 for x in v]
+
+print(carres == carres_bis)
+</div>
+```
+
+| Situation | Écriture |
+|---|---|
+| transformer chaque élément | compréhension |
+| filtrer selon un critère | compréhension |
+| accumuler un total, un compteur | boucle |
+| chaque tour dépend du précédent | boucle |
+| plusieurs instructions par tour | boucle |
+| afficher, écrire dans un fichier | boucle |
+
+La compréhension **construit une liste**. Dès que le but est autre, la boucle s'impose.
+
+# 4.7 Un exemple complet
+
+```{=html}
+<div data-console data-engine="python" data-title="ce que vous ferez sur de vraies données">
+donnees = [
+    ("Tanger", 45.2, 11.2),
+    ("Rabat", 62.1, 8.4),
+    ("Fes", 38.7, 13.1),
+    ("Agadir", 29.3, 9.7),
+]
+
+print(f"{'Ville':<10}{'PIB':>8}{'Chomage':>10}")
+print("-" * 28)
+
+total_pib = 0
+fort_chomage = []
+
+for ville, pib, chomage in donnees:
+    print(f"{ville:<10}{pib:>8.1f}{chomage:>10.1f}")
+    total_pib += pib
+    if chomage > 10:
+        fort_chomage.append(ville)
+
+print("-" * 28)
+print(f"PIB total : {total_pib:.1f}")
+print(f"Chomage eleve : {', '.join(fort_chomage)}")
+</div>
+```
+
+Remarquez `for ville, pib, chomage in donnees` : chaque tuple est **décomposé** directement en trois variables. Et `total_pib += pib` est l'abréviation de `total_pib = total_pib + pib`.
+
+# À vous
+
+Écrivez une boucle qui parcourt les notes, compte les reçus, et affiche pour chacune son numéro, sa valeur et sa mention.
+
+```{=html}
+<div data-console data-engine="python" data-title="à compléter">
+notes = [12, 8, 15, 6, 17, 11]
+
+# a completer
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```python
+recus = 0
+
+for i, n in enumerate(notes, start=1):
+    if n >= 14:
+        mention = "bien"
+    elif n >= 10:
+        mention = "passable"
+    else:
+        mention = "insuffisant"
+
+    if n >= 10:
+        recus += 1
+
+    print(f"{i}. {n:>3}  {mention}")
+
+print(f"\n{recus} recus sur {len(notes)} ({recus/len(notes):.0%})")
+```
+
+Le `if / elif / else` employé ici fait l'objet du chapitre suivant. `enumerate(..., start=1)` numérote à partir de 1, plus naturel pour un affichage.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `for x in v:` | parcourir une liste, une chaîne, un tuple |
+| **quatre espaces** | l'indentation délimite le bloc — jamais de tabulation |
+| `range(5)`, `range(2, 8)`, `range(0, 20, 5)` | engendrer des nombres — fin exclue |
+| `enumerate(v)` | indice **et** valeur — mieux que `range(len(v))` |
+| `enumerate(v, start=1)` | numéroter à partir de 1 |
+| `zip(a, b)` | parcourir deux listes en parallèle |
+| `while cond:` | répéter tant que — vérifier qu'elle progresse |
+| `break`, `continue` | quitter la boucle, passer au tour suivant |
+| `total += x` | abréviation de `total = total + x` |
+| `for a, b in donnees:` | décomposer un tuple directement |
+
+Le chapitre suivant est consacré au **test** : faire dépendre l'exécution d'une condition, comme le `if` employé dans l'exercice ci-dessus.
