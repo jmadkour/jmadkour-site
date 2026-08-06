@@ -1,0 +1,270 @@
+---
+title: "Importer et enregistrer des données"
+subtitle: "Informatique — MATLAB, chapitre 7"
+sidebar: matlab
+include-after-body: ../../_includes/console.html
+---
+
+Jusqu'ici, toutes les matrices étaient tapées à la main. Dans la pratique, elles viennent d'un fichier — un CSV exporté d'une base, un classeur Excel reçu par courriel. Ce chapitre traite de ce passage et des quelques pièges qui font perdre une soirée à tout le monde au moins une fois.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des commandes à recopier
+
+Les blocs de ce chapitre supposent un fichier sur votre disque : ouvrez-les dans MATLAB Online ou Octave Online, où vous pourrez déposer vos propres données. Les commandes fonctionnent à l'identique dans les deux.
+:::
+
+# 7.1 Où MATLAB cherche-t-il les fichiers ?
+
+```matlab
+pwd                     % ou suis-je
+ls                      % que contient ce dossier
+cd('C:/Users/moi')      % aller ailleurs
+```
+
+Un chemin **relatif** part du dossier courant : `readmatrix('donnees/pib.csv')`. Un chemin **absolu** part de la racine du disque.
+
+::: {.callout-warning}
+### La barre oblique, dans le bon sens
+
+L'explorateur Windows affiche `C:\Users\moi`. Écrivez `C:/Users/moi` avec des barres normales : elles fonctionnent sous Windows comme sous macOS et Linux, et évitent toute interprétation de la barre inversée.
+
+Et n'inscrivez jamais un `cd` absolu dans un script destiné à circuler : il fonctionnera sur votre machine et sur aucune autre.
+:::
+
+# 7.2 Le format texte
+
+## 7.2.1 Un tableau purement numérique
+
+```matlab
+A = readmatrix('donnees.csv');
+size(A)
+```
+
+`readmatrix` renvoie une **matrice de nombres**. C'est la fonction à employer quand le fichier ne contient que des valeurs numériques — le cas le plus fréquent en calcul matriciel.
+
+```matlab
+A = readmatrix('donnees.csv', 'Delimiter', ';', 'DecimalSeparator', ',');
+A = readmatrix('donnees.csv', 'NumHeaderLines', 1);
+```
+
+::: {.callout-important}
+### Le CSV « français »
+
+Un tableur configuré en français exporte un fichier où le séparateur de colonnes est le **point-virgule** et le séparateur décimal la **virgule**. MATLAB attend l'inverse.
+
+Sans les options ci-dessus, `readmatrix` lit `12,5` comme deux colonnes, ou renvoie des `NaN` sur toute la colonne. Le symptôme : une matrice deux fois trop large, ou pleine de `NaN`.
+
+C'est exactement le même piège qu'en R et en Python. Il vaut pour tous les logiciels.
+:::
+
+## 7.2.2 Un tableau avec du texte
+
+```matlab
+T = readtable('donnees.csv');
+head(T)
+T.Properties.VariableNames
+```
+
+`readtable` construit une **table**, structure à colonnes nommées et de types mêlés — l'équivalent du *data frame* de R.
+
+```matlab
+T.pib                       % une colonne, par son nom
+T{:, 'pib'}                 % la meme, en matrice
+T(T.pib > 40, :)            % filtrer les lignes
+A = table2array(T(:, 2:4)); % convertir en matrice numerique
+```
+
+::: {.callout-tip}
+### Quelle fonction choisir
+
+| Contenu du fichier | Fonction |
+|---|---|
+| que des nombres | `readmatrix` |
+| noms de colonnes, texte, dates | `readtable` |
+| structure irrégulière | `readcell` |
+
+En pratique : `readtable` pour explorer et vérifier, puis `table2array` pour extraire la matrice numérique sur laquelle on calcule.
+
+Note : `readmatrix` et `readtable` sont récents. Sur d'anciennes versions ou sous Octave, employez `csvread`, `dlmread` ou `textscan`.
+:::
+
+# 7.3 Excel
+
+```matlab
+A = readmatrix('donnees.xlsx');
+T = readtable('donnees.xlsx', 'Sheet', '2023');
+A = readmatrix('donnees.xlsx', 'Range', 'B2:F120');
+
+[~, feuilles] = xlsfinfo('donnees.xlsx')    % lister les feuilles
+```
+
+Le tilde `~` remplace une sortie dont on ne veut pas : ici, on ignore la première et ne garde que la liste des feuilles.
+
+::: {.callout-tip}
+### Le meilleur conseil de ce chapitre
+
+Un classeur destiné à l'analyse doit contenir **un tableau et rien d'autre** : une ligne d'en-têtes, puis les données. Pas de titre fusionné, pas de ligne de totaux, pas de cellules colorées porteuses de sens, pas de commentaire en marge.
+
+Chaque fioriture devient un obstacle à l'import. Beaucoup de temps perdu sur MATLAB est en réalité du temps perdu sur un classeur mal conçu.
+:::
+
+# 7.4 Vérifier immédiatement
+
+```matlab
+size(A)                     % le bon nombre de lignes et colonnes ?
+sum(isnan(A(:)))            % combien de valeurs manquantes
+sum(isnan(A))               % par colonne
+min(A), max(A)              % des valeurs plausibles ?
+mean(A, 'omitnan')          % moyenne en ignorant les NaN
+```
+
+Ces cinq commandes prennent dix secondes et évitent des heures de perplexité.
+
+::: {.callout-important}
+### `NaN` se propage, comme le `NA` de R
+
+```matlab
+A = [1 2; 3 NaN];
+sum(A)                      % 4  NaN
+sum(A, 'omitnan')           % 4  2
+```
+
+Une seule valeur manquante suffit à rendre `NaN` toute une somme. C'est délibéré : MATLAB refuse de calculer en cachant qu'il manque des données.
+
+L'option `'omitnan'` existe sur `sum`, `mean`, `std`, `var`, `median`. C'est l'équivalent exact du `na.rm = TRUE` de R.
+:::
+
+```matlab
+lignes_completes = A(~any(isnan(A), 2), :);   % retirer les lignes incompletes
+A(isnan(A)) = 0;                              % remplacer par zero
+```
+
+La première ligne mérite d'être lue de l'intérieur : `isnan(A)` marque les manquantes, `any(..., 2)` repère les lignes en contenant au moins une, `~` inverse, et l'indexation logique ne garde que les lignes complètes. Le chapitre 9 détaille ce mécanisme.
+
+# 7.5 Enregistrer
+
+## 7.5.1 Vers un fichier texte
+
+```matlab
+writematrix(A, 'resultats.csv');
+writematrix(A, 'resultats.csv', 'Delimiter', ';');
+writetable(T, 'resultats.xlsx');
+```
+
+## 7.5.2 Le format propre à MATLAB
+
+```matlab
+save('travail.mat');                    % TOUTES les variables
+save('travail.mat', 'A', 'beta');       % seulement celles-ci
+load('travail.mat');                    % les recharger
+```
+
+| Format | Quand l'employer |
+|---|---|
+| CSV | échanger avec quelqu'un d'autre, ou un autre logiciel |
+| `.mat` | conserver des variables MATLAB avec leurs types intacts |
+| `.xlsx` | livrer un tableau à un lecteur non technique |
+
+::: {.callout-warning}
+### `load` écrase sans prévenir
+
+`load` réinjecte les variables **avec leurs noms d'origine**. Si votre session contient déjà un `A`, il est remplacé silencieusement.
+
+Deux parades : charger dans une structure — `S = load('travail.mat')`, puis `S.A` —, ou commencer tout script par `clear`.
+:::
+
+# 7.6 Nettoyer l'espace de travail
+
+```matlab
+who                     % quelles variables existent
+whos                    % avec leur taille et leur type
+clear A b               % supprimer certaines
+clear                   % tout supprimer
+clc                     % effacer l'affichage, sans toucher aux variables
+```
+
+::: {.callout-tip}
+### L'en-tête de tout script sérieux
+
+```matlab
+clear; close all; clc;
+rng(123);
+```
+
+`clear` élimine les variables d'un essai précédent, `close all` ferme les figures, `clc` nettoie l'écran, `rng` fixe la graine.
+
+Sans `clear`, un script peut fonctionner grâce à une variable oubliée en mémoire, et échouer chez votre lecteur. C'est un défaut de reproductibilité classique — et invisible tant qu'on ne redémarre pas.
+:::
+
+# 7.7 Un exemple complet
+
+```matlab
+clear; clc;
+
+T = readtable('villes.csv', 'Delimiter', ';', 'DecimalSeparator', ',');
+
+head(T)
+summary(T)
+
+X = table2array(T(:, {'pib', 'population'}));
+fprintf('%d lignes, %d colonnes\n', size(X, 1), size(X, 2));
+fprintf('valeurs manquantes : %d\n', sum(isnan(X(:))));
+
+X = X(~any(isnan(X), 2), :);
+
+pib_hab = X(:, 1) ./ X(:, 2);
+fprintf('PIB/hab moyen : %.2f\n', mean(pib_hab));
+
+writematrix([X pib_hab], 'resultats.csv', 'Delimiter', ';');
+```
+
+`fprintf` affiche du texte formaté : `%d` pour un entier, `%.2f` pour deux décimales, `\n` pour le retour à la ligne. C'est l'équivalent des f-strings de Python, et il sert dès qu'on veut un affichage lisible plutôt que le brut de MATLAB.
+
+# À vous
+
+Écrivez la séquence d'import d'un CSV français, les contrôles à effectuer, et le retrait des lignes incomplètes.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```matlab
+clear; clc;
+
+A = readmatrix('donnees.csv', ...
+               'Delimiter', ';', ...
+               'DecimalSeparator', ',', ...
+               'NumHeaderLines', 1);
+
+fprintf('dimensions : %d x %d\n', size(A, 1), size(A, 2));
+fprintf('manquantes : %d\n', sum(isnan(A(:))));
+disp(sum(isnan(A)));          % par colonne
+
+A = A(~any(isnan(A), 2), :);
+fprintf('apres nettoyage : %d lignes\n', size(A, 1));
+
+disp([min(A); max(A); mean(A)]);
+```
+
+Les trois points `...` prolongent une instruction sur la ligne suivante — indispensable dès qu'un appel comporte plusieurs options.
+
+Si `size(A, 2)` renvoie deux fois le nombre de colonnes attendu, c'est que le `'Delimiter'` est faux. Si la matrice est pleine de `NaN`, c'est le `'DecimalSeparator'`.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `pwd`, `ls`, `cd` | se repérer dans les dossiers |
+| `readmatrix` | fichier purement numérique |
+| `readtable` | colonnes nommées et types mêlés |
+| `'Delimiter', ';'` et `'DecimalSeparator', ','` | le CSV français |
+| `table2array` | passer d'une table à une matrice |
+| `sum(isnan(A(:)))` | compter les valeurs manquantes |
+| `mean(A, 'omitnan')` | calculer en les ignorant |
+| `A(~any(isnan(A), 2), :)` | ne garder que les lignes complètes |
+| `writematrix`, `writetable` | exporter |
+| `save`, `load` | format `.mat` — `load` écrase sans prévenir |
+| `clear; close all; clc;` | l'en-tête de tout script sérieux |
+| `fprintf('%.2f\n', x)` | affichage formaté |
+
+Le chapitre suivant met en images tout ce qui vient d'être calculé : les **graphiques** de MATLAB.

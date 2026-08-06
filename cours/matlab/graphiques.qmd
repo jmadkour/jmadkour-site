@@ -1,0 +1,401 @@
+---
+title: "Les graphiques"
+subtitle: "Informatique — MATLAB, chapitre 8"
+sidebar: matlab
+include-after-body: ../../_includes/console.html
+---
+
+MATLAB trace une courbe en une commande, et l'habille en quelques autres. Ses figures ont longtemps été la référence des publications scientifiques ; elles le restent en ingénierie et en finance quantitative.
+
+Les blocs de ce chapitre s'exécutent dans MATLAB Online ou Octave Online, où la figure s'affiche dans une fenêtre séparée.
+
+# 8.1 La courbe
+
+## 8.1.1 La commande minimale
+
+```{=html}
+<div data-octave data-file="plot-simple.m">
+```
+
+```matlab
+x = linspace(0, 2*pi, 100);
+y = sin(x);
+
+plot(x, y)
+```
+
+```{=html}
+</div>
+```
+
+`plot(x, y)` relie les points par des segments. Avec cent points, l'œil ne voit qu'une courbe lisse — c'est toute l'astuce.
+
+Avec **un seul** argument, `plot(y)` porte les valeurs en ordonnée et leur rang en abscisse : commode pour une série temporelle déjà ordonnée.
+
+## 8.1.2 Habiller
+
+```{=html}
+<div data-octave data-file="plot-habille.m">
+```
+
+```matlab
+x = linspace(0, 2*pi, 100);
+y = sin(x);
+
+plot(x, y, 'LineWidth', 2, 'Color', [0.18 0.49 0.66])
+xlabel('angle (radians)')
+ylabel('sin(x)')
+title('La fonction sinus')
+grid on
+xlim([0 2*pi])
+ylim([-1.2 1.2])
+```
+
+```{=html}
+</div>
+```
+
+| Commande | Effet |
+|---|---|
+| `xlabel`, `ylabel` | étiquettes des axes |
+| `title` | titre |
+| `legend` | légende |
+| `grid on` | quadrillage |
+| `xlim`, `ylim` | bornes des axes |
+| `axis equal` | même échelle sur les deux axes |
+
+## 8.1.3 Le raccourci de style
+
+```{=html}
+<div data-octave data-file="plot-style.m">
+```
+
+```matlab
+x = 0:0.5:10;
+
+plot(x, sin(x), 'r--o')
+```
+
+```{=html}
+</div>
+```
+
+Une chaîne de trois caractères condense couleur, trait et marqueur : `'r--o'` signifie rouge, tirets, cercles.
+
+| Couleur | Trait | Marqueur |
+|---|---|---|
+| `r` rouge, `b` bleu, `g` vert | `-` plein | `o` cercle |
+| `k` noir, `m` magenta | `--` tirets | `s` carré |
+| `c` cyan, `y` jaune | `:` pointillés | `^` triangle |
+| | `-.` trait-point | `*` étoile, `.` point |
+
+Pratique pour un essai rapide. Pour une figure publiable, préférez `'Color', [r g b]` qui donne accès à toutes les nuances.
+
+# 8.2 Superposer
+
+## 8.2.1 Plusieurs courbes d'un coup
+
+```{=html}
+<div data-octave data-file="plusieurs-courbes.m">
+```
+
+```matlab
+x = linspace(0, 2*pi, 100);
+
+plot(x, sin(x), 'LineWidth', 2)
+hold on
+plot(x, cos(x), '--', 'LineWidth', 2)
+hold off
+
+legend('sin(x)', 'cos(x)', 'Location', 'northeast')
+grid on
+title('Sinus et cosinus')
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-important}
+### `hold on`, sans quoi tout s'efface
+
+Par défaut, chaque `plot` **remplace** la figure précédente. `hold on` demande de superposer ; `hold off` rétablit le comportement normal.
+
+C'est l'oubli le plus fréquent du chapitre : on trace trois courbes, une seule apparaît.
+
+Alternative pour des données de même longueur : `plot(x, [sin(x)' cos(x)'])` trace une courbe **par colonne** de la matrice, sans `hold`.
+:::
+
+## 8.2.2 Ajouter des repères
+
+```{=html}
+<div data-octave data-file="reperes.m">
+```
+
+```matlab
+rand('seed', 3);
+x = randn(1, 200);
+
+plot(x, 'Color', [0.6 0.66 0.72])
+hold on
+yline(0, 'k--', 'LineWidth', 1.5)
+yline(mean(x), 'r-', 'LineWidth', 2)
+hold off
+
+legend('serie', 'zero', 'moyenne')
+title('Serie et sa moyenne')
+```
+
+```{=html}
+</div>
+```
+
+`yline` et `xline` tracent des lignes de repère horizontales et verticales. Sous Octave ou une ancienne version de MATLAB, employez `plot([1 200], [0 0], 'k--')`.
+
+# 8.3 Le nuage de points
+
+```{=html}
+<div data-octave data-file="nuage.m">
+```
+
+```matlab
+rand('seed', 11);
+x = randn(60, 1);
+y = 1.5 * x + randn(60, 1);
+
+scatter(x, y, 40, 'filled')
+hold on
+
+X = [ones(60, 1) x];
+beta = X \ y;
+xg = linspace(min(x), max(x), 2)';
+plot(xg, [ones(2,1) xg] * beta, 'r-', 'LineWidth', 2)
+hold off
+
+xlabel('x'), ylabel('y')
+title(sprintf('y = %.2f + %.2f x', beta(1), beta(2)))
+legend('observations', 'MCO', 'Location', 'northwest')
+grid on
+```
+
+```{=html}
+</div>
+```
+
+Le titre est construit par `sprintf`, qui formate comme `fprintf` mais renvoie une chaîne au lieu de l'afficher : les coefficients estimés apparaissent directement dans la figure.
+
+Le calcul de `beta` reprend l'opérateur `\` du chapitre 6.
+
+# 8.4 Les graphiques d'une variable
+
+```{=html}
+<div data-octave data-file="histogramme.m">
+```
+
+```matlab
+rand('seed', 7);
+x = 50 + 8 * randn(1, 500);
+
+hist(x, 25)
+xlabel('valeur')
+ylabel('effectif')
+title('Distribution simulee')
+```
+
+```{=html}
+</div>
+```
+
+Dans MATLAB récent, `histogram(x, 25)` remplace `hist` et offre davantage d'options — notamment `'Normalization', 'pdf'` pour passer en densité. `hist` reste compris par les deux logiciels.
+
+```{=html}
+<div data-octave data-file="barres-boites.m">
+```
+
+```matlab
+valeurs = [45.2 62.1 38.7 29.3];
+noms = {'Tanger', 'Rabat', 'Fes', 'Agadir'};
+
+bar(valeurs)
+set(gca, 'XTickLabel', noms)
+ylabel('PIB (milliards)')
+title('PIB par ville')
+```
+
+```{=html}
+</div>
+```
+
+`gca` désigne les axes courants (*get current axes*), et `set` en modifie une propriété — ici les étiquettes de l'axe des abscisses. C'est le mécanisme général de personnalisation de MATLAB.
+
+Notez les **accolades** : `{'Tanger', 'Rabat'}` est un *cell array*, la structure qui contient des chaînes de longueurs différentes. Des crochets colleraient les mots bout à bout.
+
+# 8.5 Plusieurs figures côte à côte
+
+```{=html}
+<div data-octave data-file="subplot.m">
+```
+
+```matlab
+rand('seed', 21);
+x = randn(1, 300);
+
+subplot(2, 2, 1)
+hist(x, 25)
+title('Histogramme')
+
+subplot(2, 2, 2)
+plot(cumsum(x))
+title('Somme cumulee')
+
+subplot(2, 2, 3)
+plot(x(1:end-1), x(2:end), '.')
+title('x(t) contre x(t-1)')
+
+subplot(2, 2, 4)
+boxplot(x)
+title('Boite a moustaches')
+```
+
+```{=html}
+</div>
+```
+
+`subplot(lignes, colonnes, position)` découpe la fenêtre. Les positions se numérotent **de gauche à droite, puis de haut en bas** — l'inverse de l'indexation matricielle du chapitre 2, qui parcourt les colonnes. C'est une incohérence du langage, à mémoriser telle quelle.
+
+# 8.6 Enregistrer
+
+```matlab
+print('figure.png', '-dpng', '-r300')
+print('figure.pdf', '-dpdf')
+saveas(gcf, 'figure.png')
+```
+
+| Format | Usage |
+|---|---|
+| PNG à 300 dpi | site web, présentation |
+| PDF | article, mémoire — vectoriel, ne pixelise jamais |
+| EPS | revues exigeant le format historique |
+
+`gcf` désigne la figure courante (*get current figure*), comme `gca` désigne les axes.
+
+::: {.callout-warning}
+### Fermez vos figures dans une boucle
+
+Une boucle qui trace cent figures en laisse cent ouvertes, et finit par saturer la mémoire.
+
+```matlab
+close all       % fermer toutes les figures
+close(gcf)      % fermer seulement la courante
+```
+
+C'est la raison du `close all` recommandé en tête de script au chapitre précédent.
+:::
+
+# 8.7 Quelques règles de lisibilité
+
+::: {.callout-tip}
+### Trois habitudes qui changent une figure
+
+**Ne codez pas une information par la seule couleur.** Environ 8 % des hommes distinguent mal le rouge du vert. Doublez toujours par un style de trait ou un marqueur — c'est aussi ce qui sauve une figure imprimée en noir et blanc.
+
+**Épaississez les traits.** `'LineWidth', 2` au lieu du défaut à 0,5 : projeté en amphithéâtre, l'écart est considérable.
+
+**Agrandissez les polices.** `set(gca, 'FontSize', 12)` avant l'export. Une figure conçue pour l'écran est presque toujours illisible sur papier une fois réduite.
+:::
+
+```{=html}
+<div data-octave data-file="figure-soignee.m">
+```
+
+```matlab
+x = linspace(0, 10, 200);
+
+figure('Position', [100 100 700 450])
+plot(x, exp(-x/3).*sin(x), 'LineWidth', 2, 'Color', [0.18 0.49 0.66])
+hold on
+plot(x, exp(-x/3), '--', 'LineWidth', 1.5, 'Color', [0.78 0.33 0.18])
+plot(x, -exp(-x/3), '--', 'LineWidth', 1.5, 'Color', [0.78 0.33 0.18])
+hold off
+
+xlabel('temps'), ylabel('amplitude')
+title('Oscillation amortie et son enveloppe')
+legend('signal', 'enveloppe', 'Location', 'northeast')
+grid on
+set(gca, 'FontSize', 12)
+```
+
+```{=html}
+</div>
+```
+
+Notez `exp(-x/3).*sin(x)` : le **point** est indispensable, puisqu'il s'agit de multiplier deux vecteurs terme à terme. Sans lui, MATLAB tenterait un produit matriciel entre deux vecteurs ligne et refuserait — l'erreur du chapitre 4, qui se manifeste ici très concrètement.
+
+# À vous
+
+Simulez une marche aléatoire de 200 pas, tracez-la avec sa moyenne, ajoutez un titre indiquant la valeur finale, et soignez la mise en forme.
+
+```{=html}
+<div data-octave data-file="exercice-graphiques.m">
+```
+
+```matlab
+rand('seed', 2024);
+
+% a completer
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```matlab
+rand('seed', 2024);
+n = 200;
+pas = randn(1, n);
+marche = cumsum(pas);
+
+figure('Position', [100 100 750 450])
+plot(marche, 'LineWidth', 1.8, 'Color', [0.18 0.49 0.66])
+hold on
+yline(0, 'k--')
+yline(mean(marche), 'r-', 'LineWidth', 1.5)
+hold off
+
+xlabel('temps'), ylabel('niveau')
+title(sprintf('Marche aleatoire : niveau final %.2f', marche(end)))
+legend('trajectoire', 'origine', 'moyenne', 'Location', 'best')
+grid on
+set(gca, 'FontSize', 12)
+
+print('marche.png', '-dpng', '-r300')
+```
+
+`cumsum` transforme des accroissements indépendants en une trajectoire — c'est la définition même d'une marche aléatoire.
+
+`'Location', 'best'` laisse MATLAB placer la légende là où elle masque le moins de données. Réexécutez avec une autre graine : la légende se déplacera d'elle-même.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `plot(x, y)` | courbe — **efface** la figure précédente |
+| `hold on` / `hold off` | superposer / cesser de superposer |
+| `'r--o'` | couleur, trait, marqueur en un raccourci |
+| `'LineWidth', 2`, `'Color', [r g b]` | mise en forme fine |
+| `xlabel`, `ylabel`, `title`, `legend`, `grid on` | habiller |
+| `xlim`, `ylim` | borner les axes |
+| `scatter` | nuage de points |
+| `hist`, `bar`, `boxplot` | distribution, barres, boîtes |
+| `yline`, `xline` | lignes de repère |
+| `subplot(m, n, k)` | grille — numérotée **par lignes** |
+| `gca`, `gcf` | axes courants, figure courante |
+| `sprintf` | construire un titre avec des valeurs calculées |
+| `print(..., '-dpng', '-r300')` | enregistrer |
+| `close all` | fermer les figures — indispensable en boucle |
+
+La première partie du cours s'achève. La seconde aborde la **programmation** : conditions, boucles et fonctions, en commençant par les opérateurs logiques.

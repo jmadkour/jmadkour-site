@@ -1,0 +1,528 @@
+---
+title: "Opérations sur les matrices"
+subtitle: "Informatique — MATLAB, chapitre 4"
+sidebar: matlab
+include-after-body: ../../_includes/console.html
+---
+
+Ce chapitre contient la distinction la plus importante de tout le cours : celle entre l'opération **matricielle** et l'opération **terme à terme**. Un point mal placé, et le calcul reste plausible tout en étant faux.
+
+C'est aussi ici que MATLAB montre sa supériorité d'écriture : la formule du tableau et le code se ressemblent au point de se confondre.
+
+# 4.1 Somme et différence
+
+```{=html}
+<div data-octave data-file="somme.m">
+```
+
+```matlab
+A = [1 2; 3 4];
+B = [5 6; 7 8];
+
+A + B
+A - B
+```
+
+```
+ans =
+
+    6    8
+   10   12
+
+ans =
+
+  -4  -4
+  -4  -4
+```
+
+```{=html}
+</div>
+```
+
+L'addition se fait terme à terme, et exige des dimensions **identiques**. Aucune ambiguïté ici : il n'existe qu'une seule façon d'additionner deux matrices.
+
+## 4.1.1 Ajouter un scalaire
+
+```{=html}
+<div data-octave data-file="scalaire.m">
+```
+
+```matlab
+A = [1 2; 3 4];
+
+A + 10
+A * 2
+```
+
+```
+ans =
+
+   11   12
+   13   14
+
+ans =
+
+   2   4
+   6   8
+```
+
+```{=html}
+</div>
+```
+
+Un nombre isolé s'applique à chaque élément. C'est la vectorisation, gratuite et implicite — aucune boucle n'est nécessaire.
+
+# 4.2 Le produit matriciel
+
+## 4.2.1 La règle des dimensions
+
+```{=html}
+<div data-octave data-file="produit.m">
+```
+
+```matlab
+A = [1 2 3; 4 5 6];
+B = [1 2; 3 4; 5 6];
+
+A * B
+size(A * B)
+```
+
+```
+ans =
+
+   22   28
+   49   64
+
+ans =
+
+   2   2
+```
+
+```{=html}
+</div>
+```
+
+Le produit $AB$ n'existe que si le nombre de **colonnes** de $A$ égale le nombre de **lignes** de $B$. Le résultat a les lignes de $A$ et les colonnes de $B$ : (2×3) × (3×2) donne 2×2.
+
+```matlab
+B * A
+```
+
+```
+ans =
+
+    9   12   15
+   19   26   33
+   29   40   51
+```
+
+Notez que `B * A` existe aussi, mais donne une matrice 3×3 : **le produit matriciel n'est pas commutatif**. Sur des matrices non carrées, l'un des deux produits est même souvent impossible.
+
+## 4.2.2 L'erreur de dimension
+
+```matlab
+A = [1 2 3];
+B = [4 5 6];
+A * B
+```
+
+```
+error: operator *: nonconformant arguments (op1 is 1x3, op2 is 1x3)
+```
+
+::: {.callout-important}
+### Le message le plus fréquent de MATLAB
+
+`nonconformant arguments` signale que les dimensions ne s'accordent pas. Il indique toujours les deux tailles en cause — lisez-les, elles disent tout.
+
+Ici, deux vecteurs **ligne** ne peuvent pas se multiplier. Il faut transposer l'un des deux :
+
+- `A * B'` donne un scalaire (1×3 fois 3×1) : le **produit scalaire**, soit 32 ;
+- `A' * B` donne une matrice 3×3 : le **produit extérieur**.
+
+Deux résultats radicalement différents selon la place de l'apostrophe.
+:::
+
+## 4.2.3 La transposée
+
+```{=html}
+<div data-octave data-file="transposee.m">
+```
+
+```matlab
+A = [1 2 3];
+B = [4 5 6];
+
+A * B'
+A' * B
+```
+
+```
+ans = 32
+
+ans =
+
+    4    5    6
+    8   10   12
+   12   15   18
+```
+
+```{=html}
+</div>
+```
+
+L'apostrophe est l'opérateur le plus employé de MATLAB. Il rend la traduction des formules quasi littérale : $X'X$ s'écrit `X' * X`.
+
+::: {.callout-warning}
+### `'` et `.'` diffèrent sur les nombres complexes
+
+`A'` est la transposée **conjuguée** ; `A.'` est la transposée simple.
+
+Sur des réels, les deux coïncident. Sur des complexes — analyse spectrale, séries de Fourier —, `'` change aussi le signe de la partie imaginaire.
+
+En économétrie appliquée aux données réelles, `'` suffit. Sachez seulement que la distinction existe.
+:::
+
+# 4.3 Les opérations terme à terme
+
+C'est le point central du chapitre.
+
+```{=html}
+<div data-octave data-file="terme-a-terme.m">
+```
+
+```matlab
+A = [1 2; 3 4];
+B = [5 6; 7 8];
+
+A * B
+A .* B
+```
+
+```
+ans =
+
+   19   22
+   43   50
+
+ans =
+
+    5   12
+   21   32
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-important}
+### Le point change tout
+
+`A * B` est le **produit matriciel** : combinaisons de lignes et de colonnes.
+
+`A .* B` est le produit **terme à terme** : chaque élément multiplié par son homologue.
+
+Les deux résultats n'ont rien de commun. Et sur deux matrices carrées de même taille, **les deux opérations sont valides** : aucune erreur ne vous avertira que vous avez écrit l'une pour l'autre.
+
+C'est l'erreur la plus coûteuse de MATLAB, précisément parce qu'elle est silencieuse.
+:::
+
+| Opérateur | Effet |
+|---|---|
+| `.*` | multiplication terme à terme |
+| `./` | division terme à terme |
+| `.^` | puissance terme à terme |
+| `.\` | division terme à terme, à gauche |
+
+```{=html}
+<div data-octave data-file="puissance.m">
+```
+
+```matlab
+A = [1 2; 3 4];
+
+A^2
+A.^2
+```
+
+```
+ans =
+
+    7   10
+   15   22
+
+ans =
+
+    1    4
+    9   16
+```
+
+```{=html}
+</div>
+```
+
+`A^2` est `A * A` — le produit matriciel de la matrice par elle-même. `A.^2` élève **chaque coefficient** au carré. Le premier vaut 7 en haut à gauche, le second 1.
+
+## 4.3.1 Quand employer lequel
+
+| Vous voulez | Écrivez |
+|---|---|
+| $X'X$, $AB$, $A^{-1}b$ | `*` — algèbre linéaire |
+| carrer chaque résidu | `.^2` |
+| multiplier deux séries observation par observation | `.*` |
+| rendements = variations / valeurs | `./` |
+| $A^n$ au sens matriciel | `^` |
+
+::: {.callout-tip}
+### La règle mnémotechnique
+
+Le point signifie « **élément par élément** ». Dès que votre formule mathématique porte un indice $i$ répété — $\sum_i x_i y_i$, $e_i^2$ —, c'est un point qu'il faut.
+
+Dès qu'elle s'écrit sans indice, en notation matricielle — $X'X$, $Ab$ —, l'opérateur est nu.
+:::
+
+# 4.4 L'expansion implicite
+
+```{=html}
+<div data-octave data-file="expansion.m">
+```
+
+```matlab
+A = [1 2 3; 4 5 6];
+v = [10 20 30];
+
+A + v
+A .* [1; 2]
+```
+
+```
+ans =
+
+   11   22   33
+   14   25   36
+
+ans =
+
+    1    2    3
+    8   10   12
+```
+
+```{=html}
+</div>
+```
+
+Un vecteur ligne s'applique à **chaque ligne** de la matrice ; un vecteur colonne, à chaque colonne. MATLAB étend automatiquement la dimension manquante — c'est l'*implicit expansion*, l'équivalent du *broadcasting* de NumPy.
+
+::: {.callout-warning}
+### Puissant, mais silencieux
+
+Centrer les colonnes d'une matrice s'écrit d'une ligne : `A - mean(A)`.
+
+Mais si vos dimensions ne sont pas celles que vous croyez, l'expansion produit un résultat de taille inattendue **sans aucune erreur**. Une opération entre un vecteur ligne et un vecteur colonne engendre une matrice entière.
+
+Vérifiez `size` du résultat quand il vous surprend.
+:::
+
+# 4.5 Les fonctions d'agrégation
+
+```{=html}
+<div data-octave data-file="agregation.m">
+```
+
+```matlab
+A = [1 2 3; 4 5 6];
+
+sum(A)
+sum(A, 2)
+sum(A(:))
+mean(A)
+max(A)
+```
+
+```
+ans =
+
+   5   7   9
+
+ans =
+
+    6
+   15
+
+ans = 21
+
+ans =
+
+   2.5000   3.5000   4.5000
+
+ans =
+
+   4   5   6
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-important}
+### Par défaut, MATLAB agrège **par colonnes**
+
+`sum(A)` renvoie la somme de chaque **colonne** — un vecteur ligne. Ce n'est pas la somme totale.
+
+- `sum(A, 2)` agrège par lignes ;
+- `sum(A(:))` ou `sum(sum(A))` donne la somme de tout.
+
+La convention vaut pour `mean`, `max`, `min`, `std`, `var`, `cumsum`. Elle est cohérente avec la logique « une colonne = une variable », qui est celle de toute l'analyse de données.
+:::
+
+```{=html}
+<div data-octave data-file="statistiques.m">
+```
+
+```matlab
+X = [2 4; 4 6; 6 8; 8 10];
+
+mean(X)
+std(X)
+var(X)
+median(X)
+```
+
+```
+ans =
+
+   5   7
+
+ans =
+
+   2.5820   2.5820
+
+ans =
+
+   6.6667   6.6667
+
+ans =
+
+   5   7
+```
+
+```{=html}
+</div>
+```
+
+`std` et `var` divisent par $n-1$ par défaut — l'estimateur sans biais, comme en R. Pour diviser par $n$, écrivez `std(X, 1)`.
+
+# 4.6 Un exemple : centrer et réduire
+
+```{=html}
+<div data-octave data-file="centrer-reduire.m">
+```
+
+```matlab
+X = [2 4; 4 6; 6 8; 8 10];
+
+Z = (X - mean(X)) ./ std(X)
+
+mean(Z)
+std(Z)
+```
+
+```
+Z =
+
+  -1.1619  -1.1619
+  -0.3873  -0.3873
+   0.3873   0.3873
+   1.1619   1.1619
+
+ans =
+
+   0   0
+
+ans =
+
+   1   1
+```
+
+```{=html}
+</div>
+```
+
+Une seule ligne centre et réduit toutes les colonnes à la fois. Elle combine tout le chapitre : l'expansion implicite soustrait un vecteur ligne à chaque ligne, et `./` divise **terme à terme** — un `/` nu déclencherait ici une résolution de système, sujet du chapitre 6.
+
+# À vous
+
+Soit $X$ une matrice de deux variables observées sur quatre individus, et $y$ un vecteur de réponses. Calculez $X'X$, $X'y$, la somme de chaque colonne de $X$, et le carré de chaque élément de $y$.
+
+```{=html}
+<div data-octave data-file="exercice-operations.m">
+```
+
+```matlab
+X = [1 2; 1 4; 1 6; 1 8];
+y = [3; 5; 8; 10];
+
+% a completer
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```matlab
+XtX = X' * X
+Xty = X' * y
+sommes = sum(X)
+carres = y.^2
+```
+
+```
+XtX =
+
+     4    20
+    20   120
+
+Xty =
+
+    26
+   162
+
+sommes =
+
+    4   20
+
+carres =
+
+     9
+    25
+    64
+   100
+```
+
+`X' * X` et `X' * y` sont les deux ingrédients de l'estimateur des moindres carrés $\hat\beta = (X'X)^{-1}X'y$. Le chapitre 6 montrera comment le résoudre — sans jamais inverser $X'X$.
+
+Notez `y.^2` avec le point : élever un vecteur colonne au carré au sens matriciel serait impossible, `y^2` exigeant une matrice carrée.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `A + B`, `A - B` | terme à terme, dimensions identiques |
+| `A + 10` | s'applique à chaque élément |
+| `A * B` | **produit matriciel** — colonnes de A = lignes de B |
+| `A'` | transposée — l'opérateur roi de MATLAB |
+| `A .* B`, `A ./ B`, `A .^ n` | **terme à terme** — le point change tout |
+| `A^2` vs `A.^2` | `A * A` vs chaque coefficient au carré |
+| `A + v` | expansion implicite — vérifiez `size` |
+| `sum(A)` | somme **par colonne** |
+| `sum(A, 2)`, `sum(A(:))` | par ligne, total |
+| `mean`, `std`, `var`, `median` | par colonne également |
+| `std` divise par $n-1$ | `std(X, 1)` pour diviser par $n$ |
+| `(X - mean(X)) ./ std(X)` | centrer et réduire en une ligne |
+
+Le chapitre suivant s'intéresse aux **matrices carrées** et à ce qui les caractérise : trace, déterminant, rang, inverse et valeurs propres.

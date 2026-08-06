@@ -1,0 +1,551 @@
+---
+title: "Les opérateurs logiques"
+subtitle: "Informatique — MATLAB, chapitre 9"
+sidebar: matlab
+include-after-body: ../../_includes/console.html
+---
+
+Voici le premier chapitre de la seconde partie. Il n'introduit pourtant aucune boucle ni aucun test : il montre au contraire comment s'en passer.
+
+L'**indexation logique** est ce qui distingue un programme MATLAB écrit par un débutant d'un programme écrit par quelqu'un qui a compris le langage. Elle remplace la plupart des boucles, en une ligne et cent fois plus vite.
+
+# 9.1 Comparer
+
+```{=html}
+<div data-octave data-file="comparer.m">
+```
+
+```matlab
+v = [4 8 15 16 23 42];
+
+v > 15
+v == 16
+v ~= 8
+```
+
+```
+ans =
+
+  0  0  0  1  1  1
+
+ans =
+
+  0  0  0  1  0  0
+
+ans =
+
+  1  0  1  1  1  1
+```
+
+```{=html}
+</div>
+```
+
+Une comparaison sur un vecteur renvoie **un vecteur de 0 et de 1**, de même taille : une réponse par élément. C'est le point de départ de tout le chapitre.
+
+| Opérateur | Signification |
+|---|---|
+| `>` `<` `>=` `<=` | comparaisons d'ordre |
+| `==` | égal — **deux** signes |
+| `~=` | différent — le tilde, pas le point d'exclamation |
+
+::: {.callout-warning}
+### `=` et `==` ne font pas la même chose
+
+`x = 5` **range** 5 dans `x`. `x == 5` **demande** si `x` vaut 5.
+
+MATLAB refuse `if x = 5` avec une erreur de syntaxe, ce qui limite les dégâts. Mais l'inverse — écrire `==` là où il fallait affecter — produit un `ans` inutilisé, et la variable attendue n'est jamais créée.
+:::
+
+# 9.2 Combiner
+
+```{=html}
+<div data-octave data-file="combiner.m">
+```
+
+```matlab
+v = [4 8 15 16 23 42];
+
+(v > 10) & (v < 30)
+(v < 10) | (v > 30)
+~(v > 15)
+```
+
+```
+ans =
+
+  0  0  1  1  1  0
+
+ans =
+
+  1  1  0  0  0  1
+
+ans =
+
+  1  1  1  0  0  0
+```
+
+```{=html}
+</div>
+```
+
+| Opérateur | Sens |
+|---|---|
+| `&` | ET, élément par élément |
+| `\|` | OU, élément par élément |
+| `~` | NON |
+| `xor(a, b)` | OU exclusif |
+
+::: {.callout-important}
+### `&` et `&&` ne sont pas interchangeables
+
+`&` opère **élément par élément** et renvoie un vecteur : c'est celui de l'indexation.
+
+`&&` n'accepte que des valeurs **uniques** et renvoie une seule réponse : c'est celui du `if`, au chapitre suivant.
+
+Appliqué à un vecteur, `&&` déclenche une erreur. Employé dans un `if`, `&` fonctionne mais teste une condition globale surprenante — nous y revenons en 9.5.
+
+Règle simple : **`&` dans des crochets, `&&` dans un `if`**.
+:::
+
+Les parenthèses autour de chaque condition ne sont pas obligatoires en MATLAB, mais prenez l'habitude : elles le sont en NumPy, et elles rendent l'intention explicite.
+
+# 9.3 L'indexation logique
+
+C'est le cœur du chapitre.
+
+```{=html}
+<div data-octave data-file="indexation-logique.m">
+```
+
+```matlab
+v = [4 8 15 16 23 42];
+
+masque = v > 15
+v(masque)
+v(v > 15)
+```
+
+```
+masque =
+
+  0  0  0  1  1  1
+
+ans =
+
+   16   23   42
+
+ans =
+
+   16   23   42
+```
+
+```{=html}
+</div>
+```
+
+Un vecteur de 0 et de 1 placé entre parenthèses ne désigne pas des positions : il **sélectionne** les éléments marqués 1. C'est le même mécanisme qu'en R.
+
+## 9.3.1 Compter et calculer
+
+```{=html}
+<div data-octave data-file="compter.m">
+```
+
+```matlab
+v = [4 8 15 16 23 42];
+
+sum(v > 15)
+mean(v > 15)
+sum(v(v > 15))
+mean(v(v > 15))
+```
+
+```
+ans = 3
+ans = 0.5000
+ans = 81
+ans = 27
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-tip}
+### Le raccourci le plus rentable de MATLAB
+
+Un `1` logique vaut 1, un `0` vaut 0. Donc :
+
+- `sum(condition)` **compte** les cas vérifiant la condition ;
+- `mean(condition)` en donne directement la **proportion**.
+
+`mean(rendements < 0)` livre la fréquence des séances de baisse en une ligne. C'est le même raccourci qu'en R et en NumPy.
+:::
+
+## 9.3.2 Modifier par condition
+
+```{=html}
+<div data-octave data-file="modifier-condition.m">
+```
+
+```matlab
+v = [4 8 15 16 23 42];
+
+v(v > 20) = 0
+v(v == 0) = NaN
+```
+
+```
+v =
+
+    4    8   15   16    0    0
+
+v =
+
+     4     8    15    16   NaN   NaN
+```
+
+```{=html}
+</div>
+```
+
+Une seule ligne remplace ce qu'une boucle avec test ferait en cinq. C'est ainsi qu'on code les valeurs aberrantes en manquantes : `revenu(revenu > 1e6) = NaN`.
+
+## 9.3.3 Sur une matrice
+
+```{=html}
+<div data-octave data-file="matrice-logique.m">
+```
+
+```matlab
+A = [1 -2 3; -4 5 -6];
+
+A > 0
+A(A > 0)'
+A(A < 0) = 0
+```
+
+```
+ans =
+
+  1  0  1
+  0  1  0
+
+ans =
+
+   1   5   3
+
+ans =
+
+   1   0   3
+   0   5   0
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-warning}
+### L'extraction aplatit toujours
+
+`A(A > 0)` renvoie un **vecteur colonne**, jamais une matrice : les éléments retenus ne formeraient pas un rectangle.
+
+Et l'ordre suit le parcours **par colonnes** du chapitre 2 : ici 1, puis 5, puis 3.
+
+L'affectation, elle, conserve la forme : `A(A < 0) = 0` laisse `A` en 2×3.
+:::
+
+# 9.4 Localiser
+
+```{=html}
+<div data-octave data-file="find.m">
+```
+
+```matlab
+v = [4 8 15 16 23 42];
+
+find(v > 15)
+find(v > 15, 1)
+[~, imax] = max(v)
+```
+
+```
+ans =
+
+   4   5   6
+
+ans = 4
+imax = 6
+```
+
+```{=html}
+</div>
+```
+
+`find` convertit un masque logique en **positions**. Le second argument limite le nombre de résultats : `find(cond, 1)` donne la première occurrence, ce qui évite de parcourir tout le vecteur.
+
+`[~, imax] = max(v)` récupère la position du maximum en ignorant sa valeur, grâce au tilde vu au chapitre 7.
+
+::: {.callout-tip}
+### Masque ou `find` ?
+
+Pour **extraire ou modifier**, le masque suffit et va plus vite : `v(v > 15)`.
+
+Pour connaître les **positions** — les afficher, les recouper avec un autre tableau, s'arrêter à la première —, il faut `find`.
+
+Écrire `v(find(v > 15))` fonctionne mais fait un détour inutile.
+:::
+
+```{=html}
+<div data-octave data-file="find-matrice.m">
+```
+
+```matlab
+A = [1 -2 3; -4 5 -6];
+
+[lig, col] = find(A < 0)
+```
+
+```
+lig =
+
+   2
+   1
+   2
+
+col =
+
+   1
+   2
+   3
+```
+
+```{=html}
+</div>
+```
+
+Avec deux sorties, `find` renvoie les indices de ligne et de colonne — la façon de localiser précisément les valeurs problématiques d'un tableau importé.
+
+# 9.5 `any` et `all`
+
+```{=html}
+<div data-octave data-file="any-all.m">
+```
+
+```matlab
+v = [4 8 15 16 23 42];
+
+any(v > 40)
+all(v > 0)
+any(isnan(v))
+```
+
+```
+ans = 1
+ans = 1
+ans = 0
+```
+
+```{=html}
+</div>
+```
+
+`any` répond « au moins un », `all` répond « tous ». Ces deux fonctions **réduisent** un vecteur logique à une seule valeur — ce qu'un `if` exige.
+
+```{=html}
+<div data-octave data-file="any-all-matrice.m">
+```
+
+```matlab
+A = [1 NaN 3; 4 5 6];
+
+any(isnan(A))
+any(isnan(A), 2)
+any(isnan(A(:)))
+A(~any(isnan(A), 2), :)
+```
+
+```
+ans =
+
+  0  1  0
+
+ans =
+
+  1
+  0
+
+ans = 1
+
+ans =
+
+   4   5   6
+```
+
+```{=html}
+</div>
+```
+
+Comme toutes les fonctions d'agrégation du chapitre 4, `any` travaille **par colonne** par défaut ; `any(..., 2)` travaille par ligne.
+
+La dernière expression est celle rencontrée au chapitre 7 : elle ne garde que les lignes sans valeur manquante. Vous pouvez maintenant la lire entièrement.
+
+::: {.callout-important}
+### Pourquoi `if v > 0` est piégeux
+
+```matlab
+v = [1 -2 3];
+if v > 0
+    disp('tous positifs')
+end
+```
+
+Rien ne s'affiche — et c'est heureux. Mais avec `v = [1 2 -3]`, rien non plus, alors qu'avec `v = [1 2 3]` le message apparaît.
+
+MATLAB considère un `if` comme vrai si **tous** les éléments le sont : `if v > 0` équivaut à `if all(v > 0)`. Cette règle implicite est une source de bugs classiques.
+
+Écrivez toujours explicitement `if all(v > 0)` ou `if any(v > 0)`. L'intention devient lisible, et le comportement certain.
+:::
+
+# 9.6 Comparer des nombres à virgule
+
+```{=html}
+<div data-octave data-file="tolerance.m">
+```
+
+```matlab
+a = 0.1 + 0.2;
+
+a == 0.3
+abs(a - 0.3) < 1e-12
+```
+
+```
+ans = 0
+ans = 1
+```
+
+```{=html}
+</div>
+```
+
+Le chapitre 1 l'avait annoncé ; c'est dans une condition que le problème se manifeste. Ne testez jamais l'égalité de deux nombres à virgule par `==` : comparez leur écart à une tolérance.
+
+Sur des vecteurs, `all(abs(a - b) < 1e-12)` fait le même travail.
+
+# 9.7 Un exemple complet
+
+```{=html}
+<div data-octave data-file="exemple-logique.m">
+```
+
+```matlab
+rand('seed', 17);
+rendements = 0.0004 + 0.012 * randn(1, 250);
+
+nb_baisses = sum(rendements < 0);
+freq = mean(rendements < 0);
+
+perte_max = min(rendements);
+[~, jour] = min(rendements);
+
+seuil = -0.02;
+chocs = find(rendements < seuil);
+
+fprintf('seances de baisse : %d (%.1f %%)\n', nb_baisses, 100*freq);
+fprintf('pire seance : %.2f %% au jour %d\n', 100*perte_max, jour);
+fprintf('chocs sous %.0f %% : %d\n', 100*seuil, numel(chocs));
+
+VaR95 = -quantile(rendements, 0.05);
+fprintf('VaR 95 %% : %.2f %%\n', 100*VaR95);
+```
+
+```
+seances de baisse : 122 (48.8 %)
+pire seance : -3.24 % au jour 68
+chocs sous -2 % : 6
+VaR 95 % : 1.90 %
+```
+
+```{=html}
+</div>
+```
+
+Tout le chapitre est ici : comptages par `sum`, proportion par `mean`, localisation par `find` et par la seconde sortie de `min`. Aucune boucle, et une lecture directe de ce que le code calcule.
+
+# À vous
+
+Sur une série de notes, comptez les reçus, extrayez les mentions, localisez la meilleure copie, et remplacez les notes aberrantes par `NaN`.
+
+```{=html}
+<div data-octave data-file="exercice-logique.m">
+```
+
+```matlab
+notes = [12 8 15 6 17 11 25 14 -3 9];
+
+% a completer
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```matlab
+valides = (notes >= 0) & (notes <= 20);
+notes(~valides) = NaN
+
+nb_recus = sum(notes >= 10)
+taux = mean(notes >= 10, 'omitnan')
+
+mentions = notes(notes >= 14)
+[meilleure, rang] = max(notes)
+
+any(isnan(notes))
+sum(isnan(notes))
+```
+
+```
+notes =
+
+    12     8    15     6    17    11   NaN    14   NaN     9
+
+nb_recus = 5
+taux = 0.6250
+mentions =
+
+   15   17   14
+
+meilleure = 17
+rang = 5
+ans = 1
+ans = 2
+```
+
+Le masque `valides` combine deux conditions, et `~valides` désigne les aberrantes : 25 et −3 deviennent `NaN`.
+
+Attention à `nb_recus` : `sum` compte 5 parce que `NaN >= 10` vaut faux — heureusement. Mais `mean` sans `'omitnan'` aurait renvoyé `NaN`. La différence de traitement entre les deux fonctions est exactement le genre de détail qui fausse un résultat sans prévenir.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `v > 15`, `v == 16`, `v ~= 8` | comparer — un résultat par élément |
+| `&`, `\|`, `~` | combiner **élément par élément** |
+| `&&`, `\|\|` | pour un `if` seulement, sur une valeur unique |
+| `v(v > 15)` | indexation logique — extraire |
+| `v(v > 20) = 0` | modifier par condition |
+| `sum(cond)`, `mean(cond)` | compter, calculer une proportion |
+| `find(cond)`, `find(cond, 1)` | positions, première position |
+| `[lig, col] = find(A < 0)` | localiser dans une matrice |
+| `any`, `all` | au moins un, tous — réduisent à une valeur |
+| `if all(...)`, `if any(...)` | **toujours** expliciter dans un `if` |
+| `A(~any(isnan(A), 2), :)` | ne garder que les lignes complètes |
+| `abs(a - b) < 1e-12` | comparer des nombres à virgule |
+
+Le chapitre suivant introduit enfin les **boucles et les tests** — en montrant que la moitié d'entre eux étaient évitables.

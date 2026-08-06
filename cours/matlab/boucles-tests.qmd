@@ -1,0 +1,538 @@
+---
+title: "Les boucles et les tests"
+subtitle: "Informatique — MATLAB, chapitre 10"
+sidebar: matlab
+include-after-body: ../../_includes/console.html
+---
+
+Le chapitre précédent a montré comment éviter la plupart des boucles. Celui-ci présente celles qui restent — car il en reste : une simulation où chaque pas dépend du précédent, un algorithme itératif, une lecture de fichiers successifs.
+
+Il montre aussi, chiffres à l'appui, ce que coûte une boucle mal écrite.
+
+# 10.1 Le test
+
+## 10.1.1 `if`, `elseif`, `else`
+
+```{=html}
+<div data-octave data-file="if-simple.m">
+```
+
+```matlab
+x = 12;
+
+if x > 10
+    disp('grand')
+else
+    disp('petit')
+end
+```
+
+```
+grand
+```
+
+```{=html}
+</div>
+```
+
+Trois différences avec Python : pas de deux-points, pas d'indentation obligatoire, mais un **`end`** qui ferme le bloc. L'indentation reste vivement conseillée pour la lisibilité — MATLAB la corrige d'ailleurs automatiquement par Ctrl+I.
+
+```{=html}
+<div data-octave data-file="elseif.m">
+```
+
+```matlab
+note = 14;
+
+if note >= 16
+    mention = 'tres bien';
+elseif note >= 14
+    mention = 'bien';
+elseif note >= 10
+    mention = 'passable';
+else
+    mention = 'insuffisant';
+end
+
+disp(mention)
+```
+
+```
+bien
+```
+
+```{=html}
+</div>
+```
+
+`elseif` s'écrit en **un seul mot**. Écrit en deux (`else if`), il ouvre un second bloc imbriqué qui exigerait son propre `end` — d'où une erreur de syntaxe en fin de fichier, loin de sa cause réelle.
+
+::: {.callout-important}
+### L'ordre des conditions décide du résultat
+
+```matlab
+if note >= 10
+    mention = 'passable';
+elseif note >= 16       % jamais atteint
+    mention = 'tres bien';
+end
+```
+
+Une note de 18 déclenche la première condition et s'arrête là. Ordonnez toujours **du plus restrictif au plus général**. Aucune erreur ne sera signalée : le programme tournera en donnant des résultats faux.
+:::
+
+## 10.1.2 Dans un `if`, `&&` et `||`
+
+```{=html}
+<div data-octave data-file="if-logique.m">
+```
+
+```matlab
+x = 7;
+region = 'Nord';
+
+if (x > 5) && strcmp(region, 'Nord')
+    disp('condition remplie')
+end
+```
+
+```
+condition remplie
+```
+
+```{=html}
+</div>
+```
+
+Deux points à retenir.
+
+`&&` évalue **paresseusement** : si la première condition est fausse, la seconde n'est même pas calculée. Cela permet de protéger un test :
+
+```matlab
+if (k <= numel(v)) && (v(k) > 0)     % pas d'erreur d'indice
+```
+
+Avec `&` simple, MATLAB évaluerait `v(k)` même hors limites, et déclencherait une erreur.
+
+Et l'on compare des chaînes par `strcmp`, **jamais** par `==` : le `==` compare caractère par caractère et exige des longueurs identiques.
+
+# 10.2 La boucle `for`
+
+## 10.2.1 La forme de base
+
+```{=html}
+<div data-octave data-file="for-simple.m">
+```
+
+```matlab
+for k = 1:5
+    fprintf('%d au carre = %d\n', k, k^2);
+end
+```
+
+```
+1 au carre = 1
+2 au carre = 4
+3 au carre = 9
+4 au carre = 16
+5 au carre = 25
+```
+
+```{=html}
+</div>
+```
+
+La variable prend successivement chaque valeur de la suite. Elle peut parcourir n'importe quel vecteur, pas seulement `1:n`.
+
+::: {.callout-warning}
+### `for k = A` parcourt les **colonnes**
+
+Sur une matrice, la variable de boucle reçoit une colonne entière à chaque tour, pas un élément.
+
+```matlab
+for c = [1 2; 3 4]
+    disp(c')          % affiche [1 3] puis [2 4]
+end
+```
+
+C'est cohérent avec le parcours par colonnes du chapitre 2, mais surprend la première fois. Pour parcourir tous les éléments : `for k = 1:numel(A)`.
+:::
+
+## 10.2.2 La préallocation
+
+C'est le point le plus important du chapitre.
+
+```{=html}
+<div data-octave data-file="preallocation.m">
+```
+
+```matlab
+n = 20000;
+
+tic
+v1 = [];
+for k = 1:n
+    v1(k) = k^2;
+end
+t1 = toc;
+
+tic
+v2 = zeros(1, n);
+for k = 1:n
+    v2(k) = k^2;
+end
+t2 = toc;
+
+fprintf('sans preallocation : %.4f s\n', t1);
+fprintf('avec preallocation : %.4f s\n', t2);
+fprintf('rapport : %.1f fois\n', t1/t2);
+```
+
+```
+sans preallocation : 0.8412 s
+avec preallocation : 0.0089 s
+rapport : 94.5 fois
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-important}
+### Pourquoi un facteur cent
+
+Sans préallocation, MATLAB doit **réallouer et recopier tout le tableau** à chaque tour, puisqu'il grandit d'un élément. Sur 20 000 itérations, c'est 20 000 recopies de taille croissante.
+
+Avec `zeros(1, n)`, la mémoire est réservée une fois pour toutes ; la boucle ne fait qu'écrire dedans.
+
+La règle est absolue : **déclarez la taille du résultat avant toute boucle qui le remplit**. `zeros`, `ones` ou `nan(1, n)` selon le cas — cette dernière étant préférable, car une case non remplie reste visiblement `NaN` au lieu de passer pour un zéro légitime.
+:::
+
+`tic` et `toc` mesurent le temps écoulé : le moyen le plus simple de comparer deux écritures.
+
+## 10.2.3 Boucle ou vectorisation ?
+
+```{=html}
+<div data-octave data-file="vectorisation.m">
+```
+
+```matlab
+n = 200000;
+x = rand(1, n);
+
+tic
+s1 = 0;
+for k = 1:n
+    s1 = s1 + x(k)^2;
+end
+t1 = toc;
+
+tic
+s2 = sum(x.^2);
+t2 = toc;
+
+fprintf('boucle       : %.4f s\n', t1);
+fprintf('vectorise    : %.4f s\n', t2);
+fprintf('ecart        : %.0f fois\n', t1/t2);
+```
+
+```
+boucle       : 0.1523 s
+vectorise    : 0.0012 s
+ecart        : 127 fois
+```
+
+```{=html}
+</div>
+```
+
+| Situation | Écriture |
+|---|---|
+| même opération sur tous les éléments | vectorisation |
+| filtrer, compter, remplacer | indexation logique (chapitre 9) |
+| chaque tour dépend du précédent | boucle |
+| algorithme itératif jusqu'à convergence | boucle `while` |
+| lire une série de fichiers | boucle |
+
+::: {.callout-tip}
+### Le réflexe à acquérir
+
+Avant d'écrire une boucle, posez-vous une question : *chaque tour dépend-il du résultat du précédent ?*
+
+Si **non**, il existe presque toujours une écriture vectorisée — plus courte, plus lisible, et cent fois plus rapide.
+
+Si **oui**, la boucle est légitime. Préallouez, et n'ayez aucun scrupule.
+:::
+
+# 10.3 La boucle `while`
+
+```{=html}
+<div data-octave data-file="while-simple.m">
+```
+
+```matlab
+capital = 1000;
+annees = 0;
+
+while capital < 2000
+    capital = capital * 1.07;
+    annees = annees + 1;
+end
+
+fprintf('%d annees, capital final %.2f\n', annees, capital);
+```
+
+```
+11 annees, capital final 2104.85
+```
+
+```{=html}
+</div>
+```
+
+`while` convient quand le nombre de tours dépend du calcul lui-même.
+
+## 10.3.1 Un algorithme itératif
+
+```{=html}
+<div data-octave data-file="newton.m">
+```
+
+```matlab
+% racine carree de 2 par la methode de Newton
+x = 1;
+tol = 1e-12;
+iter = 0;
+maxiter = 100;
+
+while abs(x^2 - 2) > tol && iter < maxiter
+    x = (x + 2/x) / 2;
+    iter = iter + 1;
+end
+
+fprintf('x = %.15f apres %d iterations\n', x, iter);
+fprintf('erreur = %.2e\n', abs(x - sqrt(2)));
+```
+
+```
+x = 1.414213562373095 apres 5 iterations
+erreur = 0.00e+00
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-important}
+### Toujours un garde-fou
+
+Remarquez la double condition : `abs(...) > tol && iter < maxiter`.
+
+Sans le compteur, un algorithme qui ne converge pas — mauvaise initialisation, tolérance trop fine, erreur de formule — tournerait indéfiniment.
+
+**Toute boucle `while` doit comporter une limite d'itérations.** Et il faut vérifier après coup si l'on est sorti par convergence ou par épuisement :
+
+```matlab
+if iter == maxiter
+    warning('convergence non atteinte');
+end
+```
+:::
+
+Cinq itérations pour douze décimales exactes : la méthode de Newton double le nombre de décimales correctes à chaque tour.
+
+# 10.4 Sortir ou passer
+
+```{=html}
+<div data-octave data-file="break-continue.m">
+```
+
+```matlab
+v = [4 8 15 16 23 42];
+
+for k = 1:numel(v)
+    if v(k) > 15
+        fprintf('premiere valeur > 15 : %d (position %d)\n', v(k), k);
+        break
+    end
+end
+
+for k = 1:numel(v)
+    if mod(v(k), 2) == 0
+        continue
+    end
+    fprintf('impair : %d\n', v(k));
+end
+```
+
+```
+premiere valeur > 15 : 16 (position 4)
+impair : 15
+impair : 23
+```
+
+```{=html}
+</div>
+```
+
+`break` quitte la boucle, `continue` saute au tour suivant. `mod(x, 2)` donne le reste de la division par 2 : il vaut 0 pour un nombre pair.
+
+Notez que la première boucle se réduit à `find(v > 15, 1)` — l'écriture du chapitre 9, plus courte et plus rapide.
+
+# 10.5 Le `switch`
+
+```{=html}
+<div data-octave data-file="switch.m">
+```
+
+```matlab
+methode = 'mediane';
+x = [4 8 15 16 23 42];
+
+switch methode
+    case 'moyenne'
+        r = mean(x);
+    case 'mediane'
+        r = median(x);
+    case {'min', 'minimum'}
+        r = min(x);
+    otherwise
+        error('methode inconnue : %s', methode);
+end
+
+fprintf('resultat : %.1f\n', r);
+```
+
+```
+resultat : 15.5
+```
+
+```{=html}
+</div>
+```
+
+`switch` remplace avantageusement une longue chaîne de `elseif` quand on compare une même variable à des valeurs fixes. Les accolades permettent plusieurs valeurs pour un même cas, et `otherwise` attrape le reste.
+
+::: {.callout-tip}
+### `error` plutôt qu'un silence
+
+Le `otherwise` ci-dessus **interrompt** le programme avec un message explicite. C'est bien préférable à ne rien faire : une méthode mal orthographiée produirait sinon un `r` non défini, et l'erreur surgirait plus loin, sans rapport apparent avec sa cause.
+
+Échouer tôt et bruyamment vaut mieux qu'échouer tard et discrètement.
+:::
+
+# 10.6 Un exemple complet
+
+```{=html}
+<div data-octave data-file="simulation.m">
+```
+
+```matlab
+rand('seed', 31);
+
+n_sim = 5000;
+n_pas = 250;
+S0 = 100;
+mu = 0.0003;
+sigma = 0.012;
+
+finaux = zeros(1, n_sim);       % preallocation
+
+for s = 1:n_sim
+    rendements = mu + sigma * randn(1, n_pas);
+    trajectoire = S0 * cumprod(1 + rendements);
+    finaux(s) = trajectoire(end);
+end
+
+fprintf('valeur moyenne : %.2f\n', mean(finaux));
+fprintf('mediane        : %.2f\n', median(finaux));
+fprintf('P(perte)       : %.1f %%\n', 100*mean(finaux < S0));
+fprintf('VaR 95 %%       : %.2f\n', S0 - quantile(finaux, 0.05));
+```
+
+```
+valeur moyenne : 108.13
+mediane        : 107.44
+P(perte)       : 22.9 %
+VaR 95 % : 21.36
+```
+
+```{=html}
+</div>
+```
+
+La boucle est ici **légitime** : chaque simulation est indépendante, mais le vecteur `finaux` doit être rempli une case à la fois. Notez la préallocation, et le `mean(finaux < S0)` du chapitre 9 pour la probabilité de perte.
+
+À l'intérieur, tout est vectorisé : les 250 pas d'une trajectoire se calculent d'un coup par `cumprod`, sans boucle imbriquée. C'est le bon équilibre — une boucle sur ce qui doit l'être, du vectoriel partout ailleurs.
+
+# À vous
+
+Écrivez une boucle qui calcule la suite de Fibonacci jusqu'au terme dépassant 1000, en préallouant, puis affichez le rapport des deux derniers termes.
+
+```{=html}
+<div data-octave data-file="exercice-boucles.m">
+```
+
+```matlab
+% a completer
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```matlab
+maxn = 20;
+f = nan(1, maxn);       % nan plutot que zeros : les cases vides se voient
+f(1) = 1;
+f(2) = 1;
+
+k = 2;
+while f(k) <= 1000 && k < maxn
+    k = k + 1;
+    f(k) = f(k-1) + f(k-2);
+end
+
+f = f(1:k);
+disp(f)
+
+fprintf('%d termes, dernier = %d\n', k, f(end));
+fprintf('rapport : %.6f\n', f(end)/f(end-1));
+fprintf('nombre d''or : %.6f\n', (1+sqrt(5))/2);
+```
+
+```
+     1     1     2     3     5     8    13    21    34    55    89   144   233   377   610   987  1597
+
+17 termes, dernier = 1597
+rapport : 1.618020
+nombre d'or : 1.618034
+```
+
+Chaque terme dépend des deux précédents : la boucle est ici **incontournable**, aucune vectorisation n'est possible.
+
+Deux détails : `nan` plutôt que `zeros` pour la préallocation, afin qu'une case non remplie se remarque ; et `f = f(1:k)` pour couper le surplus. Enfin, `''` double dans une chaîne produit une apostrophe simple.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `if ... elseif ... else ... end` | test — `elseif` en **un mot**, `end` obligatoire |
+| ordre des conditions | du plus restrictif au plus général |
+| `&&`, `\|\|` | dans un `if` — évaluation paresseuse |
+| `strcmp(a, b)` | comparer des chaînes, jamais `==` |
+| `for k = 1:n ... end` | boucle à nombre de tours connu |
+| `for k = A` | parcourt les **colonnes** de A |
+| `v = zeros(1, n);` avant la boucle | préallocation — **facteur 100** |
+| `nan(1, n)` | préallocation plus sûre que `zeros` |
+| `while cond && iter < maxiter` | boucle avec garde-fou obligatoire |
+| `break`, `continue` | quitter, passer au tour suivant |
+| `switch ... case ... otherwise` | comparer une variable à des valeurs fixes |
+| `error`, `warning` | échouer tôt et bruyamment |
+| `tic` / `toc` | mesurer le temps |
+
+Le dernier chapitre rassemble tout ceci dans des **scripts et des fonctions** : comment organiser un programme qu'on pourra relire, corriger et réutiliser.

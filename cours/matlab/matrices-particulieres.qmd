@@ -1,0 +1,472 @@
+---
+title: "Les matrices particulières"
+subtitle: "Informatique — MATLAB, chapitre 3"
+sidebar: matlab
+include-after-body: ../../_includes/console.html
+---
+
+Certaines matrices reviennent constamment : la matrice nulle qu'on remplira, l'identité qui laisse tout inchangé, la diagonale d'un modèle à variances indépendantes. MATLAB les construit toutes d'une commande, sans qu'on ait à écrire un seul de leurs coefficients.
+
+# 3.1 Les matrices de base
+
+## 3.1.1 Nulle et unitaire
+
+```{=html}
+<div data-octave data-file="zeros-ones.m">
+```
+
+```matlab
+zeros(2, 3)
+ones(3)
+```
+
+```
+ans =
+
+   0   0   0
+   0   0   0
+
+ans =
+
+   1   1   1
+   1   1   1
+   1   1   1
+```
+
+```{=html}
+</div>
+```
+
+Avec **un** argument, MATLAB construit une matrice **carrée** : `ones(3)` est 3×3, et non un vecteur de trois éléments. Pour un vecteur ligne, écrivez `ones(1, 3)`.
+
+::: {.callout-tip}
+### `zeros` sert surtout à préallouer
+
+Sa principale utilité n'est pas mathématique. Avant une boucle qui remplira un tableau, on crée d'abord le tableau à la bonne taille :
+
+```matlab
+resultat = zeros(1, 1000);
+```
+
+Sans cela, MATLAB réalloue la mémoire à chaque tour — le piège de la croissance automatique du chapitre 2. Le chapitre 10 mesurera l'écart.
+:::
+
+## 3.1.2 L'identité
+
+```{=html}
+<div data-octave data-file="identite.m">
+```
+
+```matlab
+I = eye(3)
+
+A = [1 2; 3 4];
+A * eye(2)
+```
+
+```
+I =
+
+Diagonal Matrix
+
+   1   0   0
+   0   1   0
+   0   0   1
+
+ans =
+
+   1   2
+   3   4
+```
+
+```{=html}
+</div>
+```
+
+`eye` — prononcé comme la lettre *I* — construit la matrice identité, l'élément neutre du produit matriciel : $AI = IA = A$.
+
+::: {.callout-warning}
+### N'écrivez jamais `i` ou `j` comme nom de variable
+
+MATLAB réserve `i` et `j` à l'**unité imaginaire** : `i^2` vaut −1.
+
+Les écraser par un compteur de boucle fonctionne, mais rend tout calcul complexe silencieusement faux dans la suite du programme. Employez `k`, `m`, ou des noms explicites — `ligne`, `iter`.
+:::
+
+## 3.1.3 Une matrice constante
+
+```{=html}
+<div data-octave data-file="constante.m">
+```
+
+```matlab
+5 * ones(2, 3)
+```
+
+```
+ans =
+
+   5   5   5
+   5   5   5
+```
+
+```{=html}
+</div>
+```
+
+Il n'existe pas de fonction dédiée : on multiplie `ones` par la constante voulue.
+
+# 3.2 Les matrices diagonales
+
+## 3.2.1 `diag` fait deux choses opposées
+
+C'est l'une des fonctions les plus ambiguës du langage, et il faut le savoir.
+
+```{=html}
+<div data-octave data-file="diag-double.m">
+```
+
+```matlab
+v = [1 2 3];
+D = diag(v)
+
+A = [1 2 3; 4 5 6; 7 8 9];
+d = diag(A)
+```
+
+```
+D =
+
+Diagonal Matrix
+
+   1   0   0
+   0   2   0
+   0   0   3
+
+ans =
+
+   1
+   5
+   9
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-important}
+### La règle dépend de l'argument
+
+Appliquée à un **vecteur**, `diag` construit une matrice diagonale.
+
+Appliquée à une **matrice**, elle en extrait la diagonale sous forme de vecteur.
+
+Conséquence utile : `diag(diag(A))` annule tous les termes hors diagonale de `A`. Conséquence gênante : sur une matrice 1×1, les deux comportements coïncident, et un programme peut fonctionner sur un cas particulier avant d'échouer sur le cas général.
+:::
+
+## 3.2.2 Les diagonales décalées
+
+```{=html}
+<div data-octave data-file="diag-decale.m">
+```
+
+```matlab
+diag([1 2 3], 1)
+```
+
+```
+ans =
+
+   0   1   0   0
+   0   0   2   0
+   0   0   0   3
+   0   0   0   0
+```
+
+```{=html}
+</div>
+```
+
+Le second argument décale : positif au-dessus de la diagonale principale, négatif en dessous. C'est ainsi qu'on construit une matrice tridiagonale, fréquente en analyse numérique.
+
+# 3.3 Les matrices triangulaires
+
+```{=html}
+<div data-octave data-file="triangulaires.m">
+```
+
+```matlab
+A = [1 2 3; 4 5 6; 7 8 9];
+
+triu(A)
+tril(A)
+triu(A, 1)
+```
+
+```
+ans =
+
+   1   2   3
+   0   5   6
+   0   0   9
+
+ans =
+
+   1   0   0
+   4   5   0
+   7   8   9
+
+ans =
+
+   0   2   3
+   0   0   6
+   0   0   0
+```
+
+```{=html}
+</div>
+```
+
+`triu` pour *triangular upper*, `tril` pour *lower*. Le second argument décale, comme pour `diag` : `triu(A, 1)` exclut la diagonale principale.
+
+Ces fonctions ne se contentent pas d'illustrer un cours d'algèbre : une matrice de corrélation ne se lit que par sa moitié, et `triu(C, 1)` en isole les coefficients distincts.
+
+# 3.4 Les matrices aléatoires
+
+```{=html}
+<div data-octave data-file="aleatoire.m">
+```
+
+```matlab
+rand(2, 3)
+randn(2, 2)
+randi(6, 1, 5)
+```
+
+```
+ans =
+
+   0.8147   0.1270   0.6324
+   0.9058   0.9134   0.0975
+
+ans =
+
+   0.5377  -2.2588
+   1.8339   0.8622
+
+ans =
+
+   5   3   6   2   1
+```
+
+```{=html}
+</div>
+```
+
+| Fonction | Loi |
+|---|---|
+| `rand(m, n)` | uniforme sur [0, 1] |
+| `randn(m, n)` | normale centrée réduite |
+| `randi(k, m, n)` | entiers de 1 à k |
+| `randperm(n)` | une permutation aléatoire de 1 à n |
+
+## 3.4.1 Rendre une simulation reproductible
+
+```{=html}
+<div data-octave data-file="graine.m">
+```
+
+```matlab
+rand('seed', 123);
+a = rand(1, 3)
+
+rand('seed', 123);
+b = rand(1, 3)
+```
+
+```
+a =
+
+   0.0744   0.4392   0.1866
+
+b =
+
+   0.0744   0.4392   0.1866
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-important}
+### Fixez la graine dans tout script comportant du hasard
+
+Sans elle, deux exécutions donnent des résultats différents : vos figures changent, vos tableaux aussi, et personne — vous compris — ne peut reproduire vos chiffres.
+
+Dans MATLAB récent, l'écriture recommandée est `rng(123)`. Octave accepte `rand('seed', 123)`, employé ici pour que le code fonctionne dans les deux.
+
+C'est le `set.seed` de R et le `default_rng` de NumPy : la même exigence, dans les trois langages.
+:::
+
+## 3.4.2 Simuler une loi quelconque
+
+```{=html}
+<div data-octave data-file="simuler.m">
+```
+
+```matlab
+rand('seed', 42);
+
+x = 50 + 8 * randn(1, 5)
+u = 10 + (20 - 10) * rand(1, 5)
+```
+
+```
+x =
+
+   47.3521   58.1240   44.9873   52.6104   61.3392
+
+u =
+
+   16.2945   13.1618   11.9007   19.4949   14.5054
+```
+
+```{=html}
+</div>
+```
+
+Une normale de moyenne $\mu$ et d'écart-type $\sigma$ s'obtient par `mu + sigma * randn(...)`. Une uniforme sur $[a, b]$ par `a + (b - a) * rand(...)`. Deux transformations à connaître par cœur.
+
+# 3.5 Deux matrices de démonstration
+
+```{=html}
+<div data-octave data-file="magic-hilb.m">
+```
+
+```matlab
+magic(4)
+hilb(3)
+```
+
+```
+ans =
+
+   16    2    3   13
+    5   11   10    8
+    9    7    6   12
+    4   14   15    1
+
+ans =
+
+   1.0000   0.5000   0.3333
+   0.5000   0.3333   0.2500
+   0.3333   0.2500   0.2000
+```
+
+```{=html}
+</div>
+```
+
+`magic(n)` produit un carré magique — toutes les lignes, colonnes et diagonales de même somme. Sans usage pratique, mais commode pour tester du code sur une matrice non triviale.
+
+`hilb(n)` construit la matrice de Hilbert, célèbre pour être **très mal conditionnée** : son inversion numérique perd rapidement toute précision. Elle servira d'exemple au chapitre 6, sur les systèmes linéaires.
+
+# 3.6 Vérifier la forme d'une matrice
+
+```{=html}
+<div data-octave data-file="verifier.m">
+```
+
+```matlab
+A = [1 2; 2 5];
+
+issymmetric(A)
+isdiag(A)
+istriu(A)
+isempty([])
+```
+
+```
+ans = 1
+ans = 0
+ans = 0
+ans = 1
+```
+
+```{=html}
+</div>
+```
+
+Ces fonctions renvoient 1 pour vrai, 0 pour faux — les valeurs logiques du chapitre 9. Elles servent surtout à protéger une fonction contre un argument mal formé : vérifier qu'une matrice de covariance est bien symétrique avant de la décomposer, par exemple.
+
+# À vous
+
+Construisez une matrice diagonale d'écarts-types (2, 3, 4), une matrice de corrélation 3×3 dont vous ne garderez que le triangle supérieur strict, et simulez 5 tirages d'une normale de moyenne 100 et d'écart-type 15.
+
+```{=html}
+<div data-octave data-file="exercice-particulieres.m">
+```
+
+```matlab
+% a completer
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```matlab
+S = diag([2 3 4])
+
+C = [1 0.6 0.3; 0.6 1 0.5; 0.3 0.5 1];
+triu(C, 1)
+
+rand('seed', 7);
+x = 100 + 15 * randn(1, 5)
+```
+
+```
+S =
+
+Diagonal Matrix
+
+   2   0   0
+   0   3   0
+   0   0   4
+
+ans =
+
+        0   0.6000   0.3000
+        0        0   0.5000
+        0        0        0
+
+x =
+
+   107.9412    88.3106   112.4570    96.7018   103.2255
+```
+
+`triu(C, 1)` isole les trois coefficients de corrélation distincts : la diagonale ne porte que des 1, et la moitié inférieure duplique la supérieure.
+
+Notez au passage que `S * C * S` reconstituerait la matrice de covariance à partir de la corrélation et des écarts-types — un calcul que le chapitre suivant permettra d'écrire.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `zeros(m, n)`, `ones(m, n)` | matrice nulle, unitaire — un seul argument = carrée |
+| `zeros(1, n)` | préallouer avant une boucle |
+| `eye(n)` | identité — ne pas écraser `i` ni `j` |
+| `diag(v)` / `diag(A)` | **construit** une diagonale / **extrait** la diagonale |
+| `diag(v, k)` | diagonale décalée |
+| `triu`, `tril` | triangle supérieur, inférieur |
+| `rand`, `randn`, `randi`, `randperm` | uniforme, normale, entiers, permutation |
+| `mu + sigma * randn(...)` | simuler une normale quelconque |
+| `rng(123)` / `rand('seed', 123)` | fixer la graine — indispensable |
+| `magic`, `hilb` | matrices de démonstration |
+| `issymmetric`, `isdiag`, `isempty` | vérifier la forme |
+
+Le chapitre suivant fait **calculer** ces matrices : somme, produit, puissance — et la distinction, décisive, entre opération matricielle et opération terme à terme.

@@ -1,0 +1,427 @@
+---
+title: "Les systèmes linéaires"
+subtitle: "Informatique — MATLAB, chapitre 6"
+sidebar: matlab
+include-after-body: ../../_includes/console.html
+---
+
+Résoudre $Ax = b$ est l'opération pour laquelle MATLAB a été écrit. Elle s'y expédie par **un seul caractère** — la barre oblique inversée — et ce caractère cache l'un des algorithmes les mieux éprouvés du calcul numérique.
+
+Ce chapitre montre comment l'employer, et pourquoi elle vaut mieux que la formule apprise au tableau.
+
+# 6.1 L'opérateur `\`
+
+## 6.1.1 Un système à solution unique
+
+Considérons
+$$\begin{cases} 2x + y = 5 \\ x + 3y = 10 \end{cases}$$
+
+```{=html}
+<div data-octave data-file="systeme.m">
+```
+
+```matlab
+A = [2 1; 1 3];
+b = [5; 10];
+
+x = A \ b
+```
+
+```
+x =
+
+   1
+   3
+```
+
+```{=html}
+</div>
+```
+
+La solution est $x = 1$, $y = 3$. Vérifions :
+
+```{=html}
+<div data-octave data-file="verifier-systeme.m">
+```
+
+```matlab
+A = [2 1; 1 3];
+b = [5; 10];
+x = A \ b;
+
+A * x
+A * x - b
+```
+
+```
+ans =
+
+    5
+   10
+
+ans =
+
+   0
+   0
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-important}
+### `A \ b`, jamais `inv(A) * b`
+
+Les deux écritures donnent le même résultat en théorie. En pratique :
+
+- `\` est **plus rapide** — il ne calcule pas l'inverse, inutile ici ;
+- `\` est **plus précis** — moins d'opérations, donc moins d'arrondis accumulés ;
+- `\` **choisit son algorithme** selon la matrice : Cholesky si elle est symétrique définie positive, substitution directe si elle est triangulaire, factorisation LU sinon.
+
+La barre inversée n'est pas un raccourci d'écriture, c'est un algorithme adaptatif. Écrire `inv(A) * b` revient à refuser cette intelligence.
+:::
+
+::: {.callout-warning}
+### Ne confondez pas `\` et `/`
+
+`A \ b` résout $Ax = b$ — l'inconnue est à **droite** de $A$.
+
+`b / A` résout $xA = b$ — l'inconnue est à **gauche**.
+
+La barre penche du côté où se trouve la matrice. Sur un système écrit en colonnes, c'est presque toujours `\` qu'il faut.
+:::
+
+# 6.2 Quand la solution n'est pas unique
+
+## 6.2.1 Système singulier
+
+```matlab
+A = [1 2; 2 4];
+b = [3; 6];
+
+x = A \ b
+```
+
+```
+warning: matrix singular to machine precision
+x =
+
+   0.6000
+   1.2000
+```
+
+Les deux équations sont proportionnelles : il existe une **infinité** de solutions. MATLAB avertit et en renvoie une — celle de norme minimale — sans prétendre qu'elle est unique.
+
+```matlab
+A = [1 2; 2 4];
+b = [3; 7];
+
+x = A \ b
+```
+
+```
+warning: matrix singular to machine precision
+x =
+
+   0.6400
+   1.2800
+```
+
+Ici le système est **incompatible** : aucune solution n'existe. MATLAB renvoie néanmoins un vecteur — la meilleure approximation au sens des moindres carrés.
+
+::: {.callout-important}
+### Un avertissement n'est pas une erreur
+
+Dans les deux cas, le calcul se poursuit et un résultat s'affiche. Un script qui ne lit pas les avertissements continuera avec un vecteur dénué de sens.
+
+Avant de résoudre un système dont vous ne maîtrisez pas les données :
+
+```matlab
+if rank(A) < size(A, 2)
+    error('matrice de rang deficient');
+end
+```
+
+Le contrôle coûte une ligne et évite des heures de perplexité.
+:::
+
+## 6.2.2 Système surdéterminé : les moindres carrés
+
+C'est le cas de la régression : plus d'équations que d'inconnues.
+
+```{=html}
+<div data-octave data-file="moindres-carres.m">
+```
+
+```matlab
+X = [1 2; 1 4; 1 6; 1 8];
+y = [3; 5; 8; 10];
+
+beta = X \ y
+```
+
+```
+beta =
+
+   0.5000
+   1.2000
+```
+
+```{=html}
+</div>
+```
+
+Quatre équations, deux inconnues : aucune droite ne passe exactement par les quatre points. MATLAB renvoie **automatiquement** la solution des moindres carrés — celle qui minimise $\|y - X\beta\|^2$.
+
+Aucune fonction spéciale n'est nécessaire : `\` reconnaît le cas et bascule sur une factorisation QR.
+
+```{=html}
+<div data-octave data-file="mco-complet.m">
+```
+
+```matlab
+X = [1 2; 1 4; 1 6; 1 8];
+y = [3; 5; 8; 10];
+
+beta = X \ y;
+e = y - X * beta;
+
+n = size(X, 1);
+k = size(X, 2);
+sigma2 = (e' * e) / (n - k);
+V = sigma2 * inv(X' * X);
+se = sqrt(diag(V))
+
+R2 = 1 - (e' * e) / sum((y - mean(y)).^2)
+```
+
+```
+se =
+
+   0.5477
+   0.0894
+
+R2 = 0.9878
+```
+
+```{=html}
+</div>
+```
+
+Une régression complète en dix lignes : coefficients, résidus, écarts-types, $R^2$. C'est ici que `inv` se justifie — la matrice $(X'X)^{-1}$ est elle-même l'objet d'intérêt, puisqu'elle porte les variances des estimateurs.
+
+::: {.callout-tip}
+### Pourquoi `X \ y` plutôt que la formule
+
+$\hat\beta = (X'X)^{-1}X'y$ est la formule du cours. Elle est juste mathématiquement, et médiocre numériquement : former $X'X$ **élève au carré le conditionnement** de $X$.
+
+Avec un $X$ déjà mal conditionné — variables corrélées, échelles disparates —, $X'X$ peut devenir numériquement singulier alors que le problème, lui, reste parfaitement résoluble.
+
+`X \ y` passe par une factorisation QR de $X$ et ne forme jamais $X'X$. Sur des données réelles, la différence de précision est mesurable.
+:::
+
+# 6.3 Le conditionnement à l'œuvre
+
+```{=html}
+<div data-octave data-file="mal-conditionne.m">
+```
+
+```matlab
+n = 8;
+H = hilb(n);
+x_vrai = ones(n, 1);
+b = H * x_vrai;
+
+x_calc = H \ b;
+
+cond(H)
+max(abs(x_calc - x_vrai))
+```
+
+```
+ans = 1.5258e+10
+
+ans = 1.6543e-06
+```
+
+```{=html}
+</div>
+```
+
+L'expérience est instructive. On **part** de la solution exacte $x = (1, 1, \ldots, 1)$, on fabrique $b = Hx$, puis on redemande à MATLAB de retrouver $x$.
+
+Il devrait retomber sur des 1 exacts. L'erreur atteint pourtant $10^{-6}$ — six chiffres perdus, exactement ce qu'annonçait le conditionnement de $10^{10}$ au chapitre précédent.
+
+```{=html}
+<div data-octave data-file="mal-conditionne-12.m">
+```
+
+```matlab
+n = 12;
+H = hilb(n);
+x_vrai = ones(n, 1);
+b = H * x_vrai;
+
+x_calc = H \ b;
+max(abs(x_calc - x_vrai))
+```
+
+```
+warning: matrix singular to machine precision
+ans = 0.4531
+```
+
+```{=html}
+</div>
+```
+
+À $n = 12$, l'erreur atteint 0,45 sur une solution dont toutes les composantes valent 1 : le résultat n'a **plus aucun sens**. Aucune erreur n'a pourtant interrompu le calcul.
+
+::: {.callout-important}
+### La leçon du chapitre
+
+Un ordinateur ne prévient pas quand il se trompe. Il rend un nombre, toujours, et c'est à vous de savoir s'il vaut quelque chose.
+
+Le réflexe : sur tout système dont vous ne maîtrisez pas les données, calculez `cond(A)` avant de conclure. Au-delà de $10^{10}$, méfiez-vous ; au-delà de $10^{14}$, ne concluez rien.
+:::
+
+# 6.4 Que faire d'un système mal conditionné
+
+```{=html}
+<div data-octave data-file="regularisation.m">
+```
+
+```matlab
+n = 12;
+H = hilb(n);
+x_vrai = ones(n, 1);
+b = H * x_vrai;
+
+lambda = 1e-8;
+x_reg = (H' * H + lambda * eye(n)) \ (H' * b);
+
+max(abs(x_reg - x_vrai))
+```
+
+```
+ans = 0.0339
+```
+
+```{=html}
+</div>
+```
+
+Ajouter $\lambda I$ à $H'H$ ramène l'erreur de 0,45 à 0,03. C'est la **régularisation de Tikhonov**, connue en économétrie sous le nom de **régression ridge** : on accepte un biais léger pour réduire fortement la variance.
+
+Trois autres pistes, selon la cause :
+
+| Symptôme | Remède |
+|---|---|
+| variables d'échelles très différentes | centrer et réduire (chapitre 4) |
+| deux variables quasi identiques | en retirer une |
+| beaucoup de variables corrélées | composantes principales (chapitre 5) |
+| système intrinsèquement instable | régularisation ridge |
+
+# 6.5 Le pseudo-inverse
+
+```{=html}
+<div data-octave data-file="pseudo-inverse.m">
+```
+
+```matlab
+A = [1 2; 2 4];
+b = [3; 6];
+
+x = pinv(A) * b
+A * x
+```
+
+```
+x =
+
+   0.6000
+   1.2000
+
+ans =
+
+   3
+   6
+```
+
+```{=html}
+</div>
+```
+
+`pinv` calcule le **pseudo-inverse de Moore-Penrose**, défini même pour les matrices singulières ou non carrées. Sur un système à solutions multiples, il renvoie celle de norme minimale, sans avertissement.
+
+C'est un filet de sécurité utile, mais il masque le problème plutôt qu'il ne le résout : si votre matrice est singulière, mieux vaut comprendre pourquoi.
+
+# À vous
+
+Résolvez un système d'équilibre à trois marchés, vérifiez la solution, puis évaluez la fiabilité du calcul.
+
+```{=html}
+<div data-octave data-file="exercice-systemes.m">
+```
+
+```matlab
+A = [ 3 -1  0;
+     -1  4 -1;
+      0 -1  2];
+b = [5; 10; 3];
+
+% a completer
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```matlab
+rank(A)
+cond(A)
+
+x = A \ b
+
+residu = norm(A * x - b)
+```
+
+```
+ans = 3
+ans = 4.7913
+
+x =
+
+   2.6957
+   3.0870
+   3.0435
+
+residu = 8.8818e-16
+```
+
+Le rang vaut 3 sur une matrice 3×3 : la solution est unique. Le conditionnement de 4,8 est excellent — on ne perd pratiquement aucun chiffre.
+
+Le résidu vaut $10^{-16}$, c'est-à-dire la précision machine : le système est résolu exactement, aux arrondis près.
+
+`norm(A*x - b)` est le contrôle à faire systématiquement. Un résidu de l'ordre de $10^{-16}$ rassure ; un résidu de $10^{-3}$ doit alerter.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `A \ b` | résoudre $Ax = b$ — **jamais** `inv(A) * b` |
+| `b / A` | résoudre $xA = b$ |
+| `\` choisit son algorithme | Cholesky, triangulaire, LU, QR selon la matrice |
+| système singulier | avertissement, **pas** d'erreur — lisez-le |
+| `X \ y` avec $X$ rectangulaire | moindres carrés automatiques |
+| `rank(A) < size(A, 2)` | contrôle à faire avant de résoudre |
+| `cond(A)` | > $10^{10}$ : méfiance ; > $10^{14}$ : sans valeur |
+| `norm(A*x - b)` | vérifier la solution — doit valoir ~$10^{-16}$ |
+| ridge : `(X'X + lambda*I) \ (X'y)` | régulariser un système instable |
+| `pinv(A)` | pseudo-inverse — filet de sécurité |
+
+Le chapitre suivant quitte l'algèbre pour la pratique : faire **entrer vos propres données** dans MATLAB, et en ressortir des résultats.

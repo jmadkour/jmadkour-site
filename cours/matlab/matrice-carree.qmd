@@ -1,0 +1,476 @@
+---
+title: "Caractéristiques d'une matrice carrée"
+subtitle: "Informatique — MATLAB, chapitre 5"
+sidebar: matlab
+include-after-body: ../../_includes/console.html
+---
+
+Une matrice carrée porte en elle quelques nombres qui résument son comportement : sa trace, son déterminant, son rang, ses valeurs propres. Ce sont eux qui disent si un système admet une solution unique, si une matrice de covariance est admissible, ou si un calcul numérique va perdre toute précision.
+
+Ce chapitre les calcule tous, et surtout explique ce qu'ils annoncent.
+
+# 5.1 La trace
+
+```{=html}
+<div data-octave data-file="trace.m">
+```
+
+```matlab
+A = [4 1 2; 1 5 3; 2 3 6];
+
+trace(A)
+sum(diag(A))
+```
+
+```
+ans = 15
+ans = 15
+```
+
+```{=html}
+</div>
+```
+
+La trace est la somme des éléments diagonaux — donc `sum(diag(A))`, ce qui rappelle le double rôle de `diag` vu au chapitre 3.
+
+Elle possède une propriété qui la rend précieuse en économétrie : elle est **égale à la somme des valeurs propres**. La trace de la matrice chapeau $H = X(X'X)^{-1}X'$ donne ainsi directement le nombre de paramètres estimés.
+
+# 5.2 Le déterminant
+
+```{=html}
+<div data-octave data-file="determinant.m">
+```
+
+```matlab
+A = [4 1; 2 3];
+B = [1 2; 2 4];
+
+det(A)
+det(B)
+```
+
+```
+ans = 10
+ans = 0
+```
+
+```{=html}
+</div>
+```
+
+Un déterminant nul signale une matrice **singulière** : ses colonnes sont liées, elle n'est pas inversible, et le système associé n'a pas de solution unique.
+
+Ici, la deuxième colonne de `B` est exactement le double de la première.
+
+::: {.callout-warning}
+### Ne testez jamais `det(A) == 0`
+
+```matlab
+det(hilb(10))
+```
+
+```
+ans = 2.1644e-53
+```
+
+Le déterminant de cette matrice notoirement mal conditionnée n'est pas nul, mais si petit qu'il est numériquement indiscernable de zéro — tout en étant, formellement, différent.
+
+À l'inverse, `det(0.001 * eye(100))` vaut $10^{-300}$ alors que la matrice est parfaitement inversible : le déterminant dépend de l'**échelle**, pas seulement de la singularité.
+
+Pour juger de l'inversibilité, employez `rank` ou `cond`, présentés plus bas. Jamais le déterminant.
+:::
+
+# 5.3 Le rang
+
+```{=html}
+<div data-octave data-file="rang.m">
+```
+
+```matlab
+A = [4 1; 2 3];
+B = [1 2; 2 4];
+C = [1 2 3; 4 5 6; 7 8 9];
+
+rank(A)
+rank(B)
+rank(C)
+```
+
+```
+ans = 2
+ans = 1
+ans = 2
+```
+
+```{=html}
+</div>
+```
+
+Le rang est le nombre de colonnes linéairement indépendantes. Une matrice $n \times n$ est inversible si et seulement si son rang vaut $n$ — on dit qu'elle est de **rang plein**.
+
+`C` semble anodine, mais son rang vaut 2 : sa troisième colonne est la combinaison $2 \times$ (deuxième) $-$ (première).
+
+::: {.callout-tip}
+### Le rang détecte la colinéarité parfaite
+
+En régression, si `rank(X)` est inférieur au nombre de colonnes de `X`, c'est qu'une variable explicative est combinaison exacte des autres — souvent une indicatrice de trop, oubliée après un codage disjonctif.
+
+`rank` est plus fiable que `det` parce qu'il s'appuie sur une décomposition en valeurs singulières, insensible à l'échelle des données.
+:::
+
+# 5.4 L'inverse
+
+```{=html}
+<div data-octave data-file="inverse.m">
+```
+
+```matlab
+A = [4 1; 2 3];
+
+Ainv = inv(A)
+A * Ainv
+```
+
+```
+Ainv =
+
+   0.3000  -0.1000
+  -0.2000   0.4000
+
+ans =
+
+   1   0
+   0   1
+```
+
+```{=html}
+</div>
+```
+
+Le produit d'une matrice par son inverse redonne l'identité — aux erreurs d'arrondi près, qui restent ici invisibles à cinq décimales.
+
+```matlab
+B = [1 2; 2 4];
+inv(B)
+```
+
+```
+warning: matrix singular to machine precision
+ans =
+
+   Inf   Inf
+   Inf   Inf
+```
+
+MATLAB **avertit** plutôt que d'échouer, et renvoie des infinis. Le calcul suivant les propagera silencieusement : lisez les avertissements.
+
+::: {.callout-important}
+### N'inversez presque jamais une matrice
+
+Pour résoudre $Ax = b$, on écrit `A \ b` et **non** `inv(A) * b`.
+
+L'opérateur `\` est plus rapide, plus précis, et ne calcule jamais l'inverse complet — inutile pour obtenir une solution. Sur une matrice mal conditionnée, l'écart de précision entre les deux écritures peut atteindre plusieurs chiffres significatifs.
+
+`inv` ne se justifie que si l'inverse lui-même est l'objet d'intérêt — par exemple la matrice de variance-covariance des estimateurs $\sigma^2 (X'X)^{-1}$, qu'on veut afficher.
+
+C'est le sujet du chapitre suivant.
+:::
+
+# 5.5 Le conditionnement
+
+```{=html}
+<div data-octave data-file="conditionnement.m">
+```
+
+```matlab
+cond(eye(3))
+cond([4 1; 2 3])
+cond(hilb(6))
+```
+
+```
+ans = 1
+ans = 3.6180
+ans = 1.4951e+07
+```
+
+```{=html}
+</div>
+```
+
+Le **conditionnement** mesure la sensibilité de la solution aux erreurs sur les données. Il vaut 1 pour l'identité — le cas idéal — et croît sans limite à mesure qu'on approche de la singularité.
+
+::: {.callout-important}
+### La règle des chiffres perdus
+
+Un conditionnement de $10^k$ fait perdre environ **$k$ chiffres significatifs**.
+
+Un ordinateur en double précision en offre environ 16. Avec `cond(hilb(6))` proche de $10^7$, il en reste 9 : encore acceptable. Avec `cond(hilb(12))` de l'ordre de $10^{16}$, il n'en reste **aucun** — le résultat n'a plus de sens, alors qu'aucune erreur n'a été signalée.
+
+En économétrie, un conditionnement élevé de $X'X$ est le signe numérique de la **multicolinéarité** : les coefficients deviennent instables, leurs écarts-types explosent, et un changement minime des données modifie les estimations.
+:::
+
+# 5.6 Valeurs et vecteurs propres
+
+## 5.6.1 Les calculer
+
+```{=html}
+<div data-octave data-file="valeurs-propres.m">
+```
+
+```matlab
+A = [4 1; 2 3];
+
+eig(A)
+[V, D] = eig(A)
+```
+
+```
+ans =
+
+   2
+   5
+
+V =
+
+  -0.4472  -0.7071
+   0.8944  -0.7071
+
+D =
+
+Diagonal Matrix
+
+   2   0
+   0   5
+```
+
+```{=html}
+</div>
+```
+
+Avec **une** sortie, `eig` renvoie le vecteur des valeurs propres. Avec **deux**, il renvoie la matrice `V` des vecteurs propres et la matrice diagonale `D` des valeurs propres, telles que $AV = VD$.
+
+```{=html}
+<div data-octave data-file="verifier-eig.m">
+```
+
+```matlab
+A = [4 1; 2 3];
+[V, D] = eig(A);
+
+A * V - V * D
+trace(A)
+sum(eig(A))
+```
+
+```
+ans =
+
+   0   0
+   0   0
+
+ans = 5
+ans = 5
+```
+
+```{=html}
+</div>
+```
+
+La première sortie vérifie la définition, la seconde illustre la propriété annoncée en 5.1 : la trace égale la somme des valeurs propres. De même, `det(A)` égale leur produit.
+
+## 5.6.2 Ce qu'elles indiquent
+
+::: {.callout-tip}
+### Le test de positivité d'une matrice de covariance
+
+Une matrice symétrique est **définie positive** si toutes ses valeurs propres sont strictement positives. C'est la condition qu'une matrice de covariance doit remplir pour être admissible.
+
+```matlab
+C = [1 0.9; 0.9 1];
+eig(C)              % 0.1 et 1.9 : toutes positives, admissible
+
+D = [1 1.2; 1.2 1];
+eig(D)              % -0.2 et 2.2 : une negative, impossible
+```
+
+Une corrélation de 1,2 est mathématiquement impossible, et la valeur propre négative le révèle immédiatement. C'est un contrôle à faire sur toute matrice de covariance estimée ou saisie à la main.
+:::
+
+```{=html}
+<div data-octave data-file="acp.m">
+```
+
+```matlab
+C = [1 0.8 0.5; 0.8 1 0.6; 0.5 0.6 1];
+
+lambda = eig(C);
+lambda = sort(lambda, 'descend')
+
+part = lambda / sum(lambda)
+cumsum(part)
+```
+
+```
+lambda =
+
+   2.2637
+   0.4808
+   0.2555
+
+part =
+
+   0.7546
+   0.1603
+   0.0852
+
+ans =
+
+   0.7546
+   0.9148
+   1.0000
+```
+
+```{=html}
+</div>
+```
+
+Voici une analyse en composantes principales en quatre lignes : les valeurs propres d'une matrice de corrélation, triées, donnent la part de variance expliquée par chaque composante. Ici, la première en explique 75 %, les deux premières 91 %.
+
+# 5.7 La décomposition de Cholesky
+
+```{=html}
+<div data-octave data-file="cholesky.m">
+```
+
+```matlab
+C = [1 0.8; 0.8 1];
+
+L = chol(C, 'lower')
+L * L'
+```
+
+```
+L =
+
+   1.0000        0
+   0.8000   0.6000
+
+ans =
+
+   1.0000   0.8000
+   0.8000   1.0000
+```
+
+```{=html}
+</div>
+```
+
+Toute matrice symétrique définie positive s'écrit $C = LL'$ avec $L$ triangulaire inférieure. C'est la « racine carrée » d'une matrice de covariance.
+
+Son usage le plus direct : **simuler des variables corrélées**. Si $z$ est un vecteur de normales indépendantes, $Lz$ a exactement la matrice de covariance $C$.
+
+```{=html}
+<div data-octave data-file="simuler-correle.m">
+```
+
+```matlab
+rand('seed', 5);
+C = [1 0.8; 0.8 1];
+L = chol(C, 'lower');
+
+Z = randn(2, 1000);
+X = L * Z;
+
+corr(X')
+```
+
+```
+ans =
+
+   1.0000   0.7936
+   0.7936   1.0000
+```
+
+```{=html}
+</div>
+```
+
+La corrélation empirique reproduit bien le 0,8 demandé. C'est la technique de base de toute simulation de portefeuille ou de scénarios de risque corrélés.
+
+::: {.callout-tip}
+### `chol` est aussi le meilleur test de positivité
+
+`chol` **échoue** si la matrice n'est pas définie positive. Un simple appel dans un bloc `try` vérifie donc l'admissibilité d'une covariance, plus vite qu'un calcul complet de valeurs propres.
+:::
+
+# À vous
+
+Vérifiez qu'une matrice de corrélation proposée est admissible, calculez son conditionnement, et donnez la part de variance de sa première composante principale.
+
+```{=html}
+<div data-octave data-file="exercice-carree.m">
+```
+
+```matlab
+C = [1 0.7 0.4; 0.7 1 0.9; 0.4 0.9 1];
+
+% a completer
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```matlab
+issymmetric(C)
+lambda = sort(eig(C), 'descend')
+all(lambda > 0)
+
+rank(C)
+cond(C)
+
+part1 = lambda(1) / sum(lambda)
+```
+
+```
+ans = 1
+
+lambda =
+
+   2.3956
+   0.5487
+   0.0557
+
+ans = 1
+ans = 3
+ans = 43.0093
+
+part1 = 0.7985
+```
+
+La matrice est symétrique, de rang plein, et toutes ses valeurs propres sont positives : elle est admissible.
+
+Mais la plus petite vaut 0,056 et le conditionnement dépasse 43 — c'est le signe d'une **quasi-colinéarité** entre les deuxième et troisième variables, dont la corrélation atteint 0,9. Une régression sur ces trois variables donnerait des coefficients instables.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `trace(A)` | somme diagonale = somme des valeurs propres |
+| `det(A)` | déterminant — **ne jamais** tester `== 0` |
+| `rank(A)` | rang — détecte la colinéarité parfaite |
+| `inv(A)` | inverse — presque toujours à éviter |
+| `cond(A)` | conditionnement — $10^k$ fait perdre $k$ chiffres |
+| `eig(A)` | valeurs propres |
+| `[V, D] = eig(A)` | vecteurs et valeurs propres, $AV = VD$ |
+| toutes valeurs propres > 0 | matrice de covariance admissible |
+| `eig` triées / somme | part de variance en ACP |
+| `chol(C, 'lower')` | racine de Cholesky, $C = LL'$ |
+| `L * randn(n, N)` | simuler des variables corrélées |
+
+Le chapitre suivant tire les conséquences de tout ceci : **résoudre un système linéaire**, avec l'opérateur qui fait la réputation de MATLAB.

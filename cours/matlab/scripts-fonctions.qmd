@@ -1,0 +1,514 @@
+---
+title: "Scripts et fonctions"
+subtitle: "Informatique — MATLAB, chapitre 11"
+sidebar: matlab
+include-after-body: ../../_includes/console.html
+---
+
+Dernier chapitre du cours. Tout ce qui précède a été tapé ligne à ligne dans une console : commode pour essayer, désastreux pour un travail qui doit durer.
+
+Un mémoire, une thèse, un article se reposent sur des programmes qu'on relit, corrige et réexécute des mois plus tard. Ce chapitre montre comment les organiser.
+
+# 11.1 Le script
+
+Un **script** est un fichier `.m` contenant une suite de commandes, exécutées comme si vous les tapiez.
+
+```matlab
+% analyse_pib.m
+% Analyse descriptive des PIB regionaux
+% J. Madkour - aout 2026
+
+clear; close all; clc;
+rng(123);
+
+% --- 1. Donnees ---
+pib = [45.2 62.1 38.7 29.3];
+hab = [1.2 1.9 1.1 0.9];
+
+% --- 2. Calculs ---
+pib_hab = pib ./ hab;
+
+% --- 3. Resultats ---
+fprintf('PIB/hab moyen : %.2f\n', mean(pib_hab));
+```
+
+::: {.callout-tip}
+### Les quatre habitudes d'un script lisible
+
+**Un en-tête** : ce que fait le fichier, qui l'a écrit, quand.
+
+**`clear; close all; clc;`** en tête — sans quoi le script peut fonctionner grâce à une variable oubliée en mémoire, et échouer chez votre lecteur.
+
+**Des sections** commentées, qui séparent données, calculs et résultats. Dans l'éditeur MATLAB, `%%` crée une section exécutable seule par Ctrl+Entrée.
+
+**Aucun chemin absolu** : `C:/Users/jaouad/these` fonctionne sur votre machine et sur aucune autre.
+:::
+
+# 11.2 La fonction
+
+## 11.2.1 Écrire la sienne
+
+Une fonction s'écrit dans un fichier `.m` portant **exactement son nom**.
+
+```matlab
+% fichier taux_croissance.m
+function t = taux_croissance(debut, fin)
+%TAUX_CROISSANCE Taux de croissance en pourcentage.
+%   T = TAUX_CROISSANCE(DEBUT, FIN) renvoie la variation
+%   relative entre DEBUT et FIN, exprimee en pourcentage.
+%
+%   Exemple :
+%       taux_croissance(100, 112)   % renvoie 12
+
+    t = (fin - debut) / debut * 100;
+end
+```
+
+```{=html}
+<div data-octave data-file="fonction-simple.m">
+```
+
+```matlab
+function t = taux_croissance(debut, fin)
+    t = (fin - debut) / debut * 100;
+end
+
+taux_croissance(100, 112)
+taux_croissance(45, 51)
+```
+
+```
+ans = 12
+ans = 13.333
+```
+
+```{=html}
+</div>
+```
+
+La sortie est **nommée dans l'en-tête** : `function t = ...` déclare que la fonction renvoie `t`. Il n'y a pas de `return` obligatoire — la valeur de `t` à la fin est ce qui sort.
+
+::: {.callout-important}
+### Le nom du fichier fait foi
+
+Si le fichier s'appelle `croissance.m` mais que l'en-tête déclare `function t = taux_croissance(...)`, MATLAB appellera la fonction `croissance`.
+
+Le fichier l'emporte toujours sur l'en-tête. Renommer une fonction impose donc de renommer le fichier — c'est la cause du classique `undefined function` alors que le code semble correct.
+:::
+
+## 11.2.2 Le commentaire d'aide
+
+Les lignes de commentaire **placées juste après** l'en-tête constituent l'aide de la fonction.
+
+```matlab
+help taux_croissance
+```
+
+C'est l'équivalent de la docstring de Python. Écrivez-la dès que la fonction dépasse trois lignes : votre premier lecteur sera vous-même, dans six mois.
+
+## 11.2.3 Plusieurs sorties
+
+```{=html}
+<div data-octave data-file="sorties-multiples.m">
+```
+
+```matlab
+function [m, s, n] = resume(x)
+    x = x(~isnan(x));
+    n = numel(x);
+    m = mean(x);
+    s = std(x);
+end
+
+v = [4 8 15 NaN 23 42];
+
+[moyenne, ecart, effectif] = resume(v)
+moyenne_seule = resume(v)
+```
+
+```
+moyenne = 18.400
+ecart = 15.242
+effectif = 5
+moyenne_seule = 18.400
+```
+
+```{=html}
+</div>
+```
+
+Les sorties se déclarent entre crochets. On peut n'en demander qu'une partie : MATLAB fournit les premières dans l'ordre.
+
+::: {.callout-tip}
+### Ordonnez les sorties par importance
+
+Puisque l'appelant peut s'arrêter à la première, placez en tête ce qu'on veut le plus souvent.
+
+C'est la logique de `[V, D] = eig(A)` du chapitre 5 : `eig(A)` seul donne les valeurs propres, l'usage le plus fréquent ; les vecteurs propres viennent en second.
+:::
+
+## 11.2.4 Arguments variables
+
+```{=html}
+<div data-octave data-file="nargin.m">
+```
+
+```matlab
+function y = arrondi_pct(x, decimales)
+    if nargin < 2
+        decimales = 1;
+    end
+    y = round(x * 100 * 10^decimales) / 10^decimales;
+end
+
+arrondi_pct(0.0734)
+arrondi_pct(0.0734, 3)
+```
+
+```
+ans = 7.3000
+ans = 7.3400
+```
+
+```{=html}
+</div>
+```
+
+`nargin` compte les arguments **réellement fournis**. C'est ainsi qu'on donne une valeur par défaut à un paramètre facultatif. `nargout` fait de même pour les sorties demandées.
+
+# 11.3 La portée des variables
+
+```{=html}
+<div data-octave data-file="portee.m">
+```
+
+```matlab
+function y = double_valeur(x)
+    x = x * 2;
+    y = x;
+end
+
+x = 10;
+resultat = double_valeur(x);
+
+fprintf('resultat = %d, x vaut toujours %d\n', resultat, x);
+```
+
+```
+resultat = 20, x vaut toujours 10
+```
+
+```{=html}
+</div>
+```
+
+Une fonction travaille dans son **propre espace de noms**. Elle ne voit pas vos variables, et ne peut pas les modifier. C'est une garantie précieuse : appeler une fonction ne peut jamais altérer vos données à votre insu.
+
+::: {.callout-important}
+### C'est ce qui distingue une fonction d'un script
+
+Un **script** partage l'espace de travail : il lit et écrase vos variables.
+
+Une **fonction** est étanche : tout ce dont elle a besoin entre par ses arguments, tout ce qu'elle produit sort par ses sorties.
+
+D'où la règle : dès qu'un bout de code est appelé plus d'une fois, ou qu'il pourrait l'être, faites-en une fonction. Un script qui dépend de l'état de la session est presque impossible à déboguer.
+
+Et n'employez **jamais** `global`. C'est la porte ouverte à des bugs où une variable change sans qu'aucune ligne visible ne la touche.
+:::
+
+# 11.4 Contrôler les arguments
+
+```{=html}
+<div data-octave data-file="validation.m">
+```
+
+```matlab
+function x = resoudre(A, b)
+    if nargin < 2
+        error('resoudre:args', 'deux arguments sont requis');
+    end
+    if size(A, 1) ~= numel(b)
+        error('resoudre:dim', ...
+              'A a %d lignes mais b en a %d', size(A, 1), numel(b));
+    end
+    if rank(A) < size(A, 2)
+        warning('resoudre:rang', 'matrice de rang deficient');
+    end
+    x = A \ b;
+end
+
+A = [2 1; 1 3];
+b = [5; 10];
+resoudre(A, b)
+```
+
+```
+ans =
+
+   1
+   3
+```
+
+```{=html}
+</div>
+```
+
+Trois lignes de contrôle en tête d'une fonction évitent des heures de perplexité. `error` interrompt, `warning` signale sans arrêter.
+
+Le premier argument — `'resoudre:dim'` — est un identifiant qui permet de capter précisément cette erreur, ou de la désactiver.
+
+# 11.5 Les fonctions anonymes
+
+```{=html}
+<div data-octave data-file="anonymes.m">
+```
+
+```matlab
+carre = @(x) x.^2;
+carre(4)
+carre([1 2 3])
+
+a = 2; b = 3;
+droite = @(x) a*x + b;
+droite(5)
+```
+
+```
+ans = 16
+ans =
+
+   1   4   9
+
+ans = 13
+```
+
+```{=html}
+</div>
+```
+
+L'arobase `@` définit une fonction en une expression, sans fichier séparé. Notez `x.^2` avec le point : la fonction accepte ainsi un vecteur entier.
+
+::: {.callout-warning}
+### Les valeurs sont figées à la création
+
+```matlab
+a = 2;
+f = @(x) a*x;
+a = 100;
+f(1)              % renvoie 2, pas 100
+```
+
+Une fonction anonyme **capture** la valeur des variables au moment où elle est écrite. Changer `a` ensuite n'a aucun effet.
+
+C'est souvent le comportement voulu — mais il surprend, et il faut le connaître.
+:::
+
+```{=html}
+<div data-octave data-file="fonctions-args.m">
+```
+
+```matlab
+f = @(x) x.^2 - 2;
+
+racine = fzero(f, 1)
+integrale = quad(@(x) exp(-x.^2), 0, 2)
+```
+
+```
+racine = 1.4142
+integrale = 0.88208
+```
+
+```{=html}
+</div>
+```
+
+C'est là leur usage principal : passer une fonction à une autre fonction. `fzero` cherche un zéro, `quad` intègre numériquement, `fminsearch` minimise — toutes attendent une fonction en argument.
+
+# 11.6 Déboguer
+
+| Commande | Effet |
+|---|---|
+| `dbstop if error` | s'arrête à la ligne fautive, variables intactes |
+| point d'arrêt (clic dans la marge) | s'arrête à une ligne choisie |
+| `dbstep`, `dbcont`, `dbquit` | avancer, continuer, sortir |
+| `disp`, `fprintf` | afficher une variable en cours de route |
+| `size(x)`, `class(x)` | vérifier forme et type |
+
+::: {.callout-tip}
+### La méthode qui résout 90 % des bugs
+
+Avant tout débogueur, insérez un `fprintf` :
+
+```matlab
+fprintf('k=%d, size(A)=[%d %d], cond=%.2e\n', k, size(A), cond(A));
+```
+
+Neuf fois sur dix, l'erreur vient d'une **dimension inattendue** ou d'un `NaN` apparu en chemin. Afficher `size` et `class` aux étapes clés révèle le problème immédiatement.
+
+Et lorsqu'un résultat vous surprend, vérifiez d'abord `size` : c'est presque toujours une expansion implicite ou un `.*` oublié.
+:::
+
+# 11.7 Un programme complet
+
+```matlab
+% mco.m
+function [beta, se, R2] = mco(X, y)
+%MCO Estimation par les moindres carres ordinaires.
+%   [BETA, SE, R2] = MCO(X, Y) estime le modele Y = X*BETA + E.
+%   X doit contenir la constante si elle est souhaitee.
+%
+%   Exemple :
+%       X = [ones(4,1) (2:2:8)'];
+%       y = [3; 5; 8; 10];
+%       [b, s, r2] = mco(X, y);
+
+    if nargin < 2
+        error('mco:args', 'deux arguments requis');
+    end
+    if size(X, 1) ~= numel(y)
+        error('mco:dim', 'X a %d lignes, y en a %d', size(X,1), numel(y));
+    end
+    if rank(X) < size(X, 2)
+        error('mco:rang', 'colinearite parfaite entre les colonnes de X');
+    end
+
+    y = y(:);
+    n = size(X, 1);
+    k = size(X, 2);
+
+    beta = X \ y;
+    e = y - X * beta;
+
+    sigma2 = (e' * e) / (n - k);
+    se = sqrt(diag(sigma2 * inv(X' * X)));
+    R2 = 1 - (e' * e) / sum((y - mean(y)).^2);
+end
+```
+
+```{=html}
+<div data-octave data-file="mco-usage.m">
+```
+
+```matlab
+function [beta, se, R2] = mco(X, y)
+    y = y(:);
+    n = size(X, 1); k = size(X, 2);
+    beta = X \ y;
+    e = y - X * beta;
+    sigma2 = (e' * e) / (n - k);
+    se = sqrt(diag(sigma2 * inv(X' * X)));
+    R2 = 1 - (e' * e) / sum((y - mean(y)).^2);
+end
+
+X = [ones(4,1) [2;4;6;8]];
+y = [3; 5; 8; 10];
+
+[b, s, r2] = mco(X, y);
+
+fprintf('constante : %7.4f  (%.4f)\n', b(1), s(1));
+fprintf('pente     : %7.4f  (%.4f)\n', b(2), s(2));
+fprintf('R2        : %7.4f\n', r2);
+```
+
+```
+constante :  0.5000  (0.5477)
+pente     :  1.2000  (0.0894)
+R2        :  0.9878
+```
+
+```{=html}
+</div>
+```
+
+Cette fonction rassemble tout le cours : l'opérateur `\` du chapitre 6, la transposée et `.^` du chapitre 4, `diag` et `inv` du chapitre 5, `rank` pour le contrôle, `error` du chapitre 10.
+
+Le `y = y(:)` mérite un mot : il force `y` en colonne, que l'appelant l'ait fourni en ligne ou en colonne. Une ligne de robustesse qui évite un `nonconformant arguments` déroutant.
+
+# À vous
+
+Écrivez une fonction `decrire` qui renvoie moyenne, écart-type, minimum et maximum d'un vecteur, en ignorant les `NaN` et en refusant un vecteur vide.
+
+```{=html}
+<div data-octave data-file="exercice-fonctions.m">
+```
+
+```matlab
+% a completer
+
+v = [4 8 15 NaN 23 42];
+```
+
+```{=html}
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```matlab
+function [m, s, mini, maxi] = decrire(x, nom)
+%DECRIRE Statistiques descriptives d'un vecteur, NaN ignores.
+
+    if nargin < 2
+        nom = 'serie';
+    end
+
+    x = x(:);
+    x = x(~isnan(x));
+
+    if isempty(x)
+        error('decrire:vide', 'aucune valeur exploitable');
+    end
+
+    m = mean(x);
+    s = std(x);
+    mini = min(x);
+    maxi = max(x);
+
+    fprintf('%s : n=%d, moyenne=%.2f, ecart-type=%.2f, [%.2f ; %.2f]\n', ...
+            nom, numel(x), m, s, mini, maxi);
+end
+
+v = [4 8 15 NaN 23 42];
+[m, s] = decrire(v, 'valeurs');
+```
+
+```
+valeurs : n=5, moyenne=18.40, ecart-type=15.24, [4.00 ; 42.00]
+```
+
+Quatre points de méthode : `nargin` pour le paramètre facultatif, `x(:)` pour accepter ligne ou colonne, le filtrage des `NaN` par indexation logique, et `isempty` pour refuser le cas dégénéré.
+
+L'affichage se fait dans la fonction **et** les valeurs sont renvoyées : l'appelant peut les réutiliser sans avoir à les relire à l'écran.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| script `.m` | suite de commandes — partage l'espace de travail |
+| `clear; close all; clc;` | l'en-tête de tout script |
+| `function y = f(x)` … `end` | définir une fonction |
+| nom du **fichier** | l'emporte sur l'en-tête |
+| commentaires après l'en-tête | l'aide affichée par `help` |
+| `function [a, b] = f(x)` | plusieurs sorties, la plus utile en premier |
+| `nargin`, `nargout` | arguments et sorties réellement demandés |
+| espace de noms séparé | une fonction ne peut pas modifier vos variables |
+| `error`, `warning` | contrôler les arguments en tête de fonction |
+| `@(x) x.^2` | fonction anonyme — valeurs figées à la création |
+| `fzero`, `quad`, `fminsearch` | fonctions prenant une fonction |
+| `dbstop if error`, `fprintf` | déboguer |
+| `y = y(:)` | forcer en colonne — robustesse |
+
+# La suite
+
+Ce chapitre clôt le cours. Vous savez manipuler des matrices, résoudre des systèmes, importer des données, tracer des figures et organiser un programme — l'essentiel de ce qu'exige un travail quantitatif.
+
+Trois directions pour aller plus loin :
+
+- les **boîtes à outils** MATLAB : *Statistics and Machine Learning*, *Econometrics*, *Optimization* ;
+- **Simulink**, pour la modélisation par schémas-blocs ;
+- et surtout **NumPy**, dont le [cours Python](../python/numpy.qmd) de ce site montre qu'il reprend presque toutes les idées vues ici — avec quelques inversions de convention à connaître.
+
+La pensée matricielle acquise en MATLAB se transporte partout ailleurs. C'était l'objet de ce cours.
