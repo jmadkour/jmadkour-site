@@ -1,0 +1,413 @@
+---
+title: "Renvois et bibliographie"
+subtitle: "Informatique — LaTeX, chapitre 6"
+sidebar: latex
+include-after-body: ../../_includes/console.html
+---
+
+Voici ce qui justifie à lui seul l'apprentissage de LaTeX. Sur un mémoire de cent pages, la numérotation des sections, les renvois aux tableaux et la bibliographie représentent des heures de vérification manuelle — et une source d'erreurs inépuisable.
+
+LaTeX s'en charge intégralement, et les met à jour à chaque compilation.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des fichiers à compiler
+
+Les blocs de ce chapitre sont à recopier dans **[Overleaf](https://www.overleaf.com)** ou dans votre distribution locale.
+:::
+
+# 6.1 Les renvois internes
+
+## 6.1.1 Étiqueter, puis renvoyer
+
+```latex
+\section{Le modèle}
+\label{sec:modele}
+
+...
+
+Comme nous l'avons vu à la section~\ref{sec:modele}, page~\pageref{sec:modele}...
+```
+
+Deux commandes suffisent : `\label{...}` pose une étiquette, `\ref{...}` affiche le numéro correspondant. `\pageref{...}` donne le numéro de page.
+
+::: {.callout-important}
+### Où placer le `\label`
+
+| Objet | Emplacement du `\label` |
+|---|---|
+| section, chapitre | juste **après** le titre |
+| équation | à l'intérieur de l'environnement |
+| tableau, figure | **après** le `\caption` |
+
+L'erreur classique — placer `\label` avant `\caption` — donne un renvoi qui pointe vers la section englobante. Aucun message d'erreur : simplement un mauvais numéro, qu'on ne repère qu'à la relecture finale.
+:::
+
+## 6.1.2 La convention de nommage
+
+```latex
+\label{sec:introduction}     % section
+\label{eq:mco}               % equation
+\label{fig:nuage}            % figure
+\label{tab:desc}             % tableau
+\label{ch:methode}           % chapitre
+```
+
+Préfixer par le type d'objet n'est pas obligatoire, mais devient indispensable au-delà de vingt étiquettes : vous saurez d'un coup d'œil à quoi renvoie `\ref{tab:desc}`, et les collisions de noms disparaissent.
+
+## 6.1.3 Les commandes spécialisées
+
+```latex
+L'équation~\eqref{eq:mco} montre...      % (3.1) avec parentheses
+Voir le tableau~\ref{tab:desc}...        % 2
+\autoref{fig:nuage}                      % "figure 4" : le mot est ajoute
+```
+
+`\eqref` ajoute les parenthèses attendues autour d'un numéro d'équation. `\autoref`, fourni par **hyperref**, insère aussi le nom de l'objet — pratique, mais vérifiez qu'il le traduit bien en français.
+
+::: {.callout-tip}
+### L'espace insécable devant un renvoi
+
+Écrivez `tableau~\ref{tab:desc}` avec un tilde, jamais un espace ordinaire.
+
+Sans lui, LaTeX peut couper la ligne entre le mot et son numéro, laissant « tableau » en fin de ligne et « 3 » au début de la suivante. C'est une faute typographique visible.
+
+La règle vaut aussi pour « M.~Dupont », « figure~2 », « 100~km ».
+:::
+
+## 6.1.4 Les renvois non résolus
+
+```
+LaTeX Warning: There were undefined references.
+```
+
+Le document affiche alors `??` à la place des numéros. Deux causes possibles :
+
+- vous n'avez **compilé qu'une fois** — LaTeX a besoin de deux passes, comme l'expliquait le chapitre 4 ;
+- l'étiquette n'existe pas : faute de frappe, ou `\label` supprimé.
+
+Le message est un **avertissement**, pas une erreur : la compilation aboutit et produit un PDF truffé de `??`. Prenez l'habitude de chercher « undefined » dans le journal avant toute impression.
+
+# 6.2 La bibliographie
+
+## 6.2.1 Le fichier `.bib`
+
+Les références vivent dans un fichier séparé, par exemple `biblio.bib` :
+
+```bibtex
+@article{okun1962,
+  author  = {Okun, Arthur M.},
+  title   = {Potential {GNP}: Its Measurement and Significance},
+  journal = {Proceedings of the Business and Economic Statistics Section},
+  year    = {1962},
+  pages   = {98--104}
+}
+
+@book{wooldridge2020,
+  author    = {Wooldridge, Jeffrey M.},
+  title     = {Introductory Econometrics: A Modern Approach},
+  edition   = {7},
+  publisher = {Cengage Learning},
+  year      = {2020},
+  address   = {Boston}
+}
+
+@incollection{hcp2023,
+  author    = {{Haut-Commissariat au Plan}},
+  title     = {Les comptes régionaux},
+  booktitle = {Annuaire statistique du Maroc},
+  year      = {2023},
+  publisher = {HCP},
+  address   = {Rabat}
+}
+```
+
+::: {.callout-important}
+### Les accolades protègent les majuscules
+
+La plupart des styles bibliographiques passent les titres en minuscules. `{GNP}` conserve les capitales ; sans les accolades, on obtiendrait « gnp ».
+
+Protégez ainsi tous les sigles, noms propres et pays figurant dans un titre.
+
+De même, `{{Haut-Commissariat au Plan}}` avec **double** accolade signale un auteur institutionnel : sans cela, BibTeX comprendrait « Plan, Haut-Commissariat au » en inversant prénom et nom.
+:::
+
+::: {.callout-tip}
+### Ne tapez jamais une référence à la main
+
+Chaque source vous donne son entrée BibTeX toute faite :
+
+- **Google Scholar** : sous chaque résultat, l'icône guillemets, puis « BibTeX » ;
+- les sites d'éditeurs — Elsevier, Springer, JSTOR — proposent tous « Export citation » ;
+- **Zotero** ou **JabRef** gèrent votre bibliothèque et exportent un `.bib` complet.
+
+Vérifiez tout de même ce que vous copiez : les entrées de Google Scholar comportent souvent des noms de revue abrégés ou des années fausses.
+:::
+
+## 6.2.2 Citer et compiler
+
+```latex
+\documentclass{article}
+\usepackage[french]{babel}
+\usepackage{natbib}
+
+\begin{document}
+
+La loi d'Okun \citep{okun1962} établit une relation négative.
+\citet{wooldridge2020} en propose une présentation pédagogique.
+
+\bibliographystyle{apalike}
+\bibliography{biblio}
+
+\end{document}
+```
+
+| Commande | Résultat |
+|---|---|
+| `\citep{okun1962}` | (Okun, 1962) — entre parenthèses |
+| `\citet{okun1962}` | Okun (1962) — dans la phrase |
+| `\citep[p.~102]{okun1962}` | (Okun, 1962, p. 102) |
+| `\citep{a,b,c}` | plusieurs références d'un coup |
+| `\citeauthor`, `\citeyear` | l'auteur seul, l'année seule |
+
+::: {.callout-important}
+### La séquence de compilation
+
+Avec BibTeX, il faut **quatre** passes :
+
+```
+pdflatex memoire
+bibtex   memoire
+pdflatex memoire
+pdflatex memoire
+```
+
+La première recense les citations, `bibtex` fabrique la bibliographie, les deux suivantes l'insèrent et résolvent les renvois.
+
+Une seule passe donne une bibliographie vide et des citations en `[?]`.
+
+En pratique, employez `latexmk -pdf memoire.tex`, qui enchaîne tout seul. Overleaf le fait également.
+:::
+
+## 6.2.3 `biblatex`, l'alternative moderne
+
+```latex
+\usepackage[backend=biber, style=authoryear, sorting=nyt]{biblatex}
+\addbibresource{biblio.bib}
+
+\begin{document}
+
+La loi d'Okun \parencite{okun1962} établit une relation négative.
+\textcite{wooldridge2020} en propose une présentation.
+
+\printbibliography
+
+\end{document}
+```
+
+| | `natbib` + BibTeX | `biblatex` + Biber |
+|---|---|---|
+| Ancienneté | historique, universel | moderne |
+| Accents et Unicode | limités | complets |
+| Personnalisation | difficile | aisée |
+| Styles | via fichiers `.bst` | par options |
+| Attendu par les revues | souvent imposé | rarement |
+
+::: {.callout-tip}
+### Lequel choisir
+
+Si votre revue ou votre école doctorale impose un modèle, **suivez-le** : il fixe le choix.
+
+Sinon, `biblatex` gère bien mieux les caractères accentués et les sources non anglophones — ce qui compte pour une bibliographie francophone ou arabophone.
+
+Ne mélangez jamais les deux : ils sont incompatibles.
+:::
+
+## 6.2.4 Les styles de citation
+
+| Style | Rendu | Discipline |
+|---|---|---|
+| `apalike`, `authoryear` | (Okun, 1962) | économie, sciences sociales |
+| `plain`, `numeric` | [1] | mathématiques, informatique |
+| `unsrt` | [1], par ordre d'apparition | sciences exactes |
+| `chicago` | variable | histoire, lettres |
+
+En économie, l'auteur-année s'impose : le lecteur identifie la source sans quitter la page.
+
+::: {.callout-warning}
+### Seules les références citées apparaissent
+
+BibTeX n'inclut que les entrées effectivement citées dans le texte. Un fichier `.bib` de trois cents références produira une bibliographie de dix titres si vous n'en citez que dix.
+
+Pour forcer l'inclusion d'une référence non citée :
+
+```latex
+\nocite{okun1962}      % une reference precise
+\nocite{*}             % TOUT le fichier .bib
+```
+
+`\nocite{*}` est commode pour vérifier que toutes vos entrées sont bien formées — et dangereux si vous l'oubliez avant de rendre.
+:::
+
+# 6.3 Un document complet
+
+```latex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath, amssymb, graphicx, booktabs}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{natbib}
+\usepackage[hidelinks]{hyperref}
+
+\title{Croissance et chômage au Maroc}
+\author{Jaouad Madkour}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+\label{sec:intro}
+
+La loi d'Okun \citep{okun1962} établit une relation négative entre
+variation du chômage et croissance. \citet{wooldridge2020} en donne
+une présentation pédagogique complète.
+
+\section{Le modèle}
+\label{sec:modele}
+
+Nous estimons
+\begin{equation}
+\label{eq:okun}
+\Delta u_t = \alpha + \beta \, g_t + \varepsilon_t.
+\end{equation}
+
+\section{Résultats}
+\label{sec:resultats}
+
+Le tableau~\ref{tab:reg} présente les estimations de
+l'équation~\eqref{eq:okun}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Estimation de la loi d'Okun}
+  \label{tab:reg}
+  \begin{tabular}{lr}
+    \toprule
+    Variable & Coefficient \\
+    \midrule
+    Croissance & $-0{,}872^{***}$ \\
+    Constante  & $3{,}120^{***}$ \\
+    \midrule
+    $R^2$      & 0{,}486 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Comme annoncé à la section~\ref{sec:modele}, le coefficient est
+négatif et significatif. Les données proviennent du
+\citet{hcp2023}.
+
+\bibliographystyle{apalike}
+\bibliography{biblio}
+
+\end{document}
+```
+
+Ce document rassemble les chapitres 4, 5 et 6 : structure, équation numérotée, tableau flottant, renvois internes et citations. Il compile en quatre passes, ou en une commande `latexmk`.
+
+# 6.4 Trois erreurs fréquentes
+
+::: {.callout-warning}
+### `Citation undefined`
+
+La référence citée n'existe pas dans le `.bib`, ou vous n'avez pas exécuté `bibtex`. Vérifiez d'abord l'orthographe de la clé — elle est **sensible à la casse**.
+
+### La bibliographie reste vide
+
+Vous avez modifié le `.bib` mais pas relancé `bibtex`. Supprimez le fichier `.bbl` et recompilez entièrement.
+
+### Les accents disparaissent dans la bibliographie
+
+Symptôme classique de BibTeX avec des sources francophones. Deux remèdes : protéger chaque accent par des accolades dans le `.bib` — `{\'e}` — ou passer à `biblatex` avec Biber, qui gère l'UTF-8 nativement.
+:::
+
+# À vous
+
+Créez un fichier `biblio.bib` avec deux références, citez-les dans un document, et vérifiez que la bibliographie se construit.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+Le fichier `biblio.bib` :
+
+```bibtex
+@article{okun1962,
+  author  = {Okun, Arthur M.},
+  title   = {Potential {GNP}: Its Measurement and Significance},
+  journal = {Proceedings of the Business and Economic Statistics Section},
+  year    = {1962},
+  pages   = {98--104}
+}
+
+@book{greene2018,
+  author    = {Greene, William H.},
+  title     = {Econometric Analysis},
+  edition   = {8},
+  publisher = {Pearson},
+  year      = {2018},
+  address   = {New York}
+}
+```
+
+Le document :
+
+```latex
+\documentclass{article}
+\usepackage[french]{babel}
+\usepackage{natbib}
+
+\begin{document}
+
+La relation d'Okun \citep{okun1962} est un résultat empirique classique.
+Pour un traitement approfondi, voir \citet[chap.~4]{greene2018}.
+
+\bibliographystyle{apalike}
+\bibliography{biblio}
+
+\end{document}
+```
+
+Puis :
+
+```bash
+latexmk -pdf document.tex
+```
+
+Deux détails : `\citet[chap.~4]{greene2018}` produit « Greene (2018, chap. 4) » — l'argument optionnel précise la localisation. Et `98--104` avec **deux tirets** donne le tiret demi-cadratin des intervalles de pages, comme au chapitre 4.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `\label{...}` / `\ref{...}` | étiqueter / renvoyer |
+| `\label` **après** `\caption` | sinon le renvoi est faux |
+| `sec:`, `eq:`, `fig:`, `tab:` | convention de nommage |
+| `\eqref{...}` | numéro d'équation avec parenthèses |
+| `\pageref{...}` | numéro de page |
+| `tableau~\ref{...}` | espace insécable — toujours |
+| `??` dans le PDF | compiler deux fois, ou étiquette absente |
+| fichier `.bib` | une entrée par référence |
+| `{GNP}`, `{{Institution}}` | protéger majuscules et auteurs institutionnels |
+| `\citep` / `\citet` | (Auteur, année) / Auteur (année) |
+| `\citep[p.~102]{...}` | citation avec localisation |
+| `bibtex` entre deux `pdflatex` | quatre passes — ou `latexmk` |
+| `biblatex` + Biber | l'alternative moderne, meilleure en UTF-8 |
+| `\nocite{*}` | inclure tout le `.bib` |
+
+Le chapitre suivant assemble tout ceci à l'échelle d'un **mémoire ou d'une thèse** : plusieurs fichiers, une page de garde, des annexes.

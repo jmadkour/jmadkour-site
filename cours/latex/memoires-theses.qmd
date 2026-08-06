@@ -1,0 +1,451 @@
+---
+title: "Mémoires et thèses"
+subtitle: "Informatique — LaTeX, chapitre 7"
+sidebar: latex
+include-after-body: ../../_includes/console.html
+---
+
+Tout ce qui précède suffit à un article de vingt pages. Un mémoire en fait cent, une thèse trois cents — et à cette échelle, de nouvelles difficultés apparaissent : un fichier unique devient impossible à naviguer, la compilation ralentit, et une erreur au chapitre 3 bloque la relecture du chapitre 7.
+
+Ce chapitre montre comment organiser un document long pour qu'il reste maniable jusqu'à la soutenance.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des fichiers à compiler
+
+Les blocs sont à recopier dans **[Overleaf](https://www.overleaf.com)** ou dans votre distribution locale.
+:::
+
+# 7.1 Un fichier par chapitre
+
+## 7.1.1 Le fichier maître
+
+```latex
+% these.tex — le fichier maitre
+\documentclass[12pt, a4paper, twoside, openright]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath, amssymb, graphicx, booktabs}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{natbib}
+\usepackage[hidelinks]{hyperref}
+
+\begin{document}
+
+\include{pages/garde}
+\include{pages/remerciements}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\include{chapitres/introduction}
+\include{chapitres/revue-litterature}
+\include{chapitres/methodologie}
+\include{chapitres/resultats}
+\include{chapitres/conclusion}
+
+\appendix
+\include{annexes/donnees}
+\include{annexes/demonstrations}
+
+\bibliographystyle{apalike}
+\bibliography{biblio}
+
+\end{document}
+```
+
+Chaque chapitre vit dans son propre fichier, qui ne contient **que du contenu** — ni `\documentclass`, ni `\begin{document}` :
+
+```latex
+% chapitres/methodologie.tex
+\chapter{Méthodologie}
+\label{ch:methodo}
+
+\section{Le modèle}
+
+Nous estimons par les moindres carrés...
+```
+
+::: {.callout-important}
+### `\include` ou `\input` ?
+
+`\input{fichier}` insère le contenu à l'endroit exact, comme un copier-coller. Employez-le pour un tableau, un morceau de préambule, un bout de texte.
+
+`\include{fichier}` force un **saut de page** avant et après, et crée un fichier `.aux` séparé. Réservez-le aux **chapitres**.
+
+L'avantage décisif de `\include` est ci-dessous.
+:::
+
+## 7.1.2 Ne compiler qu'un chapitre
+
+```latex
+\includeonly{chapitres/resultats}
+```
+
+Placée dans le préambule, cette ligne ne compile que le chapitre nommé — **tout en conservant** la numérotation et les renvois des autres, lus dans leurs `.aux`.
+
+::: {.callout-tip}
+### Le gain de temps décisif
+
+Sur une thèse de trois cents pages avec cent figures, une compilation complète prend une à deux minutes. Pendant la rédaction du chapitre 4, c'est intenable.
+
+`\includeonly{chapitres/resultats}` ramène cela à quelques secondes, et les références aux autres chapitres restent justes.
+
+Commentez la ligne pour la version finale. Et n'oubliez pas de le faire avant d'imprimer.
+:::
+
+## 7.1.3 L'arborescence
+
+```
+these/
+├── these.tex              ← le fichier maitre
+├── biblio.bib
+├── preambule.tex
+├── pages/
+│   ├── garde.tex
+│   └── remerciements.tex
+├── chapitres/
+│   ├── introduction.tex
+│   ├── revue-litterature.tex
+│   └── ...
+├── annexes/
+│   └── donnees.tex
+└── figures/
+    ├── nuage.pdf
+    └── serie.pdf
+```
+
+Un préambule volumineux gagne à être extrait :
+
+```latex
+\input{preambule}
+```
+
+::: {.callout-warning}
+### Pas d'espaces ni d'accents dans les noms de fichiers
+
+`revue litterature.tex` et `méthodologie.tex` provoquent des erreurs difficiles à diagnostiquer, surtout entre Windows et Linux.
+
+Employez des minuscules, des tirets, aucun accent. La règle vaut aussi pour vos figures.
+:::
+
+# 7.2 La page de garde
+
+Beaucoup d'universités imposent un modèle. Si la vôtre en fournit un, employez-le sans discuter. Sinon :
+
+```latex
+% pages/garde.tex
+\begin{titlepage}
+\begin{center}
+
+{\large Université Abdelmalek Essaâdi}\\[0.3cm]
+{\large Faculté d'Économie et de Gestion de Tanger}\\[2cm]
+
+\includegraphics[width=3cm]{figures/logo}\\[2cm]
+
+{\Huge \bfseries Croissance et chômage\\[0.4cm] au Maroc}\\[0.5cm]
+{\Large Une analyse en données de panel régionales}\\[3cm]
+
+{\large Thèse de doctorat en sciences économiques}\\[2cm]
+
+\begin{minipage}{0.45\textwidth}
+\begin{flushleft}
+\emph{Présentée par :}\\
+Prénom \textsc{Nom}
+\end{flushleft}
+\end{minipage}
+\hfill
+\begin{minipage}{0.45\textwidth}
+\begin{flushright}
+\emph{Sous la direction de :}\\
+Pr. Jaouad \textsc{Madkour}
+\end{flushright}
+\end{minipage}
+
+\vfill
+
+{\large Soutenue le 15 juin 2027}\\[0.5cm]
+{\large Année universitaire 2026--2027}
+
+\end{center}
+\end{titlepage}
+```
+
+Trois mécanismes à retenir : les `minipage` placent deux blocs côte à côte ; `\vfill` pousse ce qui suit vers le bas de la page ; `\textsc{}` compose les noms en petites capitales, l'usage académique français.
+
+Les tailles, de la plus petite à la plus grande : `\small`, `\normalsize`, `\large`, `\Large`, `\LARGE`, `\huge`, `\Huge`.
+
+# 7.3 Les parties liminaires
+
+```latex
+\frontmatter        % pages en chiffres romains, chapitres non numerotes
+\include{pages/remerciements}
+\include{pages/resume}
+\tableofcontents
+
+\mainmatter         % retour aux chiffres arabes, page 1
+\include{chapitres/introduction}
+...
+
+\backmatter         % chapitres non numerotes a nouveau
+\bibliography{biblio}
+```
+
+::: {.callout-tip}
+### Ces trois commandes n'existent qu'avec `book`
+
+`\frontmatter`, `\mainmatter` et `\backmatter` sont propres à la classe `book`. Avec `report`, on obtient le même effet à la main :
+
+```latex
+\pagenumbering{roman}
+% ... remerciements, resume, table des matieres ...
+\pagenumbering{arabic}
+\setcounter{page}{1}
+```
+
+La convention veut que les pages liminaires soient en chiffres romains, et que la page 1 arabe corresponde au début de l'introduction.
+:::
+
+Le résumé se compose sans numérotation de chapitre :
+
+```latex
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Ce travail examine...
+
+\vspace{1cm}
+\noindent\textbf{Mots-clés :} croissance, chômage, données de panel, Maroc.
+```
+
+L'étoile supprime le numéro **et** l'entrée dans la table ; `\addcontentsline` la réintroduit manuellement. Sans elle, votre résumé serait absent du sommaire.
+
+# 7.4 Les annexes
+
+```latex
+\appendix
+
+\chapter{Sources et construction des données}
+\label{ann:donnees}
+
+\chapter{Démonstrations}
+\label{ann:demos}
+```
+
+`\appendix` ne produit rien de visible : il **change la numérotation**. Les chapitres suivants deviennent Annexe A, Annexe B, et leurs sections A.1, A.2. Tout ce qui précède reste inchangé.
+
+Un renvoi comme `\ref{ann:donnees}` affichera « A » automatiquement.
+
+# 7.5 Mise en page d'un document long
+
+## 7.5.1 Les marges et la reliure
+
+```latex
+\usepackage[
+  a4paper,
+  inner=3cm,        % cote reliure
+  outer=2.5cm,
+  top=2.5cm,
+  bottom=2.5cm,
+  bindingoffset=0.5cm
+]{geometry}
+```
+
+::: {.callout-important}
+### La marge intérieure doit être plus large
+
+Un document relié ou broché perd un demi-centimètre dans la pliure. Avec des marges égales, le texte paraît décentré une fois le volume ouvert.
+
+Avec `twoside`, `inner` et `outer` alternent automatiquement selon la parité de la page. Vérifiez toujours sur une impression recto-verso réelle avant le tirage définitif.
+:::
+
+## 7.5.2 Interligne et en-têtes
+
+```latex
+\usepackage{setspace}
+\onehalfspacing              % interligne 1,5 — souvent exige
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhead[LE]{\leftmark}    % nom du chapitre, pages paires
+\fancyhead[RO]{\rightmark}   % nom de la section, pages impaires
+\fancyfoot[C]{\thepage}
+```
+
+`\leftmark` et `\rightmark` reprennent automatiquement les titres courants. Les positions se codent par deux lettres : `L`/`C`/`R` pour la position, `E`/`O` pour paire ou impaire.
+
+## 7.5.3 Les débordements de marge
+
+```
+Overfull \hbox (12.4pt too wide) in paragraph at lines 245--248
+```
+
+Cet **avertissement** signale une ligne qui dépasse. Les causes habituelles : une URL longue, un mot composé que LaTeX ne sait pas couper, une formule en ligne trop large.
+
+Les remèdes, par ordre de préférence :
+
+```latex
+\usepackage[french]{babel}      % la cesure francaise, deja presente
+\usepackage{microtype}          % ajustements typographiques fins
+\hyphenation{éco-no-mé-trie}    % apprendre une cesure
+\usepackage{url}                % couper les URL proprement
+```
+
+::: {.callout-tip}
+### `microtype`, une ligne pour un vrai gain
+
+Ce paquet ajuste imperceptiblement l'espacement et la largeur des caractères. Il supprime à lui seul la majorité des débordements, et améliore visiblement la densité du gris typographique.
+
+Une seule ligne dans le préambule, aucun effet de bord. À mettre dans tous vos documents.
+:::
+
+# 7.6 Théorèmes et définitions
+
+```latex
+\usepackage{amsthm}
+
+\newtheorem{theoreme}{Théorème}[chapter]
+\newtheorem{proposition}[theoreme]{Proposition}
+\newtheorem{definition}{Définition}[chapter]
+
+\theoremstyle{remark}
+\newtheorem{remarque}{Remarque}[chapter]
+```
+
+```latex
+\begin{theoreme}[Gauss-Markov]
+\label{th:gm}
+Sous les hypothèses du modèle linéaire classique, l'estimateur des
+moindres carrés ordinaires est le meilleur estimateur linéaire sans biais.
+\end{theoreme}
+
+\begin{proof}
+Soit $\tilde{\beta} = Cy$ un autre estimateur linéaire sans biais...
+\end{proof}
+```
+
+Le `[chapter]` fait redémarrer la numérotation à chaque chapitre — Théorème 3.1, 3.2. Le `[theoreme]` sur la proposition lui fait **partager** le compteur : un théorème 3.1 est suivi d'une proposition 3.2.
+
+`\begin{proof}` compose « Démonstration » et place le carré de fin automatiquement.
+
+# 7.7 Avant de rendre
+
+::: {.callout-warning}
+### La liste de vérification
+
+**Compiler intégralement** — retirez `\includeonly`, supprimez tous les fichiers auxiliaires, recompilez depuis zéro.
+
+**Chercher « Warning » dans le journal** — en particulier `undefined references` et `Citation undefined`.
+
+**Chercher `??` dans le PDF** — un renvoi non résolu passe inaperçu à la lecture.
+
+**Vérifier la table des matières** — les niveaux affichés, les numéros de page, l'absence de doublons.
+
+**Relire les légendes** — elles sont écrites vite et relues rarement.
+
+**Imprimer recto-verso** — les marges de reliure et les pages blanches ne se jugent pas à l'écran.
+
+**Sauvegarder ailleurs** — Git, ou au minimum une copie datée hors de votre ordinateur. Une thèse perdue la veille du dépôt n'est pas une légende.
+:::
+
+# À vous
+
+Réorganisez un mémoire d'un seul fichier en arborescence : fichier maître, préambule séparé, un fichier par chapitre, et une annexe.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+`memoire.tex` :
+
+```latex
+\documentclass[12pt, a4paper, twoside]{report}
+\input{preambule}
+
+\begin{document}
+
+\include{pages/garde}
+
+\pagenumbering{roman}
+\chapter*{Remerciements}
+\addcontentsline{toc}{chapter}{Remerciements}
+Je remercie...
+
+\tableofcontents
+\listoftables
+\listoffigures
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\include{chapitres/introduction}
+\include{chapitres/methodologie}
+\include{chapitres/resultats}
+\include{chapitres/conclusion}
+
+\appendix
+\include{annexes/donnees}
+
+\bibliographystyle{apalike}
+\bibliography{biblio}
+
+\end{document}
+```
+
+`preambule.tex` :
+
+```latex
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx, booktabs}
+\usepackage[inner=3cm, outer=2.5cm, top=2.5cm, bottom=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{microtype}
+\usepackage{natbib}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{theoreme}{Théorème}[chapter]
+\newtheorem{definition}{Définition}[chapter]
+```
+
+`chapitres/methodologie.tex` :
+
+```latex
+\chapter{Méthodologie}
+\label{ch:methodo}
+
+\section{Le modèle}
+
+Comme annoncé au chapitre~\ref{ch:intro}...
+```
+
+Le renvoi `\ref{ch:intro}` fonctionne **entre fichiers** : LaTeX résout les étiquettes à l'échelle du document, pas du fichier. C'est ce qui rend le découpage sans risque.
+
+Pendant la rédaction, ajoutez `\includeonly{chapitres/methodologie}` au préambule : vous ne recompilerez que ce chapitre, en quelques secondes, tout en gardant les renvois justes.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `\include{chapitres/x}` | un fichier par chapitre — saut de page, `.aux` séparé |
+| `\input{fichier}` | insertion simple, sans saut de page |
+| `\includeonly{...}` | ne compiler qu'un chapitre — gain de temps décisif |
+| pas d'accents dans les noms de fichiers | portabilité |
+| `titlepage`, `minipage`, `\vfill` | page de garde |
+| `\textsc{Nom}` | petites capitales, usage académique |
+| `\frontmatter`, `\mainmatter` | classe `book` — ou `\pagenumbering` à la main |
+| `\chapter*` + `\addcontentsline` | sans numéro, mais dans la table |
+| `\appendix` | bascule la numérotation en Annexe A, B… |
+| `inner` > `outer` | marge de reliure |
+| `\onehalfspacing` | interligne 1,5 |
+| `fancyhdr` | en-têtes courants |
+| `microtype` | une ligne, moins de débordements |
+| `\newtheorem` + `proof` | théorèmes numérotés |
+| liste de vérification | avant tout dépôt |
+
+Le dernier chapitre change de format : les **diapositives**, avec Beamer.
