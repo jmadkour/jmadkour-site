@@ -1,0 +1,452 @@
+---
+title: "Graphiques avec PGFPlots"
+subtitle: "Informatique — LaTeX, chapitre 10"
+sidebar: latex
+include-after-body: ../../_includes/console.html
+---
+
+Dessiner un axe gradué avec le seul TikZ serait pénible : il faudrait placer chaque marque, écrire chaque étiquette, calculer chaque position. **PGFPlots** s'en charge — c'est une surcouche de TikZ dédiée aux graphiques de données.
+
+Le résultat rivalise avec ggplot2 ou Matplotlib, avec un avantage décisif : la figure emploie la police et la taille du document, et ses formules sont composées par LaTeX.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des fichiers à compiler
+
+Les blocs sont à recopier dans **[Overleaf](https://www.overleaf.com)** ou dans votre distribution locale.
+
+```latex
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+```
+
+La ligne `compat` n'est pas optionnelle : sans elle, PGFPlots émet un avertissement à chaque compilation et adopte des comportements anciens.
+:::
+
+# 10.1 Le premier graphique
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel = {Croissance du PIB (\%)},
+    ylabel = {Taux de chômage (\%)},
+    grid   = major
+  ]
+  \addplot[only marks] coordinates {
+    (1.2, 12.1) (2.4, 10.8) (3.1, 9.9)
+    (0.8, 12.6) (4.2, 8.7)  (2.9, 10.2)
+  };
+\end{axis}
+\end{tikzpicture}
+```
+
+Trois niveaux imbriqués : `tikzpicture` contient l'environnement `axis`, qui contient un ou plusieurs `\addplot`. Les options de l'axe entre crochets, les données après `coordinates`.
+
+::: {.callout-important}
+### Le pourcentage doit être échappé
+
+`xlabel = {Taux (\%)}` — sans la barre oblique, le `%` ouvre un commentaire et fait disparaître la fin de la ligne, exactement comme au chapitre 1.
+
+Dans une étiquette d'axe, l'erreur est particulièrement déroutante : c'est l'accolade fermante qui disparaît, et le message d'erreur surgit bien plus loin.
+:::
+
+# 10.2 Les types de tracé
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[xlabel = {année}, ylabel = {PIB}]
+  \addplot[blue, thick, mark=*]        coordinates {(1,45) (2,48) (3,52)};
+  \addplot[red, dashed, mark=square*]  coordinates {(1,38) (2,41) (3,43)};
+  \addplot[only marks, mark=triangle*] coordinates {(1,30) (2,33) (3,36)};
+\end{axis}
+\end{tikzpicture}
+```
+
+| Option | Effet |
+|---|---|
+| `only marks` | nuage de points, sans ligne |
+| `no marks` | ligne seule |
+| `mark=*`, `mark=square*`, `mark=triangle*` | forme des points |
+| `mark size=3pt` | taille |
+| `smooth` | courbe lissée entre les points |
+| `ybar`, `xbar` | barres verticales, horizontales |
+| `const plot` | escalier |
+
+Toutes les options de tracé du chapitre 9 restent valables : `thick`, `dashed`, `blue!60`, `opacity`.
+
+# 10.3 Tracer une fonction
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel = {$x$}, ylabel = {$f(x)$},
+    domain = -3:3, samples = 200,
+    axis lines = middle,
+    grid = major
+  ]
+  \addplot[blue, thick]        {x^2};
+  \addplot[red, thick, dashed] {2*x + 1};
+\end{axis}
+\end{tikzpicture}
+```
+
+Sans `coordinates`, PGFPlots **calcule** la fonction. `domain` fixe l'intervalle, `samples` le nombre de points évalués — 200 donne une courbe parfaitement lisse.
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[
+    domain = -4:4, samples = 300,
+    axis lines = middle,
+    xlabel = {$z$}, ylabel = {$\varphi(z)$},
+    ymin = 0, ymax = 0.45,
+    height = 6cm, width = 10cm
+  ]
+  \addplot[blue, thick] {1/sqrt(2*pi) * exp(-x^2/2)};
+\end{axis}
+\end{tikzpicture}
+```
+
+La densité de la loi normale centrée réduite, tracée exactement. Les fonctions disponibles : `exp`, `ln`, `log10`, `sqrt`, `sin`, `cos`, `abs`, `max`, `min`, et les constantes `pi` et `e`.
+
+::: {.callout-warning}
+### La variable s'appelle toujours `x`
+
+Même si votre axe est étiqueté $z$ ou $t$, la variable de la formule reste `x`. Écrire `{exp(-z^2/2)}` produirait une erreur.
+
+Et les angles trigonométriques sont en **degrés** par défaut : `sin(x)` sur le domaine −4:4 donne une courbe presque plate. Employez `sin(deg(x))` pour des radians.
+:::
+
+# 10.4 Lire les données d'un fichier
+
+C'est l'usage le plus important pour un travail empirique.
+
+Un fichier `donnees.dat` :
+
+```
+annee  pib   chomage
+2018   43.2  10.9
+2019   45.1  10.2
+2020   38.7  12.8
+2021   44.9  11.4
+2022   47.3  10.1
+2023   49.8   9.6
+```
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel = {année}, ylabel = {PIB (milliards)},
+    grid = major, width = 10cm, height = 6cm
+  ]
+  \addplot[blue, thick, mark=*]
+    table[x=annee, y=pib] {donnees.dat};
+\end{axis}
+\end{tikzpicture}
+```
+
+`table[x=..., y=...]` désigne les colonnes **par leur nom**. Le fichier peut en contenir vingt : vous n'en tracez que deux.
+
+::: {.callout-tip}
+### Le même principe qu'au chapitre 5
+
+Votre script R ou Python exporte le fichier de données ; le document le lit à la compilation.
+
+```r
+write.table(d, "donnees.dat", row.names = FALSE, quote = FALSE)
+```
+
+```python
+d.to_csv("donnees.dat", sep=" ", index=False)
+```
+
+Une nouvelle estimation met la figure à jour **sans que vous touchiez au document**. C'est la même logique que les tableaux produits automatiquement, appliquée aux graphiques — et le fondement de la recherche reproductible.
+
+Pour un CSV séparé par des virgules, ajoutez `col sep=comma` dans les options de `table`.
+:::
+
+# 10.5 Habiller
+
+## 10.5.1 Les options d'axe usuelles
+
+```latex
+\begin{axis}[
+    title  = {Chômage et croissance},
+    xlabel = {Croissance (\%)},
+    ylabel = {Chômage (\%)},
+    xmin = 0, xmax = 5,
+    ymin = 8, ymax = 14,
+    grid = major,
+    grid style = {dashed, gray!30},
+    width = 10cm, height = 6.5cm,
+    legend pos = north east,
+    axis lines = left
+  ]
+```
+
+| Option | Effet |
+|---|---|
+| `axis lines = box` | cadre complet (défaut) |
+| `axis lines = left` | seulement en bas et à gauche |
+| `axis lines = middle` | axes croisés à l'origine |
+| `grid = major` / `both` | quadrillage |
+| `width`, `height` | dimensions — **pas** `scale` |
+| `xtick = {0,1,2,3}` | graduations choisies |
+| `xticklabels = {A,B,C}` | étiquettes personnalisées |
+| `ymode = log` | échelle logarithmique |
+| `xticklabel style = {rotate=45}` | pivoter les étiquettes |
+
+::: {.callout-tip}
+### `axis lines = left` pour un graphique de publication
+
+Le cadre complet enferme la figure sans rien apporter. Deux axes suffisent, comme dans les revues d'économie.
+
+C'est le même principe qu'au chapitre 5 pour les tableaux : moins de traits, plus de lisibilité. Et c'est ce que font `theme_minimal()` en ggplot2 ou `spines.set_visible(False)` en Matplotlib.
+:::
+
+## 10.5.2 La légende
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel = {année}, ylabel = {taux (\%)},
+    legend pos = north west,
+    legend style = {draw=none, fill=none, font=\small}
+  ]
+  \addplot[blue, thick, mark=*] coordinates {(1,10) (2,11) (3,9)};
+  \addlegendentry{chômage}
+
+  \addplot[red, thick, mark=square*] coordinates {(1,4) (2,3) (3,5)};
+  \addlegendentry{croissance}
+\end{axis}
+\end{tikzpicture}
+```
+
+`\addlegendentry` suit chaque `\addplot`. On peut aussi tout déclarer d'un coup par `\legend{chômage, croissance}`.
+
+`draw=none, fill=none` retire le cadre et le fond de la légende — plus discret. Positions possibles : `north west`, `north east`, `south west`, `south east`, `outer north east`.
+
+# 10.6 Nuage et droite de régression
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel = {Croissance du PIB (\%)},
+    ylabel = {Variation du chômage (\%)},
+    axis lines = left, grid = major,
+    width = 10cm, height = 6.5cm,
+    legend pos = north east,
+    legend style = {draw=none, font=\small}
+  ]
+
+  \addplot[only marks, mark=*, mark size=2pt, blue!70]
+    coordinates {
+      (1.2, 0.8) (2.4, 0.1) (3.1,-0.4) (0.8, 1.1)
+      (4.2,-1.0) (2.9,-0.2) (1.9, 0.4) (3.6,-0.7)
+    };
+  \addlegendentry{observations}
+
+  \addplot[red, thick, domain=0.5:4.5] {1.35 - 0.52*x};
+  \addlegendentry{$\widehat{\Delta u} = 1{,}35 - 0{,}52\,g$}
+
+\end{axis}
+\end{tikzpicture}
+```
+
+L'équation estimée figure directement dans la légende, composée en LaTeX. Aucun logiciel de graphiques ne rend cela aussi proprement.
+
+::: {.callout-tip}
+### PGFPlots peut ajuster lui-même
+
+```latex
+\usepgfplotslibrary{statistics}
+
+\addplot[red, thick] table[x=g, y={create col/linear regression={y=du}}]
+  {donnees.dat};
+```
+
+La bibliothèque `statistics` calcule la droite des moindres carrés à partir des données du fichier. Les coefficients deviennent accessibles par `\pgfplotstableregressiona` et `\pgfplotstableregressionb`.
+
+C'est commode pour un graphique rapide. Pour un travail sérieux, estimez dans R ou Python — vous y disposez des écarts-types et des diagnostics — et n'employez PGFPlots que pour tracer.
+:::
+
+# 10.7 Histogrammes et barres
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[
+    ybar, bar width = 0.6cm,
+    xlabel = {région}, ylabel = {PIB (milliards)},
+    symbolic x coords = {Nord, Centre, Sud, Est},
+    xtick = data,
+    nodes near coords,
+    ymin = 0,
+    axis lines = left,
+    width = 10cm, height = 6cm
+  ]
+  \addplot[fill=blue!40, draw=blue!70]
+    coordinates {(Nord,45) (Centre,62) (Sud,29) (Est,38)};
+\end{axis}
+\end{tikzpicture}
+```
+
+`symbolic x coords` accepte des étiquettes textuelles au lieu de nombres. `nodes near coords` inscrit la valeur au-dessus de chaque barre — pratique quand elles sont peu nombreuses.
+
+```latex
+\usepgfplotslibrary{statistics}
+
+\begin{tikzpicture}
+\begin{axis}[
+    ylabel = {effectif}, xlabel = {valeur},
+    axis lines = left, width = 10cm, height = 6cm
+  ]
+  \addplot[hist={bins=15}, fill=blue!30, draw=blue!60]
+    table[y index=0] {valeurs.dat};
+\end{axis}
+\end{tikzpicture}
+```
+
+`hist={bins=15}` construit l'histogramme à partir des valeurs brutes. Avec `hist={bins=15, density}`, on passe en densité — pour superposer une courbe théorique.
+
+# 10.8 Plusieurs graphiques
+
+```latex
+\usepgfplotslibrary{groupplots}
+
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style = {group size = 2 by 1, horizontal sep = 1.5cm},
+    width = 6cm, height = 5cm,
+    axis lines = left
+  ]
+
+  \nextgroupplot[title = {PIB}, xlabel = {année}]
+    \addplot[blue, thick] coordinates {(1,43) (2,45) (3,49)};
+
+  \nextgroupplot[title = {Chômage}, xlabel = {année}]
+    \addplot[red, thick] coordinates {(1,10.9) (2,10.2) (3,9.6)};
+
+\end{groupplot}
+\end{tikzpicture}
+```
+
+`groupplots` aligne plusieurs axes et partage leurs dimensions — l'équivalent de `facet_wrap` en ggplot2 ou de `subplot` en MATLAB.
+
+L'option `group style = {..., y descriptions at=edge left}` supprime les étiquettes redondantes, ce qui allège nettement une grille.
+
+# 10.9 Remplir une aire
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[
+    domain = -4:4, samples = 300,
+    axis lines = middle,
+    xlabel = {$z$}, ylabel = {$\varphi(z)$},
+    ymin = 0, ymax = 0.45,
+    xtick = {-1.96, 0, 1.96},
+    xticklabels = {$-1{,}96$, $0$, $1{,}96$},
+    ytick = \empty,
+    width = 11cm, height = 6cm,
+    enlargelimits = false
+  ]
+
+  \addplot[draw=none, fill=red!25, domain=-4:-1.96]
+    {1/sqrt(2*pi)*exp(-x^2/2)} \closedcycle;
+  \addplot[draw=none, fill=red!25, domain=1.96:4]
+    {1/sqrt(2*pi)*exp(-x^2/2)} \closedcycle;
+
+  \addplot[blue, very thick] {1/sqrt(2*pi)*exp(-x^2/2)};
+
+  \node at (axis cs:2.9,0.05) {\small $2{,}5\,\%$};
+  \node at (axis cs:-2.9,0.05) {\small $2{,}5\,\%$};
+
+\end{axis}
+\end{tikzpicture}
+```
+
+Voilà la figure la plus utile d'un cours de statistique : la région critique d'un test bilatéral à 5 %.
+
+`\closedcycle` referme la courbe sur l'axe, ce qui permet de remplir. `axis cs:` place un nœud dans les **coordonnées de l'axe** plutôt que dans celles du dessin — indispensable dès que les échelles ne sont pas unitaires.
+
+::: {.callout-tip}
+### L'ordre des `\addplot` compte
+
+Les tracés se superposent dans l'ordre d'écriture. Les aires remplies **d'abord**, la courbe **ensuite** : autrement, le remplissage recouvrirait le trait.
+
+Et `enlargelimits = false` colle le graphique à ses bornes, sans la marge que PGFPlots ajoute par défaut.
+:::
+
+# 10.10 Quand employer PGFPlots
+
+::: {.callout-important}
+### Le bon partage des rôles
+
+**PGFPlots** convient pour : une figure destinée à un document LaTeX, une illustration de cours devant employer la police du texte, un schéma comportant des formules, un graphique qui doit se régénérer depuis un fichier de données.
+
+**R, Python ou MATLAB** conviennent mieux pour : l'exploration rapide, les jeux de données volumineux, les graphiques statistiques élaborés — densités estimées, boîtes à moustaches par groupe, cartes.
+
+La compilation d'un nuage de dix mille points en PGFPlots prend des minutes et alourdit le PDF. Au-delà de quelques centaines de points, exportez plutôt un PDF depuis votre logiciel statistique, et insérez-le par `\includegraphics`.
+
+Une solution intermédiaire existe : `tikzDevice` en R et `tikzplotlib` en Python convertissent une figure existante en code TikZ. Vous gardez la souplesse du logiciel statistique et la typographie de LaTeX.
+:::
+
+# À vous
+
+Tracez la densité d'une loi normale de moyenne 0 et d'écart-type 1, avec l'aire sous la courbe à gauche de −1,645 remplie, et une annotation indiquant 5 %.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```latex
+\begin{tikzpicture}
+\begin{axis}[
+    domain = -4:4, samples = 300,
+    axis lines = middle,
+    xlabel = {$z$}, ylabel = {$\varphi(z)$},
+    ymin = 0, ymax = 0.45,
+    xtick = {-1.645, 0},
+    xticklabels = {$-1{,}645$, $0$},
+    ytick = \empty,
+    width = 11cm, height = 6cm,
+    enlargelimits = false,
+    every axis x label/.style = {at={(ticklabel* cs:1.0)}, anchor=west}
+  ]
+
+  \addplot[draw=none, fill=red!25, domain=-4:-1.645]
+    {1/sqrt(2*pi)*exp(-x^2/2)} \closedcycle;
+
+  \addplot[blue, very thick] {1/sqrt(2*pi)*exp(-x^2/2)};
+
+  \draw[->, thick] (axis cs:-3.2,0.14) -- (axis cs:-2.1,0.03);
+  \node at (axis cs:-3.2,0.17) {\small $\alpha = 5\,\%$};
+
+\end{axis}
+\end{tikzpicture}
+```
+
+Trois points : l'aire est tracée **avant** la courbe ; `axis cs:` sert aussi bien au `\draw` de la flèche qu'au `\node` ; et `5\,\%` combine l'espace fine du chapitre 2 avec le pourcentage échappé du chapitre 1.
+
+Changez `-1.645` en `-2.326` et l'annotation en `1\,\%` : vous obtenez la figure du seuil à 1 %, sans rien d'autre à modifier.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `\usepackage{pgfplots}` + `\pgfplotsset{compat=1.18}` | charger — la ligne compat est nécessaire |
+| `axis` dans `tikzpicture` | l'environnement de base |
+| `\addplot coordinates {...}` | données saisies |
+| `\addplot {x^2}` avec `domain`, `samples` | fonction calculée |
+| `\addplot table[x=a, y=b] {fichier.dat}` | données lues d'un fichier |
+| `only marks`, `smooth`, `ybar`, `const plot` | types de tracé |
+| `\%` échappé | dans toute étiquette |
+| la variable est toujours `x` | quelle que soit l'étiquette d'axe |
+| `axis lines = left` | plus lisible qu'un cadre complet |
+| `\addlegendentry` | légende, après chaque tracé |
+| `symbolic x coords` | étiquettes textuelles en abscisse |
+| `nodes near coords` | valeurs au-dessus des barres |
+| `hist={bins=15}` | histogramme depuis les valeurs brutes |
+| `groupplots` | plusieurs graphiques alignés |
+| `\closedcycle` | remplir une aire — **avant** la courbe |
+| `axis cs:` | coordonnées de l'axe, pour un nœud |
+| au-delà de quelques centaines de points | exporter un PDF depuis R ou Python |
+
+Le dernier chapitre applique TikZ et PGFPlots aux figures dont un cours d'économie a réellement besoin : **schémas économiques et figures pédagogiques**.

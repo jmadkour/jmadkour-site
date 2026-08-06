@@ -1,0 +1,455 @@
+---
+title: "Dessiner avec TikZ"
+subtitle: "Informatique — LaTeX, chapitre 9"
+sidebar: latex
+include-after-body: ../../_includes/console.html
+---
+
+Le chapitre 5 insérait des images produites ailleurs. **TikZ** en produit directement, dans le document lui-même.
+
+L'avantage n'est pas théorique : la figure emploie la police du texte, sa taille suit celle du document, ses formules sont composées par LaTeX, et elle reste vectorielle à toute échelle. Une figure TikZ ne se distingue pas du reste de la page — c'est exactement ce qu'on veut.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des fichiers à compiler
+
+TikZ produit un dessin, que l'éditeur de formules de ce site ne peut pas rendre. Les blocs sont à recopier dans **[Overleaf](https://www.overleaf.com)**, où ils compilent tels quels.
+
+Les figures « fil conducteur » de tous les cours de ce site sont faites en TikZ.
+:::
+
+# 9.1 Le principe
+
+```latex
+\usepackage{tikz}           % dans le preambule
+
+\begin{tikzpicture}
+  \draw (0,0) -- (3,2);
+\end{tikzpicture}
+```
+
+Une seule ligne de dessin, et déjà tout le langage : `\draw` trace, `(0,0)` et `(3,2)` sont des **coordonnées**, `--` les relie par un segment, et le point-virgule termine.
+
+::: {.callout-important}
+### Le point-virgule est obligatoire
+
+Chaque commande TikZ se termine par un `;`. Son oubli est l'erreur la plus fréquente, et le message est déroutant :
+
+```
+! Package tikz Error: Giving up on this path. Did you forget a semicolon?
+```
+
+TikZ pose lui-même la question. Quand vous le voyez, cherchez le point-virgule manquant sur la ligne précédente.
+:::
+
+## 9.1.1 L'unité de longueur
+
+```latex
+\begin{tikzpicture}[x=1cm, y=1cm]
+  \draw (0,0) -- (3,0);
+\end{tikzpicture}
+
+\begin{tikzpicture}[scale=2]
+  \draw (0,0) -- (3,0);
+\end{tikzpicture}
+```
+
+Par défaut, une unité vaut 1 cm. L'option `scale` multiplie tout, `x=` et `y=` règlent chaque axe séparément — utile quand les abscisses couvrent 0 à 100 et les ordonnées 0 à 1.
+
+# 9.2 Les chemins
+
+## 9.2.1 Relier des points
+
+```latex
+\begin{tikzpicture}
+  \draw (0,0) -- (2,0) -- (2,2) -- (0,2) -- cycle;
+  \draw[dashed] (0,0) -- (2,2);
+\end{tikzpicture}
+```
+
+Les segments s'enchaînent, et `cycle` referme le chemin sur son point de départ — préférable à réécrire les coordonnées initiales, car l'angle est alors correctement joint.
+
+| Écriture | Effet |
+|---|---|
+| `--` | segment droit |
+| `|-` | d'abord vertical, puis horizontal |
+| `-|` | d'abord horizontal, puis vertical |
+| `to[out=30,in=150]` | courbe, avec angles de départ et d'arrivée |
+| `.. controls (1,2) ..` | courbe de Bézier |
+
+## 9.2.2 Les options de tracé
+
+```latex
+\begin{tikzpicture}
+  \draw[thick, blue]              (0,2) -- (3,2);
+  \draw[dashed, red, thin]        (0,1.5) -- (3,1.5);
+  \draw[->, very thick]           (0,1) -- (3,1);
+  \draw[<->, dotted, line width=2pt] (0,0.5) -- (3,0.5);
+\end{tikzpicture}
+```
+
+| Option | Effet |
+|---|---|
+| `thin`, `thick`, `very thick`, `ultra thick` | épaisseur |
+| `line width=1.5pt` | épaisseur précise |
+| `dashed`, `dotted`, `dash dot` | style de trait |
+| `->`, `<-`, `<->` | pointes de flèche |
+| `red`, `blue!60`, `black!30` | couleur, éventuellement éclaircie |
+| `opacity=0.5` | transparence |
+
+::: {.callout-tip}
+### `!` éclaircit une couleur
+
+`blue!60` signifie « 60 % de bleu, 40 % de blanc ». `black!20` donne un gris clair.
+
+On mélange aussi deux couleurs : `red!40!blue` est un violet. C'est le mécanisme du paquet **xcolor**, et il évite d'avoir à définir des teintes à la main.
+:::
+
+## 9.2.3 Tracer et remplir
+
+```latex
+\begin{tikzpicture}
+  \draw            (0,0) rectangle (2,1);
+  \fill[blue!30]   (2.5,0) rectangle (4.5,1);
+  \filldraw[fill=blue!30, draw=blue!70, thick]
+                   (5,0) rectangle (7,1);
+\end{tikzpicture}
+```
+
+`\draw` trace le contour, `\fill` remplit sans contour, `\filldraw` fait les deux — avec deux options distinctes, `fill=` et `draw=`.
+
+# 9.3 Les formes
+
+```latex
+\begin{tikzpicture}
+  \draw (0,0) rectangle (2,1.5);
+  \draw (3,0.75) circle (0.75);
+  \draw (5,0.75) ellipse (1 and 0.5);
+  \draw (7,0) arc (0:120:1);
+  \draw (8,0) grid (10,1.5);
+\end{tikzpicture}
+```
+
+| Commande | Forme |
+|---|---|
+| `rectangle (x,y)` | rectangle jusqu'au coin opposé |
+| `circle (r)` | cercle de rayon r |
+| `ellipse (a and b)` | ellipse de demi-axes a et b |
+| `arc (début:fin:rayon)` | arc, angles en degrés |
+| `grid (x,y)` | quadrillage |
+
+# 9.4 Les nœuds
+
+C'est le cœur de TikZ. Un **nœud** est une boîte contenant du texte, placée à une coordonnée.
+
+## 9.4.1 Créer un nœud
+
+```latex
+\begin{tikzpicture}
+  \node at (0,0) {Un texte};
+  \node[draw] at (0,-1) {Encadré};
+  \node[draw, circle, fill=blue!20] at (0,-2.5) {Rond};
+  \node[draw, rounded corners, fill=green!20] at (3,-1) {Arrondi};
+\end{tikzpicture}
+```
+
+Le contenu est du **LaTeX ordinaire** : vous pouvez y mettre une formule, du gras, une liste.
+
+```latex
+\begin{tikzpicture}
+  \node[draw, fill=blue!10] at (0,0)
+    {$\hat{\beta} = (X'X)^{-1}X'y$};
+\end{tikzpicture}
+```
+
+## 9.4.2 Nommer et relier
+
+```latex
+\begin{tikzpicture}
+  \node[draw] (a) at (0,0)   {Données};
+  \node[draw] (b) at (3,0)   {Modèle};
+  \node[draw] (c) at (6,0)   {Résultats};
+
+  \draw[->] (a) -- (b);
+  \draw[->] (b) -- (c);
+\end{tikzpicture}
+```
+
+::: {.callout-important}
+### La parenthèse nomme, l'accolade contient
+
+`\node[options] (nom) at (x,y) {contenu};`
+
+Le nom entre **parenthèses** sert à désigner le nœud ensuite. Le contenu entre **accolades** est ce qui s'affiche.
+
+Et TikZ est intelligent : `\draw[->] (a) -- (b)` ne part pas du centre de `a`, mais de son **bord**, dans la direction de `b`. La flèche s'ajuste automatiquement si vous déplacez les nœuds ou changez leur texte.
+
+C'est ce qui rend les schémas TikZ maintenables, là où un dessin fait à la souris devrait être refait à chaque modification.
+:::
+
+## 9.4.3 Le positionnement relatif
+
+```latex
+\usetikzlibrary{positioning}    % dans le preambule
+
+\begin{tikzpicture}[node distance=2cm]
+  \node[draw]                       (a) {Données};
+  \node[draw, right=of a]           (b) {Modèle};
+  \node[draw, below=of b]           (c) {Diagnostic};
+  \node[draw, right=3cm of b]       (d) {Résultats};
+
+  \draw[->] (a) -- (b);
+  \draw[->] (b) -- (c);
+  \draw[->] (b) -- (d);
+\end{tikzpicture}
+```
+
+Plutôt que de calculer des coordonnées, on décrit les positions les unes par rapport aux autres : `right=of a`, `below left=of b`, `above=1cm of c`.
+
+C'est nettement préférable. Ajouter un nœud au milieu d'un schéma ne demande alors aucun recalcul.
+
+## 9.4.4 Les ancrages
+
+```latex
+\begin{tikzpicture}
+  \node[draw, minimum width=3cm, minimum height=1.5cm] (n) at (0,0) {Nœud};
+
+  \fill[red] (n.north) circle (2pt);
+  \fill[red] (n.south east) circle (2pt);
+  \fill[red] (n.west) circle (2pt);
+
+  \draw[->] (n.east) -- ++(1.5,0);
+\end{tikzpicture}
+```
+
+Chaque nœud possède des **points d'ancrage** : `.north`, `.south`, `.east`, `.west`, et leurs combinaisons. On y accroche précisément une flèche.
+
+`++(1.5,0)` est une coordonnée **relative** : « 1,5 unité à droite du point précédent ».
+
+# 9.5 Étiqueter un trait
+
+```latex
+\begin{tikzpicture}[node distance=3cm]
+  \node[draw] (a) {Offre};
+  \node[draw, right=of a] (b) {Prix};
+
+  \draw[->] (a) -- node[above] {détermine} (b);
+  \draw[->] (a) to[bend right] node[below] {influence} (b);
+\end{tikzpicture}
+```
+
+Un `node` placé **au milieu d'un chemin** s'y positionne automatiquement. Les options `above`, `below`, `midway`, `near start`, `near end`, `sloped` en règlent le placement.
+
+`to[bend right]` courbe le trait — indispensable quand deux flèches relient les mêmes nœuds en sens opposés.
+
+# 9.6 Les styles
+
+C'est ce qui rend une figure lisible et modifiable.
+
+```latex
+\begin{tikzpicture}[
+    boite/.style   = {draw, rounded corners, fill=blue!10,
+                      minimum width=2.5cm, minimum height=1cm},
+    fleche/.style  = {->, thick, >=stealth},
+    node distance  = 2.5cm
+  ]
+
+  \node[boite]                  (a) {Données};
+  \node[boite, right=of a]      (b) {Estimation};
+  \node[boite, right=of b]      (c) {Diagnostic};
+
+  \draw[fleche] (a) -- (b);
+  \draw[fleche] (b) -- (c);
+  \draw[fleche] (c) to[bend right=40] node[above] {révision} (b);
+\end{tikzpicture}
+```
+
+::: {.callout-tip}
+### Définissez vos styles en tête de figure
+
+Sans styles, chaque nœud répète six options — et changer la couleur du schéma demande de modifier douze lignes.
+
+Avec `boite/.style = {...}`, la définition est unique. Vous changez une couleur à un seul endroit, et toute la figure suit.
+
+C'est exactement le principe de LaTeX lui-même : décrire la structure, pas l'apparence.
+
+Pour un style employé dans tout le document, placez-le dans le préambule :
+
+```latex
+\tikzset{
+  boite/.style = {draw, rounded corners, fill=blue!10},
+  fleche/.style = {->, thick, >=stealth}
+}
+```
+:::
+
+`>=stealth` change la forme des pointes de flèche — plus fine et plus élégante que la pointe par défaut. Elle demande `\usetikzlibrary{arrows.meta}`.
+
+# 9.7 Répéter avec `\foreach`
+
+```latex
+\begin{tikzpicture}
+  \foreach \x in {0,1,2,3,4}
+    \draw (\x,0) circle (0.3);
+
+  \foreach \x in {0,...,4}
+    \node at (\x,-1) {\x};
+
+  \foreach \x/\nom in {0/Nord, 2/Centre, 4/Sud}
+    \node[draw] at (\x,-2.5) {\nom};
+\end{tikzpicture}
+```
+
+`\foreach` évite la répétition. Les trois formes : liste explicite, intervalle par `...`, et paires séparées par `/` pour parcourir deux listes en parallèle.
+
+```latex
+\begin{tikzpicture}[scale=0.8]
+  % un quadrillage de 5 x 4 cases numerotees
+  \foreach \x in {0,...,4}
+    \foreach \y in {0,...,3} {
+      \draw[fill=blue!10] (\x,\y) rectangle ++(1,1);
+      \node at (\x+0.5,\y+0.5) {\tiny \x,\y};
+    }
+\end{tikzpicture}
+```
+
+Deux boucles imbriquées produisent une grille — le mécanisme employé pour les figures « fil conducteur » du chapitre 11.
+
+# 9.8 Où placer sa figure
+
+```latex
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}
+    ...
+  \end{tikzpicture}
+  \caption{Le processus d'estimation}
+  \label{fig:processus}
+\end{figure}
+```
+
+Une `tikzpicture` s'insère comme une image : dans un flottant `figure`, avec sa légende et son étiquette, exactement comme au chapitre 5.
+
+::: {.callout-warning}
+### La compilation ralentit
+
+Une figure TikZ complexe prend plusieurs secondes à compiler, et ce coût se répète à **chaque** compilation. Sur une thèse comptant trente figures, cela devient pénible.
+
+Deux remèdes :
+
+**L'externalisation** — TikZ compile chaque figure une fois, la stocke en PDF, et la réutilise tant qu'elle n'a pas changé :
+
+```latex
+\usetikzlibrary{external}
+\tikzexternalize[prefix=figures/]
+```
+
+Il faut alors compiler avec `-shell-escape`.
+
+**Un fichier séparé** — mettez chaque figure dans son propre `.tex`, compilez-la une fois en PDF autonome, et incluez le PDF par `\includegraphics`. C'est la méthode employée pour les figures de ce site.
+:::
+
+# 9.9 Un exemple complet
+
+```latex
+\documentclass{article}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+
+\tikzset{
+  etape/.style  = {draw, rounded corners, fill=blue!10,
+                   minimum width=2.8cm, minimum height=1cm,
+                   align=center},
+  donnee/.style = {draw, fill=orange!15, minimum width=2.8cm,
+                   minimum height=1cm, align=center},
+  fleche/.style = {-{Stealth}, thick}
+}
+
+\begin{document}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=1.6cm and 2.4cm]
+
+  \node[donnee]                        (brut)   {Données\\brutes};
+  \node[etape, right=of brut]          (nettoy) {Nettoyage};
+  \node[etape, right=of nettoy]        (estim)  {Estimation};
+  \node[etape, below=of estim]         (diag)   {Diagnostic};
+  \node[donnee, right=of estim]        (res)    {Résultats};
+
+  \draw[fleche] (brut)   -- (nettoy);
+  \draw[fleche] (nettoy) -- (estim);
+  \draw[fleche] (estim)  -- (diag);
+  \draw[fleche] (estim)  -- (res);
+  \draw[fleche] (diag) to[bend left=35]
+        node[left, font=\small] {révision} (nettoy);
+
+\end{tikzpicture}
+\caption{Le déroulement d'un travail empirique}
+\label{fig:processus}
+\end{figure}
+
+\end{document}
+```
+
+Notez `align=center` sur les styles : sans lui, le `\\` à l'intérieur d'un nœud ne produirait aucun retour à la ligne.
+
+# À vous
+
+Dessinez un schéma à trois nœuds représentant le lien entre théorie, modèle et données, avec des flèches dans les deux sens entre modèle et données.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```latex
+\usetikzlibrary{positioning, arrows.meta}
+
+\begin{tikzpicture}[
+    node distance = 3cm,
+    boite/.style  = {draw, rounded corners, fill=blue!10,
+                     minimum width=2.5cm, minimum height=1cm},
+    fleche/.style = {-{Stealth}, thick}
+  ]
+
+  \node[boite]              (th)  {Théorie};
+  \node[boite, right=of th] (mod) {Modèle};
+  \node[boite, right=of mod](don) {Données};
+
+  \draw[fleche] (th) -- node[above, font=\small] {formalise} (mod);
+
+  \draw[fleche] (mod) to[bend left=25]
+        node[above, font=\small] {prédit} (don);
+  \draw[fleche] (don) to[bend left=25]
+        node[below, font=\small] {infirme} (mod);
+
+\end{tikzpicture}
+```
+
+Les deux `bend left=25` en sens inverse produisent deux arcs symétriques : c'est la façon habituelle de représenter une relation réciproque. Avec deux traits droits, ils se superposeraient.
+
+Notez `font=\small` sur les étiquettes : le texte d'un schéma doit être plus petit que le corps du document, sans quoi la figure paraît lourde.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `\usepackage{tikz}` | charger — puis `\usetikzlibrary{...}` selon les besoins |
+| `\begin{tikzpicture}` … `\end{tikzpicture}` | une figure |
+| `;` en fin de commande | **obligatoire** |
+| `\draw (0,0) -- (3,2);` | segment |
+| `cycle` | refermer un chemin |
+| `thick`, `dashed`, `->`, `blue!60` | options de tracé |
+| `\fill`, `\filldraw` | remplir, remplir et tracer |
+| `rectangle`, `circle`, `ellipse`, `arc`, `grid` | formes |
+| `\node (nom) at (x,y) {texte};` | nœud — parenthèse nomme, accolade contient |
+| `\draw[->] (a) -- (b);` | relie **bord à bord**, automatiquement |
+| `right=of a` | positionnement relatif — bibliothèque `positioning` |
+| `(n.north)`, `(n.east)` | ancrages |
+| `++(1,0)` | coordonnée relative |
+| `-- node[above] {texte} --` | étiqueter un trait |
+| `to[bend left=30]` | courber un lien |
+| `boite/.style = {...}` | définir un style — à faire systématiquement |
+| `\foreach \x in {0,...,4}` | répéter |
+| `\tikzexternalize` | compiler chaque figure une seule fois |
+
+Le chapitre suivant emploie TikZ à ce qu'il fait le mieux en économie : tracer des **graphiques de données**, avec PGFPlots.
