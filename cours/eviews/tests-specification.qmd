@@ -1,0 +1,334 @@
+---
+title: "Tests de spécification"
+subtitle: "Informatique — EViews, chapitre 3"
+sidebar: eviews
+---
+
+Une régression estimée n'est pas une régression validée. Les probabilités affichées dans la colonne `Prob.` ne valent que si les résidus se comportent comme la théorie le suppose : variance constante, absence d'autocorrélation, forme fonctionnelle correcte.
+
+Ce chapitre passe en revue les tests qui vérifient ces hypothèses. Tous se trouvent dans le menu `View` de la fenêtre d'équation, et tous s'exécutent en deux clics.
+
+::: {.callout-important}
+### La logique commune à tous ces tests
+
+Dans presque tous les cas, **l'hypothèse nulle est celle qui vous arrange** : homoscédasticité, absence d'autocorrélation, normalité, stabilité.
+
+Une `Prob.` **inférieure à 0,05 est donc une mauvaise nouvelle** : elle rejette l'hypothèse nulle et signale un problème.
+
+C'est l'inverse du réflexe acquis sur les coefficients, où une petite probabilité était le résultat souhaité. Cette inversion est la source d'erreur numéro un dans la lecture des diagnostics.
+:::
+
+# L'hétéroscédasticité
+
+## Le problème
+
+Si la variance des résidus n'est pas constante, les coefficients restent sans biais — mais leurs **écarts-types sont faux**, donc les `t-Statistic` et les `Prob.` aussi. Vous concluez à tort qu'une variable est significative, ou l'inverse.
+
+C'est fréquent en coupe transversale : la dispersion des dépenses augmente avec le revenu, celle des profits avec la taille de l'entreprise.
+
+## Le repérer
+
+> **View → Actual, Fitted, Residual → Residual Graph**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 1 — un graphique de résidus hétéroscédastiques</strong>
+Montrer un graphique de résidus en entonnoir, dont l'amplitude croît nettement de gauche à droite.</div>
+```
+
+L'œil détecte souvent l'hétéroscédasticité avant les tests : les résidus dessinent un entonnoir, ou leur amplitude change nettement d'une sous-période à l'autre.
+
+## Le tester
+
+> **View → Residual Diagnostics → Heteroskedasticity Tests**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 2 — la boîte de choix du test d'hétéroscédasticité</strong>
+Montrer la liste déroulante avec Breusch-Pagan-Godfrey, Harvey, Glejser, ARCH, White, et l'option « Include White cross terms ».</div>
+```
+
+| Test | Ce qu'il suppose |
+|---|---|
+| `Breusch-Pagan-Godfrey` | la variance dépend linéairement des explicatives |
+| `Harvey`, `Glejser` | variantes sur d'autres formes fonctionnelles |
+| `White` | aucune forme précise — le plus général |
+| `ARCH` | la variance dépend de son propre passé — chapitre 5 |
+
+```{=html}
+<div class="jm-shot"><strong>Capture 3 — sortie du test de White</strong>
+Montrer le bloc supérieur avec F-statistic, Obs*R-squared et leurs probabilités, puis la régression auxiliaire en dessous.</div>
+```
+
+Lisez la ligne **`Prob. Chi-Square`** associée à `Obs*R-squared`. Au-dessus de 0,05 : pas d'hétéroscédasticité détectée. En dessous : il y en a.
+
+::: {.callout-tip}
+### White détecte, Breusch-Pagan explique
+
+Le test de **White** ne suppose aucune forme particulière : il détecte largement, mais ne dit pas d'où vient le problème.
+
+**Breusch-Pagan** teste une dépendance aux explicatives elles-mêmes : sa régression auxiliaire, affichée sous le test, indique **quelle variable** est responsable. C'est souvent l'information utile.
+
+Commencez par White pour savoir s'il y a un problème, puis Breusch-Pagan pour comprendre lequel.
+:::
+
+## Y remédier
+
+La solution moderne n'est pas de corriger le modèle, mais de corriger les écarts-types.
+
+> **Estimate Equation → onglet Options → Coefficient covariance matrix : White**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 4 — l'onglet Options de la boîte d'estimation</strong>
+Montrer le menu « Coefficient covariance matrix » ouvert, avec les choix Ordinary, White, HAC (Newey-West).</div>
+```
+
+```
+ls(cov=white) chomage c croissance activite
+```
+
+Les coefficients ne changent pas ; seuls leurs écarts-types deviennent valides. La sortie porte alors la mention `White heteroskedasticity-consistent standard errors`.
+
+::: {.callout-important}
+### Signalez-le dans votre mémoire
+
+Un tableau de régression doit préciser quels écarts-types il rapporte. « Écarts-types robustes à l'hétéroscédasticité (White) entre parenthèses » en note de bas de tableau suffit.
+
+Sans cette mention, un lecteur averti supposera des écarts-types ordinaires et jugera vos conclusions fragiles.
+:::
+
+# L'autocorrélation
+
+## Le problème
+
+En séries temporelles, les résidus se ressemblent souvent d'une période à la suivante. Les écarts-types sont alors **sous-estimés**, ce qui gonfle artificiellement les `t-Statistic` : on croit significatif ce qui ne l'est pas.
+
+## Le premier signal : Durbin-Watson
+
+La statistique figure déjà dans toute sortie de régression.
+
+| Valeur | Interprétation |
+|---|---|
+| proche de 2 | pas d'autocorrélation d'ordre 1 |
+| en dessous de 1,5 | autocorrélation positive probable |
+| au-dessus de 2,5 | autocorrélation négative |
+
+::: {.callout-warning}
+### Durbin-Watson ne vaut rien avec une variable retardée
+
+Dès que la spécification contient `y(-1)`, la statistique de Durbin-Watson est **biaisée vers 2** : elle indique l'absence d'autocorrélation même quand il y en a.
+
+C'est un cas extrêmement fréquent, puisque les modèles dynamiques sont la norme en séries temporelles.
+
+Employez alors le test de Breusch-Godfrey ci-dessous, qui reste valide.
+:::
+
+## Le corrélogramme des résidus
+
+> **View → Residual Diagnostics → Correlogram — Q-statistics**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 5 — corrélogramme des résidus</strong>
+Montrer les colonnes AC et PAC avec leurs bandes de confiance, puis les colonnes Q-Stat et Prob.</div>
+```
+
+Les barres qui sortent des pointillés signalent une autocorrélation à ce retard. La colonne `Prob.` teste la nullité conjointe de tous les retards jusqu'à celui-là : au-dessus de 0,05 partout, les résidus sont un bruit blanc.
+
+## Le test de Breusch-Godfrey
+
+> **View → Residual Diagnostics → Serial Correlation LM Test**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 6 — le test LM de Breusch-Godfrey</strong>
+Montrer d'abord la petite boîte demandant le nombre de retards, puis la sortie avec F-statistic et Obs*R-squared.</div>
+```
+
+EViews demande un nombre de retards. Choisissez-le selon la fréquence : 1 ou 2 pour de l'annuel, 4 pour du trimestriel, 12 pour du mensuel.
+
+Lisez `Prob. Chi-Square`. En dessous de 0,05 : autocorrélation présente.
+
+## Y remédier
+
+Trois voies, par ordre de préférence.
+
+**Corriger la spécification.** L'autocorrélation résulte le plus souvent d'une **variable omise** ou d'une dynamique absente. Ajouter `y(-1)` ou un retard des explicatives règle souvent le problème à la racine.
+
+**Employer des écarts-types HAC.** L'option `HAC (Newey-West)` dans l'onglet Options corrige à la fois l'autocorrélation et l'hétéroscédasticité.
+
+```
+ls(cov=hac) chomage c croissance
+```
+
+**Modéliser explicitement l'erreur** par un terme `ar(1)` dans la spécification — le sujet du chapitre 4.
+
+::: {.callout-important}
+### L'autocorrélation est un symptôme, pas une maladie
+
+Corriger les écarts-types masque le problème sans le traiter. Si vos résidus sont autocorrélés, c'est d'abord que votre modèle **oublie quelque chose**.
+
+Cherchez la variable manquante ou la dynamique absente avant d'atteindre l'option HAC. Un jury demandera pourquoi vous n'avez pas commencé par là.
+:::
+
+# La normalité
+
+> **View → Residual Diagnostics → Histogram — Normality Test**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 7 — histogramme et test de Jarque-Bera</strong>
+Montrer l'histogramme des résidus avec le tableau latéral : Mean, Median, Std. Dev., Skewness, Kurtosis, Jarque-Bera et sa probabilité.</div>
+```
+
+Le test de **Jarque-Bera** combine l'asymétrie (`Skewness`) et l'aplatissement (`Kurtosis`). Sous normalité, la première vaut 0 et la seconde 3.
+
+Une `Probability` inférieure à 0,05 rejette la normalité.
+
+::: {.callout-tip}
+### C'est le test dont il faut le moins s'inquiéter
+
+La normalité des résidus n'est **pas** nécessaire à la validité des moindres carrés. Elle ne sert qu'à justifier les tests $t$ et $F$ en petit échantillon.
+
+Au-delà d'une centaine d'observations, le théorème central limite prend le relais : les tests restent valides même sans normalité.
+
+Ce que le test révèle d'utile, c'est autre chose : un `Kurtosis` très élevé signale des **valeurs extrêmes**, une asymétrie marquée suggère une transformation logarithmique. Regardez l'histogramme plus que la probabilité.
+:::
+
+# La forme fonctionnelle
+
+> **View → Stability Diagnostics → Ramsey RESET Test**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 8 — le test RESET de Ramsey</strong>
+Montrer la boîte demandant le nombre de termes ajustés, puis la sortie avec t-statistic, F-statistic et Likelihood ratio.</div>
+```
+
+Le test RESET ajoute des puissances des valeurs ajustées et vérifie si elles apportent quelque chose. Si oui, la relation n'est pas linéaire — ou une variable manque.
+
+Une `Prob.` inférieure à 0,05 signale un problème de spécification. Les remèdes : passer en logarithmes, ajouter un terme quadratique, ou chercher la variable omise.
+
+# La stabilité
+
+## Une rupture connue
+
+> **View → Stability Diagnostics → Chow Breakpoint Test**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 9 — le test de Chow</strong>
+Montrer la boîte de saisie de la date de rupture, puis la sortie avec F-statistic, Log likelihood ratio et Wald Statistic.</div>
+```
+
+On indique la date suspectée — une réforme, une crise, un changement de régime. Une `Prob.` inférieure à 0,05 indique que les coefficients diffèrent de part et d'autre.
+
+::: {.callout-warning}
+### Le test de Chow suppose une date choisie **a priori**
+
+Essayer toutes les dates et retenir la plus significative invalide le test : à force de chercher, on finit toujours par trouver.
+
+Si vous ne connaissez pas la date, employez `Multiple Breakpoint Test` (Bai-Perron), conçu pour cela, ou le CUSUM ci-dessous.
+:::
+
+## Une instabilité inconnue
+
+> **View → Stability Diagnostics → Recursive Estimates → CUSUM Test**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 10 — le test CUSUM</strong>
+Montrer le graphique de la somme cumulée des résidus récursifs avec ses deux droites de confiance à 5 %.</div>
+```
+
+Tant que la courbe reste entre les deux droites, le modèle est stable. Une sortie de couloir signale une rupture — et l'abscisse indique **quand** elle se produit.
+
+Le `CUSUM of Squares` détecte plutôt les changements de **variance** que de coefficients. Les deux se complètent.
+
+# La multicolinéarité
+
+> **View → Coefficient Diagnostics → Variance Inflation Factors**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 11 — les facteurs d'inflation de la variance</strong>
+Montrer le tableau avec les colonnes Coefficient Variance, Uncentered VIF et Centered VIF.</div>
+```
+
+Lisez la colonne `Centered VIF`. Au-delà de 10, la variable est fortement liée aux autres : son coefficient devient instable, et son écart-type gonfle.
+
+::: {.callout-important}
+### Le symptôme sans test
+
+Un modèle globalement très significatif — `Prob(F-statistic)` proche de 0 — dont **aucun** coefficient n'est individuellement significatif : c'est la signature de la multicolinéarité.
+
+Deux variables se disputent le même pouvoir explicatif ; ensemble elles expliquent, séparément aucune ne ressort.
+
+Les remèdes : retirer l'une des deux, les combiner en un indice, ou accepter la situation si l'objectif est de prévoir plutôt que d'interpréter — la prévision n'en souffre pas.
+:::
+
+# L'ordre dans lequel tester
+
+::: {.callout-tip}
+### Un protocole en cinq temps
+
+**1. Le graphique des résidus.** Avant tout test. Il révèle ruptures, valeurs aberrantes et hétéroscédasticité d'un coup d'œil.
+
+**2. La stationnarité** — chapitre 4. Sur séries temporelles, c'est le préalable absolu : tout le reste est sans valeur sur des séries non stationnaires.
+
+**3. L'autocorrélation.** Breusch-Godfrey, pas Durbin-Watson dès qu'il y a un retard.
+
+**4. L'hétéroscédasticité.** White, puis Breusch-Pagan si détection.
+
+**5. La spécification.** RESET et stabilité.
+
+La normalité vient en dernier, et ne conditionne presque rien.
+
+Et surtout : présentez ces tests dans votre mémoire **même quand ils sont rassurants**. Un tableau de diagnostics vide de mauvaises nouvelles vaut mieux que son absence, qui suggère qu'on n'a pas regardé.
+:::
+
+# En ligne de commande
+
+```
+eq01.white                     ' test de White
+eq01.hettest                   ' Breusch-Pagan-Godfrey
+eq01.auto(4)                   ' Breusch-Godfrey, 4 retards
+eq01.correl(12)                ' correlogramme des residus
+eq01.hist                      ' histogramme et Jarque-Bera
+eq01.reset(2)                  ' RESET de Ramsey
+eq01.chow 2008q3               ' test de Chow
+eq01.cusum                     ' CUSUM
+eq01.varinf                    ' facteurs d'inflation de la variance
+```
+
+# À vous
+
+Sur une régression de votre choix, conduisez le protocole complet :
+
+1. Affichez le graphique des résidus et décrivez ce que vous voyez ;
+2. Testez l'autocorrélation par Breusch-Godfrey avec un nombre de retards adapté à la fréquence ;
+3. Testez l'hétéroscédasticité par White ;
+4. Si l'un des deux rejette, réestimez avec `cov=hac` et comparez les `Prob.` ;
+5. Concluez : quelles variables restent significatives après correction ?
+
+::: {.callout-note collapse="true"}
+### Ce que vous devriez observer
+
+Les **coefficients sont strictement identiques** dans les deux estimations : la correction ne touche que les écarts-types.
+
+Les `Prob.` changent, en général vers le haut — les écarts-types robustes sont le plus souvent plus grands. Il n'est pas rare qu'une variable significative à 5 % avec des écarts-types ordinaires cesse de l'être une fois corrigée.
+
+C'est exactement pourquoi le diagnostic n'est pas une formalité : il change les conclusions. Un mémoire qui rapporte des `Prob.` non corrigées sur des données présentant une autocorrélation manifeste sera contesté sur ce point précis.
+:::
+
+# Ce qu'il faut retenir
+
+| Test | Chemin | `Prob. < 0,05` signifie |
+|---|---|---|
+| White, Breusch-Pagan | `Residual Diagnostics → Heteroskedasticity` | hétéroscédasticité |
+| Breusch-Godfrey | `Residual Diagnostics → Serial Correlation LM` | autocorrélation |
+| Corrélogramme Q | `Residual Diagnostics → Correlogram` | résidus non blancs |
+| Jarque-Bera | `Residual Diagnostics → Histogram — Normality` | non-normalité |
+| Ramsey RESET | `Stability Diagnostics → Ramsey RESET` | forme fonctionnelle erronée |
+| Chow | `Stability Diagnostics → Chow Breakpoint` | rupture à la date testée |
+| CUSUM | `Stability Diagnostics → Recursive Estimates` | sortie de couloir = instabilité |
+| VIF | `Coefficient Diagnostics → Variance Inflation` | `Centered VIF > 10` |
+
+| Correction | Commande |
+|---|---|
+| hétéroscédasticité | `ls(cov=white) ...` |
+| autocorrélation + hétéroscédasticité | `ls(cov=hac) ...` |
+| autocorrélation | chercher d'abord la variable ou la dynamique manquante |
+
+Le chapitre suivant s'attaque au préalable de tout travail sur données temporelles : la **stationnarité**, puis les modèles ARIMA et la prévision.

@@ -1,0 +1,318 @@
+---
+title: "La régression linéaire et sa lecture"
+subtitle: "Informatique — EViews, chapitre 2"
+sidebar: eviews
+---
+
+Le chapitre précédent a montré comment estimer une régression en quatre clics. Celui-ci s'attarde sur ce qui suit — car c'est là que tout se joue.
+
+Estimer est facile. **Lire** ce qu'EViews renvoie l'est moins, et c'est la seule compétence qui compte devant un jury.
+
+# L'objet équation
+
+> **Quick → Estimate Equation**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 1 — la boîte de dialogue « Equation Estimation »</strong>
+Montrer les trois onglets (Specification, Options, et le champ de méthode), avec « LS — Least Squares (NLS and ARMA) » sélectionné et un échantillon renseigné.</div>
+```
+
+La spécification s'écrit sans signe égal : l'expliquée d'abord, puis `c` pour la constante, puis les explicatives.
+
+```
+chomage c croissance activite
+```
+
+::: {.callout-warning}
+### N'oubliez jamais le `c`
+
+Sans lui, EViews estime **sans constante**. Aucun avertissement n'apparaît, et les résultats semblent normaux — mais le $R^2$ devient ininterprétable et les coefficients sont biaisés dès que la moyenne des résidus n'est pas nulle.
+
+C'est l'erreur la plus fréquente des débutants, et la plus difficile à repérer sur une sortie imprimée.
+:::
+
+## La zone d'échantillon
+
+Le champ **Sample** en bas de la boîte limite l'estimation à une sous-période. `1990 2010` estime sur ces années seulement ; `@all` reprend tout.
+
+C'est ainsi qu'on estime sur une partie de l'échantillon pour prévoir sur l'autre — le principe de validation présenté au chapitre 4.
+
+# Lire la sortie, ligne par ligne
+
+```{=html}
+<div class="jm-shot"><strong>Capture 2 — la sortie de régression annotée</strong>
+Montrer la fenêtre de résultats complète : bandeau supérieur (Dependent Variable, Method, Date, Sample, Included observations), tableau des coefficients, et bloc de statistiques du bas.</div>
+```
+
+## Le bandeau supérieur
+
+Quatre informations, souvent négligées, qu'il faut pourtant vérifier en premier.
+
+| Ligne | Ce qu'elle dit |
+|---|---|
+| `Dependent Variable` | la variable expliquée — vérifiez que c'est la bonne |
+| `Method` | Least Squares, ou autre |
+| `Sample` | la période effectivement retenue |
+| `Included observations` | le nombre d'observations **utilisées** |
+
+::: {.callout-important}
+### Comparez toujours `Included observations` à votre effectif réel
+
+Si votre fichier compte 120 observations et qu'EViews en annonce 94, c'est que 26 lignes ont été écartées — valeurs manquantes, ou retards qui consomment le début de l'échantillon.
+
+Ce n'est pas nécessairement une erreur, mais vous devez savoir pourquoi. Une variable comportant beaucoup de manquantes peut amputer l'échantillon de moitié sans que rien ne le signale ailleurs.
+
+Un `Sample (adjusted)` dans le bandeau indique qu'EViews a lui-même réduit la période.
+:::
+
+## Le tableau des coefficients
+
+Cinq colonnes.
+
+**`Coefficient`** — l'effet estimé. Sur une variable en niveau, il se lit « une unité de plus de $x$ fait varier $y$ de tant ». Sur une variable en logarithme, c'est une élasticité.
+
+**`Std. Error`** — la précision de l'estimation. Un coefficient de 2 avec un écart-type de 0,1 n'a rien à voir avec le même coefficient assorti d'un écart-type de 3.
+
+**`t-Statistic`** — simplement le coefficient divisé par son écart-type.
+
+**`Prob.`** — la probabilité d'observer un tel coefficient si le vrai était nul. En dessous de 0,05, on parle de significativité au seuil de 5 %.
+
+::: {.callout-warning}
+### La significativité n'est pas l'importance
+
+Sur 100 000 observations, un coefficient économiquement négligeable ressort avec une `Prob.` de 0,000. Sur 30 observations, un effet considérable peut rester non significatif.
+
+Regardez toujours **l'ordre de grandeur du coefficient** avant sa probabilité, et rapportez-le à l'échelle de la variable. Un jury attentif posera exactement cette question.
+:::
+
+## Le bloc de statistiques
+
+```{=html}
+<div class="jm-shot"><strong>Capture 3 — le bloc inférieur de la sortie</strong>
+Montrer en gros plan les statistiques du bas : R-squared, Adjusted R-squared, S.E. of regression, Sum squared resid, Log likelihood, F-statistic, Prob(F-statistic), Durbin-Watson, Akaike, Schwarz.</div>
+```
+
+| Statistique | Ce qu'elle mesure |
+|---|---|
+| `R-squared` | part de variance expliquée |
+| `Adjusted R-squared` | la même, corrigée du nombre de variables |
+| `S.E. of regression` | écart-type des résidus, dans l'unité de $y$ |
+| `Sum squared resid` | somme des carrés des résidus |
+| `F-statistic` et sa `Prob.` | significativité globale du modèle |
+| `Durbin-Watson stat` | autocorrélation d'ordre 1 des résidus |
+| `Akaike info criterion` | critère de sélection — plus bas est meilleur |
+| `Schwarz criterion` | idem, pénalise davantage les variables |
+
+::: {.callout-tip}
+### `S.E. of regression` mérite mieux que le $R^2$
+
+Le $R^2$ est sans unité et se compare mal entre modèles portant sur des variables différentes.
+
+`S.E. of regression` s'exprime dans **l'unité de la variable expliquée** : un écart-type résiduel de 0,8 point de chômage se comprend immédiatement, et se rapporte à l'écart-type de la variable elle-même.
+
+C'est le chiffre à citer quand on veut dire quelque chose de concret sur la qualité de l'ajustement.
+:::
+
+# Comparer deux modèles
+
+Deux critères servent à choisir entre spécifications : **Akaike** (AIC) et **Schwarz** (SIC, ou BIC). Le plus bas gagne.
+
+Schwarz pénalise plus fortement l'ajout de variables : il retient donc des modèles plus parcimonieux. Sur de petits échantillons, les deux peuvent diverger — signalez alors lequel vous suivez.
+
+::: {.callout-important}
+### Ces critères ne se comparent qu'à échantillon identique
+
+Ajouter une variable retardée réduit l'échantillon d'une observation. Les AIC des deux modèles ne sont alors **plus comparables**.
+
+Vérifiez `Included observations` avant toute comparaison. Si les effectifs diffèrent, réestimez le modèle le plus large sur l'échantillon du plus court.
+:::
+
+# Les transformations dans la spécification
+
+EViews accepte des expressions directement dans le champ de spécification, sans créer de variables intermédiaires.
+
+```
+log(pib) c log(capital) log(travail)
+d(chomage) c d(pib)
+chomage c chomage(-1) croissance
+y c x x^2
+```
+
+| Écriture | Effet |
+|---|---|
+| `log(x)` | logarithme |
+| `d(x)` | différence première |
+| `d(x,2)` | différence seconde |
+| `dlog(x)` | différence du logarithme — taux de croissance |
+| `x(-1)` | valeur retardée d'une période |
+| `x(-1 to -4)` | quatre retards d'un coup |
+| `@trend` | tendance déterministe |
+| `@seas(q)` | indicatrice saisonnière |
+
+::: {.callout-tip}
+### Les élasticités par le logarithme
+
+Dans `log(y) c log(x)`, le coefficient de `log(x)` est directement l'**élasticité** de $y$ par rapport à $x$ : une hausse de 1 % de $x$ fait varier $y$ de tant de pour cent.
+
+C'est la raison pour laquelle les fonctions de production s'estiment presque toujours en logarithmes — et le coefficient devient interprétable sans calcul supplémentaire.
+:::
+
+# Les variables indicatrices
+
+```
+chomage c croissance dum2020
+```
+
+Une indicatrice se crée par une expression logique :
+
+```
+genr dum2020 = (@year = 2020)
+genr crise = (@date >= @dateval("2008q3") and @date <= @dateval("2009q4"))
+genr grande = (population > 1.5)
+```
+
+EViews attribue 1 quand la condition est vraie, 0 sinon.
+
+::: {.callout-warning}
+### Le piège de la colinéarité parfaite
+
+Avec quatre trimestres, on ne met que **trois** indicatrices en plus de la constante. Les quatre ensemble reconstituent exactement la constante, et EViews répond :
+
+```
+Near singular matrix
+```
+
+C'est le rang déficient : la modalité omise devient la **référence**, et chaque coefficient se lit par rapport à elle. Précisez toujours laquelle dans votre commentaire.
+:::
+
+# Après l'estimation
+
+La fenêtre d'équation offre deux menus déterminants.
+
+## Le menu `View`
+
+```{=html}
+<div class="jm-shot"><strong>Capture 4 — le menu View d'une fenêtre d'équation</strong>
+Montrer le menu déroulant ouvert, avec les entrées Representations, Estimation Output, Actual Fitted Residual, Coefficient Diagnostics, Residual Diagnostics, Stability Diagnostics.</div>
+```
+
+| Entrée | Ce qu'elle donne |
+|---|---|
+| `Representations` | l'équation écrite en toutes lettres, coefficients substitués |
+| `Estimation Output` | retour à la sortie standard |
+| `Actual, Fitted, Residual` | le graphique des résidus — **à regarder systématiquement** |
+| `Coefficient Diagnostics` | tests sur les coefficients |
+| `Residual Diagnostics` | tests sur les résidus — chapitre 3 |
+| `Stability Diagnostics` | ruptures et stabilité — chapitre 3 |
+
+::: {.callout-tip}
+### Regardez le graphique des résidus avant tout test
+
+`View → Actual, Fitted, Residual → Actual, Fitted, Residual Graph` superpose la série observée, la série ajustée, et les résidus en bas.
+
+Un coup d'œil suffit à repérer ce qu'aucune statistique ne dit d'emblée : une rupture au milieu de l'échantillon, une volatilité qui augmente, une valeur aberrante isolée, un motif cyclique dans les résidus.
+
+Cette figure vous économisera souvent une demi-heure de tests mal orientés.
+:::
+
+## Le menu `Proc`
+
+| Entrée | Effet |
+|---|---|
+| `Specify/Estimate` | modifier la spécification et réestimer |
+| `Forecast` | prévoir — chapitre 4 |
+| `Make Residual Series` | enregistrer les résidus comme série |
+| `Make Regressor Group` | rassembler les explicatives en groupe |
+| `Make Model` | créer un modèle pour simulation |
+
+`Make Residual Series` est indispensable : il crée une série que vous pouvez ensuite tester, tracer ou réutiliser dans une autre équation.
+
+# Tester une hypothèse sur les coefficients
+
+> **View → Coefficient Diagnostics → Wald Test — Coefficient Restrictions**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 5 — la boîte du test de Wald</strong>
+Montrer le champ de saisie des restrictions avec un exemple du type c(2)+c(3)=1, et la sortie du test en dessous.</div>
+```
+
+Les coefficients se désignent par `c(1)`, `c(2)`, dans l'ordre de la spécification — `c(1)` étant la constante.
+
+```
+c(2) = 0                    ' un coefficient nul
+c(2) + c(3) = 1             ' rendements d'echelle constants
+c(2) = c(3)                 ' deux effets egaux
+```
+
+C'est ainsi qu'on teste les rendements d'échelle d'une Cobb-Douglas : la somme des élasticités vaut-elle 1 ?
+
+# Exporter proprement
+
+::: {.callout-important}
+### `freeze` fige un résultat
+
+```
+freeze(tab_reg) eq01
+```
+
+La commande transforme la sortie de l'équation `eq01` en un objet table nommé `tab_reg`, qui ne bougera plus même si vous réestimez.
+
+Sans `freeze`, une sortie recopiée dans Word ne correspond plus au modèle dès que vous modifiez quoi que ce soit — et personne ne s'en aperçoit.
+
+L'objet figé se copie ensuite dans le presse-papiers par clic droit → **Copy**, avec l'option de conserver la mise en forme.
+:::
+
+Pour un tableau de mémoire, sélectionnez la sortie, clic droit → **Copy**, puis collez dans Word en **texte non formaté** et appliquez une police à chasse fixe : l'alignement des colonnes est préservé.
+
+# En ligne de commande
+
+```
+ls chomage c croissance activite       ' estimer
+ls(cov=white) chomage c croissance     ' ecarts-types robustes
+eq01.wald c(2)=c(3)                    ' test de Wald
+eq01.makeresid res01                   ' enregistrer les residus
+eq01.results                           ' reafficher la sortie
+freeze(tab1) eq01                      ' figer
+```
+
+L'option `cov=white` produit les écarts-types robustes à l'hétéroscédasticité — le sujet du chapitre suivant.
+
+# À vous
+
+Sur n'importe quel jeu de données comportant une variable expliquée et deux explicatives :
+
+1. Estimez le modèle en niveaux, puis en logarithmes ;
+2. Comparez les deux `S.E. of regression` — sont-ils comparables ? Pourquoi ?
+3. Comparez les AIC en vérifiant d'abord `Included observations` ;
+4. Affichez le graphique `Actual, Fitted, Residual` et décrivez ce que vous y voyez ;
+5. Enregistrez les résidus par `Make Residual Series`.
+
+::: {.callout-note collapse="true"}
+### Un point de méthode sur la question 2
+
+Les deux `S.E. of regression` ne sont **pas** comparables : le premier s'exprime dans l'unité de $y$, le second dans celle de $\log y$.
+
+De même, les $R^2$ de deux modèles dont la variable expliquée diffère ne se comparent pas — et `chomage` et `log(chomage)` sont deux variables différentes.
+
+Cette erreur figure dans un grand nombre de mémoires. La règle : on ne compare des critères d'ajustement qu'entre modèles ayant **la même variable expliquée** et **le même échantillon**.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture ou commande | Effet |
+|---|---|
+| `y c x1 x2` | spécification — le `c` est **obligatoire** |
+| `Included observations` | à comparer à votre effectif réel |
+| `Coefficient` avant `Prob.` | l'ordre de grandeur d'abord |
+| `S.E. of regression` | plus parlant que le $R^2$ |
+| AIC et Schwarz | comparer — à échantillon **identique** |
+| `log(x)`, `d(x)`, `dlog(x)`, `x(-1)` | transformations dans la spécification |
+| `genr dum = (condition)` | créer une indicatrice |
+| $k-1$ indicatrices pour $k$ modalités | sinon `Near singular matrix` |
+| `View → Actual, Fitted, Residual` | à regarder avant tout test |
+| `Proc → Make Residual Series` | enregistrer les résidus |
+| `View → Coefficient Diagnostics → Wald` | tester une restriction |
+| `c(1)`, `c(2)` | désigner les coefficients |
+| `freeze(tab1) eq01` | figer une sortie avant de l'exporter |
+
+Le chapitre suivant met ces résidus à l'épreuve : **tests de spécification** — hétéroscédasticité, autocorrélation, normalité, stabilité.

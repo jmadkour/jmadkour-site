@@ -1,0 +1,343 @@
+---
+title: "Séries temporelles : stationnarité et ARIMA"
+subtitle: "Informatique — EViews, chapitre 4"
+sidebar: eviews
+---
+
+EViews a été conçu pour les séries temporelles, et c'est là qu'il n'a guère d'équivalent : une racine unitaire se teste en trois clics, un ARIMA s'estime en une ligne, une prévision se produit avec son intervalle de confiance sans effort.
+
+Mais tout commence par une vérification que rien ne remplace : la **stationnarité**. Le chapitre 1 l'a annoncée ; il est temps de la traiter sérieusement.
+
+# Pourquoi la stationnarité d'abord
+
+::: {.callout-important}
+### La régression fallacieuse
+
+Deux séries qui montent chacune de leur côté, sans aucun lien économique, produisent une régression au $R^2$ superbe et aux coefficients « significatifs ».
+
+Le PIB du Maroc et le nombre d'abonnés au téléphone en Norvège donneraient un $R^2$ de 0,95. Cela ne signifie rien : les deux séries partagent seulement une tendance.
+
+**La signature** : un $R^2$ élevé assorti d'un Durbin-Watson faible. La règle de survie du chapitre 1 — si le $R^2$ dépasse le Durbin-Watson, ne lisez pas les coefficients — vient de là.
+
+Tant que la stationnarité n'est pas établie, aucun test du chapitre 3 n'a de valeur.
+:::
+
+# Regarder la série
+
+> **Double-clic sur la série → View → Graph**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 1 — une série en niveau et en différence première</strong>
+Montrer deux graphiques côte à côte : à gauche une série tendancielle, à droite sa différence première qui oscille autour de zéro.</div>
+```
+
+Trois choses à repérer : une **tendance**, une **saisonnalité**, un **changement de variance**. Une série stationnaire oscille autour d'une moyenne constante, avec une amplitude à peu près stable.
+
+## Le corrélogramme
+
+> **View → Correlogram**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 2 — corrélogramme d'une série non stationnaire</strong>
+Montrer les colonnes AC et PAC : l'autocorrélation décroît très lentement, restant hors des bandes sur de nombreux retards.</div>
+```
+
+Une autocorrélation qui décroît **très lentement** — encore élevée au retard 10 ou 15 — est le signe classique d'une racine unitaire. Sur une série stationnaire, elle chute rapidement dans les bandes de confiance.
+
+# Le test de racine unitaire
+
+> **View → Unit Root Test**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 3 — la boîte du test de racine unitaire</strong>
+Montrer les choix : méthode (Augmented Dickey-Fuller), « Test for unit root in » (Level / 1st difference / 2nd difference), et « Include in test equation » (Intercept / Trend and intercept / None).</div>
+```
+
+Trois réglages, et le troisième est décisif.
+
+| Réglage | Choix |
+|---|---|
+| Méthode | ADF le plus souvent ; PP en complément ; KPSS pour l'hypothèse inverse |
+| Niveau ou différence | `Level`, puis `1st difference` si nécessaire |
+| Termes déterministes | `Intercept`, `Trend and intercept`, ou `None` |
+
+::: {.callout-important}
+### Le choix des termes déterministes change la conclusion
+
+**Regardez d'abord le graphique.** Si la série présente une tendance visible, testez avec `Trend and intercept`. Si elle oscille autour d'une constante non nulle, `Intercept`. Si elle oscille autour de zéro — cas d'une série déjà différenciée — `None`.
+
+Un test mal spécifié conclut à l'inverse de la réalité. C'est l'erreur la plus fréquente, et elle est invisible sur la sortie.
+:::
+
+```{=html}
+<div class="jm-shot"><strong>Capture 4 — sortie d'un test ADF</strong>
+Montrer la statistique t d'Augmented Dickey-Fuller, sa probabilité, les valeurs critiques à 1 %, 5 % et 10 %, puis la régression du test en dessous.</div>
+```
+
+## Lire le résultat
+
+::: {.callout-warning}
+### Ici l'hypothèse nulle est la **présence** d'une racine unitaire
+
+Contrairement aux tests du chapitre 3, une petite probabilité est ici une **bonne** nouvelle.
+
+`Prob.` inférieure à 0,05 → on rejette la racine unitaire → la série est **stationnaire**.
+
+`Prob.` supérieure à 0,05 → on ne rejette pas → la série est **non stationnaire**, il faut la différencier.
+
+Et attention : ne pas rejeter n'est pas prouver. Le test ADF a une puissance faible sur des échantillons courts.
+:::
+
+## Déterminer l'ordre d'intégration
+
+La procédure est mécanique.
+
+1. Tester la série en `Level`. Si stationnaire, elle est **I(0)** : terminé.
+2. Sinon, tester en `1st difference`. Si stationnaire, la série est **I(1)**.
+3. Sinon, tester en `2nd difference`. En économie, on dépasse rarement I(1).
+
+::: {.callout-tip}
+### Croiser ADF et KPSS
+
+ADF et KPSS ont des hypothèses nulles **opposées** : ADF teste la présence d'une racine unitaire, KPSS teste la stationnarité.
+
+Quand les deux concordent — ADF ne rejette pas, KPSS rejette — la conclusion est solide.
+
+Quand ils se contredisent, c'est en général que la série est proche de la frontière, ou que l'échantillon est trop court. Signalez-le plutôt que de choisir le résultat qui vous arrange.
+:::
+
+# Les séries cointégrées
+
+Deux séries I(1) peuvent entretenir une relation de long terme stable : leurs tendances se compensent. C'est la **cointégration**, et elle justifie une régression en niveaux là où la différenciation ferait perdre l'information de long terme.
+
+> **Sélectionner les séries → Open as Group → View → Cointegration Test**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 5 — le test de cointégration de Johansen</strong>
+Montrer la sortie du test de la trace et du test de la valeur propre maximale, avec le nombre de relations de cointégration retenu.</div>
+```
+
+Le test de **Johansen** indique le nombre de relations de cointégration. S'il en existe au moins une, un modèle à correction d'erreur (VECM) devient approprié — sujet qui dépasse ce chapitre, mais dont EViews dispose par `Quick → Estimate VAR → Vector Error Correction`.
+
+# Les modèles ARIMA
+
+Une fois la série rendue stationnaire, on modélise sa dynamique propre.
+
+## Identifier l'ordre
+
+> **View → Correlogram** sur la série stationnaire
+
+```{=html}
+<div class="jm-shot"><strong>Capture 6 — corrélogramme d'une série stationnaire</strong>
+Montrer les colonnes AC et PAC avec quelques barres significatives aux premiers retards, puis un retour rapide dans les bandes.</div>
+```
+
+La lecture classique :
+
+| Comportement | Modèle suggéré |
+|---|---|
+| AC décroît, PAC coupe après $p$ retards | AR($p$) |
+| AC coupe après $q$ retards, PAC décroît | MA($q$) |
+| les deux décroissent | ARMA($p,q$) |
+
+::: {.callout-tip}
+### Cette lecture est indicative, pas décisive
+
+En pratique, les corrélogrammes réels sont rarement aussi nets que dans les manuels.
+
+La méthode qui fonctionne : identifier deux ou trois candidats plausibles par le corrélogramme, les estimer tous, et retenir celui qui **minimise le critère de Schwarz** tout en laissant des résidus non autocorrélés.
+
+Le corrélogramme oriente la recherche ; les critères d'information tranchent.
+:::
+
+## Estimer
+
+> **Quick → Estimate Equation**
+
+```
+dlog(pib) c ar(1) ma(1)
+```
+
+Les termes `ar(p)` et `ma(q)` s'écrivent directement dans la spécification. Le `d(...)` ou `dlog(...)` assure la différenciation — c'est le « I » d'ARIMA.
+
+```
+d(chomage) c ar(1) ar(2)          ' ARIMA(2,1,0)
+dlog(pib) c ma(1)                 ' ARIMA(0,1,1) sur le log
+d(ventes) c ar(1) sar(4) ma(1)    ' composante saisonniere trimestrielle
+```
+
+`sar` et `sma` désignent les termes **saisonniers** : `sar(4)` pour du trimestriel, `sar(12)` pour du mensuel.
+
+```{=html}
+<div class="jm-shot"><strong>Capture 7 — sortie d'une estimation ARIMA</strong>
+Montrer la sortie avec les coefficients AR et MA, et surtout le bloc « Inverted AR Roots » et « Inverted MA Roots » en bas.</div>
+```
+
+::: {.callout-important}
+### Vérifiez les racines inversées
+
+Le bas de la sortie affiche `Inverted AR Roots` et `Inverted MA Roots`. **Toutes doivent être inférieures à 1 en module.**
+
+Une racine AR de 0,99 signale que la série n'est pas suffisamment différenciée. Une racine MA proche de 1 suggère au contraire une sur-différenciation.
+
+Si EViews affiche `Estimated AR process is nonstationary`, le modèle est inutilisable quelles que soient les probabilités affichées.
+:::
+
+## Valider
+
+Les diagnostics du chapitre 3 s'appliquent, avec un impératif supplémentaire.
+
+> **View → Residual Diagnostics → Correlogram — Q-statistics**
+
+Les résidus d'un bon ARIMA doivent être un **bruit blanc** : aucune barre hors des bandes, toutes les `Prob.` du Q de Ljung-Box au-dessus de 0,05.
+
+S'il reste de l'autocorrélation, le modèle est sous-spécifié : ajoutez un terme.
+
+# Prévoir
+
+> Dans la fenêtre d'équation : **Proc → Forecast**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 8 — la boîte de prévision</strong>
+Montrer les champs : Forecast name, S.E. (optional), le choix Dynamic / Static, la plage de prévision, et la case « Output : Forecast graph / Forecast evaluation ».</div>
+```
+
+| Réglage | Ce qu'il fait |
+|---|---|
+| `Forecast name` | nom de la série de prévision créée |
+| `S.E. (optional)` | crée aussi la série des écarts-types — pour l'intervalle |
+| `Dynamic` | utilise ses propres prévisions pour les retards |
+| `Static` | utilise les valeurs observées — un pas en avant |
+| plage | la période à prévoir |
+
+::: {.callout-important}
+### Dynamique ou statique : ce n'est pas un détail
+
+**Statique** prévoit un pas en avant à chaque date, en se servant des valeurs **réellement observées** aux dates précédentes. C'est ce qu'on évalue quand on juge la qualité d'ajustement.
+
+**Dynamique** prévoit à partir du seul début de l'horizon, en réinjectant ses propres prévisions. C'est la vraie prévision — et elle est nettement moins bonne.
+
+Un mémoire qui présente des prévisions statiques hors échantillon comme des prévisions annonce une performance qu'il n'atteindra jamais en pratique.
+:::
+
+```{=html}
+<div class="jm-shot"><strong>Capture 9 — graphique de prévision avec intervalle</strong>
+Montrer la courbe de prévision encadrée de ses bornes à deux écarts-types, avec le panneau d'évaluation à droite (RMSE, MAE, MAPE, Theil).</div>
+```
+
+Le panneau d'évaluation donne :
+
+| Mesure | Signification |
+|---|---|
+| `Root Mean Squared Error` | erreur quadratique moyenne, dans l'unité de la série |
+| `Mean Absolute Error` | erreur absolue moyenne |
+| `Mean Abs. Percent Error` | erreur en pourcentage — comparable entre séries |
+| `Theil Inequality Coefficient` | entre 0 et 1 ; 0 = prévision parfaite |
+
+## La bonne façon d'évaluer une prévision
+
+::: {.callout-tip}
+### Estimez sur une partie, prévoyez sur l'autre
+
+Évaluer une prévision sur les données ayant servi à estimer le modèle ne prouve rien : le modèle a été ajusté pour bien s'y comporter.
+
+La méthode honnête :
+
+```
+smpl 1990 2015
+ls dlog(pib) c ar(1) ma(1)
+smpl 2016 2023
+eq01.forecast pib_prev
+```
+
+On estime sur 1990-2015, on prévoit sur 2016-2023, et on compare aux valeurs réellement observées. Le RMSE obtenu est alors une mesure honnête.
+
+C'est le principe de validation hors échantillon, et il distingue un travail sérieux d'une simple illustration.
+:::
+
+# Les transformations utiles
+
+| Écriture | Effet |
+|---|---|
+| `d(x)` | différence première |
+| `d(x,2)` | différence seconde |
+| `d(x,0,4)` | différence saisonnière — même trimestre l'an dernier |
+| `dlog(x)` | taux de croissance |
+| `@pch(x)` | variation en pourcentage |
+| `@movav(x,4)` | moyenne mobile sur 4 périodes |
+| `@trend` | tendance déterministe |
+| `@seas(2)` | indicatrice du deuxième trimestre |
+
+::: {.callout-tip}
+### `dlog` plutôt que `d` sur une série en niveau
+
+`dlog(pib)` est le taux de croissance — sans unité, comparable entre pays et dans le temps, et généralement stationnaire là où `d(pib)` ne l'est pas toujours.
+
+Sur toute série monétaire ou de volume croissante, commencez par `dlog`.
+:::
+
+# Le lissage exponentiel
+
+> **Sur la série : Proc → Exponential Smoothing**
+
+Pour une prévision rapide sans modélisation, EViews propose les méthodes de lissage : simple, Holt-Winters additif ou multiplicatif. Utile comme **référence de comparaison** : un ARIMA élaboré qui ne bat pas un lissage exponentiel simple n'apporte rien.
+
+# En ligne de commande
+
+```
+uroot(adf, trend) pib            ' ADF avec tendance et constante
+uroot(adf, const) d(pib)         ' ADF sur la difference premiere
+pib.correl(24)                   ' correlogramme, 24 retards
+
+ls dlog(pib) c ar(1) ma(1)       ' estimer un ARIMA
+eq01.correl(12)                  ' correlogramme des residus
+
+smpl 1990 2015
+ls dlog(pib) c ar(1)
+smpl 2016 2023
+eq01.forecast(f=dynamic) pib_prev pib_se
+smpl @all
+```
+
+# À vous
+
+Sur une série macroéconomique annuelle ou trimestrielle de votre choix :
+
+1. Tracez la série et décidez des termes déterministes du test ;
+2. Testez la racine unitaire en niveau, puis en différence première ;
+3. Concluez sur l'ordre d'intégration ;
+4. Sur la série rendue stationnaire, lisez le corrélogramme et proposez deux modèles ARIMA candidats ;
+5. Estimez les deux, comparez les critères de Schwarz, et vérifiez que les résidus du modèle retenu sont un bruit blanc ;
+6. Estimez sur les trois quarts de l'échantillon, prévoyez sur le dernier quart en mode dynamique, et relevez le RMSE.
+
+::: {.callout-note collapse="true"}
+### Deux points de vigilance
+
+**Sur la question 2** : si le test en niveau conclut à la stationnarité alors que le graphique montre une tendance nette, vous avez probablement choisi `Intercept` au lieu de `Trend and intercept`. Recommencez.
+
+**Sur la question 6** : la prévision dynamique d'un ARIMA converge vers la moyenne de la série au fur et à mesure que l'horizon s'éloigne. C'est normal, et c'est une propriété du modèle, pas un défaut de votre travail.
+
+Un ARIMA prévoit bien à un ou deux pas, médiocrement au-delà. Le dire dans votre mémoire vaut mieux que de laisser le lecteur le découvrir sur votre graphique.
+:::
+
+# Ce qu'il faut retenir
+
+| Opération | Chemin ou commande |
+|---|---|
+| tracer la série | `View → Graph` — **avant tout** |
+| corrélogramme | `View → Correlogram` — décroissance lente = racine unitaire |
+| test de racine unitaire | `View → Unit Root Test` |
+| ADF : `Prob. < 0,05` | série **stationnaire** — hypothèse nulle inversée |
+| termes déterministes | selon le graphique — change la conclusion |
+| croiser ADF et KPSS | hypothèses nulles opposées |
+| cointégration | groupe → `View → Cointegration Test` |
+| ARIMA | `dlog(y) c ar(1) ma(1)` |
+| termes saisonniers | `sar(4)`, `sma(12)` |
+| `Inverted AR Roots` | toutes < 1 en module |
+| valider | résidus = bruit blanc au corrélogramme |
+| choisir | Schwarz minimal, résidus blancs |
+| prévoir | `Proc → Forecast` |
+| dynamique vs statique | la vraie prévision est **dynamique** |
+| évaluer honnêtement | estimer sur une partie, prévoir sur l'autre |
+
+Le chapitre suivant s'intéresse à ce que les modèles précédents supposent constant et qui ne l'est jamais en finance : la **variance conditionnelle**, avec les modèles ARCH et GARCH.

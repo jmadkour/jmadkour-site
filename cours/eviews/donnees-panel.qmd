@@ -1,0 +1,332 @@
+---
+title: "Données de panel"
+subtitle: "Informatique — EViews, chapitre 6"
+sidebar: eviews
+---
+
+Dernier chapitre du cours. Jusqu'ici, les données comportaient une seule dimension : des individus, ou des dates. Un **panel** combine les deux — douze régions suivies sur quatorze années, cinquante entreprises sur dix exercices.
+
+Cette double dimension apporte davantage qu'un surcroît d'observations : elle permet de neutraliser tout ce qui distingue durablement les individus, même ce qu'on ne mesure pas.
+
+# Ce que le panel apporte
+
+::: {.callout-important}
+### Le vrai argument : l'hétérogénéité inobservée
+
+Vous estimez l'effet de l'investissement sur la croissance régionale. Chaque région possède des caractéristiques stables et invisibles — qualité des institutions, culture entrepreneuriale, position géographique — qui influencent la croissance **et** sont corrélées à l'investissement.
+
+En coupe transversale, ces facteurs manquants biaisent l'estimation, et aucune variable de contrôle ne les remplacera tous.
+
+Le panel les élimine : en travaillant sur les **écarts à la moyenne de chaque région**, tout ce qui est constant pour cette région disparaît, mesuré ou non.
+
+C'est le principal argument en faveur du panel, et il faut savoir l'énoncer devant un jury.
+:::
+
+# Structurer le workfile
+
+> **File → New → Workfile → Workfile structure type : Balanced Panel**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 1 — création d'un workfile panel équilibré</strong>
+Montrer la boîte « Workfile Create » avec « Balanced Panel » sélectionné, et les champs de fréquence, de période et de nombre de coupes transversales renseignés.</div>
+```
+
+Trois informations : la **fréquence** temporelle, la **période**, et le **nombre d'individus**.
+
+## À partir de données existantes
+
+Le cas le plus fréquent : vous disposez d'un fichier où chaque ligne est un couple (individu, date).
+
+> **File → New → Workfile → Unstructured**, importer, puis **Proc → Structure/Resize Current Page**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 2 — la boîte « Workfile Structure »</strong>
+Montrer le type « Dated Panel » sélectionné, avec les champs « Cross section ID series » et « Date series » renseignés par les noms des colonnes correspondantes.</div>
+```
+
+EViews demande deux colonnes : l'**identifiant d'individu** et la **date**. Elles doivent exister dans vos données.
+
+::: {.callout-warning}
+### La forme longue, jamais la forme large
+
+Vos données doivent se présenter ainsi :
+
+```
+region  annee  pib   chomage
+Nord    2018   43.2  10.9
+Nord    2019   45.1  10.2
+Centre  2018   61.0   8.8
+Centre  2019   62.4   8.4
+```
+
+Et **non** avec une colonne par année. Un tableur organise spontanément les données en forme large ; EViews attend la forme longue.
+
+Restructurer se fait dans le tableur avant l'import — c'est plus rapide que toute manipulation dans EViews.
+:::
+
+```{=html}
+<div class="jm-shot"><strong>Capture 3 — un workfile panel correctement structuré</strong>
+Montrer la fenêtre du workfile avec le bandeau supérieur indiquant « Panel : 12 cross-sections, 168 observations » et la liste des séries.</div>
+```
+
+Le bandeau du workfile confirme la structure. S'il n'indique rien de tel, EViews traite vos données comme une simple coupe : tous les outils de panel resteront grisés.
+
+# Explorer un panel
+
+> **Sur une série : View → Descriptive Statistics → By Cross-section**
+
+Les vues d'une série s'adaptent au panel :
+
+| Vue | Ce qu'elle montre |
+|---|---|
+| `Graph → Panel options` | une courbe par individu, ou en petits multiples |
+| `Descriptive Statistics → By Cross-section` | statistiques par individu |
+| `Descriptive Statistics → By Period` | statistiques par date |
+
+```{=html}
+<div class="jm-shot"><strong>Capture 4 — graphique d'une série en panel</strong>
+Montrer les options de graphique panel, avec l'aperçu en petits multiples (une vignette par individu).</div>
+```
+
+::: {.callout-tip}
+### Regardez la dispersion inter et intra
+
+`View → Descriptive Statistics → By Cross-section` révèle si les individus diffèrent surtout **entre eux** (dispersion inter) ou **dans le temps** (dispersion intra).
+
+Si toute la variation est inter-individuelle et qu'il n'y a presque aucune variation temporelle, les effets fixes absorberont tout : votre variable d'intérêt n'aura plus rien à expliquer.
+
+Ce diagnostic évite d'estimer pendant une heure un modèle voué à ne rien donner.
+:::
+
+# Les trois estimateurs
+
+## Les moindres carrés groupés
+
+> **Quick → Estimate Equation**, onglet **Panel Options** : `None` / `None`
+
+```
+pib c investissement education
+```
+
+Toutes les observations sont empilées, comme si les individus étaient interchangeables. C'est le point de départ, et presque toujours le mauvais modèle : il ignore précisément l'hétérogénéité qui justifie le panel.
+
+## Les effets fixes
+
+> Onglet **Panel Options** → **Cross-section : Fixed**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 5 — l'onglet Panel Options</strong>
+Montrer les listes déroulantes « Cross-section » et « Period » avec les choix None / Fixed / Random, ainsi que la section des écarts-types (Coef covariance method).</div>
+```
+
+Chaque individu reçoit sa propre constante. L'estimation porte sur les **écarts à la moyenne individuelle** — c'est l'estimateur *within*.
+
+```{=html}
+<div class="jm-shot"><strong>Capture 6 — sortie d'une estimation à effets fixes</strong>
+Montrer la sortie avec la mention « Cross-section fixed (dummy variables) » dans le bandeau, les coefficients, puis les blocs R-squared et « Effects Specification ».</div>
+```
+
+::: {.callout-important}
+### Ce que les effets fixes vous font perdre
+
+Toute variable **constante dans le temps** pour un individu disparaît : le sexe, la région d'implantation, le régime juridique, la distance à la capitale.
+
+EViews ne proteste pas toujours — il peut renvoyer un coefficient nul ou une matrice singulière.
+
+Si votre variable d'intérêt est de cette nature, les effets fixes sont inutilisables. C'est le principal argument en faveur des effets aléatoires, et un point que le jury soulèvera.
+:::
+
+Pour afficher les constantes individuelles estimées : **View → Fixed/Random Effects → Cross-section Effects**.
+
+## Les effets aléatoires
+
+> Onglet **Panel Options** → **Cross-section : Random**
+
+L'effet individuel est traité comme une variable aléatoire non corrélée aux explicatives. L'estimateur est plus efficace — et conserve les variables invariantes dans le temps.
+
+::: {.callout-warning}
+### Le prix de l'hypothèse
+
+Les effets aléatoires supposent que l'effet individuel n'est **pas corrélé** aux explicatives.
+
+Or c'est rarement plausible : si la qualité institutionnelle d'une région influence à la fois sa croissance et son attractivité pour l'investissement, la corrélation existe par construction.
+
+Quand l'hypothèse est fausse, l'estimateur est **biaisé** — alors que les effets fixes restent valides. D'où le test ci-dessous.
+:::
+
+# Choisir entre les trois
+
+## Effets fixes ou moindres carrés groupés ?
+
+> **View → Fixed/Random Effects Testing → Redundant Fixed Effects — Likelihood Ratio**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 7 — le test de redondance des effets fixes</strong>
+Montrer la sortie avec la statistique F « Cross-section F », le test du khi-deux, et leurs probabilités.</div>
+```
+
+Hypothèse nulle : les effets individuels sont **redondants**, autrement dit tous égaux.
+
+`Prob. < 0,05` → les effets fixes sont nécessaires, les moindres carrés groupés sont rejetés.
+
+## Effets fixes ou aléatoires ?
+
+> Estimer en **Random**, puis **View → Fixed/Random Effects Testing → Correlated Random Effects — Hausman Test**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 8 — le test de Hausman</strong>
+Montrer la statistique de khi-deux, ses degrés de liberté et sa probabilité, suivis du tableau comparant les coefficients sous les deux estimateurs.</div>
+```
+
+::: {.callout-important}
+### Comment lire Hausman
+
+Hypothèse nulle : l'effet individuel n'est **pas corrélé** aux explicatives — les effets aléatoires sont valides et efficaces.
+
+`Prob. < 0,05` → on rejette → **effets fixes**.
+
+`Prob. > 0,05` → on ne rejette pas → **effets aléatoires** acceptables.
+
+Deux avertissements. Le test exige d'avoir estimé en aléatoire au préalable : lancé sur une équation à effets fixes, l'entrée de menu reste inactive.
+
+Et une statistique **négative** — cela arrive — indique que les conditions du test ne sont pas réunies. Reportez-vous alors au tableau comparatif : si les coefficients diffèrent nettement entre les deux estimateurs, retenez les effets fixes.
+:::
+
+::: {.callout-tip}
+### En pratique, en économie appliquée
+
+Les effets fixes l'emportent le plus souvent, et ils constituent le choix par défaut de la littérature récente : ils exigent moins d'hypothèses.
+
+Présentez néanmoins **les deux estimations côte à côte** dans votre mémoire, avec le test de Hausman. C'est ce qu'attend un lecteur, et cela montre que le choix a été raisonné plutôt que subi.
+:::
+
+# Les effets temporels
+
+> **Panel Options → Period : Fixed**
+
+On peut cumuler effets individuels et temporels : le modèle **à deux voies** neutralise à la fois ce qui distingue durablement les individus et ce qui affecte toutes les unités une année donnée — une crise, une réforme nationale.
+
+C'est souvent la spécification la plus défendable sur des données régionales.
+
+# Les écarts-types
+
+::: {.callout-important}
+### Le point le plus souvent négligé
+
+Les résidus d'un même individu sont corrélés dans le temps. Les écarts-types ordinaires sont alors **très sous-estimés** — l'erreur peut atteindre un facteur trois, et transforme en « hautement significatifs » des coefficients qui ne le sont pas.
+
+> **Onglet Panel Options → Coef covariance method : White cross-section** ou **Cross-section SUR (PCSE)**
+
+```
+ls(cov=cxwhite) pib c investissement education
+```
+
+L'usage standard depuis une vingtaine d'années est le **groupement par individu** (*clustered standard errors*). Ne rapportez jamais des écarts-types ordinaires sur un panel : c'est la première chose qu'un rapporteur vérifiera.
+:::
+
+# La stationnarité en panel
+
+> **Sur une série : View → Unit Root Test**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 9 — test de racine unitaire en panel</strong>
+Montrer la boîte proposant Levin-Lin-Chu, Im-Pesaran-Shin, ADF-Fisher, PP-Fisher et Hadri, avec les options de termes déterministes.</div>
+```
+
+Dans un workfile panel, le test de racine unitaire propose automatiquement les versions adaptées :
+
+| Test | Hypothèse nulle |
+|---|---|
+| Levin-Lin-Chu | racine unitaire commune à tous |
+| Im-Pesaran-Shin | racine unitaire individuelle |
+| ADF-Fisher, PP-Fisher | combinaison des tests individuels |
+| Hadri | **stationnarité** — hypothèse inversée |
+
+Sur des panels courts — moins d'une dizaine de périodes — ces tests ont peu de puissance. Sur les panels macroéconomiques longs, ils sont indispensables : la logique du chapitre 4 s'applique intégralement.
+
+# Le panel dynamique
+
+Introduire `pib(-1)` parmi les explicatives crée un problème sérieux : la variable retardée est corrélée à l'effet individuel, ce qui **biaise** l'estimateur *within*. C'est le biais de Nickell, d'autant plus grave que la dimension temporelle est courte.
+
+> **Quick → Estimate Equation → Method : GMM/DPD — Generalized Method of Moments**
+
+```{=html}
+<div class="jm-shot"><strong>Capture 10 — l'estimation GMM en panel dynamique</strong>
+Montrer la boîte d'estimation GMM/DPD avec l'onglet « Dynamic Panel Wizard » et les options d'instruments.</div>
+```
+
+EViews propose un assistant qui met en place les estimateurs d'**Arellano-Bond** et de **Blundell-Bond**. Deux tests accompagnent obligatoirement ces estimations :
+
+- le test de **Sargan** ou **Hansen** sur la validité des instruments ;
+- le test d'**autocorrélation d'ordre 2** des résidus différenciés, qui ne doit pas rejeter.
+
+Sans ces deux diagnostics, une estimation GMM ne vaut rien.
+
+# En ligne de commande
+
+```
+ls pib c invest educ                        ' moindres carres groupes
+ls(cx=f) pib c invest educ                  ' effets fixes individuels
+ls(cx=r) pib c invest educ                  ' effets aleatoires
+ls(cx=f, per=f) pib c invest educ           ' deux voies
+ls(cx=f, cov=cxwhite) pib c invest educ     ' effets fixes + ecarts-types groupes
+
+eq01.fixedtest                              ' redondance des effets fixes
+eq02.hausman                                ' test de Hausman (apres estimation aleatoire)
+pib.uroot(llc)                              ' Levin-Lin-Chu
+```
+
+# À vous
+
+Sur un panel de votre choix — régions, pays, entreprises — comportant au moins deux variables explicatives :
+
+1. Structurez correctement le workfile et vérifiez le bandeau ;
+2. Examinez la dispersion inter et intra de votre variable d'intérêt ;
+3. Estimez successivement en groupé, effets fixes, effets aléatoires ;
+4. Conduisez le test de redondance puis le test de Hausman ;
+5. Réestimez le modèle retenu avec des écarts-types groupés ;
+6. Présentez les trois estimations dans un même tableau et commentez les écarts.
+
+::: {.callout-note collapse="true"}
+### Ce que vous devriez observer
+
+**Les coefficients groupés diffèrent souvent nettement** de ceux à effets fixes. C'est normal, et c'est instructif : l'écart mesure ce que l'hétérogénéité inobservée faisait porter à tort à vos explicatives.
+
+Il n'est pas rare qu'un coefficient change de signe entre les deux. Quand cela se produit, dites-le et expliquez-le — c'est un résultat en soi, pas une anomalie à cacher.
+
+**Les écarts-types groupés sont nettement plus grands** que les ordinaires, souvent du simple au double. Des variables « significatives à 1 % » peuvent cesser de l'être. C'est la raison pour laquelle ce réglage n'est pas une option cosmétique.
+
+**Sur la question 2** : si votre variable d'intérêt varie peu dans le temps, les effets fixes lui laisseront peu de matière et son écart-type explosera. Le signaler vaut mieux que de présenter un coefficient non significatif sans explication.
+:::
+
+# Ce qu'il faut retenir
+
+| Opération | Chemin ou commande |
+|---|---|
+| structurer | `Proc → Structure/Resize` → Dated Panel |
+| forme des données | **longue**, une ligne par (individu, date) |
+| vérifier | le bandeau du workfile annonce le panel |
+| explorer | `Descriptive Statistics → By Cross-section` |
+| effets fixes | `Panel Options → Cross-section : Fixed` |
+| ce qu'ils éliminent | toute variable constante dans le temps |
+| effets aléatoires | `Cross-section : Random` — hypothèse forte |
+| groupé contre fixes | `Redundant Fixed Effects` — `Prob. < 0,05` → fixes |
+| fixes contre aléatoires | `Hausman` — `Prob. < 0,05` → fixes |
+| deux voies | `Period : Fixed` en plus |
+| écarts-types | `cov=cxwhite` — **jamais** les ordinaires |
+| stationnarité | `View → Unit Root Test`, versions panel |
+| panel dynamique | GMM/DPD, avec Sargan et AR(2) |
+
+# La suite
+
+Ce chapitre clôt le cours. Vous savez construire un workfile, importer et vérifier des données, estimer et lire une régression, valider par les diagnostics, traiter des séries temporelles, modéliser une volatilité et exploiter un panel.
+
+Reste l'avertissement du chapitre 1, qui prend ici tout son sens : **une analyse conduite à la souris n'est pas reproductible**. Six mois après, ni vous ni personne ne saura refaire exactement la même suite de clics.
+
+Trois directions, par ordre d'exigence croissante :
+
+- les **programmes `.prg`** d'EViews, qui consignent l'analyse et la rejouent d'une commande ;
+- **[R](../r/index.qmd)** et **[Python](../python/index.qmd)**, où l'analyse *est* le script — avec `plm` en R et `linearmodels` en Python pour les panels ;
+- **[LaTeX](../latex/index.qmd)** pour rédiger, avec des tableaux produits automatiquement depuis vos estimations.
+
+EViews reste imbattable pour explorer vite et pour enseigner. Pour un travail qui doit durer et se défendre, complétez-le.
