@@ -1,0 +1,264 @@
+---
+title: "ggplot2"
+subtitle: "Informatique — R, chapitre 9"
+sidebar: r
+include-after-body: ../../_includes/console.html
+---
+
+Les graphiques du chapitre précédent se dessinent : on trace, puis on ajoute par-dessus. ggplot2 procède autrement — on **décrit** une figure, couche par couche, et R la compose. La différence paraît subtile ; elle change tout dès qu'une figure doit être reprise, déclinée ou publiée.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des blocs à recopier
+
+ggplot2 n'est pas fourni avec R : il s'installe. La console de ce site ne dispose pas des paquets additionnels, les blocs de ce chapitre sont donc donnés **à recopier dans RStudio**. Le résultat attendu est décrit sous chacun.
+
+```r
+install.packages("ggplot2")   # une seule fois
+library(ggplot2)              # a chaque session
+```
+:::
+
+# 9.1 La grammaire des graphiques
+
+Toute figure ggplot2 combine trois éléments obligatoires :
+
+| Élément | Rôle | Écriture |
+|---|---|---|
+| les **données** | un tableau, toujours | `ggplot(d, ...)` |
+| l'**esthétique** | quelle colonne sur quel canal visuel | `aes(x = , y = , color = )` |
+| la **géométrie** | quelle forme dessiner | `geom_point()`, `geom_line()`… |
+
+```r
+ggplot(d, aes(x = pib, y = chomage)) +
+  geom_point()
+```
+
+Trois lignes qui se lisent comme une phrase : *prends le tableau `d`, place `pib` en abscisse et `chomage` en ordonnée, et représente chaque observation par un point.*
+
+::: {.callout-warning}
+### Le `+` se met en fin de ligne
+
+```r
+ggplot(d, aes(x, y))
+  + geom_point()        # ERREUR
+```
+
+Comme pour le `else` du chapitre 6, R considère l'instruction terminée à la fin de la première ligne. Le `+` doit **terminer** la ligne, jamais la commencer.
+:::
+
+# 9.2 Les géométries
+
+## 9.2.1 Les plus employées
+
+| Géométrie | Figure produite |
+|---|---|
+| `geom_point()` | nuage de points |
+| `geom_line()` | ligne — série temporelle |
+| `geom_col()` | barres à partir de valeurs |
+| `geom_bar()` | barres à partir d'effectifs, comptés automatiquement |
+| `geom_histogram()` | histogramme |
+| `geom_boxplot()` | boîte à moustaches |
+| `geom_smooth()` | courbe d'ajustement, avec intervalle |
+
+## 9.2.2 Superposer, sans effacer
+
+```r
+ggplot(d, aes(x = pib, y = chomage)) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "#c8542f")
+```
+
+Le nuage, puis la droite des moindres carrés avec son intervalle de confiance. `se = FALSE` retire la bande ; `method = "loess"` remplace la droite par un lissage local.
+
+::: {.callout-note}
+### La différence décisive avec les graphiques de base
+
+Une figure ggplot2 est un **objet**, qu'on peut stocker et reprendre :
+
+```r
+p <- ggplot(d, aes(pib, chomage)) + geom_point()
+
+p                                    # l'afficher
+p + geom_smooth(method = "lm")       # une variante
+p + labs(title = "Autre titre")      # une autre
+```
+
+Avec les graphiques de base, chaque variante exigeait de retracer la séquence entière. Ici l'objet `p` reste intact et sert de socle. C'est ce qui rend ggplot2 supérieur dès qu'une figure doit être déclinée.
+:::
+
+# 9.3 L'esthétique : faire porter une information par la forme
+
+## 9.3.1 Dans `aes` ou en dehors ?
+
+C'est **la** question qui déroute au début. La règle est pourtant nette.
+
+```r
+geom_point(color = "blue")              # tous les points en bleu
+geom_point(aes(color = region))         # une couleur PAR REGION
+```
+
+Dans `aes`, un attribut visuel est **relié à une colonne** : la couleur devient porteuse d'information et une légende apparaît. En dehors, c'est une valeur fixe appliquée à tout.
+
+::: {.callout-important}
+### Le symptôme du `aes` mal placé
+
+```r
+geom_point(aes(color = "blue"))
+```
+
+Tous les points ressortent **rouges**, avec une légende intitulée « blue ». ggplot2 a compris que vous vouliez colorer selon une variable qui vaut partout la chaîne `"blue"` — il n'y a donc qu'une modalité, à laquelle il attribue sa première couleur.
+
+Une couleur fixe se déclare **hors** de `aes`.
+:::
+
+## 9.3.2 Les canaux disponibles
+
+| Canal | Convient à |
+|---|---|
+| `color` | une qualitative, ou le contour d'une forme |
+| `fill` | l'intérieur d'une forme — barres, boîtes |
+| `shape` | une qualitative, jusqu'à six modalités |
+| `size` | une quantitative |
+| `alpha` | la transparence — utile quand les points se superposent |
+| `linetype` | style de trait |
+
+```r
+ggplot(d, aes(x = pib, y = chomage, color = region, shape = region)) +
+  geom_point(size = 3)
+```
+
+Coder la même variable par la couleur **et** la forme rend la figure lisible en noir et blanc comme pour un lecteur daltonien — la règle énoncée au chapitre précédent.
+
+# 9.4 Découper en petits multiples
+
+```r
+ggplot(d, aes(x = annee, y = pib)) +
+  geom_line() +
+  facet_wrap(~ region)
+```
+
+`facet_wrap` produit **une figure par modalité**, aux mêmes échelles, disposées en grille. C'est l'une des fonctions les plus utiles de ggplot2 : là où le système de base demanderait une boucle et un `par(mfrow)`, une ligne suffit.
+
+```r
+facet_wrap(~ region, ncol = 2)                   # deux colonnes
+facet_wrap(~ region, scales = "free_y")          # echelles y independantes
+facet_grid(secteur ~ region)                     # une grille a deux variables
+```
+
+::: {.callout-tip}
+### Échelles communes ou libres ?
+
+Par défaut, toutes les facettes partagent les mêmes axes — ce qui rend les niveaux **comparables** entre panneaux. C'est presque toujours ce que l'on veut.
+
+`scales = "free_y"` libère l'axe vertical : chaque panneau utilise toute sa hauteur. Cela révèle mieux la **forme** de chaque série, mais interdit de comparer les niveaux. Choisissez selon la question posée, et dites-le en légende.
+:::
+
+# 9.5 Habiller
+
+## 9.5.1 Titres et étiquettes
+
+```r
+ggplot(d, aes(pib, chomage, color = region)) +
+  geom_point(size = 3) +
+  labs(title    = "Chomage et richesse regionale",
+       subtitle = "Maroc, 2023",
+       x        = "PIB (milliards de dirhams)",
+       y        = "Taux de chomage (%)",
+       color    = "Region",
+       caption  = "Source : HCP")
+```
+
+`labs` renomme tout, y compris le **titre de la légende** — qui porte le nom du canal esthétique (`color`, `fill`, `shape`).
+
+## 9.5.2 Les thèmes
+
+```r
+p + theme_minimal()      # fond blanc, grille discrete
+p + theme_bw()           # cadre noir, classique en publication
+p + theme_classic()      # deux axes seulement, sans grille
+```
+
+`theme_minimal(base_size = 14)` agrandit toutes les polices d'un coup — le réglage à faire pour une projection en amphithéâtre.
+
+```r
+p + theme_minimal(base_size = 13) +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold"))
+```
+
+## 9.5.3 Les échelles
+
+```r
+p + scale_y_continuous(limits = c(0, 20))                  # borner un axe
+p + scale_x_log10()                                        # echelle log
+p + scale_color_brewer(palette = "Set2")                   # palette qualitative
+p + scale_color_viridis_d()                                # palette lisible par tous
+```
+
+::: {.callout-warning}
+### Deux façons de borner un axe, aux effets opposés
+
+`scale_y_continuous(limits = c(0, 20))` **supprime** les observations hors bornes — un ajustement linéaire calculé ensuite ne portera pas sur toutes les données.
+
+`coord_cartesian(ylim = c(0, 20))` se contente de **zoomer** : rien n'est retiré du calcul.
+
+Pour cadrer une figure sans fausser un ajustement, utilisez `coord_cartesian`. ggplot2 avertit du nombre de lignes retirées dans le premier cas — lisez ces messages, ils sont là pour cela.
+:::
+
+# 9.6 Enregistrer
+
+```r
+ggsave("figure.png", width = 8, height = 5, dpi = 300)
+ggsave("figure.pdf", plot = p, width = 8, height = 5)
+```
+
+`ggsave` enregistre la **dernière figure affichée** si l'on ne précise rien, et devine le format d'après l'extension. Plus simple que la séquence `png()` … `dev.off()` du chapitre précédent, et sans risque d'oublier la fermeture.
+
+Les dimensions sont en pouces. Pour un article sur deux colonnes, `width = 6.5` correspond à la largeur d'une page A4 avec marges.
+
+# À vous
+
+À partir d'un tableau contenant `pib`, `chomage` et `region`, écrivez la figure suivante : un nuage de points coloré et différencié par région, une droite d'ajustement par région, des titres complets, le thème minimal, et un enregistrement en PDF.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```r
+library(ggplot2)
+
+p <- ggplot(d, aes(x = pib, y = chomage,
+                   color = region, shape = region)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Chomage et richesse regionale",
+       x = "PIB (milliards de dirhams)",
+       y = "Taux de chomage (%)",
+       color = "Region", shape = "Region") +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "bottom")
+
+p
+ggsave("chomage_pib.pdf", plot = p, width = 8, height = 5)
+```
+
+Notez que `color` et `shape` doivent recevoir **le même titre** dans `labs`, sans quoi ggplot2 affiche deux légendes séparées pour la même variable.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `ggplot(d, aes(x, y)) + geom_*()` | les trois éléments obligatoires |
+| `+` en **fin** de ligne | jamais en début |
+| `aes(color = var)` | la couleur porte une information |
+| `color = "blue"` hors de `aes` | couleur fixe |
+| `geom_point`, `geom_line`, `geom_col`, `geom_boxplot` | les géométries usuelles |
+| `geom_smooth(method = "lm")` | ajustement avec intervalle |
+| `facet_wrap(~ var)` | une figure par modalité |
+| `labs` | titres, axes, et titre de légende |
+| `theme_minimal(base_size = 14)` | thème et taille de police |
+| `coord_cartesian(ylim = )` | zoomer sans supprimer d'observations |
+| `ggsave` | enregistrer, format déduit de l'extension |
+| `p <- ggplot(...)` | la figure est un objet réutilisable |
+
+Le dernier chapitre complète ggplot2 par son compagnon naturel : **dplyr**, qui prépare les tableaux que ces figures représentent.

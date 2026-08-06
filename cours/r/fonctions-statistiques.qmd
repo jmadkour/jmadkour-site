@@ -1,0 +1,314 @@
+---
+title: "Les fonctions statistiques"
+subtitle: "Informatique — R, chapitre 7"
+sidebar: r
+include-after-body: ../../_includes/console.html
+---
+
+Voici ce pour quoi R a été écrit. Là où d'autres langages exigent de charger des bibliothèques, R propose d'emblée la description, les lois de probabilité, les tests classiques et la régression linéaire. Ce chapitre en fait le tour, et montre surtout comment **lire** ce qu'il renvoie.
+
+# 7.1 Décrire une variable
+
+## 7.1.1 Les indicateurs usuels
+
+```{=html}
+<div data-console data-engine="r" data-title="tout est disponible sans rien charger">
+x <- c(12, 8, 15, 6, 17, 11, 14, 9)
+
+mean(x)       # moyenne
+median(x)     # mediane
+var(x)        # variance
+sd(x)         # ecart-type
+range(x)      # minimum et maximum
+IQR(x)        # ecart interquartile
+</div>
+```
+
+::: {.callout-warning}
+### `var` et `sd` divisent par $n-1$
+
+R calcule la variance **corrigée**, celle qui estime sans biais la variance de la population :
+
+$$s^2 = \frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})^2$$
+
+Si votre cours définit la variance descriptive avec $n$ au dénominateur, l'écart est visible sur de petits échantillons. Pour l'obtenir : `var(x) * (length(x) - 1) / length(x)`.
+:::
+
+## 7.1.2 Quantiles et résumé
+
+```{=html}
+<div data-console data-engine="r" data-title="la distribution en cinq nombres">
+x <- c(12, 8, 15, 6, 17, 11, 14, 9)
+
+quantile(x)                          # les quartiles
+quantile(x, c(0.1, 0.9))             # les deciles extremes
+summary(x)                           # le resume standard
+</div>
+```
+
+## 7.1.3 Décrire deux variables ensemble
+
+```{=html}
+<div data-console data-engine="r" data-title="covariance, corrélation, tableau croisé">
+x <- c(12, 8, 15, 6, 17, 11)
+y <- c(3.1, 2.2, 3.8, 1.9, 4.2, 2.9)
+
+cov(x, y)                      # covariance
+cor(x, y)                      # correlation de Pearson
+cor(x, y, method = "spearman") # correlation des rangs
+</div>
+```
+
+::: {.callout-note}
+### Corrélation et valeurs manquantes
+
+`cor(x, y)` renvoie `NA` dès qu'une seule observation est incomplète. Ajoutez `use = "complete.obs"` pour n'utiliser que les paires complètes.
+
+Sur un tableau entier, `cor(d, use = "complete.obs")` produit la matrice des corrélations en une commande.
+:::
+
+# 7.2 Les lois de probabilité
+
+## 7.2.1 Une convention à quatre lettres
+
+R nomme ses fonctions de loi selon un schéma parfaitement régulier. Une lettre, puis le nom de la loi.
+
+| Préfixe | Signification | Question posée |
+|---|---|---|
+| `d` | densité | quelle hauteur de courbe en $x$ ? |
+| `p` | probabilité cumulée | quelle probabilité d'être **en dessous** de $x$ ? |
+| `q` | quantile | quelle valeur laisse $p$ % en dessous ? |
+| `r` | tirage aléatoire | donne-moi $n$ valeurs au hasard |
+
+Les noms de lois : `norm`, `t`, `chisq`, `f`, `binom`, `pois`, `unif`, `exp`.
+
+```{=html}
+<div data-console data-engine="r" data-title="la loi normale, dans les quatre sens">
+dnorm(0)              # hauteur de la densite en 0
+pnorm(1.96)           # P(Z < 1.96) : environ 0,975
+qnorm(0.975)          # la valeur qui laisse 97,5 % : 1,96
+rnorm(5)              # cinq tirages
+</div>
+```
+
+Une fois la convention comprise, toutes les lois s'utilisent sans documentation. `qt(0.975, df = 20)` donne la valeur critique de Student à 20 degrés de liberté ; `pchisq(q, df)` la probabilité cumulée d'un khi-deux.
+
+## 7.2.2 Les valeurs critiques d'un test
+
+```{=html}
+<div data-console data-engine="r" data-title="ce que vous cherchiez dans une table imprimée">
+qnorm(0.975)                  # normale, bilateral a 5 %
+qt(0.975, df = 20)            # Student, 20 ddl
+qchisq(0.95, df = 3)          # khi-deux, 3 ddl
+qf(0.95, df1 = 2, df2 = 30)   # Fisher
+</div>
+```
+
+Les tables statistiques en annexe des manuels ne sont plus que ces quatre lignes.
+
+## 7.2.3 Reproduire un tirage aléatoire
+
+```{=html}
+<div data-console data-engine="r" data-title="exécutez deux fois : le résultat est identique">
+set.seed(123)
+rnorm(3)
+
+set.seed(123)
+rnorm(3)
+</div>
+```
+
+::: {.callout-important}
+### `set.seed` avant toute simulation
+
+Sans elle, deux exécutions du même script donnent des résultats différents — vos figures changent, vos tableaux aussi, et personne ne peut reproduire vos chiffres.
+
+Placez `set.seed(123)` en tête de tout script comportant du tirage aléatoire. Le nombre choisi n'a aucune importance ; ce qui compte est qu'il soit fixé.
+:::
+
+# 7.3 Les tests classiques
+
+## 7.3.1 Comparer une moyenne
+
+```{=html}
+<div data-console data-engine="r" data-title="le test de Student sur un échantillon">
+set.seed(42)
+x <- rnorm(30, mean = 10.4, sd = 2)
+
+t.test(x, mu = 10)
+</div>
+```
+
+Lisez la sortie dans cet ordre : la statistique `t`, les degrés de liberté, la `p-value`, puis l'**intervalle de confiance**. Ce dernier est souvent plus informatif que la p-value seule, parce qu'il donne l'ordre de grandeur de l'écart.
+
+## 7.3.2 Comparer deux groupes
+
+```{=html}
+<div data-console data-engine="r" data-title="deux échantillons, et la notation formule">
+set.seed(1)
+d <- data.frame(
+  valeur = c(rnorm(20, 10), rnorm(20, 11.5)),
+  groupe = rep(c("A", "B"), each = 20)
+)
+
+t.test(valeur ~ groupe, data = d)
+</div>
+```
+
+La notation `valeur ~ groupe` se lit « valeur **expliquée par** groupe ». C'est la même écriture qu'à `aggregate` au chapitre 4, et que celle de la régression ci-dessous : R l'emploie partout.
+
+## 7.3.3 Les autres tests courants
+
+```{=html}
+<div data-console data-engine="r" data-title="normalité, indépendance, variances">
+set.seed(7)
+x <- rnorm(40)
+
+shapiro.test(x)                        # normalite
+var.test(rnorm(30), rnorm(30))         # egalite des variances
+chisq.test(matrix(c(20, 15, 30, 35), 2))  # independance, tableau croise
+</div>
+```
+
+| Test | Fonction | Hypothèse nulle |
+|---|---|---|
+| Student | `t.test` | les moyennes sont égales |
+| Wilcoxon | `wilcox.test` | idem, sans hypothèse de normalité |
+| Shapiro-Wilk | `shapiro.test` | la variable est normale |
+| Fisher | `var.test` | les variances sont égales |
+| Khi-deux | `chisq.test` | les deux variables sont indépendantes |
+
+::: {.callout-warning}
+### La p-value ne mesure pas l'importance d'un effet
+
+Une p-value inférieure à 0,05 indique que l'écart observé serait improbable si l'hypothèse nulle était vraie. Elle ne dit rien de la **taille** de cet écart.
+
+Sur 100 000 observations, un écart économiquement négligeable ressort « hautement significatif ». Regardez toujours l'intervalle de confiance et l'ordre de grandeur du coefficient avant de conclure.
+:::
+
+# 7.4 La régression linéaire
+
+## 7.4.1 Estimer
+
+```{=html}
+<div data-console data-engine="r" data-title="le modèle en une ligne">
+set.seed(10)
+d <- data.frame(x1 = rnorm(50), x2 = rnorm(50))
+d$y <- 2 + 1.5 * d$x1 - 0.8 * d$x2 + rnorm(50, sd = 0.5)
+
+mod <- lm(y ~ x1 + x2, data = d)
+summary(mod)
+</div>
+```
+
+`lm` pour *linear model*. La formule reprend la notation déjà rencontrée : la variable à expliquer, un tilde, les explicatives séparées par des `+`.
+
+## 7.4.2 Lire la sortie
+
+Dans le tableau des coefficients : l'estimation, son écart-type, la statistique $t$, et la p-value. En bas : le $R^2$, le $R^2$ ajusté, et le test de Fisher de significativité globale.
+
+::: {.callout-note}
+### Les variantes de formule utiles
+
+| Écriture | Signification |
+|---|---|
+| `y ~ x1 + x2` | deux explicatives |
+| `y ~ .` | toutes les autres colonnes du tableau |
+| `y ~ x1 * x2` | les deux, **plus** leur interaction |
+| `y ~ x1 + I(x1^2)` | un terme quadratique |
+| `y ~ x1 - 1` | sans constante |
+| `y ~ log(x1)` | transformation à la volée |
+
+Une colonne de type **facteur** est automatiquement éclatée en indicatrices, la première modalité servant de référence. C'est la raison d'être du facteur, annoncée au chapitre 2.
+:::
+
+## 7.4.3 Extraire et diagnostiquer
+
+```{=html}
+<div data-console data-engine="r" data-title="ce qu'on tire d'un modèle estimé">
+set.seed(10)
+d <- data.frame(x = rnorm(50))
+d$y <- 2 + 1.5 * d$x + rnorm(50, sd = 0.5)
+mod <- lm(y ~ x, data = d)
+
+coef(mod)              # les coefficients
+confint(mod)           # leurs intervalles de confiance
+head(residuals(mod))   # les residus
+head(fitted(mod))      # les valeurs ajustees
+</div>
+```
+
+```{=html}
+<div data-console data-engine="r" data-title="les quatre graphiques de diagnostic">
+set.seed(10)
+d <- data.frame(x = rnorm(50))
+d$y <- 2 + 1.5 * d$x + rnorm(50, sd = 0.5)
+mod <- lm(y ~ x, data = d)
+
+par(mfrow = c(2, 2))
+plot(mod)
+</div>
+```
+
+`plot` appliqué à un modèle ne trace pas les données : il produit les **quatre diagnostics** des moindres carrés — résidus contre valeurs ajustées, droite de Henry, racine des résidus standardisés, et distance de Cook. C'est l'un des grands conforts de R.
+
+## 7.4.4 Prédire
+
+```{=html}
+<div data-console data-engine="r" data-title="appliquer le modèle à de nouvelles valeurs">
+set.seed(10)
+d <- data.frame(x = rnorm(50))
+d$y <- 2 + 1.5 * d$x + rnorm(50, sd = 0.5)
+mod <- lm(y ~ x, data = d)
+
+nouveau <- data.frame(x = c(-1, 0, 1))
+predict(mod, newdata = nouveau, interval = "confidence")
+</div>
+```
+
+Le tableau `newdata` doit contenir des colonnes **portant exactement les mêmes noms** que les variables explicatives du modèle.
+
+# À vous
+
+Simulez 60 observations d'un modèle $y = 5 + 2x + \varepsilon$, estimez-le, et vérifiez que l'intervalle de confiance du coefficient de $x$ contient bien 2.
+
+```{=html}
+<div data-console data-engine="r" data-title="à compléter">
+set.seed(2024)
+
+# a completer
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```r
+set.seed(2024)
+x <- rnorm(60)
+y <- 5 + 2 * x + rnorm(60, sd = 1)
+
+mod <- lm(y ~ x)
+summary(mod)
+confint(mod)      # la ligne x doit encadrer 2
+```
+
+Refaites l'exercice avec `sd = 5` : le coefficient reste proche de 2 en moyenne, mais son intervalle s'élargit nettement. C'est la précision de l'estimation qui se dégrade, pas sa justesse.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `mean`, `median`, `sd`, `var`, `quantile` | décrire — `var` et `sd` divisent par $n-1$ |
+| `cor(x, y, use = "complete.obs")` | corrélation en présence de manquantes |
+| `d`/`p`/`q`/`r` + `norm`, `t`, `chisq`, `f` | densité, cumulée, quantile, tirage |
+| `qnorm(0.975)`, `qt(0.975, df)` | les valeurs critiques, sans table |
+| `set.seed` | rendre une simulation reproductible |
+| `t.test`, `wilcox.test`, `shapiro.test`, `chisq.test` | les tests classiques |
+| `y ~ x` | la notation formule, commune à tout R |
+| `lm`, `summary`, `coef`, `confint` | estimer et lire une régression |
+| `plot(mod)` | les quatre diagnostics des MCO |
+| `predict(mod, newdata = ...)` | prédire |
+
+Le chapitre suivant met en images tout ce que ce chapitre a calculé : les **graphiques de base** de R.

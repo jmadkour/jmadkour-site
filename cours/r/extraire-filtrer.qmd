@@ -1,0 +1,252 @@
+---
+title: "Extraire et filtrer"
+subtitle: "Informatique — R, chapitre 3"
+sidebar: r
+include-after-body: ../../_includes/console.html
+---
+
+Travailler sur des données, c'est presque toujours travailler sur une **partie** des données : les hommes seulement, les années postérieures à 2015, les observations dont le revenu dépasse un seuil. Ce chapitre est consacré à cette opération unique, et aux crochets qui la réalisent.
+
+# 3.1 Extraire par position
+
+## 3.1.1 Les quatre écritures
+
+```{=html}
+<div data-console data-engine="r" data-title="un nombre, plusieurs nombres, ou un signe moins">
+v <- c(4, 8, 15, 16, 23, 42)
+
+v[2]           # le deuxieme
+v[c(2, 5)]     # le deuxieme et le cinquieme
+v[2:4]         # du deuxieme au quatrieme
+v[-2]          # tous SAUF le deuxieme
+</div>
+```
+
+Le signe moins **exclut**, il ne compte pas depuis la fin. `v[-1]` retire le premier élément ; en Python, la même écriture désignerait le dernier. C'est une source de confusion pour qui pratique les deux langages.
+
+## 3.1.2 Le dernier élément
+
+```{=html}
+<div data-console data-engine="r" data-title="R n'a pas d'indice négatif pour la fin">
+v <- c(4, 8, 15, 16, 23, 42)
+
+v[length(v)]           # le dernier
+v[length(v) - 1]       # l'avant-dernier
+tail(v, 2)             # les deux derniers
+head(v, 3)             # les trois premiers
+</div>
+```
+
+`head` et `tail` sont plus lisibles et fonctionnent aussi sur les tableaux du chapitre suivant.
+
+# 3.2 Extraire par condition
+
+## 3.2.1 Le mécanisme en deux temps
+
+C'est le point central du chapitre. Une condition produit un vecteur de `TRUE` et `FALSE` ; les crochets ne retiennent que les positions vraies.
+
+```{=html}
+<div data-console data-engine="r" data-title="décomposez, puis recomposez">
+v <- c(4, 8, 15, 16, 23, 42)
+
+v > 15        # etape 1 : le masque logique
+v[v > 15]     # etape 2 : on l'applique
+</div>
+```
+
+Prenez le temps d'exécuter séparément les deux lignes. Tout le filtrage en R tient dans cet enchaînement.
+
+## 3.2.2 Combiner plusieurs critères
+
+```{=html}
+<div data-console data-engine="r" data-title="et, ou, non">
+v <- c(4, 8, 15, 16, 23, 42)
+
+v[v > 10 & v < 30]      # entre 10 et 30
+v[v < 10 | v > 30]      # en dehors
+v[!(v > 15)]            # l'inverse de v > 15
+</div>
+```
+
+::: {.callout-warning}
+### `&` et `&&` ne sont pas interchangeables
+
+`&` compare **élément par élément** et renvoie un vecteur : c'est celui du filtrage.
+
+`&&` ne renvoie **qu'une seule valeur** et sert dans un `if`. Appliqué à un vecteur, il ne regarde que le premier élément — et depuis R 4.3, il déclenche une erreur.
+
+Règle simple : dans des crochets, toujours `&` et `|` simples.
+:::
+
+## 3.2.3 Filtrer en présence de valeurs manquantes
+
+```{=html}
+<div data-console data-engine="r" data-title="le NA traverse le filtre">
+w <- c(4, 8, NA, 16, 23)
+
+w[w > 10]                    # un NA apparait dans le resultat
+w[which(w > 10)]             # which l'elimine
+w[!is.na(w) & w > 10]        # ou on l'exclut explicitement
+</div>
+```
+
+`which` convertit un masque logique en **positions**, et ignore les `NA` au passage. C'est la parade la plus courte.
+
+# 3.3 Appartenance et correspondance
+
+## 3.3.1 L'opérateur `%in%`
+
+```{=html}
+<div data-console data-engine="r" data-title="tester l'appartenance à une liste">
+villes <- c("Tanger", "Rabat", "Fes", "Agadir", "Rabat")
+
+villes %in% c("Rabat", "Fes")        # VRAI ou FAUX pour chacune
+villes[villes %in% c("Rabat", "Fes")]
+</div>
+```
+
+`%in%` remplace avantageusement une longue suite de `==` reliés par des `|`. C'est l'un de ces opérateurs encadrés de `%` rencontrés au chapitre 1.
+
+## 3.3.2 Le piège du recyclage
+
+```{=html}
+<div data-console data-engine="r" data-title="exécutez, puis lisez l'explication">
+v <- c(4, 8, 15, 16, 23, 42)
+
+v == c(4, 8)     # attention au resultat
+</div>
+```
+
+::: {.callout-important}
+### Le recyclage silencieux
+
+Quand deux vecteurs n'ont pas la même longueur, R **recycle** le plus court en le répétant. Ici `c(4, 8)` est comparé à `(4, 8)`, puis `(15, 16)`, puis `(23, 42)`.
+
+Aucune erreur n'est signalée si la longueur du grand est un multiple de celle du petit. Le résultat est faux mais plausible, ce qui en fait un bug particulièrement difficile à repérer.
+
+Pour comparer à une liste de valeurs, utilisez toujours `%in%`.
+:::
+
+# 3.4 Nommer pour extraire
+
+```{=html}
+<div data-console data-engine="r" data-title="un vecteur peut porter des étiquettes">
+pib <- c(Tanger = 45, Rabat = 62, Fes = 38)
+
+pib
+pib["Rabat"]              # extraction par nom
+names(pib)                # la liste des noms
+pib[pib > 40]             # les noms suivent le filtrage
+</div>
+```
+
+Extraire par nom est plus robuste qu'extraire par position : l'ordre des données peut changer, pas les étiquettes.
+
+# 3.5 Trier et ordonner
+
+## 3.5.1 Deux fonctions, deux résultats
+
+```{=html}
+<div data-console data-engine="r" data-title="sort renvoie des valeurs, order des positions">
+v <- c(15, 4, 42, 8)
+
+sort(v)                    # les valeurs, triees
+order(v)                   # les POSITIONS du tri
+v[order(v)]                # equivalent a sort(v)
+sort(v, decreasing = TRUE) # ordre decroissant
+</div>
+```
+
+::: {.callout-note}
+### Pourquoi `order` est le plus important des deux
+
+`sort` trie un vecteur isolé. Mais dans un tableau, trier une colonne sans déplacer les autres détruirait les données : chaque ligne doit rester solidaire.
+
+`order` renvoie précisément l'ordre des lignes à appliquer au tableau entier. C'est la fonction du chapitre suivant, et la raison pour laquelle elle existe.
+:::
+
+## 3.5.2 Rang et valeurs extrêmes
+
+```{=html}
+<div data-console data-engine="r" data-title="qui est le plus grand, et à quelle position">
+v <- c(15, 4, 42, 8)
+
+max(v)            # la valeur maximale
+which.max(v)      # sa position
+rank(v)           # le rang de chaque valeur
+rev(v)            # inverser l'ordre
+</div>
+```
+
+# 3.6 Remplacer une partie des valeurs
+
+Les crochets fonctionnent aussi à **gauche** du signe d'affectation.
+
+```{=html}
+<div data-console data-engine="r" data-title="modifier sur place">
+v <- c(4, 8, 15, 16, 23, 42)
+
+v[1] <- 0            # une valeur
+v[v > 20] <- NA      # toutes celles qui remplissent la condition
+v
+</div>
+```
+
+C'est la façon habituelle de **coder les valeurs aberrantes en manquantes** : `revenu[revenu > 1e6] <- NA` en une ligne.
+
+::: {.callout-tip}
+### Recoder une variable
+
+```r
+age <- c(17, 25, 62, 40)
+classe <- rep("adulte", length(age))
+classe[age < 18]  <- "mineur"
+classe[age >= 60] <- "senior"
+```
+
+Trois lignes, aucune boucle, aucun `if`. On part d'une valeur par défaut, puis on écrase par condition. Ce motif revient constamment.
+:::
+
+# À vous
+
+Le vecteur `salaires` contient sept valeurs, dont une manquante. Extrayez celles comprises entre 3000 et 8000, comptez-les, et remplacez toute valeur supérieure à 20000 par `NA`.
+
+```{=html}
+<div data-console data-engine="r" data-title="à compléter">
+salaires <- c(2500, 4200, NA, 7800, 25000, 3100, 9500)
+
+# a completer
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```r
+sel <- salaires[which(salaires >= 3000 & salaires <= 8000)]
+sel                                    # 4200 7800 3100
+length(sel)                            # 3
+
+salaires[which(salaires > 20000)] <- NA
+salaires                               # le 25000 est devenu NA
+```
+
+`which` est indispensable ici : sans lui, le `NA` de départ ressortirait dans la sélection et fausserait le comptage.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `v[2]`, `v[2:4]`, `v[-2]` | extraire par position, ou exclure |
+| `head`, `tail` | les premiers, les derniers |
+| `v[v > 15]` | extraire par condition |
+| `&`, `|`, `!` | combiner des critères (jamais `&&` dans des crochets) |
+| `which` | convertir une condition en positions, sans les `NA` |
+| `%in%` | tester l'appartenance à une liste |
+| `names`, `v["nom"]` | étiqueter et extraire par nom |
+| `sort`, `order`, `rank`, `rev` | trier, ordonner, classer, inverser |
+| `which.max`, `which.min` | position de la valeur extrême |
+| `v[cond] <- valeur` | remplacer une partie des valeurs |
+
+Le chapitre suivant applique tout ceci à la structure centrale de R : le **tableau de données**, où les lignes sont des observations et les colonnes des variables.

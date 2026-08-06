@@ -1,0 +1,296 @@
+---
+title: "Les autres types"
+subtitle: "Informatique — R, chapitre 2"
+sidebar: r
+include-after-body: ../../_includes/console.html
+---
+
+Le chapitre précédent n'a manipulé que des nombres. Or une enquête contient aussi des noms, des réponses par oui ou non, des catégories, et des cases vides. R traite chacun de ces cas avec un type dédié — dont l'un, le **facteur**, n'existe dans aucun autre langage courant.
+
+# 2.1 Le texte
+
+## 2.1.1 Créer et assembler
+
+Une chaîne de caractères s'écrit entre guillemets, doubles ou simples, indifféremment.
+
+```{=html}
+<div data-console data-engine="r" data-title="deux fonctions à ne pas confondre">
+prenom <- "Amina"
+ville  <- "Tanger"
+
+paste(prenom, ville)              # separe par un espace
+paste0(prenom, ville)             # sans separateur
+paste(prenom, ville, sep = " - ") # separateur choisi
+</div>
+```
+
+`paste` insère un espace par défaut, `paste0` n'insère rien. La confusion entre les deux est la première source de sorties mal formatées.
+
+## 2.1.2 Mesurer et transformer
+
+```{=html}
+<div data-console data-engine="r" data-title="les opérations de base sur le texte">
+v <- "econometrie"
+
+nchar(v)              # nombre de caracteres
+toupper(v)            # majuscules
+substr(v, 1, 4)       # du 1er au 4e caractere
+</div>
+```
+
+::: {.callout-warning}
+### `length` et `nchar` ne mesurent pas la même chose
+
+`nchar("Tanger")` vaut 6 : le nombre de **caractères**.
+
+`length("Tanger")` vaut 1 : le nombre d'**éléments** du vecteur — et une chaîne, si longue soit-elle, reste un seul élément.
+
+Essayez les deux dans la console. Cette distinction resservira à chaque chapitre.
+:::
+
+## 2.1.3 Chercher et remplacer
+
+```{=html}
+<div data-console data-engine="r" data-title="repérer un motif dans une suite de mots">
+mots <- c("taux", "prix", "taux_reel", "volume")
+
+grepl("taux", mots)              # VRAI ou FAUX pour chacun
+grep("taux", mots)               # les positions
+sub("taux", "TAUX", mots)        # remplacer la 1re occurrence
+</div>
+```
+
+`grepl` répond par vrai ou faux, `grep` renvoie des positions. Le `l` final signifie *logical* : c'est le même mot que dans la section suivante.
+
+# 2.2 Les valeurs logiques
+
+## 2.2.1 Deux valeurs, et un raccourci trompeur
+
+```{=html}
+<div data-console data-engine="r" data-title="TRUE et FALSE s'écrivent en majuscules">
+a <- TRUE
+b <- FALSE
+
+a
+class(a)
+</div>
+```
+
+::: {.callout-warning}
+### N'écrivez jamais `T` et `F`
+
+R accepte `T` et `F` comme abréviations. Mais ce sont de **simples variables**, que n'importe quel code peut redéfinir — `T <- 0` est parfaitement légal et transforme silencieusement tous vos `T` en zéros.
+
+`TRUE` et `FALSE`, eux, sont des mots réservés, impossibles à écraser. Prenez l'habitude de les écrire en entier.
+:::
+
+## 2.2.2 Comparer
+
+```{=html}
+<div data-console data-engine="r" data-title="six comparaisons">
+x <- 7
+
+x > 5      # strictement superieur
+x >= 7     # superieur ou egal
+x == 7     # egal : DEUX signes
+x != 7     # different
+</div>
+```
+
+L'égalité s'écrit avec **deux** signes `==`. Un seul signe est une affectation, et l'erreur est facile à commettre.
+
+## 2.2.3 Combiner
+
+```{=html}
+<div data-console data-engine="r" data-title="et, ou, non">
+x <- 7
+
+x > 5 & x < 10      # ET : les deux conditions
+x < 5 | x > 10      # OU : au moins une
+!(x > 5)            # NON : l'inverse
+</div>
+```
+
+## 2.2.4 Un logique vaut un nombre
+
+```{=html}
+<div data-console data-engine="r" data-title="le calcul le plus utile du chapitre">
+notes <- c(12, 8, 15, 6, 17, 11)
+
+notes >= 10             # une reponse par note
+sum(notes >= 10)        # combien de reussites
+mean(notes >= 10)       # quelle proportion
+</div>
+```
+
+`TRUE` vaut 1 et `FALSE` vaut 0. Donc `sum` **compte** et `mean` calcule une **proportion**. Ce petit fait est probablement le raccourci le plus employé de tout R : retenez-le.
+
+# 2.3 Les facteurs
+
+## 2.3.1 Une variable qualitative n'est pas du texte
+
+```{=html}
+<div data-console data-engine="r" data-title="ce que le facteur ajoute au texte">
+sexe <- c("F", "M", "F", "F", "M")
+sexe_f <- factor(sexe)
+
+sexe_f
+levels(sexe_f)      # les modalites, connues et ordonnees
+table(sexe_f)       # les effectifs, immediatement
+</div>
+```
+
+Un vecteur de texte est une simple suite de mots. Un **facteur** est une variable qualitative : R en connaît la liste des **modalités possibles** (les *levels*), même celles qui n'apparaissent pas dans les données.
+
+::: {.callout-note}
+### Pourquoi ce type n'existe qu'en R
+
+Parce que R a été écrit pour la statistique. Dans une régression, une variable qualitative doit être éclatée en indicatrices, et il faut désigner une **modalité de référence**. Le facteur porte cette information ; un simple texte ne le pourrait pas.
+
+Nous verrons au chapitre 7 que `lm` s'en sert automatiquement.
+:::
+
+## 2.3.2 Les facteurs ordonnés
+
+```{=html}
+<div data-console data-engine="r" data-title="quand l'ordre des modalités a un sens">
+niveau <- c("moyen", "faible", "eleve", "moyen")
+
+n <- factor(niveau,
+            levels = c("faible", "moyen", "eleve"),
+            ordered = TRUE)
+n
+n > "faible"      # la comparaison a maintenant un sens
+</div>
+```
+
+Sans l'argument `levels`, R classe les modalités par ordre alphabétique — ce qui placerait « élevé » avant « faible ». Dès que l'ordre compte, déclarez-le.
+
+## 2.3.3 Le piège de la conversion
+
+```{=html}
+<div data-console data-engine="r" data-title="exécutez, le résultat surprend">
+annees <- factor(c("2019", "2021", "2020"))
+
+as.numeric(annees)                    # FAUX : 1 2 3
+as.numeric(as.character(annees))      # correct : 2019 2021 2020
+</div>
+```
+
+::: {.callout-important}
+Un facteur est stocké comme un **code entier** renvoyant à la liste des modalités. `as.numeric` retourne ce code, pas l'étiquette.
+
+Le passage par `as.character` est obligatoire. C'est l'une des erreurs les plus coûteuses de R, parce qu'elle ne déclenche aucun message : le calcul se poursuit avec 1, 2, 3 au lieu de 2019, 2021, 2020.
+:::
+
+# 2.4 Les valeurs manquantes
+
+## 2.4.1 `NA` n'est pas zéro
+
+```{=html}
+<div data-console data-engine="r" data-title="une absence n'est pas une valeur">
+w <- c(4, 8, NA, 16)
+
+is.na(w)                 # ou sont les manquantes
+sum(is.na(w))            # combien
+mean(w)                  # NA se propage
+mean(w, na.rm = TRUE)    # on les ignore explicitement
+</div>
+```
+
+## 2.4.2 Le test qui ne fonctionne pas
+
+```{=html}
+<div data-console data-engine="r" data-title="pourquoi is.na existe">
+w <- c(4, 8, NA, 16)
+
+w == NA        # que des NA : inutilisable
+is.na(w)       # la bonne facon
+</div>
+```
+
+Comparer une valeur inconnue à une valeur inconnue ne peut donner qu'une réponse inconnue. R est logique : `NA == NA` vaut `NA`. D'où l'existence de `is.na`.
+
+## 2.4.3 Trois absences différentes
+
+| Valeur | Signification |
+|---|---|
+| `NA` | donnée manquante — la case existe, la valeur est inconnue |
+| `NULL` | objet vide — il n'y a pas de case du tout |
+| `NaN` | résultat de calcul impossible, comme `0/0` |
+
+```{=html}
+<div data-console data-engine="r" data-title="les distinguer">
+length(c(1, NA, 3))      # 3 : la case manquante compte
+length(c(1, NULL, 3))    # 2 : NULL disparait
+</div>
+```
+
+# 2.5 Connaître et convertir un type
+
+```{=html}
+<div data-console data-engine="r" data-title="la question à se poser devant tout objet inconnu">
+x <- c(1, 2, 3)
+y <- c("1", "2", "3")
+
+class(x)
+class(y)
+y * 2        # erreur : on ne multiplie pas du texte
+</div>
+```
+
+Les fonctions de conversion portent toutes le préfixe `as.` : `as.numeric`, `as.character`, `as.logical`, `as.factor`.
+
+::: {.callout-warning}
+### Un vecteur ne mélange pas les types
+
+```r
+c(1, "deux", TRUE)
+```
+
+R ne proteste pas : il **convertit tout au type le plus général**, ici le texte. Vos nombres deviennent silencieusement des chaînes, et le calcul suivant échoue sans que la cause soit visible.
+
+L'ordre est : logique → numérique → texte. Un seul mot dans une colonne de mille nombres suffit à convertir la colonne entière.
+:::
+
+# À vous
+
+Une classe a obtenu les notes 12, 8, 15, 6, 17, 11 et une note manquante. Calculez la moyenne en ignorant l'absence, comptez les notes supérieures ou égales à 10, et donnez la proportion de reçus.
+
+```{=html}
+<div data-console data-engine="r" data-title="à compléter">
+notes <- c(12, 8, 15, 6, 17, 11, NA)
+
+# a completer
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```r
+mean(notes, na.rm = TRUE)              # 11.5
+sum(notes >= 10, na.rm = TRUE)         # 4
+mean(notes >= 10, na.rm = TRUE)        # 0.667
+sum(is.na(notes))                      # 1 valeur manquante
+```
+
+Notez que `na.rm = TRUE` est nécessaire jusque dans le comptage : sans lui, le `NA` contamine aussi `sum`.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `paste`, `paste0` | assembler du texte, avec ou sans espace |
+| `nchar`, `toupper`, `substr` | mesurer et transformer une chaîne |
+| `grepl`, `grep`, `sub` | chercher et remplacer un motif |
+| `TRUE` / `FALSE` | valeurs logiques, jamais `T` / `F` |
+| `==`, `!=`, `&`, `|`, `!` | comparer et combiner |
+| `sum(cond)`, `mean(cond)` | compter et calculer une proportion |
+| `factor`, `levels`, `table` | variable qualitative et ses effectifs |
+| `as.numeric(as.character(f))` | convertir un facteur en nombres |
+| `is.na`, `na.rm = TRUE` | repérer et ignorer les manquantes |
+| `class`, `as.*` | connaître et convertir un type |
+
+Le chapitre suivant exploite systématiquement ces conditions logiques pour **extraire et filtrer** : ne garder d'un jeu de données que les observations qui remplissent un critère.

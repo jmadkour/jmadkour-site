@@ -1,0 +1,343 @@
+---
+title: "Boucles, tests et fonctions"
+subtitle: "Informatique — R, chapitre 6"
+sidebar: r
+include-after-body: ../../_includes/console.html
+---
+
+Ce chapitre clôt la première partie du cours. Il présente les trois constructions qui font d'une suite de commandes un véritable programme : le **test**, qui fait dépendre le code d'une condition ; la **boucle**, qui répète ; et la **fonction**, qui nomme un calcul pour le réutiliser.
+
+Un avertissement d'emblée : en R, la boucle est moins nécessaire qu'ailleurs. La vectorisation du chapitre 1 la remplace le plus souvent avantageusement.
+
+# 6.1 Le test
+
+## 6.1.1 `if` et `else`
+
+```{=html}
+<div data-console data-engine="r" data-title="exécuter selon une condition">
+x <- 12
+
+if (x > 10) {
+  print("grand")
+} else {
+  print("petit")
+}
+</div>
+```
+
+La condition entre parenthèses doit produire **une seule** valeur logique. Les accolades délimitent le bloc à exécuter.
+
+## 6.1.2 Enchaîner plusieurs cas
+
+```{=html}
+<div data-console data-engine="r" data-title="else if, autant de fois que nécessaire">
+note <- 14
+
+if (note >= 16) {
+  mention <- "tres bien"
+} else if (note >= 14) {
+  mention <- "bien"
+} else if (note >= 10) {
+  mention <- "passable"
+} else {
+  mention <- "insuffisant"
+}
+mention
+</div>
+```
+
+::: {.callout-warning}
+### Le `else` doit être sur la ligne de l'accolade fermante
+
+```r
+if (x > 10) {
+  print("grand")
+}
+else {                 # ERREUR
+  print("petit")
+}
+```
+
+R lit ligne par ligne. Quand il rencontre l'accolade fermante seule, il considère l'instruction terminée et ne s'attend plus à un `else`.
+
+Écrivez `} else {` sur la même ligne. C'est une contrainte du langage, pas une question de style.
+:::
+
+## 6.1.3 `ifelse` : la version vectorisée
+
+`if` ne traite qu'une valeur. Pour un vecteur entier, R fournit `ifelse`.
+
+```{=html}
+<div data-console data-engine="r" data-title="une décision par élément, sans boucle">
+notes <- c(12, 8, 15, 6, 17)
+
+ifelse(notes >= 10, "admis", "ajourne")
+</div>
+```
+
+Trois arguments : la condition, la valeur si vrai, la valeur si faux. C'est la construction à privilégier pour recoder une variable — avec le motif par affectation conditionnelle vu au chapitre 3.
+
+# 6.2 La boucle
+
+## 6.2.1 `for` : un nombre connu de répétitions
+
+```{=html}
+<div data-console data-engine="r" data-title="parcourir une suite de valeurs">
+for (i in 1:5) {
+  print(i^2)
+}
+</div>
+```
+
+La variable `i` prend successivement chaque valeur de la suite. Elle peut parcourir n'importe quel vecteur, pas seulement des nombres.
+
+```{=html}
+<div data-console data-engine="r" data-title="parcourir des mots">
+villes <- c("Tanger", "Rabat", "Fes")
+
+for (v in villes) {
+  print(paste("Ville :", v))
+}
+</div>
+```
+
+## 6.2.2 Stocker les résultats
+
+Une boucle qui se contente d'afficher ne sert à rien. Il faut conserver ce qu'elle produit.
+
+```{=html}
+<div data-console data-engine="r" data-title="préparer le contenant avant de le remplir">
+n <- 5
+resultat <- numeric(n)        # un vecteur vide de la bonne taille
+
+for (i in 1:n) {
+  resultat[i] <- i^2
+}
+resultat
+</div>
+```
+
+::: {.callout-important}
+### Ne faites jamais grandir un objet dans une boucle
+
+```r
+resultat <- c()
+for (i in 1:n) {
+  resultat <- c(resultat, i^2)     # a eviter
+}
+```
+
+À chaque tour, R **recopie tout le vecteur** pour en créer un plus grand. Sur mille itérations, c'est mille recopies de taille croissante.
+
+Déclarez la taille d'avance — `numeric(n)`, `character(n)`, `vector("list", n)` — puis remplissez par indice. Sur des données volumineuses, l'écart de temps se compte en minutes.
+:::
+
+## 6.2.3 `while` : un nombre inconnu de répétitions
+
+```{=html}
+<div data-console data-engine="r" data-title="répéter tant qu'une condition tient">
+capital <- 1000
+annees <- 0
+
+while (capital < 2000) {
+  capital <- capital * 1.07
+  annees <- annees + 1
+}
+annees      # combien d'annees pour doubler a 7 %
+</div>
+```
+
+`while` convient quand le nombre de tours dépend du calcul lui-même. Assurez-vous que la condition finit par devenir fausse, sans quoi la boucle ne s'arrête jamais.
+
+## 6.2.4 Le piège de `1:n`
+
+```{=html}
+<div data-console data-engine="r" data-title="que se passe-t-il si le vecteur est vide">
+v <- c()
+
+1:length(v)          # 1 0 : la boucle tournerait deux fois
+seq_along(v)         # rien : la boucle ne tourne pas
+</div>
+```
+
+::: {.callout-warning}
+Quand `v` est vide, `length(v)` vaut 0 et `1:0` produit la suite `1, 0` — deux itérations sur un vecteur qui n'a aucun élément.
+
+Écrivez `seq_along(v)` plutôt que `1:length(v)`. La différence ne se voit qu'au moment où elle casse le programme, souvent bien après.
+:::
+
+# 6.3 Les fonctions
+
+## 6.3.1 Écrire la sienne
+
+```{=html}
+<div data-console data-engine="r" data-title="nommer un calcul">
+taux_croissance <- function(debut, fin) {
+  (fin - debut) / debut * 100
+}
+
+taux_croissance(100, 112)
+taux_croissance(debut = 45, fin = 51)
+</div>
+```
+
+R renvoie automatiquement la **dernière expression évaluée**. `return` existe mais n'est utile que pour sortir avant la fin.
+
+## 6.3.2 Les arguments par défaut
+
+```{=html}
+<div data-console data-engine="r" data-title="une valeur prévue si l'argument est omis">
+resume <- function(x, digits = 2, na.rm = TRUE) {
+  c(moyenne = round(mean(x, na.rm = na.rm), digits),
+    ecart   = round(sd(x, na.rm = na.rm), digits))
+}
+
+v <- c(4, 8, 15, NA, 23)
+resume(v)
+resume(v, digits = 4)
+</div>
+```
+
+Les arguments sans défaut d'abord, ceux avec défaut ensuite. À l'appel, on peut nommer les arguments et les donner dans n'importe quel ordre.
+
+## 6.3.3 Ce qui se passe à l'intérieur reste à l'intérieur
+
+```{=html}
+<div data-console data-engine="r" data-title="la fonction ne modifie pas l'extérieur">
+x <- 10
+
+f <- function(x) {
+  x <- x * 2
+  x
+}
+
+f(x)     # 20
+x        # toujours 10
+</div>
+```
+
+Une fonction travaille sur une **copie**. C'est une garantie précieuse : appeler une fonction ne peut pas altérer vos données à votre insu.
+
+::: {.callout-note}
+### Une fonction ne doit dépendre que de ses arguments
+
+```r
+seuil <- 10
+f <- function(x) x > seuil      # a eviter
+```
+
+Cette fonction marche… tant que `seuil` existe dans votre session. Déplacée dans un autre script, elle échoue ou, pire, utilise un autre `seuil` sans le dire.
+
+Passez tout ce dont la fonction a besoin en argument : `f <- function(x, seuil = 10) x > seuil`.
+:::
+
+# 6.4 La famille `apply` : boucler sans boucle
+
+## 6.4.1 `sapply` sur un vecteur
+
+```{=html}
+<div data-console data-engine="r" data-title="appliquer une fonction à chaque élément">
+v <- c(4, 9, 16, 25)
+
+sapply(v, sqrt)                    # equivalent a sqrt(v)
+sapply(v, function(x) x^2 + 1)     # une fonction ecrite sur place
+</div>
+```
+
+Une fonction sans nom, écrite directement dans l'appel, s'appelle une **fonction anonyme**. Depuis R 4.1, elle peut aussi s'écrire `\(x) x^2 + 1`.
+
+## 6.4.2 `sapply` sur les colonnes d'un tableau
+
+C'est l'usage le plus fréquent, et le plus utile.
+
+```{=html}
+<div data-console data-engine="r" data-title="une statistique pour chaque colonne, en une ligne">
+d <- data.frame(
+  pib = c(45, 62, 38, 29),
+  chomage = c(11.2, 8.4, 13.1, 9.7),
+  hab = c(1.2, 1.9, 1.1, 0.9)
+)
+
+sapply(d, mean)                       # la moyenne de chaque colonne
+sapply(d, function(x) sum(is.na(x)))  # les manquantes de chacune
+</div>
+```
+
+## 6.4.3 `apply` sur les lignes ou les colonnes
+
+```{=html}
+<div data-console data-engine="r" data-title="le deuxième argument choisit la dimension">
+m <- matrix(1:6, nrow = 2)
+m
+
+apply(m, 1, sum)     # 1 = par LIGNE
+apply(m, 2, sum)     # 2 = par COLONNE
+</div>
+```
+
+Retenez : **1 comme ligne, 2 comme colonne**, dans l'ordre où on les écrit dans `d[lignes, colonnes]`.
+
+| Fonction | Sur quoi | Renvoie |
+|---|---|---|
+| `sapply` | vecteur, liste, colonnes d'un tableau | un vecteur si possible |
+| `lapply` | idem | toujours une liste |
+| `apply` | matrice ou tableau | selon la dimension choisie |
+| `tapply` | un vecteur, découpé par un facteur | une valeur par groupe |
+
+::: {.callout-tip}
+### Quand la boucle reste préférable
+
+`apply` n'est pas systématiquement plus rapide : sur un vecteur, `sqrt(v)` bat largement `sapply(v, sqrt)`, parce que la vectorisation opère en une seule opération interne.
+
+L'intérêt de `sapply` est la **lisibilité** — une ligne au lieu de cinq — et l'absence du piège de l'objet qui grandit. Gardez la boucle explicite quand chaque tour dépend du précédent : une simulation, une suite récurrente.
+:::
+
+# À vous
+
+Écrivez une fonction `note_mention` qui prend une note et renvoie sa mention, puis appliquez-la à un vecteur de notes.
+
+```{=html}
+<div data-console data-engine="r" data-title="à compléter">
+notes <- c(17, 12, 8, 15, 10)
+
+# a completer
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```r
+note_mention <- function(note) {
+  if (note >= 16) {
+    "tres bien"
+  } else if (note >= 14) {
+    "bien"
+  } else if (note >= 10) {
+    "passable"
+  } else {
+    "insuffisant"
+  }
+}
+
+sapply(notes, note_mention)
+```
+
+`sapply` est indispensable ici : `note_mention(notes)` échouerait, parce que `if` n'accepte qu'une seule valeur. C'est précisément la situation où la vectorisation ne suffit plus.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `if (cond) { } else { }` | exécuter selon une condition — `} else {` sur la même ligne |
+| `ifelse(cond, oui, non)` | la version vectorisée, pour un vecteur entier |
+| `for (i in 1:n) { }` | répéter un nombre connu de fois |
+| `seq_along(v)` | plus sûr que `1:length(v)` |
+| `while (cond) { }` | répéter tant que la condition tient |
+| `resultat <- numeric(n)` | préparer le contenant avant la boucle |
+| `function(x, y = 2) { }` | écrire sa propre fonction |
+| `sapply`, `lapply` | appliquer une fonction à chaque élément |
+| `apply(m, 1, f)` / `apply(m, 2, f)` | par ligne / par colonne |
+
+La première partie du cours s'achève ici : vous connaissez le langage. La seconde partie l'emploie à ce pour quoi il a été conçu, en commençant par les **fonctions statistiques**.

@@ -1,0 +1,281 @@
+---
+title: "Les tableaux de données"
+subtitle: "Informatique — R, chapitre 4"
+sidebar: r
+include-after-body: ../../_includes/console.html
+---
+
+Un vecteur ne décrit qu'une variable. Une enquête en contient des dizaines, mesurées sur les mêmes individus. La structure qui les réunit s'appelle le **data frame** : les lignes sont des observations, les colonnes des variables. C'est l'objet central de R, et celui sur lequel travaillent toutes les fonctions statistiques.
+
+# 4.1 Construire un tableau
+
+## 4.1.1 Colonne par colonne
+
+```{=html}
+<div data-console data-engine="r" data-title="quatre vecteurs, un tableau">
+d <- data.frame(
+  ville   = c("Tanger", "Rabat", "Fes", "Agadir"),
+  region  = c("Nord", "Centre", "Centre", "Sud"),
+  pib     = c(45, 62, 38, 29),
+  chomage = c(11.2, 8.4, 13.1, 9.7)
+)
+d
+</div>
+```
+
+Toutes les colonnes doivent avoir la **même longueur** : c'est la seule contrainte. Chacune garde son propre type — du texte ici, des nombres là.
+
+## 4.1.2 Regarder avant de calculer
+
+```{=html}
+<div data-console data-engine="r" data-title="les cinq commandes à taper devant tout tableau inconnu">
+d <- data.frame(
+  ville = c("Tanger", "Rabat", "Fes", "Agadir"),
+  pib = c(45, 62, 38, 29),
+  chomage = c(11.2, 8.4, 13.1, 9.7)
+)
+
+dim(d)        # lignes, colonnes
+names(d)      # les noms de variables
+str(d)        # la structure : type de chaque colonne
+head(d, 2)    # les premieres lignes
+summary(d)    # un resume statistique complet
+</div>
+```
+
+::: {.callout-tip}
+### `str` avant tout
+
+Devant un fichier importé, `str` est la première commande à taper. Elle révèle en une ligne par colonne le type que R a **deviné** — et c'est souvent là que se cache l'erreur : une colonne numérique lue comme du texte parce qu'un séparateur décimal était une virgule.
+
+Le chapitre suivant, consacré à l'import, y revient longuement.
+:::
+
+# 4.2 Extraire
+
+## 4.2.1 Une colonne
+
+```{=html}
+<div data-console data-engine="r" data-title="trois écritures pour la même colonne">
+d <- data.frame(ville = c("Tanger", "Rabat"), pib = c(45, 62))
+
+d$pib          # la plus lisible
+d[["pib"]]     # equivalent
+d[, "pib"]     # notation matricielle
+</div>
+```
+
+Le `$` est de loin le plus employé. Retenez-le d'abord ; les deux autres servent quand le nom de la colonne est lui-même dans une variable.
+
+## 4.2.2 Lignes et colonnes
+
+Les crochets d'un tableau prennent **deux arguments séparés par une virgule** : lignes d'abord, colonnes ensuite.
+
+```{=html}
+<div data-console data-engine="r" data-title="d[lignes, colonnes]">
+d <- data.frame(
+  ville = c("Tanger", "Rabat", "Fes", "Agadir"),
+  pib = c(45, 62, 38, 29),
+  chomage = c(11.2, 8.4, 13.1, 9.7)
+)
+
+d[2, ]              # toute la ligne 2
+d[, 2]              # toute la colonne 2
+d[2, 3]             # la cellule
+d[1:2, c("ville", "pib")]   # deux lignes, deux colonnes nommees
+</div>
+```
+
+::: {.callout-warning}
+### La virgule oubliée
+
+`d[2]` sans virgule ne renvoie **pas** la deuxième ligne : R comprend la deuxième **colonne**, comme pour une liste.
+
+Écrivez toujours la virgule. `d[2, ]` pour une ligne, `d[, 2]` pour une colonne. L'espace après la virgule aide l'œil.
+:::
+
+# 4.3 Filtrer les lignes
+
+Tout ce qu'a montré le chapitre précédent s'applique, à la place des lignes.
+
+```{=html}
+<div data-console data-engine="r" data-title="le filtrage, appliqué à un tableau">
+d <- data.frame(
+  ville = c("Tanger", "Rabat", "Fes", "Agadir"),
+  region = c("Nord", "Centre", "Centre", "Sud"),
+  pib = c(45, 62, 38, 29),
+  chomage = c(11.2, 8.4, 13.1, 9.7)
+)
+
+d[d$pib > 40, ]                        # les villes au PIB eleve
+d[d$region == "Centre", ]              # une modalite
+d[d$pib > 35 & d$chomage < 12, ]       # deux criteres
+d[d$pib > 40, c("ville", "chomage")]   # filtrer ET selectionner
+</div>
+```
+
+La fonction `subset` propose une écriture plus légère, sans répéter le nom du tableau.
+
+```{=html}
+<div data-console data-engine="r" data-title="la même chose, en plus lisible">
+d <- data.frame(
+  ville = c("Tanger", "Rabat", "Fes", "Agadir"),
+  pib = c(45, 62, 38, 29),
+  chomage = c(11.2, 8.4, 13.1, 9.7)
+)
+
+subset(d, pib > 40)
+subset(d, pib > 40, select = c(ville, chomage))
+</div>
+```
+
+::: {.callout-note}
+### `subset` : commode en console, déconseillé dans un script
+
+`subset` cherche les noms de colonnes dans le tableau sans qu'on les préfixe — ce qui est agréable à taper, mais rend le comportement dépendant du contexte.
+
+Pour un script destiné à durer, `d[d$pib > 40, ]` est plus sûr. Et le chapitre 10 montrera `filter` de dplyr, qui offre la lisibilité de `subset` sans ses inconvénients.
+:::
+
+# 4.4 Modifier et enrichir
+
+## 4.4.1 Créer une colonne
+
+```{=html}
+<div data-console data-engine="r" data-title="il suffit de la nommer">
+d <- data.frame(
+  ville = c("Tanger", "Rabat", "Fes"),
+  pib = c(45, 62, 38),
+  population = c(1.2, 1.9, 1.1)
+)
+
+d$pib_hab <- d$pib / d$population       # creation
+d$log_pib <- log(d$pib)                 # une autre
+d
+</div>
+```
+
+Aucune déclaration préalable : nommer une colonne qui n'existe pas la crée.
+
+## 4.4.2 Recoder
+
+```{=html}
+<div data-console data-engine="r" data-title="le motif du chapitre 3, appliqué aux colonnes">
+d <- data.frame(
+  ville = c("Tanger", "Rabat", "Fes", "Agadir"),
+  chomage = c(11.2, 8.4, 13.1, 9.7)
+)
+
+d$niveau <- "moyen"
+d$niveau[d$chomage < 9]  <- "faible"
+d$niveau[d$chomage > 12] <- "eleve"
+d
+</div>
+```
+
+## 4.4.3 Supprimer, renommer, trier
+
+```{=html}
+<div data-console data-engine="r" data-title="trois opérations d'entretien">
+d <- data.frame(
+  ville = c("Tanger", "Rabat", "Fes"),
+  pib = c(45, 62, 38),
+  temp = c(1, 2, 3)
+)
+
+d$temp <- NULL                 # supprimer une colonne
+names(d)[2] <- "pib_mrd"       # renommer la deuxieme
+d <- d[order(-d$pib_mrd), ]    # trier par PIB decroissant
+d
+</div>
+```
+
+C'est ici que `order`, introduit au chapitre précédent, prend tout son sens : il réordonne les **lignes entières**, en gardant chaque observation solidaire.
+
+# 4.5 Croiser et agréger
+
+```{=html}
+<div data-console data-engine="r" data-title="les trois fonctions de base de l'analyse">
+d <- data.frame(
+  region = c("Nord", "Centre", "Centre", "Sud", "Nord"),
+  pib = c(45, 62, 38, 29, 51)
+)
+
+table(d$region)                              # effectifs par region
+tapply(d$pib, d$region, mean)                # moyenne par region
+aggregate(pib ~ region, data = d, FUN = mean)  # meme chose, en tableau
+</div>
+```
+
+`aggregate` utilise la **notation formule** `y ~ x`, qui se lit « `y` expliqué par `x` ». Cette écriture traverse tout R : elle sert aussi aux graphiques et aux régressions du chapitre 7.
+
+# 4.6 Assembler deux tableaux
+
+```{=html}
+<div data-console data-engine="r" data-title="empiler, ou apparier">
+a <- data.frame(ville = c("Tanger", "Rabat"), pib = c(45, 62))
+b <- data.frame(ville = c("Fes"), pib = c(38))
+pop <- data.frame(ville = c("Tanger", "Rabat", "Fes"), hab = c(1.2, 1.9, 1.1))
+
+rbind(a, b)                    # empiler des lignes
+merge(rbind(a, b), pop, by = "ville")   # apparier par une cle
+</div>
+```
+
+`rbind` empile des tableaux de mêmes colonnes. `merge` apparie deux tableaux par une **clé** commune — l'équivalent d'une recherche verticale de tableur, en une commande.
+
+::: {.callout-warning}
+### Vérifiez toujours le nombre de lignes après un `merge`
+
+Par défaut, `merge` ne conserve que les lignes présentes **dans les deux** tableaux. Une ville absente de `pop` disparaîtrait sans avertissement.
+
+Comparez `nrow` avant et après. Si vous voulez tout garder, ajoutez `all.x = TRUE`.
+:::
+
+# À vous
+
+À partir du tableau ci-dessous, créez une colonne `pib_hab`, gardez les régions du Centre et du Nord, et triez par PIB par habitant décroissant.
+
+```{=html}
+<div data-console data-engine="r" data-title="à compléter">
+d <- data.frame(
+  ville = c("Tanger", "Rabat", "Fes", "Agadir"),
+  region = c("Nord", "Centre", "Centre", "Sud"),
+  pib = c(45, 62, 38, 29),
+  hab = c(1.2, 1.9, 1.1, 0.9)
+)
+
+# a completer
+</div>
+```
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```r
+d$pib_hab <- d$pib / d$hab
+d2 <- d[d$region %in% c("Centre", "Nord"), ]
+d2 <- d2[order(-d2$pib_hab), ]
+d2
+```
+
+Trois lignes, dans l'ordre naturel du raisonnement : créer, filtrer, trier. Le chapitre 10 montrera comment les enchaîner en une seule instruction lisible.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `data.frame(...)` | construire un tableau |
+| `dim`, `names`, `str`, `summary` | inspecter avant de calculer |
+| `d$pib` | extraire une colonne |
+| `d[lignes, colonnes]` | extraire — la virgule est obligatoire |
+| `d[d$pib > 40, ]` | filtrer les lignes |
+| `subset` | filtrer plus lisiblement, en console |
+| `d$nouvelle <- ...` | créer une colonne |
+| `d$col <- NULL` | supprimer une colonne |
+| `d[order(-d$pib), ]` | trier le tableau entier |
+| `table`, `tapply`, `aggregate` | effectifs et moyennes par groupe |
+| `rbind`, `merge` | empiler, apparier par clé |
+
+Le chapitre suivant montre comment faire entrer vos propres données dans ces tableaux : **importer** un CSV ou un fichier Excel, et exporter ses résultats.

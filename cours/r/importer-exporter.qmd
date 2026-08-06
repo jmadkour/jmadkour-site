@@ -1,0 +1,230 @@
+---
+title: "Importer et exporter"
+subtitle: "Informatique — R, chapitre 5"
+sidebar: r
+include-after-body: ../../_includes/console.html
+---
+
+Jusqu'ici, les données étaient tapées à la main. Dans la vraie vie elles arrivent dans un fichier — un CSV exporté d'une base, un classeur Excel envoyé par un collègue. Ce chapitre traite de ce passage, et des trois ou quatre pièges qui font perdre une soirée à tout le monde au moins une fois.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Une console sans disque dur
+
+R fonctionne ici dans votre navigateur : il n'a pas accès à vos fichiers. Les commandes d'import sont donc données **à recopier chez vous**, et les consoles simulent les fichiers en les créant à la volée. Le mécanisme reste rigoureusement le même.
+:::
+
+# 5.1 Où R cherche-t-il les fichiers ?
+
+## 5.1.1 Le répertoire de travail
+
+```r
+getwd()                          # ou suis-je
+setwd("C:/Users/moi/donnees")    # aller ailleurs
+list.files()                     # que contient ce dossier
+```
+
+Un chemin **relatif** part du répertoire de travail : `read.csv("data/enquete.csv")`. Un chemin **absolu** part de la racine du disque.
+
+::: {.callout-warning}
+### La barre oblique, dans le bon sens
+
+Sous Windows, l'explorateur affiche `C:\Users\moi`. R refuse cette écriture : la barre inversée y a un sens spécial.
+
+Écrivez `C:/Users/moi` (barre normale) ou `C:\\Users\\moi` (doublée). La première est plus simple, et fonctionne aussi sur Mac et Linux.
+:::
+
+## 5.1.2 Ne jamais écrire `setwd` dans un script
+
+`setwd("C:/Users/jaouad/these/chap3")` fonctionne sur votre machine et sur aucune autre. Votre directeur de thèse, votre coauteur, et vous-même dans deux ans sur un autre ordinateur, obtiendrez tous une erreur.
+
+::: {.callout-tip}
+### La bonne pratique : le projet
+
+Dans RStudio, **File → New Project** crée un dossier contenant un fichier `.Rproj`. Ouvrir ce fichier place automatiquement le répertoire de travail à la racine du projet, quel que soit l'ordinateur.
+
+Tous les chemins deviennent alors relatifs et portables : `read.csv("donnees/enquete.csv")` fonctionne partout. Prenez cette habitude dès votre premier travail sérieux.
+:::
+
+# 5.2 Le format CSV
+
+## 5.2.1 Lire
+
+```r
+d <- read.csv("enquete.csv")
+```
+
+Cette commande suffit dans le cas idéal : séparateur virgule, point décimal, en-têtes en première ligne. Le cas idéal est rare.
+
+## 5.2.2 Le CSV « français »
+
+Un tableur configuré en français exporte un CSV où le séparateur de colonnes est le **point-virgule** et le séparateur décimal la **virgule**. R attend l'inverse.
+
+```r
+d <- read.csv2("enquete.csv")     # le raccourci : ; et ,
+```
+
+`read.csv2` est simplement `read.csv` avec ces deux réglages inversés. Pour tout autre cas, la fonction générale :
+
+```r
+d <- read.table("enquete.csv",
+                header = TRUE,      # premiere ligne = noms
+                sep = ";",          # separateur de colonnes
+                dec = ",",          # separateur decimal
+                na.strings = c("", "NA", "."),   # ce qui vaut NA
+                stringsAsFactors = FALSE,
+                encoding = "UTF-8")
+```
+
+::: {.callout-important}
+### Le symptôme à reconnaître
+
+Après un import, `str(d)` annonce `chr` sur une colonne qui devrait être numérique. Presque toujours, la cause est le **séparateur décimal** : R a lu `12,5` comme du texte, puisque pour lui la virgule sépare des colonnes.
+
+Le calcul suivant échouera. Pire : si vous convertissez sans réfléchir par `as.numeric`, R renverra des `NA` en silence. Corrigez à l'import, avec `dec = ","`.
+:::
+
+## 5.2.3 Les accents
+
+```{=html}
+<div data-console data-engine="r" data-title="ce que produit un mauvais encodage">
+mot <- "econometrie a Tanger"
+mot
+</div>
+```
+
+Si vos données affichent `Ã©` là où vous attendez `é`, le fichier est en UTF-8 et R l'a lu autrement (ou l'inverse). Ajoutez `encoding = "UTF-8"` ou `fileEncoding = "latin1"` selon l'origine du fichier. Un CSV produit par Excel sous Windows est souvent en `latin1`.
+
+## 5.2.4 Vérifier immédiatement
+
+```{=html}
+<div data-console data-engine="r" data-title="les quatre contrôles à faire après tout import">
+d <- data.frame(
+  ville = c("Tanger", "Rabat", "Fes"),
+  pib = c(45, 62, 38),
+  chomage = c(11.2, 8.4, NA)
+)
+
+dim(d)                        # le bon nombre de lignes ?
+str(d)                        # les bons types ?
+colSums(is.na(d))             # combien de manquantes par colonne
+summary(d)                    # des valeurs plausibles ?
+</div>
+```
+
+Ces quatre commandes prennent dix secondes et évitent des heures de perplexité. `colSums(is.na(d))` en particulier révèle immédiatement une colonne entièrement vide, signe classique d'un mauvais séparateur.
+
+# 5.3 Excel
+
+R ne lit pas nativement les classeurs. Le paquet **readxl** s'en charge, sans exiger qu'Excel soit installé.
+
+```r
+install.packages("readxl")     # une seule fois
+library(readxl)                # a chaque session
+
+d <- read_excel("enquete.xlsx")                       # 1re feuille
+d <- read_excel("enquete.xlsx", sheet = "2023")       # feuille nommee
+d <- read_excel("enquete.xlsx", skip = 3)             # ignorer 3 lignes
+d <- read_excel("enquete.xlsx", range = "B2:F120")    # une plage
+```
+
+::: {.callout-warning}
+### `install.packages` une fois, `library` à chaque fois
+
+`install.packages` télécharge le paquet sur votre disque : une seule fois dans la vie de votre installation.
+
+`library` le charge en mémoire : à **chaque session** R.
+
+Ne mettez jamais `install.packages` dans un script — il retéléchargerait le paquet à chaque exécution.
+:::
+
+::: {.callout-tip}
+### Le meilleur conseil de ce chapitre
+
+Un classeur Excel destiné à l'analyse doit contenir **un tableau et rien d'autre** : une ligne d'en-têtes, puis les données. Pas de titre fusionné, pas de ligne de totaux, pas de cellules colorées porteuses de sens, pas de commentaire dans la marge.
+
+Chaque fioriture devient un obstacle à l'import. Beaucoup de temps perdu sur R est en réalité du temps perdu sur un classeur mal conçu.
+:::
+
+# 5.4 Les formats propres à R
+
+```r
+saveRDS(d, "enquete.rds")        # UN objet
+d <- readRDS("enquete.rds")      # on choisit son nom au retour
+
+save(d, modele, "session.RData") # PLUSIEURS objets
+load("session.RData")            # ils reviennent avec leurs noms
+```
+
+`readRDS` rend l'objet, que vous nommez librement. `load` réinjecte les objets **avec leurs anciens noms**, et écrase silencieusement ce qui portait ces noms. Préférez `saveRDS`.
+
+| Format | Quand l'utiliser |
+|---|---|
+| CSV | échanger avec quelqu'un d'autre, ou un autre logiciel |
+| RDS | conserver un objet R avec ses types intacts |
+| RData | sauvegarder plusieurs objets d'un coup — à éviter |
+
+Un CSV perd l'information de type : les facteurs redeviennent du texte, les dates aussi. Le RDS les conserve exactement.
+
+# 5.5 Exporter ses résultats
+
+```r
+write.csv(d, "resultats.csv", row.names = FALSE)
+write.csv2(d, "resultats.csv", row.names = FALSE)   # ; et ,
+```
+
+::: {.callout-warning}
+### `row.names = FALSE`, toujours
+
+Sans cet argument, R ajoute une première colonne sans nom contenant 1, 2, 3… Relu dans Excel, le tableau est décalé d'une colonne, et les en-têtes ne correspondent plus aux données.
+
+C'est un détail, mais il se paie cher au moment de partager un fichier.
+:::
+
+Pour un tableau destiné à un article ou à un mémoire, le paquet **knitr** produit directement du LaTeX ou du Markdown.
+
+```r
+library(knitr)
+kable(d, digits = 2, caption = "PIB et chomage par ville")
+```
+
+# À vous
+
+Vous recevez `donnees.csv`, exporté d'un tableur français, avec des cellules vides et un point comme code de valeur manquante. Écrivez la commande d'import, puis les trois contrôles à effectuer.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```r
+d <- read.table("donnees.csv",
+                header = TRUE,
+                sep = ";",
+                dec = ",",
+                na.strings = c("", ".", "NA"),
+                stringsAsFactors = FALSE,
+                encoding = "UTF-8")
+
+str(d)                # les colonnes numeriques le sont-elles ?
+dim(d)                # le nombre de lignes attendu ?
+colSums(is.na(d))     # une colonne entierement vide ?
+```
+
+Si `str` annonce `chr` sur une colonne de nombres, le `dec = ","` a été oublié ou le fichier contient un caractère parasite — un espace insécable dans les milliers, par exemple.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `getwd`, `list.files` | où suis-je, que contient le dossier |
+| projet RStudio | rend les chemins portables — mieux que `setwd` |
+| `read.csv` | CSV standard : virgule, point décimal |
+| `read.csv2` | CSV français : point-virgule, virgule décimale |
+| `read.table(sep=, dec=, na.strings=)` | le cas général |
+| `encoding = "UTF-8"` | régler les accents |
+| `read_excel` (readxl) | lire un classeur, feuille ou plage |
+| `install.packages` / `library` | une fois / à chaque session |
+| `saveRDS`, `readRDS` | conserver un objet R intact |
+| `write.csv(..., row.names = FALSE)` | exporter proprement |
+| `str`, `dim`, `colSums(is.na(d))` | les contrôles après tout import |
+
+Le chapitre suivant quitte les données pour le **raisonnement** : conditions, répétitions, et fonctions que l'on écrit soi-même.

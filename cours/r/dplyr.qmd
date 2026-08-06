@@ -1,0 +1,309 @@
+---
+title: "dplyr"
+subtitle: "Informatique — R, chapitre 10"
+sidebar: r
+include-after-body: ../../_includes/console.html
+---
+
+Le chapitre 4 a montré comment filtrer, trier et agréger un tableau avec les crochets. Tout y était possible, mais l'écriture devenait vite illisible : `d[d$pib > 40 & d$region == "Nord", c("ville", "chomage")]` demande un effort de lecture disproportionné à ce qu'elle fait.
+
+dplyr propose les mêmes opérations sous forme de **verbes**, enchaînés dans l'ordre du raisonnement. C'est le dernier chapitre du cours, et sans doute celui qui changera le plus votre façon d'écrire.
+
+::: {.callout-note appearance="simple" icon="false"}
+### Des blocs à recopier
+
+Comme ggplot2, dplyr s'installe et n'est pas disponible dans la console de ce site. Les blocs sont à recopier dans RStudio.
+
+```r
+install.packages("dplyr")   # une seule fois
+library(dplyr)              # a chaque session
+```
+:::
+
+# 10.1 Les cinq verbes
+
+Chacun prend un tableau en premier argument et **renvoie un tableau**. C'est cette régularité qui permet de les enchaîner.
+
+| Verbe | Ce qu'il fait | Équivalent du chapitre 4 |
+|---|---|---|
+| `filter` | garde des **lignes** | `d[d$pib > 40, ]` |
+| `select` | garde des **colonnes** | `d[, c("ville", "pib")]` |
+| `mutate` | crée ou modifie une colonne | `d$pib_hab <- ...` |
+| `arrange` | trie les lignes | `d[order(d$pib), ]` |
+| `summarise` | résume en une ligne | `mean(d$pib)` |
+
+```r
+filter(d, pib > 40)
+select(d, ville, pib)
+mutate(d, pib_hab = pib / hab)
+arrange(d, desc(pib))
+summarise(d, moyenne = mean(pib))
+```
+
+Les noms de colonnes s'écrivent **sans guillemets et sans `d$`** : dplyr sait dans quel tableau chercher.
+
+# 10.2 Le pipe
+
+## 10.2.1 Le principe
+
+Le pipe `|>` prend ce qui est à sa gauche et le passe comme **premier argument** de ce qui est à sa droite.
+
+```r
+d |> filter(pib > 40)        # identique a filter(d, pib > 40)
+```
+
+Sur une seule opération, l'intérêt est nul. Sur cinq, il est décisif.
+
+```r
+# sans pipe : on lit de l'interieur vers l'exterieur
+arrange(select(filter(mutate(d, pib_hab = pib / hab), pib_hab > 30),
+               ville, pib_hab), desc(pib_hab))
+
+# avec pipe : on lit de haut en bas, dans l'ordre du raisonnement
+d |>
+  mutate(pib_hab = pib / hab) |>
+  filter(pib_hab > 30) |>
+  select(ville, pib_hab) |>
+  arrange(desc(pib_hab))
+```
+
+La seconde version se lit à voix haute : *prends `d`, ajoute le PIB par habitant, garde ceux qui dépassent 30, ne conserve que deux colonnes, et trie du plus grand au plus petit.*
+
+::: {.callout-note}
+### `|>` ou `%>%` ?
+
+`%>%` vient du paquet **magrittr**, chargé par dplyr : c'est l'écriture historique, encore largement répandue.
+
+`|>` est intégré à **R lui-même** depuis la version 4.1. Il ne dépend d'aucun paquet et fonctionne partout.
+
+Préférez `|>` pour du code neuf. Vous rencontrerez `%>%` dans tout le code existant ; les deux se comportent identiquement dans l'usage courant.
+:::
+
+## 10.2.2 Le pipe en fin de ligne
+
+Comme le `+` de ggplot2 et le `else` du chapitre 6 : le pipe **termine** la ligne. Une ligne commençant par `|>` provoque une erreur.
+
+# 10.3 Les verbes en détail
+
+## 10.3.1 `filter` — les lignes
+
+```r
+d |> filter(pib > 40)
+d |> filter(pib > 40, region == "Nord")        # la virgule vaut ET
+d |> filter(pib > 40 | chomage < 9)            # OU explicite
+d |> filter(region %in% c("Nord", "Centre"))
+d |> filter(!is.na(chomage))                   # retirer les manquantes
+```
+
+::: {.callout-warning}
+### `filter` élimine les `NA`, silencieusement
+
+`filter(d, pib > 40)` retire les lignes où `pib` est manquant, sans le signaler — puisque la condition y vaut `NA`, donc pas `TRUE`.
+
+C'est le comportement souhaitable neuf fois sur dix, mais il faut le savoir : comparez `nrow` avant et après. Pour conserver les manquantes, `filter(d, pib > 40 | is.na(pib))`.
+:::
+
+## 10.3.2 `select` — les colonnes
+
+```r
+d |> select(ville, pib)                # les garder
+d |> select(-temp)                     # tout sauf celle-ci
+d |> select(ville:chomage)             # un intervalle de colonnes
+d |> select(starts_with("pib"))        # par motif de nom
+d |> select(where(is.numeric))         # par type
+d |> rename(pib_mrd = pib)             # renommer
+```
+
+`starts_with`, `ends_with`, `contains` et `where` sont précieux sur un fichier de cent colonnes.
+
+## 10.3.3 `mutate` — créer
+
+```r
+d |> mutate(
+  pib_hab = pib / hab,
+  log_pib = log(pib),
+  taille  = if_else(hab > 1.5, "grande", "petite")
+)
+```
+
+Une colonne créée dans un `mutate` est **immédiatement disponible** pour la suivante :
+
+```r
+d |> mutate(pib_hab = pib / hab,
+            rang    = rank(-pib_hab))     # utilise la colonne precedente
+```
+
+Pour plus de deux cas, `case_when` remplace avantageusement les `if_else` imbriqués :
+
+```r
+d |> mutate(
+  categorie = case_when(
+    chomage < 9  ~ "faible",
+    chomage < 12 ~ "moyen",
+    TRUE         ~ "eleve"          # le cas par defaut
+  )
+)
+```
+
+Les conditions sont évaluées **dans l'ordre** : la première vraie l'emporte. La dernière ligne, `TRUE ~ ...`, attrape tout le reste — ne l'oubliez pas, sans elle les cas non prévus deviennent `NA`.
+
+## 10.3.4 `arrange` — trier
+
+```r
+d |> arrange(pib)                      # croissant
+d |> arrange(desc(pib))                # decroissant
+d |> arrange(region, desc(pib))        # par region, puis par PIB
+```
+
+Plus lisible que `d[order(-d$pib), ]`, et le tri à plusieurs clés s'écrit naturellement.
+
+# 10.4 Grouper et résumer
+
+C'est ici que dplyr prend l'avantage le plus net.
+
+```r
+d |>
+  group_by(region) |>
+  summarise(
+    n         = n(),
+    pib_moyen = mean(pib, na.rm = TRUE),
+    pib_total = sum(pib, na.rm = TRUE),
+    chomage_m = mean(chomage, na.rm = TRUE)
+  )
+```
+
+Une ligne par région, quatre statistiques par ligne, en une seule instruction lisible. L'équivalent en R de base demanderait plusieurs `tapply` puis un `merge`.
+
+| Fonction | Ce qu'elle donne |
+|---|---|
+| `n()` | le nombre de lignes du groupe |
+| `n_distinct(x)` | le nombre de valeurs différentes |
+| `first(x)`, `last(x)` | la première, la dernière valeur |
+| `sum(x, na.rm = TRUE)` | la somme |
+
+::: {.callout-important}
+### Le groupement survit au `summarise`
+
+Après `group_by(region, secteur)`, un `summarise` retire **un seul** niveau de groupement — celui de droite. Le tableau reste groupé par `region`, et tous les calculs suivants s'en trouvent affectés sans que rien ne l'indique clairement.
+
+Terminez par `ungroup()` dès que le regroupement n'est plus nécessaire. C'est l'erreur la plus courante et la plus difficile à diagnostiquer de dplyr.
+:::
+
+## 10.4.1 `mutate` groupé : garder toutes les lignes
+
+`summarise` réduit à une ligne par groupe. Pour ajouter une statistique de groupe **en conservant toutes les observations**, utilisez `mutate` :
+
+```r
+d |>
+  group_by(region) |>
+  mutate(
+    pib_moyen_region = mean(pib),
+    ecart_a_la_moyenne = pib - pib_moyen_region
+  ) |>
+  ungroup()
+```
+
+Chaque ville garde sa ligne, mais connaît désormais la moyenne de sa région. Cette opération — centrer une variable par groupe — est fondamentale en économétrie de panel : c'est exactement le calcul de l'estimateur *within*.
+
+# 10.5 Assembler deux tableaux
+
+```r
+left_join(a, b, by = "ville")     # garde toutes les lignes de a
+inner_join(a, b, by = "ville")    # seulement celles presentes dans les deux
+full_join(a, b, by = "ville")     # toutes, des deux cotes
+anti_join(a, b, by = "ville")     # celles de a ABSENTES de b
+```
+
+`left_join` est le choix par défaut : on part d'un tableau principal et on lui adjoint de l'information, sans jamais perdre d'observation.
+
+::: {.callout-tip}
+### `anti_join` avant `left_join`
+
+Avant tout appariement, `anti_join(a, b, by = "ville")` montre les lignes de `a` qui n'ont **pas** de correspondance. Elles révèlent immédiatement les problèmes de clé : majuscules différentes, espaces surnuméraires, accents, orthographes divergentes.
+
+Dix secondes de vérification qui évitent des colonnes entièrement vides après jointure.
+:::
+
+# 10.6 L'enchaînement complet
+
+```r
+resultat <- d |>
+  filter(!is.na(chomage)) |>
+  mutate(pib_hab = pib / hab) |>
+  group_by(region) |>
+  summarise(
+    n        = n(),
+    pib_hab  = mean(pib_hab),
+    chomage  = mean(chomage)
+  ) |>
+  ungroup() |>
+  arrange(desc(pib_hab))
+
+resultat
+```
+
+Et la figure du chapitre précédent s'y branche directement, puisque ggplot2 prend un tableau en premier argument :
+
+```r
+resultat |>
+  ggplot(aes(x = reorder(region, pib_hab), y = pib_hab)) +
+  geom_col(fill = "#2f7ea8") +
+  coord_flip() +
+  labs(x = NULL, y = "PIB par habitant")
+```
+
+`reorder(region, pib_hab)` trie les barres par valeur plutôt que par ordre alphabétique, et `coord_flip` les couche à l'horizontale — deux réglages qui rendent presque toujours un diagramme en barres plus lisible.
+
+# À vous
+
+À partir d'un tableau de villes, produisez un tableau par région contenant l'effectif, le PIB par habitant moyen et le taux de chômage moyen, trié par PIB par habitant décroissant — en une seule chaîne.
+
+::: {.callout-note collapse="true"}
+### La solution
+
+```r
+library(dplyr)
+
+d |>
+  filter(!is.na(chomage)) |>
+  mutate(pib_hab = pib / hab) |>
+  group_by(region) |>
+  summarise(
+    n           = n(),
+    pib_hab_moy = mean(pib_hab),
+    chomage_moy = mean(chomage)
+  ) |>
+  ungroup() |>
+  arrange(desc(pib_hab_moy))
+```
+
+L'ordre des verbes suit celui du raisonnement : nettoyer, calculer, grouper, résumer, dégrouper, trier. Comparez avec ce qu'exigerait le chapitre 4 pour le même résultat.
+:::
+
+# Ce qu'il faut retenir
+
+| Écriture | Effet |
+|---|---|
+| `filter` | garder des lignes — élimine les `NA` silencieusement |
+| `select`, `rename` | garder, exclure ou renommer des colonnes |
+| `mutate` | créer une colonne, réutilisable aussitôt |
+| `if_else`, `case_when` | recoder — `TRUE ~ ...` pour le cas par défaut |
+| `arrange`, `desc` | trier, à une ou plusieurs clés |
+| `group_by` + `summarise` | une ligne par groupe |
+| `group_by` + `mutate` | une statistique de groupe, toutes lignes conservées |
+| `ungroup()` | à ne jamais oublier |
+| `n()`, `n_distinct` | compter |
+| `left_join`, `anti_join` | apparier, et vérifier avant d'apparier |
+| `|>` en **fin** de ligne | enchaîner dans l'ordre du raisonnement |
+
+# La suite
+
+Ce chapitre clôt le cours. Vous savez manipuler les données, les décrire, les modéliser et les représenter — c'est-à-dire l'essentiel de ce qu'exige un travail empirique.
+
+Pour aller plus loin, trois directions :
+
+- **tidyr** — passer un tableau du format large au format long, indispensable pour les données de panel ;
+- **Quarto** — réunir texte, code et résultats dans un même document, comme ce site l'est lui-même ;
+- **les paquets d'économétrie** : `plm` pour les panels, `forecast` et `tseries` pour les séries temporelles, `stargazer` ou `modelsummary` pour des tableaux de régression prêts à publier.
+
+Tous s'appuient sur ce que vous venez d'apprendre.
