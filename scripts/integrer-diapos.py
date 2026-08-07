@@ -42,13 +42,18 @@ def ecrire(chemin, texte):
 
 
 def bloc(deck):
-    """Bloc à insérer, avec un chemin relatif correct pour ce diaporama."""
-    prefixe = os.path.relpath(COMMUN, os.path.dirname(deck)).replace(os.sep, "/")
+    """Bloc à insérer, avec des chemins relatifs corrects pour ce diaporama."""
+    dossier = os.path.dirname(deck)
+    prefixe = os.path.relpath(COMMUN, dossier).replace(os.sep, "/")
+    racine = os.path.relpath(RACINE, dossier).replace(os.sep, "/")
     return (
         "\n" + MARQUE_DEBUT + "\n"
+        # Les diaporamas sont produits hors du site et n'héritent pas de sa
+        # favicône : on la rattache ici, sinon l'onglet perd son identité.
+        '<link rel="icon" href="%s/favicon.png">\n'
         '<link rel="stylesheet" href="%s/jm-diapos.css">\n'
         '<script src="%s/jm-diapos.js"></script>\n'
-        % (prefixe, prefixe)
+        % (racine, prefixe, prefixe)
         + MARQUE_FIN + "\n"
     )
 
