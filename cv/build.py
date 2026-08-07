@@ -99,7 +99,10 @@ def corps_latex(d):
     A("")
     A("% " + "=" * 69)
     A("\\cvsection{Compétences}")
-    A("\\begin{tabular}{@{}L{5.5cm}L{5.5cm}L{5.0cm}@{}}")
+    # Trois colonnes egales, calculees sur \textwidth (moins l'espacement
+    # inter-colonnes par defaut) plutot que des largeurs fixes en cm : le
+    # tableau remplit toute la largeur quels que soient les reglages de page.
+    A("\\begin{tabular}{@{}*{3}{L{\\dimexpr(\\textwidth-4\\tabcolsep)/3\\relax}}@{}}")
     A(" &\n".join(
         "{\\track\\fontsize{8.3}{10}\\selectfont\\color{gold}"
         "\\MakeUppercase{%s}}" % c["titre"] for c in d["competences"]) + " \\\\[3pt]")
