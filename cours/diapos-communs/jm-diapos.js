@@ -105,4 +105,87 @@
   } else {
     poserBoutons();
   }
+
+  /* ---------- 4. Ajustement des diapositives qui débordent ----------
+     reveal.js travaille dans une boîte de taille fixe (1280 x 720 ici) et
+     ne réduit rien : une diapositive plus haute que la boîte voit sa fin
+     passer sous le bord de l'écran, définitivement invisible. Beamer, lui,
+     scinde ou comprime le cadre — d'où un PDF correct et un HTML tronqué
+     à partir de la même source.
+
+     On mesure donc la diapositive affichée et, si elle dépasse, on réduit
+     sa taille de texte juste assez pour qu'elle rentre. Les marges et les
+     interlignes de reveal étant exprimés en em, ils suivent. Les autres
+     diapositives ne sont pas touchées. */
+
+  // Plancher : en deçà, le texte deviendrait illisible. Une diapositive
+  // si chargée qu'elle l'atteint relève de la réécriture, pas de la mise
+  // en page ; le défilement prévu en CSS prend alors le relais pour que
+  // rien ne soit perdu.
+  var PLANCHER = 0.5;
+  var MARGE = 4;         // quelques pixels de sécurité
+
+  function boite() {
+    var s = document.querySelector(".reveal .slides");
+    return s ? s.clientHeight : 0;
+  }
+
+  function baseEnPx() {
+    var v = getComputedStyle(document.documentElement)
+              .getPropertyValue("--r-main-font-size");
+    var n = parseFloat(v);
+    return isNaN(n) ? 32 : n;
+  }
+
+  function ajuster(section) {
+    if (!section) return;
+    var dispo = boite();
+    if (!dispo) return;
+
+    section.style.fontSize = "";
+    section.removeAttribute("data-jm-ajuste");
+
+    var base = baseEnPx();
+    var taille = base;
+
+    // Deux passes suffisent : la hauteur ne décroît pas exactement en
+    // proportion de la police (images, formules), une seconde mesure
+    // corrige le résidu.
+    for (var i = 0; i < 3; i++) {
+      var haut = section.scrollHeight;
+      if (haut <= dispo - MARGE) break;
+      var k = (dispo - MARGE) / haut;
+      taille = Math.max(taille * k, base * PLANCHER);
+      section.style.fontSize = taille.toFixed(2) + "px";
+      section.setAttribute("data-jm-ajuste", "");
+    }
+  }
+
+  function ajusterCourante() {
+    if (!window.Reveal || !Reveal.getCurrentSlide) return;
+    ajuster(Reveal.getCurrentSlide());
+  }
+
+  function brancher() {
+    if (!window.Reveal || !Reveal.on) return false;
+    Reveal.on("ready", ajusterCourante);
+    Reveal.on("slidechanged", ajusterCourante);
+    Reveal.on("resize", ajusterCourante);
+    // Une diapositive déjà affichée au moment où ce script s'exécute.
+    ajusterCourante();
+    return true;
+  }
+
+  if (!brancher()) {
+    // reveal.js n'est pas encore initialisé : on réessaie brièvement.
+    var essais = 0;
+    var minuteur = setInterval(function () {
+      if (brancher() || ++essais > 40) clearInterval(minuteur);
+    }, 150);
+  }
+
+  window.addEventListener("resize", function () {
+    clearTimeout(window.__jmRedim);
+    window.__jmRedim = setTimeout(ajusterCourante, 150);
+  });
 })();
