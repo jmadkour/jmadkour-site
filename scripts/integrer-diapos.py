@@ -41,19 +41,31 @@ def ecrire(chemin, texte):
         f.write(texte)
 
 
-def bloc(deck):
-    """Bloc à insérer, avec des chemins relatifs corrects pour ce diaporama."""
-    dossier = os.path.dirname(deck)
-    prefixe = os.path.relpath(COMMUN, dossier).replace(os.sep, "/")
-    racine = os.path.relpath(RACINE, dossier).replace(os.sep, "/")
+def bloc_entete(deck):
+    """Lien de favicône, à placer dans <head>.
+
+    Les navigateurs n'honorent la déclaration d'icône que si elle figure
+    dans l'entête : posée en fin de corps, elle est ignorée.
+    """
+    racine = os.path.relpath(RACINE, os.path.dirname(deck)).replace(os.sep, "/")
     return (
         "\n" + MARQUE_DEBUT + "\n"
-        # Les diaporamas sont produits hors du site et n'héritent pas de sa
-        # favicône : on la rattache ici, sinon l'onglet perd son identité.
-        '<link rel="icon" href="%s/favicon.png">\n'
+        '<link rel="icon" href="%s/favicon.png">\n' % racine
+        + MARQUE_FIN + "\n"
+    )
+
+
+def bloc_corps(deck):
+    """Feuille de style et script partagés, à placer en fin de corps.
+
+    La feuille doit venir en dernier : c'est ce qui lui permet de corriger
+    la position du bouton de menu sans recourir à !important.
+    """
+    prefixe = os.path.relpath(COMMUN, os.path.dirname(deck)).replace(os.sep, "/")
+    return (
+        "\n" + MARQUE_DEBUT + "\n"
         '<link rel="stylesheet" href="%s/jm-diapos.css">\n'
-        '<script src="%s/jm-diapos.js"></script>\n'
-        % (racine, prefixe, prefixe)
+        '<script src="%s/jm-diapos.js"></script>\n' % (prefixe, prefixe)
         + MARQUE_FIN + "\n"
     )
 
@@ -63,6 +75,7 @@ def deja_integre(txt):
 
 
 def retirer_bloc(txt):
+    """Retire un bloc marqué. Renvoie (texte, a_retire)."""
     i = txt.find(MARQUE_DEBUT)
     if i == -1:
         return txt, False
@@ -78,23 +91,35 @@ def retirer_bloc(txt):
     return txt[:i] + txt[j:], True
 
 
+def retirer_tous(txt):
+    n = 0
+    while True:
+        txt, fait = retirer_bloc(txt)
+        if not fait:
+            return txt, n
+        n += 1
+
+
 def traiter(deck, ecrire_reellement=True):
     txt = lire(deck)
     if deja_integre(txt):
         return "deja"
-    i = txt.rfind("</body>")
-    if i == -1:
+    tete = txt.find("</head>")
+    corps = txt.rfind("</body>")
+    if tete == -1 or corps == -1:
         return "sans-body"
-    nouveau = txt[:i] + bloc(deck) + txt[i:]
+    # insérer d'abord en fin de corps : l'index de </head> reste valide
+    txt = txt[:corps] + bloc_corps(deck) + txt[corps:]
+    txt = txt[:tete] + bloc_entete(deck) + txt[tete:]
     if ecrire_reellement:
-        ecrire(deck, nouveau)
+        ecrire(deck, txt)
     return "ok"
 
 
 def defaire(deck):
     txt = lire(deck)
-    nouveau, fait = retirer_bloc(txt)
-    if not fait:
+    nouveau, n = retirer_tous(txt)
+    if not n:
         return "rien"
     ecrire(deck, nouveau)
     return "ok"
