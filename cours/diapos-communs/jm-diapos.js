@@ -118,12 +118,13 @@
      interlignes de reveal étant exprimés en em, ils suivent. Les autres
      diapositives ne sont pas touchées. */
 
-  // Plancher : en deçà, le texte deviendrait illisible. Une diapositive
-  // si chargée qu'elle l'atteint relève de la réécriture, pas de la mise
-  // en page ; le défilement prévu en CSS prend alors le relais pour que
-  // rien ne soit perdu.
-  var PLANCHER = 0.5;
-  var MARGE = 4;         // quelques pixels de sécurité
+  // Plancher : en deçà, le texte deviendrait illisible. Fixé assez bas
+  // pour qu'aucune diapositive n'ait besoin de défiler — une barre de
+  // défilement au bord d'une diapositive n'a pas de sens et abîme la
+  // lecture. Une diapositive qui atteindrait ce plancher relève de la
+  // réécriture, pas de la mise en page.
+  var PLANCHER = 0.42;
+  var MARGE = 8;         // évite de frôler le bord au pixel près
 
   function boite() {
     var s = document.querySelector(".reveal .slides");
@@ -151,7 +152,7 @@
     // Deux passes suffisent : la hauteur ne décroît pas exactement en
     // proportion de la police (images, formules), une seconde mesure
     // corrige le résidu.
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 4; i++) {
       var haut = section.scrollHeight;
       if (haut <= dispo - MARGE) break;
       var k = (dispo - MARGE) / haut;
