@@ -99,6 +99,12 @@ def recomposer():
         chemin = os.path.join(COMMUN, nom)
         if nom == "polices.css":
             continue  # repéré par motif, pas par contenu
+        # Le dossier commun héberge aussi l'habillage du site (jm-diapos.*),
+        # qui n'a jamais été extrait d'un diaporama : le chercher dedans
+        # ferait échouer le traitement. Seuls les blocs de reveal.js sont
+        # des extraits.
+        if not nom.startswith("reveal-"):
+            continue
         charge = lire(chemin)
         if nom.endswith(".js"):
             blocs.append(("<script>" + charge + "</script>", nom, "js"))
@@ -127,7 +133,11 @@ def balise(nom, genre, prefixe):
 
 def traiter(deck, blocs, ecrire_reellement=True):
     txt = lire(deck)
-    if "diapos-communs/" in txt:
+    # Le repère doit être la police partagée, et non la simple mention de
+    # « diapos-communs » : integrer-diapos.py y fait référence lui aussi.
+    # Avec un test trop large, un diaporama fraîchement rendu puis habillé
+    # passait pour déjà dégroupé, et gardait ses 3,7 Mo de polices.
+    if "diapos-communs/polices.css" in txt:
         return None  # déjà dégroupé
     prefixe = reference_relative(deck)
     avant = len(txt)
@@ -160,7 +170,7 @@ def main():
         print("Aucun diaporama trouvé sous cours/*/slides/.")
         return 1
 
-    intacts = [d for d in liste if "diapos-communs/" not in lire(d)]
+    intacts = [d for d in liste if "diapos-communs/polices.css" not in lire(d)]
     if not os.path.isdir(COMMUN) or not os.listdir(COMMUN):
         if not intacts:
             print("Rien à faire : tous les diaporamas sont déjà dégroupés.")
