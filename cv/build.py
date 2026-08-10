@@ -190,8 +190,10 @@ def ecrire_page(d):
 
     A("---")
     A('title: "%s"' % ident["nom"])
-    A('subtitle: "%s — statistique, économétrie et gestion des risques financiers"'
-      % ident["titre"])
+    # Le sous-titre reprend le titre declare dans cv.yml, sans ajout : la
+    # specialite figure deja dans la description du site et dans le corps
+    # de la page, la repeter ici alourdissait l'en-tete.
+    A('subtitle: "%s"' % ident["titre"])
     A("sidebar: false")
     A("---")
     A("")
