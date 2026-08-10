@@ -67,31 +67,44 @@ def cours_du_site():
     for sb in cfg["website"]["sidebar"]:
         entrees = []
 
+        # On retient aussi le libellé déclaré dans la barre latérale : c'est
+        # le titre exact du chapitre. Le lire dans le diaporama donnerait le
+        # titre du cours, identique pour tous les chapitres.
         def parcourir(contenu):
             for it in contenu or []:
                 if isinstance(it, str):
-                    entrees.append(it)
+                    entrees.append((it, None))
                 elif isinstance(it, dict):
                     if isinstance(it.get("href"), str):
-                        entrees.append(it["href"])
+                        entrees.append((it["href"], it.get("text")))
                     parcourir(it.get("contents"))
 
         parcourir(sb.get("contents"))
 
         chapitres = []
         dossier = None
-        for e in entrees:
+        for e, libelle in entrees:
             if not e.startswith("cours/"):
                 continue
-            d = os.path.dirname(e)
             base = os.path.splitext(os.path.basename(e))[0]
             if base in ("index", "ressources"):
                 continue
+
+            # Deux formes possibles dans la barre latérale :
+            #   cours/<cours>/slides/<chapitre>.html  (depuis que le titre
+            #     du chapitre mène directement au diaporama)
+            #   cours/<cours>/<chapitre>.qmd          (forme historique)
+            parent = os.path.dirname(e)
+            if os.path.basename(parent) == "slides":
+                d = os.path.dirname(parent)
+            else:
+                d = parent
+
             deck = os.path.join(RACINE, d, "slides", base + ".html")
             if not os.path.exists(deck):
                 continue  # chapitre sans diaporama : cours d'informatique
             dossier = d
-            chapitres.append((base, titre_du_chapitre(d, base)))
+            chapitres.append((base, libelle or titre_du_chapitre(d, base)))
 
         if chapitres:
             resultat.append(
