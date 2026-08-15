@@ -1,26 +1,39 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Écrit une page « Ressources » par cours, à partir des fichiers présents.
+Insère, dans la page de chaque cours, le tableau qui lui sert de sommaire.
 
-Depuis que le titre d'un chapitre mène directement à ses diapositives, les
-documents annexes sont rassemblés sur une page unique par cours. Ce script
-la reconstruit en inspectant le disque : rien à tenir à jour à la main,
-il suffit de déposer un fichier au bon endroit et de relancer.
+Depuis que les diaporamas ne sont plus publiés qu'en PDF, la page du cours
+est le seul point d'entrée : elle porte sa présentation, puis un tableau
+donnant pour chaque chapitre le lien vers les diapositives, le polycopié,
+les exercices, l'examen et la vidéo. Il n'y a plus de page « Ressources ».
 
-Conventions, pour un chapitre dont les diapositives sont
-« cours/<cours>/slides/<chapitre>.html » :
+Le tableau est écrit entre deux marqueurs, que la page doit contenir :
 
-    slides/<chapitre>.pdf                  diapositives en PDF
-    ressources/<chapitre>-poly.pdf         polycopié du chapitre
-    ressources/<chapitre>-exercices.pdf    exercices corrigés
-    ressources/<chapitre>-examen.pdf       examen corrigé
+    <!-- TABLEAU:DEBUT -->
+    <!-- TABLEAU:FIN -->
+
+Tout ce qui se trouve entre les deux est remplacé ; le reste de la page,
+écrit à la main, n'est jamais touché.
+
+Sommaire des cours : cours/chapitres.yml
+    <cours>:
+      <slug du chapitre>: "<titre du chapitre>"
+    L'ordre des lignes est l'ordre pédagogique.
+
+Conventions de dépôt des fichiers, pour un chapitre de slug <c>
+appartenant au cours <cours> :
+
+    cours/<cours>/slides/<c>.pdf                  diapositives
+    cours/<cours>/ressources/<c>-poly.pdf         polycopié du chapitre
+    cours/<cours>/ressources/<c>-exercices.pdf    exercices corrigés
+    cours/<cours>/ressources/<c>-examen.pdf       examen corrigé
 
 Et, pour le cours entier :
 
-    ressources/polycopie.pdf               polycopié complet
-    ressources/exercices.pdf               recueil d'exercices
-    ressources/examens.pdf                 annales
+    cours/<cours>/ressources/polycopie.pdf        polycopié complet
+    cours/<cours>/ressources/exercices.pdf        recueil d'exercices
+    cours/<cours>/ressources/examens.pdf          annales
 
 Les liens vidéo se déclarent dans cours/liens-video.yml.
 
@@ -35,8 +48,11 @@ import sys
 import yaml
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG = os.path.join(RACINE, "_quarto.yml")
+SOMMAIRE = os.path.join(RACINE, "cours", "chapitres.yml")
 VIDEOS = os.path.join(RACINE, "cours", "liens-video.yml")
+
+DEBUT = "<!-- TABLEAU:DEBUT -->"
+FIN = "<!-- TABLEAU:FIN -->"
 
 ANNEXES_CHAPITRE = [
     ("poly", "Polycopié"),
@@ -46,7 +62,7 @@ ANNEXES_CHAPITRE = [
 
 ANNEXES_COURS = [
     ("polycopie.pdf", "Polycopié complet du cours"),
-    ("exercices.pdf", "Recueil d'exercices corrigés"),
+    ("exercices.pdf", "Recueil d'exercices"),
     ("examens.pdf", "Annales d'examens corrigés"),
 ]
 
@@ -56,95 +72,6 @@ def lire(chemin):
         return f.read()
 
 
-def cours_du_site():
-    """Relève, cours par cours, l'ordre et le titre des chapitres.
-
-    La source de vérité est la barre latérale : c'est elle qui fixe
-    l'ordre pédagogique, que la liste des fichiers ne donne pas.
-    """
-    cfg = yaml.safe_load(lire(CONFIG))
-    resultat = []
-    for sb in cfg["website"]["sidebar"]:
-        entrees = []
-
-        # On retient aussi le libellé déclaré dans la barre latérale : c'est
-        # le titre exact du chapitre. Le lire dans le diaporama donnerait le
-        # titre du cours, identique pour tous les chapitres.
-        def parcourir(contenu):
-            for it in contenu or []:
-                if isinstance(it, str):
-                    entrees.append((it, None))
-                elif isinstance(it, dict):
-                    if isinstance(it.get("href"), str):
-                        entrees.append((it["href"], it.get("text")))
-                    parcourir(it.get("contents"))
-
-        parcourir(sb.get("contents"))
-
-        chapitres = []
-        dossier = None
-        for e, libelle in entrees:
-            if not e.startswith("cours/"):
-                continue
-            base = os.path.splitext(os.path.basename(e))[0]
-            if base in ("index", "ressources"):
-                continue
-
-            # Deux formes possibles dans la barre latérale :
-            #   cours/<cours>/slides/<chapitre>.html  (depuis que le titre
-            #     du chapitre mène directement au diaporama)
-            #   cours/<cours>/<chapitre>.qmd          (forme historique)
-            parent = os.path.dirname(e)
-            if os.path.basename(parent) == "slides":
-                d = os.path.dirname(parent)
-            else:
-                d = parent
-
-            deck = os.path.join(RACINE, d, "slides", base + ".html")
-            if not os.path.exists(deck):
-                continue  # chapitre sans diaporama : cours d'informatique
-            dossier = d
-            chapitres.append((base, libelle or titre_du_chapitre(d, base)))
-
-        if chapitres:
-            resultat.append(
-                {
-                    "id": sb.get("id"),
-                    "titre": sb.get("title"),
-                    "dossier": dossier,
-                    "chapitres": chapitres,
-                }
-            )
-    return resultat
-
-
-def titre_du_chapitre(dossier, base):
-    """Titre lisible du chapitre.
-
-    On le prend dans la page du chapitre tant qu'elle existe ; une fois
-    celle-ci retirée, on se rabat sur le titre inscrit dans le diaporama.
-    """
-    page = os.path.join(RACINE, dossier, base + ".qmd")
-    if os.path.exists(page):
-        txt = lire(page)
-        if txt.startswith("---"):
-            try:
-                fm = yaml.safe_load(txt.split("---", 2)[1])
-                if fm and fm.get("title"):
-                    return str(fm["title"])
-            except Exception:
-                pass
-
-    deck = os.path.join(RACINE, dossier, "slides", base + ".html")
-    if os.path.exists(deck):
-        with open(deck, encoding="utf-8", errors="replace") as f:
-            for ligne in f:
-                if "<title>" in ligne:
-                    t = ligne.split("<title>", 1)[1].split("</title>")[0]
-                    return t.strip()
-    return base.replace("-", " ").capitalize()
-
-
 def lien(dossier, relatif, libelle):
     """Lien vers un fichier, ou tiret s'il n'existe pas encore."""
     if os.path.exists(os.path.join(RACINE, dossier, relatif)):
@@ -152,46 +79,38 @@ def lien(dossier, relatif, libelle):
     return "—"
 
 
-def page(cours, videos):
-    d = cours["dossier"]
-    conf = videos.get(os.path.basename(d)) or {}
+def tableau(cours, chapitres, videos):
+    """Le bloc à insérer entre les deux marqueurs."""
+    d = os.path.join("cours", cours)
+    conf = videos.get(cours) or {}
     playlist = (conf.get("playlist") or "").strip()
     par_chapitre = conf.get("chapitres") or {}
 
     L = []
-    L.append("---")
-    L.append('title: "Ressources — %s"' % cours["titre"])
-    L.append("sidebar: %s" % cours["id"])
-    L.append("---")
     L.append("")
-    L.append(
-        "Les documents du cours, chapitre par chapitre. "
-        "Les diapositives se consultent en ligne depuis la barre latérale ; "
-        "on les retrouve ici en PDF, avec le reste du matériel."
-    )
-    L.append("")
-    L.append("<!-- Page produite par scripts/generer-ressources.py. -->")
+    L.append("<!-- Bloc produit par scripts/generer-ressources.py. -->")
     L.append("<!-- Ne pas modifier à la main : déposez les fichiers selon -->")
     L.append("<!-- les conventions décrites en tête du script, puis relancez. -->")
     L.append("")
-    L.append("## Par chapitre")
+    L.append("## Chapitres et documents")
     L.append("")
     L.append("| # | Chapitre | Diapositives | Polycopié | Exercices | Examen | Vidéo |")
     L.append("|--:|---|---|---|---|---|---|")
 
-    for i, (base, titre) in enumerate(cours["chapitres"], 1):
-        cells = [str(i), titre]
-        cells.append(lien(d, "slides/%s.pdf" % base, "PDF"))
+    manquants = 0
+    for i, (slug, titre) in enumerate(chapitres.items(), 1):
+        pdf = lien(d, "slides/%s.pdf" % slug, "PDF")
+        if pdf == "—":
+            manquants += 1
+        cells = [str(i), titre, pdf]
         for suffixe, _ in ANNEXES_CHAPITRE:
-            cells.append(lien(d, "ressources/%s-%s.pdf" % (base, suffixe), "PDF"))
-        url = (par_chapitre.get(base) or "").strip()
+            cells.append(lien(d, "ressources/%s-%s.pdf" % (slug, suffixe), "PDF"))
+        url = (par_chapitre.get(slug) or "").strip()
         cells.append("[Voir](%s)" % url if url else "—")
         L.append("| " + " | ".join(cells) + " |")
 
     L.append("")
 
-    # Documents portant sur le cours entier : la section n'apparaît que
-    # si au moins un de ces fichiers existe.
     globaux = [
         (nom, libelle)
         for nom, libelle in ANNEXES_COURS
@@ -213,38 +132,62 @@ def page(cours, videos):
         )
         L.append("")
 
-    return "\n".join(L) + "\n"
+    return "\n".join(L), manquants
+
+
+def inserer(page, bloc):
+    """Remplace ce qui se trouve entre les deux marqueurs."""
+    i = page.find(DEBUT)
+    j = page.find(FIN)
+    if i == -1 or j == -1 or j < i:
+        return None
+    return page[: i + len(DEBUT)] + bloc + page[j:]
 
 
 def main():
     verif = "--verifier" in sys.argv
+    sommaire = yaml.safe_load(lire(SOMMAIRE)) or {}
     videos = yaml.safe_load(lire(VIDEOS)) or {}
-    liste = cours_du_site()
-    if not liste:
-        print("Aucun cours à diaporamas trouvé.")
-        return 1
 
     ecrits = 0
-    for c in liste:
-        cible = os.path.join(RACINE, c["dossier"], "ressources.qmd")
-        contenu = page(c, videos)
-        ancien = lire(cible) if os.path.exists(cible) else None
-        etat = "inchangé" if ancien == contenu else "écrit"
-        if ancien != contenu and not verif:
+    sans_marqueur = []
+    total_manquants = 0
+
+    for cours, chapitres in sommaire.items():
+        cible = os.path.join(RACINE, "cours", cours, "index.qmd")
+        if not os.path.exists(cible):
+            print("  ABSENTE   cours/%s/index.qmd" % cours)
+            continue
+
+        bloc, manquants = tableau(cours, chapitres, videos)
+        total_manquants += manquants
+
+        ancien = lire(cible)
+        nouveau = inserer(ancien, bloc)
+        if nouveau is None:
+            sans_marqueur.append(cours)
+            print("  MARQUEURS cours/%s/index.qmd — bloc TABLEAU absent" % cours)
+            continue
+
+        etat = "inchangée" if nouveau == ancien else "écrite"
+        if nouveau != ancien and not verif:
             with open(cible, "w", encoding="utf-8", newline="\n") as f:
-                f.write(contenu)
+                f.write(nouveau)
             ecrits += 1
-        print(
-            "  %-9s %-44s %2d chapitres"
-            % (etat, os.path.relpath(cible, RACINE), len(c["chapitres"]))
-        )
+        note = "" if manquants == 0 else "  (%d PDF manquant(s))" % manquants
+        print("  %-9s cours/%-34s %2d chapitres%s"
+              % (etat, cours + "/index.qmd", len(chapitres), note))
 
     print()
     print("%d cours, %d page(s) %s."
-          % (len(liste), ecrits if not verif else 0,
+          % (len(sommaire), ecrits if not verif else 0,
              "mise(s) à jour" if not verif else "à mettre à jour"))
-    if verif:
-        print("(simulation : aucun fichier modifié)")
+    if total_manquants:
+        print("%d chapitre(s) sans PDF : lancer publier.sh depuis le dépôt source."
+              % total_manquants)
+    if sans_marqueur:
+        print("Pages sans marqueurs : " + ", ".join(sans_marqueur))
+        return 1
     return 0
 
 
