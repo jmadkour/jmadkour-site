@@ -6,7 +6,10 @@ Insère, dans la page de chaque cours, le tableau qui lui sert de sommaire.
 Depuis que les diaporamas ne sont plus publiés qu'en PDF, la page du cours
 est le seul point d'entrée : elle porte sa présentation, puis un tableau
 donnant pour chaque chapitre le lien vers les diapositives, le polycopié,
-les exercices, l'examen et la vidéo. Il n'y a plus de page « Ressources ».
+les exercices et la vidéo. Il n'y a plus de page « Ressources ».
+
+Il n'y a pas d'examen par chapitre : l'évaluation se prépare avec un
+recueil d'exercices de synthèse, placé en fin de cours (voir plus bas).
 
 Le tableau est écrit entre deux marqueurs, que la page doit contenir :
 
@@ -27,13 +30,13 @@ appartenant au cours <cours> :
     cours/<cours>/slides/<c>.pdf                  diapositives
     cours/<cours>/ressources/<c>-poly.pdf         polycopié du chapitre
     cours/<cours>/ressources/<c>-exercices.pdf    exercices corrigés
-    cours/<cours>/ressources/<c>-examen.pdf       examen corrigé
 
 Et, pour le cours entier :
 
-    cours/<cours>/ressources/polycopie.pdf        polycopié complet
-    cours/<cours>/ressources/exercices.pdf        recueil d'exercices
-    cours/<cours>/ressources/examens.pdf          annales
+    cours/<cours>/ressources/polycopie.pdf            polycopié complet
+    cours/<cours>/ressources/exercices.pdf            recueil d'exercices
+    cours/<cours>/ressources/exercices-synthese.pdf   exercices de synthèse (préparation à l'examen)
+    cours/<cours>/ressources/examens.pdf              annales
 
 Les liens vidéo se déclarent dans cours/liens-video.yml.
 
@@ -57,12 +60,12 @@ FIN = "<!-- TABLEAU:FIN -->"
 ANNEXES_CHAPITRE = [
     ("poly", "Polycopié"),
     ("exercices", "Exercices"),
-    ("examen", "Examen"),
 ]
 
 ANNEXES_COURS = [
     ("polycopie.pdf", "Polycopié complet du cours"),
     ("exercices.pdf", "Recueil d'exercices"),
+    ("exercices-synthese.pdf", "Exercices de synthèse — préparation à l'examen"),
     ("examens.pdf", "Annales d'examens corrigés"),
 ]
 
@@ -94,8 +97,8 @@ def tableau(cours, chapitres, videos):
     L.append("")
     L.append("## Chapitres et documents")
     L.append("")
-    L.append("| # | Chapitre | Diapositives | Polycopié | Exercices | Examen | Vidéo |")
-    L.append("|--:|---|---|---|---|---|---|")
+    L.append("| # | Chapitre | Diapositives | Polycopié | Exercices | Vidéo |")
+    L.append("|--:|---|---|---|---|---|")
 
     manquants = 0
     for i, (slug, titre) in enumerate(chapitres.items(), 1):
