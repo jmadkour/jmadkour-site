@@ -8,9 +8,6 @@ est le seul point d'entrée : elle porte sa présentation, puis un tableau
 donnant pour chaque chapitre le lien vers les diapositives, le polycopié,
 les exercices et la vidéo. Il n'y a plus de page « Ressources ».
 
-Il n'y a pas d'examen par chapitre : l'évaluation se prépare avec un
-recueil d'exercices de synthèse, placé en fin de cours (voir plus bas).
-
 Le tableau est écrit entre deux marqueurs, que la page doit contenir :
 
     <!-- TABLEAU:DEBUT -->
@@ -35,8 +32,7 @@ Et, pour le cours entier :
 
     cours/<cours>/ressources/polycopie.pdf            polycopié complet
     cours/<cours>/ressources/exercices.pdf            recueil d'exercices
-    cours/<cours>/ressources/exercices-synthese.pdf   exercices de synthèse (préparation à l'examen)
-    cours/<cours>/ressources/examens.pdf              annales
+    cours/<cours>/ressources/exercices-synthese.pdf   exercices de synthèse
 
 Les liens vidéo se déclarent dans cours/liens-video.yml.
 
@@ -65,8 +61,7 @@ ANNEXES_CHAPITRE = [
 ANNEXES_COURS = [
     ("polycopie.pdf", "Polycopié complet du cours"),
     ("exercices.pdf", "Recueil d'exercices"),
-    ("exercices-synthese.pdf", "Exercices de synthèse — préparation à l'examen"),
-    ("examens.pdf", "Annales d'examens corrigés"),
+    ("exercices-synthese.pdf", "Exercices de synthèse"),
 ]
 
 
