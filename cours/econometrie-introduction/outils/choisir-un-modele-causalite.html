@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 19 — Choisir un modèle, et le seuil de la causalité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 19 — Choisir un modèle, et le seuil de la causalité</h1>
+<p class="sous-titre">Calculatrice interactive — AIC, BIC, et diagnostic d'endogénéité</p>
+
+<div class="panneau">
+  <h2>Comparer deux modèles par AIC et BIC</h2>
+  <div class="ligne">
+    <div><label for="n">n (observations)</label><input type="number" id="n" value="500" step="1" min="2"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="scrA">SCR modèle A</label><input type="number" id="scrA" value="125000" step="1"></div>
+    <div><label for="pA">p modèle A (nb. paramètres)</label><input type="number" id="pA" value="4" step="1" min="1"></div>
+    <div><label for="scrB">SCR modèle B</label><input type="number" id="scrB" value="123500" step="1"></div>
+    <div><label for="pB">p modèle B (nb. paramètres)</label><input type="number" id="pB" value="5" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerCriteres()">Comparer</button>
+  <div id="resultatCriteres" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Diagnostic de la source d'endogénéité</h2>
+  <div class="ligne">
+    <div><label for="scenario">Scénario</label>
+      <select id="scenario">
+        <option value="omise">Une caractéristique pertinente et non observée est corrélée à la variable explicative</option>
+        <option value="inverse">La variable expliquée influence en retour la variable explicative (boucle)</option>
+        <option value="mesure">La variable explicative est mal mesurée ou mal déclarée</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="diagnostiquer()">Identifier la source</button>
+  <div id="resultatDiagnostic" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Aucun test ne détecte l'endogénéité et aucune correction d'écart-type n'y remédie : elle biaise le coefficient lui-même, pas seulement sa précision. « Significatif » ne veut jamais dire « causal ».</p>
+
+<script>
+function calculerCriteres() {
+  const resDiv = document.getElementById('resultatCriteres');
+  const n = parseFloat(document.getElementById('n').value);
+  const scrA = parseFloat(document.getElementById('scrA').value);
+  const pA = parseFloat(document.getElementById('pA').value);
+  const scrB = parseFloat(document.getElementById('scrB').value);
+  const pB = parseFloat(document.getElementById('pB').value);
+  if ([n,scrA,pA,scrB,pB].some(isNaN) || n <= 1 || scrA <= 0 || scrB <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const lnN = Math.log(n);
+  const baseA = n * Math.log(scrA / n);
+  const baseB = n * Math.log(scrB / n);
+  const aicA = baseA + 2 * pA, aicB = baseB + 2 * pB;
+  const bicA = baseA + lnN * pA, bicB = baseB + lnN * pB;
+  let out = `<p>ln(n) = ${lnN.toFixed(3)} — pénalité AIC par paramètre = 2, pénalité BIC par paramètre = ${lnN.toFixed(3)}.</p>`;
+  out += '<table><tr><th>modèle</th><th>SCR</th><th>p</th><th>AIC</th><th>BIC</th></tr>';
+  out += `<tr><td>A</td><td>${scrA}</td><td>${pA}</td><td>${aicA.toFixed(2)}</td><td>${bicA.toFixed(2)}</td></tr>`;
+  out += `<tr><td>B</td><td>${scrB}</td><td>${pB}</td><td>${aicB.toFixed(2)}</td><td>${bicB.toFixed(2)}</td></tr>`;
+  out += '</table>';
+  const prefAIC = aicA < aicB ? 'A' : (aicB < aicA ? 'B' : 'égalité');
+  const prefBIC = bicA < bicB ? 'A' : (bicB < bicA ? 'B' : 'égalité');
+  out += `<p>L'AIC préfère le modèle <strong>${prefAIC}</strong> (critère le plus faible). Le BIC préfère le modèle <strong>${prefBIC}</strong>.</p>`;
+  if (prefAIC !== prefBIC) {
+    out += '<p class="alerte">Les deux critères se contredisent : le BIC, plus sévère (pénalité ln n au lieu de 2), favorise le modèle le plus court.</p>';
+  } else {
+    out += '<p class="ok">Les deux critères s\\u2019accordent sur le même modèle.</p>';
+  }
+  resDiv.innerHTML = out;
+}
+
+function diagnostiquer() {
+  const resDiv = document.getElementById('resultatDiagnostic');
+  const scenario = document.getElementById('scenario').value;
+  const noms = { omise: 'Variable omise', inverse: 'Causalité inverse', mesure: 'Erreur de mesure' };
+  const explications = {
+    omise: 'La variable explicative est corrélée à une caractéristique non observée qui influence aussi la variable expliquée : c\\u2019est le mécanisme du chapitre 16.',
+    inverse: 'La variable expliquée agit en retour sur la variable explicative (boucle de rétroaction) : le sens de causalité supposé par le modèle n\\u2019est pas à sens unique.',
+    mesure: 'La variable explicative observée diffère de sa vraie valeur (sous-déclaration, erreur de saisie), ce qui corrompt sa relation avec le terme d\\u2019erreur.'
+  };
+  resDiv.innerHTML = `<p><strong>${noms[scenario]}</strong> — ${explications[scenario]}</p><p class="alerte">Dans les trois cas : aucun test ne le détecte, aucune correction d\\u2019écart-type ne le répare.</p>`;
+}
+
+window.onload = () => { calculerCriteres(); diagnostiquer(); };
+</script>
+</body>
+</html>

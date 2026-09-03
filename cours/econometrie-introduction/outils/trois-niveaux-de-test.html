@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Les trois niveaux de test — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Les trois niveaux de test</h1>
+<p class="sous-titre">Calculatrice interactive — F global et Fisher partiel</p>
+
+<div class="panneau">
+  <h2>Test F global</h2>
+  <div class="ligne">
+    <div><label for="SCE">SCE</label><input type="number" id="SCE" value="8000"></div>
+    <div><label for="SCRg">SCR</label><input type="number" id="SCRg" value="2000"></div>
+    <div><label for="kg">k</label><input type="number" id="kg" value="4"></div>
+    <div><label for="ng">n</label><input type="number" id="ng" value="60"></div>
+    <div><label for="fcritg">seuil F critique</label><input type="number" id="fcritg" value="2.54" step="0.01"></div>
+  </div>
+  <button onclick="calculerFglobal()">Calculer F global</button>
+  <div id="resultatFglobal" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Fisher partiel (test de restrictions / bloc de variables)</h2>
+  <div class="ligne">
+    <div><label for="SCRc">SCR contraint</label><input type="number" id="SCRc" value="1500"></div>
+    <div><label for="SCRl">SCR libre</label><input type="number" id="SCRl" value="1400"></div>
+    <div><label for="q">q (restrictions)</label><input type="number" id="q" value="2"></div>
+    <div><label for="nl">n</label><input type="number" id="nl" value="80"></div>
+    <div><label for="kl">k (modèle libre)</label><input type="number" id="kl" value="6"></div>
+    <div><label for="fcritl">seuil F critique</label><input type="number" id="fcritl" value="3.12" step="0.01"></div>
+  </div>
+  <button onclick="calculerFpartiel()">Calculer le Fisher partiel</button>
+  <div id="resultatFpartiel" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Un F significatif dit qu'il y a de l'information dans le bloc testé ; il ne dit jamais laquelle des variables, prise isolément, la porte — c'est le rôle des t individuels.</p>
+
+<script>
+function calculerFglobal() {
+  const resDiv = document.getElementById('resultatFglobal');
+  const SCE = parseFloat(document.getElementById('SCE').value);
+  const SCR = parseFloat(document.getElementById('SCRg').value);
+  const k = parseFloat(document.getElementById('kg').value);
+  const n = parseFloat(document.getElementById('ng').value);
+  const fcrit = parseFloat(document.getElementById('fcritg').value);
+  if ([SCE,SCR,k,n,fcrit].some(isNaN) || n-k-1<=0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const F = (SCE/k)/(SCR/(n-k-1));
+  const rejette = F > fcrit;
+  let out = `<div class="valeur">F = ${F.toFixed(4)}</div>`;
+  out += `<p>H₀ : β₁=...=β_k=0. Seuil : ${fcrit} (ddl : ${k}, ${n-k-1}).</p>`;
+  out += rejette
+    ? `<p class="alerte">F > seuil : on rejette H₀. Au moins une variable a un effet non nul.</p>`
+    : `<p class="ok">F ≤ seuil : on ne rejette pas H₀.</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerFpartiel() {
+  const resDiv = document.getElementById('resultatFpartiel');
+  const SCRc = parseFloat(document.getElementById('SCRc').value);
+  const SCRl = parseFloat(document.getElementById('SCRl').value);
+  const q = parseFloat(document.getElementById('q').value);
+  const n = parseFloat(document.getElementById('nl').value);
+  const k = parseFloat(document.getElementById('kl').value);
+  const fcrit = parseFloat(document.getElementById('fcritl').value);
+  if ([SCRc,SCRl,q,n,k,fcrit].some(isNaN) || n-k-1<=0 || q<=0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  if (SCRc < SCRl) { resDiv.innerHTML = '<p class="erreur">SCR contraint devrait être ≥ SCR libre (retirer des variables ne peut pas réduire la SCR).</p>'; return; }
+  const F = ((SCRc-SCRl)/q)/(SCRl/(n-k-1));
+  const rejette = F > fcrit;
+  let out = `<div class="valeur">F = ${F.toFixed(4)}</div>`;
+  out += `<p>H₀ : les ${q} coefficient(s) testé(s) valent 0. Seuil : ${fcrit} (ddl : ${q}, ${n-k-1}).</p>`;
+  out += rejette
+    ? `<p class="alerte">F > seuil : on rejette H₀. Le bloc testé apporte une information significative.</p>`
+    : `<p class="ok">F ≤ seuil : on ne rejette pas H₀. Le bloc testé n'apporte pas d'information significative une fois les autres variables présentes.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerFglobal(); calculerFpartiel(); };
+</script>
+</body>
+</html>

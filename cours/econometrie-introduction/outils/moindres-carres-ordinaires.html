@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Les moindres carrés ordinaires — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  textarea { resize: vertical; min-height: 4.5em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 190px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; margin-top: 0.8em; background: #fff; border: 1px solid #eee; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Les moindres carrés ordinaires</h1>
+<p class="sous-titre">Calculatrice interactive — droite MCO, résidus et graphique</p>
+
+<div class="panneau">
+  <h2>Régression simple par les moindres carrés</h2>
+  <p class="aide">Valeurs séparées par des virgules, dans le même ordre pour X et Y.</p>
+  <div class="ligne">
+    <div><label for="serieX">X (variable explicative)</label><textarea id="serieX">2,3,4,5,6</textarea></div>
+    <div><label for="serieY">Y (variable expliquée)</label><textarea id="serieY">2.2,2.8,3.3,3.6,4.1</textarea></div>
+  </div>
+  <button onclick="calculerOLS()">Calculer la droite MCO</button>
+  <div id="resultatOLS" class="resultat-zone"></div>
+  <canvas id="canvasOLS" width="560" height="320"></canvas>
+</div>
+
+<p class="avertissement">La somme des résidus et leur produit avec X sont toujours nuls par construction (propriété algébrique des équations normales) : ce n'est jamais un signe de bon ajustement, seulement une identité mathématique — quelle que soit la qualité réelle du modèle.</p>
+
+<script>
+function mean(a) { return a.reduce((s,v)=>s+v,0)/a.length; }
+function cov(x,y) {
+  const mx = mean(x), my = mean(y);
+  let s = 0;
+  for (let i=0;i<x.length;i++) s += (x[i]-mx)*(y[i]-my);
+  return s/x.length;
+}
+function variance(x) { return cov(x,x); }
+
+function calculerOLS() {
+  const resDiv = document.getElementById('resultatOLS');
+  try {
+    const X = document.getElementById('serieX').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    const Y = document.getElementById('serieY').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    if (X.length < 2 || X.length !== Y.length) { resDiv.innerHTML = '<p class="erreur">X et Y doivent avoir la même longueur (au moins 2 valeurs).</p>'; return; }
+    const mX = mean(X), mY = mean(Y);
+    const covXY = cov(X,Y), varX = variance(X), varY = variance(Y);
+    if (varX === 0) { resDiv.innerHTML = '<p class="erreur">V(X) = 0 : toutes les valeurs de X sont identiques, la pente n\'est pas identifiable (division par zéro).</p>'; return; }
+    const b1 = covXY/varX;
+    const b0 = mY - b1*mX;
+    const r = covXY/Math.sqrt(varX*varY);
+    const pred = X.map(x => b0 + b1*x);
+    const resid = Y.map((y,i) => y - pred[i]);
+    const sumResid = resid.reduce((s,v)=>s+v, 0);
+    const sumXResid = X.reduce((s,x,i)=>s+x*resid[i], 0);
+    let out = `<div class="valeur">X̄ = ${mX.toFixed(4)}</div><div class="valeur">Ȳ = ${mY.toFixed(4)}</div>`;
+    out += `<div class="valeur">cov(X,Y) = ${covXY.toFixed(4)}</div><div class="valeur">V(X) = ${varX.toFixed(4)}</div>`;
+    out += `<div class="valeur">β̂₁ = ${b1.toFixed(4)}</div><div class="valeur">β̂₀ = ${b0.toFixed(4)}</div>`;
+    out += `<p>Droite estimée : Ŷ = ${b0.toFixed(4)} + ${b1.toFixed(4)}·X. Corrélation r = ${r.toFixed(4)} (vérification : r·σY/σX = ${(r*Math.sqrt(varY)/Math.sqrt(varX)).toFixed(4)}, doit égaler β̂₁).</p>`;
+    out += '<table><tr><th>i</th><th>X</th><th>Y</th><th>Ŷ</th><th>résidu e</th></tr>';
+    X.forEach((x,i) => { out += `<tr><td>${i+1}</td><td>${x}</td><td>${Y[i]}</td><td>${pred[i].toFixed(4)}</td><td>${resid[i].toFixed(4)}</td></tr>`; });
+    out += '</table>';
+    out += `<p>Somme des résidus = ${sumResid.toFixed(8)} (≈0 par construction). Somme de X×résidu = ${sumXResid.toFixed(8)} (≈0 par construction).</p>`;
+    resDiv.innerHTML = out;
+    dessinerRegression(X, Y, b0, b1);
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format des séries.</p>';
+  }
+}
+
+function dessinerRegression(X, Y, b0, b1) {
+  const canvas = document.getElementById('canvasOLS');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const pad = 40;
+  const xmin = Math.min(...X), xmax = Math.max(...X);
+  const ymin = Math.min(...Y, b0+b1*xmin), ymax = Math.max(...Y, b0+b1*xmax);
+  const sx = v => pad + (v-xmin)/(xmax-xmin||1) * (canvas.width-2*pad);
+  const sy = v => canvas.height-pad - (v-ymin)/(ymax-ymin||1) * (canvas.height-2*pad);
+  ctx.strokeStyle = '#5A5A5A'; ctx.beginPath();
+  ctx.moveTo(pad, pad); ctx.lineTo(pad, canvas.height-pad); ctx.lineTo(canvas.width-pad, canvas.height-pad); ctx.stroke();
+  ctx.strokeStyle = '#E08000'; ctx.lineWidth = 2; ctx.beginPath();
+  ctx.moveTo(sx(xmin), sy(b0+b1*xmin)); ctx.lineTo(sx(xmax), sy(b0+b1*xmax)); ctx.stroke();
+  ctx.fillStyle = '#1F6FB2';
+  X.forEach((x,i) => { ctx.beginPath(); ctx.arc(sx(x), sy(Y[i]), 4, 0, 2*Math.PI); ctx.fill(); });
+}
+
+window.onload = () => { calculerOLS(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Variables qualitatives — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Variables qualitatives (indicatrices)</h1>
+<p class="sous-titre">Calculatrice interactive — effet exact d'une indicatrice et test de Chow</p>
+
+<div class="panneau">
+  <h2>Effet exact d'une indicatrice (modèle log-linéaire)</h2>
+  <div class="ligne">
+    <div><label for="delta">δ (coefficient de l'indicatrice)</label><input type="number" id="delta" value="0.213" step="0.001"></div>
+  </div>
+  <button onclick="calculerDelta()">Calculer</button>
+  <div id="resultatDelta" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Test de Chow</h2>
+  <div class="ligne">
+    <div><label for="ssrP">SSR poolé (SSRp)</label><input type="number" id="ssrP" value="500" step="0.01"></div>
+    <div><label for="ssr1">SSR groupe 1</label><input type="number" id="ssr1" value="180" step="0.01"></div>
+    <div><label for="ssr2">SSR groupe 2</label><input type="number" id="ssr2" value="250" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="kp1">k+1 (paramètres par groupe)</label><input type="number" id="kp1" value="4" step="1" min="1"></div>
+    <div><label for="n">n (total des deux groupes)</label><input type="number" id="n" value="150" step="1"></div>
+    <div><label for="fcrit">seuil critique F</label><input type="number" id="fcrit" value="2.45" step="0.01"></div>
+  </div>
+  <button onclick="calculerChow()">Calculer</button>
+  <div id="resultatChow" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">g groupes exigent g−1 indicatrices plus un intercept, jamais g, sous peine de colinéarité parfaite (piège de la variable indicatrice). Le test de Chow interdit toute différence entre groupes, y compris de pente ; un rejet n'indique pas laquelle est en cause.</p>
+
+<script>
+function calculerDelta() {
+  const resDiv = document.getElementById('resultatDelta');
+  const d = parseFloat(document.getElementById('delta').value);
+  if (isNaN(d)) { resDiv.innerHTML = '<p class="erreur">Valeur invalide.</p>'; return; }
+  const approx = 100*d;
+  const exact = 100*(Math.exp(d)-1);
+  resDiv.innerHTML = `<div class="valeur">approximation = ${approx.toFixed(2)} %</div><div class="valeur">exact = ${exact.toFixed(2)} %</div><p>Écart : ${(exact-approx).toFixed(2)} point(s) de pourcentage.</p>`;
+}
+
+function calculerChow() {
+  const resDiv = document.getElementById('resultatChow');
+  const ssrP = parseFloat(document.getElementById('ssrP').value);
+  const ssr1 = parseFloat(document.getElementById('ssr1').value);
+  const ssr2 = parseFloat(document.getElementById('ssr2').value);
+  const kp1 = parseFloat(document.getElementById('kp1').value);
+  const n = parseFloat(document.getElementById('n').value);
+  const fcrit = parseFloat(document.getElementById('fcrit').value);
+  if ([ssrP,ssr1,ssr2,kp1,n,fcrit].some(isNaN) || n - 2*kp1 <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const num = (ssrP - (ssr1+ssr2)) / kp1;
+  const den = (ssr1+ssr2) / (n - 2*kp1);
+  const F = num/den;
+  const rejette = F > fcrit;
+  let out = `<div class="valeur">F = ${F.toFixed(3)}</div><div class="valeur">df = (${kp1}, ${n-2*kp1})</div>`;
+  out += `<p class="${rejette ? 'alerte' : 'ok'}">${rejette ? 'H₀ (mêmes coefficients dans les deux groupes) est rejetée.' : 'H₀ n\\u2019est pas rejetée.'}</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerDelta(); calculerChow(); };
+</script>
+</body>
+</html>

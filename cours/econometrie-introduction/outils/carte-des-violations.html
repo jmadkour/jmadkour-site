@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — La carte des violations — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — La carte des violations</h1>
+<p class="sous-titre">Calculatrice interactive — test de diagnostic par régression auxiliaire (nR²)</p>
+
+<div class="panneau">
+  <h2>Statistique nR² et sensibilité à la taille de l'échantillon</h2>
+  <div class="ligne">
+    <div><label for="r2aux">R² auxiliaire</label><input type="number" id="r2aux" value="0.045" step="0.001"></div>
+    <div><label for="q">q (nombre de variables ajoutées)</label><input type="number" id="q" value="3" step="1"></div>
+    <div><label for="n1">n — échantillon 1</label><input type="number" id="n1" value="200" step="1"></div>
+    <div><label for="n2">n — échantillon 2 (comparaison)</label><input type="number" id="n2" value="30" step="1"></div>
+    <div><label for="chicrit">seuil χ² critique</label><input type="number" id="chicrit" value="7.815" step="0.001"></div>
+  </div>
+  <button onclick="calculerNR2()">Comparer les deux échantillons</button>
+  <div id="resultatNR2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Un rejet dit que le problème existe, pas qu'il est grave ; une non-détection dit seulement que le problème n'a pas atteint le seuil de détectabilité compte tenu de n — jamais qu'il est absent.</p>
+
+<script>
+function calculerNR2() {
+  const resDiv = document.getElementById('resultatNR2');
+  const r2 = parseFloat(document.getElementById('r2aux').value);
+  const q = parseFloat(document.getElementById('q').value);
+  const n1 = parseFloat(document.getElementById('n1').value);
+  const n2 = parseFloat(document.getElementById('n2').value);
+  const chicrit = parseFloat(document.getElementById('chicrit').value);
+  if ([r2,q,n1,n2,chicrit].some(isNaN) || r2<0 || r2>1) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides (R² auxiliaire entre 0 et 1).</p>'; return; }
+  const stat1 = n1*r2, stat2 = n2*r2;
+  let out = `<p>Même R² auxiliaire (${r2}) dans les deux échantillons, avec q = ${q} et seuil χ² = ${chicrit}.</p>`;
+  out += '<table><tr><th>échantillon</th><th>n</th><th>nR²</th><th>décision</th></tr>';
+  [[n1,stat1],[n2,stat2]].forEach(([n,stat]) => {
+    const rejette = stat > chicrit;
+    out += `<tr><td>n=${n}</td><td>${n}</td><td>${stat.toFixed(3)}</td><td class="${rejette?'alerte':'ok'}">${rejette ? 'rejette H₀ (problème détecté)' : 'ne rejette pas H₀'}</td></tr>`;
+  });
+  out += '</table>';
+  const r1 = stat1 > chicrit, r2d = stat2 > chicrit;
+  if (r1 !== r2d) {
+    out += '<p><strong>Le verdict diffère selon n</strong>, alors que l\'intensité relative du problème (R² auxiliaire) est identique dans les deux échantillons : c\'est la sensibilité des tests de diagnostic à la taille de l\'échantillon.</p>';
+  } else {
+    out += '<p>Le verdict est le même dans les deux échantillons pour ces valeurs.</p>';
+  }
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerNR2(); };
+</script>
+</body>
+</html>

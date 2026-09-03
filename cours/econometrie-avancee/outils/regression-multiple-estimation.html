@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Régression multiple : estimation — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Régression multiple : estimation</h1>
+<p class="sous-titre">Calculatrice interactive — R² ajusté et prédiction multivariée</p>
+
+<div class="panneau">
+  <h2>Comparer deux modèles par le R² ajusté</h2>
+  <div class="ligne">
+    <div><label for="n">n (observations)</label><input type="number" id="n" value="100" step="1" min="4"></div>
+    <div><label for="sst">SST</label><input type="number" id="sst" value="40.0" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="ssrA">SSR modèle A</label><input type="number" id="ssrA" value="25.0" step="0.01"></div>
+    <div><label for="kA">k modèle A (nb. régresseurs)</label><input type="number" id="kA" value="2" step="1" min="1"></div>
+    <div><label for="ssrB">SSR modèle B</label><input type="number" id="ssrB" value="24.95" step="0.01"></div>
+    <div><label for="kB">k modèle B (nb. régresseurs)</label><input type="number" id="kB" value="3" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerR2Adj()">Comparer</button>
+  <div id="resultatR2Adj" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Prédiction ceteris paribus à deux régresseurs</h2>
+  <div class="ligne">
+    <div><label for="b0">β̂₀</label><input type="number" id="b0" value="1.29" step="0.001"></div>
+    <div><label for="b1">β̂₁ (x₁)</label><input type="number" id="b1" value="0.453" step="0.0001"></div>
+    <div><label for="b2">β̂₂ (x₂)</label><input type="number" id="b2" value="0.0094" step="0.0001"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="x1val">x₁</label><input type="number" id="x1val" value="3.2" step="0.01"></div>
+    <div><label for="x2val">x₂</label><input type="number" id="x2val" value="24" step="0.1"></div>
+  </div>
+  <button onclick="predire()">Prédire</button>
+  <div id="resultatPredire" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Le R² augmente mécaniquement avec chaque variable ajoutée ; le R² ajusté peut diminuer si la variable contribue trop peu à réduire SSR. La multicolinéarité gonfle la variance, jamais le biais ; le biais de variable omise, lui, provient d'un facteur pertinent non observé et corrélé aux régresseurs inclus.</p>
+
+<script>
+function R2(SSR, SST) { return 1 - SSR/SST; }
+function R2adj(SSR, SST, n, k) { return 1 - (SSR/(n-k-1)) / (SST/(n-1)); }
+
+function calculerR2Adj() {
+  const resDiv = document.getElementById('resultatR2Adj');
+  const n = parseFloat(document.getElementById('n').value);
+  const sst = parseFloat(document.getElementById('sst').value);
+  const ssrA = parseFloat(document.getElementById('ssrA').value);
+  const kA = parseFloat(document.getElementById('kA').value);
+  const ssrB = parseFloat(document.getElementById('ssrB').value);
+  const kB = parseFloat(document.getElementById('kB').value);
+  if ([n,sst,ssrA,kA,ssrB,kB].some(isNaN) || n - Math.max(kA,kB) - 1 <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides (n trop petit par rapport à k).</p>'; return; }
+  const r2A = R2(ssrA, sst), r2B = R2(ssrB, sst);
+  const r2adjA = R2adj(ssrA, sst, n, kA), r2adjB = R2adj(ssrB, sst, n, kB);
+  let out = '<table><tr><th>modèle</th><th>SSR</th><th>k</th><th>R²</th><th>R² ajusté</th></tr>';
+  out += `<tr><td>A</td><td>${ssrA}</td><td>${kA}</td><td>${r2A.toFixed(4)}</td><td>${r2adjA.toFixed(4)}</td></tr>`;
+  out += `<tr><td>B</td><td>${ssrB}</td><td>${kB}</td><td>${r2B.toFixed(4)}</td><td>${r2adjB.toFixed(4)}</td></tr>`;
+  out += '</table>';
+  const r2Monte = r2B > r2A;
+  const r2adjMonte = r2adjB > r2adjA;
+  out += `<p>R² ${r2Monte ? 'augmente' : 'diminue'} de A à B. R² ajusté ${r2adjMonte ? 'augmente' : 'diminue'} de A à B.</p>`;
+  if (r2Monte && !r2adjMonte) {
+    out += '<p class="alerte">Le R² ajusté diminue alors que le R² simple augmente : la variable supplémentaire du modèle B ne réduit pas assez SSR pour compenser la perte d\\u2019un degré de liberté — elle n\\u2019apporte pas d\\u2019information utile.</p>';
+  } else if (r2Monte && r2adjMonte) {
+    out += '<p class="ok">Les deux critères s\\u2019accordent : la variable supplémentaire améliore le modèle même une fois la pénalité de complexité prise en compte.</p>';
+  }
+  resDiv.innerHTML = out;
+}
+
+function predire() {
+  const resDiv = document.getElementById('resultatPredire');
+  const b0 = parseFloat(document.getElementById('b0').value);
+  const b1 = parseFloat(document.getElementById('b1').value);
+  const b2 = parseFloat(document.getElementById('b2').value);
+  const x1 = parseFloat(document.getElementById('x1val').value);
+  const x2 = parseFloat(document.getElementById('x2val').value);
+  if ([b0,b1,b2,x1,x2].some(isNaN)) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const yhat = b0 + b1*x1 + b2*x2;
+  resDiv.innerHTML = `<div class="valeur">ŷ = ${yhat.toFixed(4)}</div><p>β̂₁ = ${b1} s\\u2019interprète à x₂ maintenu constant ; β̂₂ = ${b2} s\\u2019interprète à x₁ maintenu constant.</p>`;
+}
+
+window.onload = () => { calculerR2Adj(); predire(); };
+</script>
+</body>
+</html>

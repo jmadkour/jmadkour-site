@@ -26,7 +26,9 @@ appartenant au cours <cours> :
 
     cours/<cours>/slides/<c>.pdf                  diapositives
     cours/<cours>/ressources/<c>-poly.pdf         polycopié du chapitre
-    cours/<cours>/ressources/<c>-exercices.pdf    exercices corrigés
+    cours/<cours>/ressources/<c>-exercices.pdf    exercices (énoncé, sans le corrigé)
+    cours/<cours>/ressources/<c>-corrections.pdf  corrigé des exercices
+    cours/<cours>/outils/<c>.html                 application interactive (calculette, graphiques)
 
 Et, pour le cours entier :
 
@@ -56,6 +58,7 @@ FIN = "<!-- TABLEAU:FIN -->"
 ANNEXES_CHAPITRE = [
     ("poly", "Polycopié"),
     ("exercices", "Exercices"),
+    ("corrections", "Corrigé"),
 ]
 
 ANNEXES_COURS = [
@@ -92,8 +95,8 @@ def tableau(cours, chapitres, videos):
     L.append("")
     L.append("## Chapitres et documents")
     L.append("")
-    L.append("| # | Chapitre | Diapositives | Polycopié | Exercices | Vidéo |")
-    L.append("|--:|---|---|---|---|---|")
+    L.append("| # | Chapitre | Diapositives | Polycopié | Exercices | Corrigé | Application | Vidéo |")
+    L.append("|--:|---|---|---|---|---|---|---|")
 
     manquants = 0
     for i, (slug, titre) in enumerate(chapitres.items(), 1):
@@ -103,6 +106,7 @@ def tableau(cours, chapitres, videos):
         cells = [str(i), titre, pdf]
         for suffixe, _ in ANNEXES_CHAPITRE:
             cells.append(lien(d, "ressources/%s-%s.pdf" % (slug, suffixe), "PDF"))
+        cells.append(lien(d, "outils/%s.html" % slug, "Ouvrir"))
         url = (par_chapitre.get(slug) or "").strip()
         cells.append("[Voir](%s)" % url if url else "—")
         L.append("| " + " | ".join(cells) + " |")

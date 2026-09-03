@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — L'hétéroscédasticité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 190px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .hausse { color: #b00020; font-weight: bold; }
+  .baisse { color: var(--cex); font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — L'hétéroscédasticité</h1>
+<p class="sous-titre">Calculatrice interactive — tests de diagnostic et écarts-types robustes</p>
+
+<div class="panneau">
+  <h2>Tests de diagnostic (Breusch-Pagan / White)</h2>
+  <p class="aide">Ces deux tests suivent le principe de la régression auxiliaire (chapitre 12) : comparer une statistique à un seuil du χ².</p>
+  <div class="ligne">
+    <div><label for="bpStat">Statistique Breusch-Pagan</label><input type="number" id="bpStat" value="57.60" step="0.01"></div>
+    <div><label for="bpSeuil">Seuil χ² (Breusch-Pagan)</label><input type="number" id="bpSeuil" value="7.81" step="0.01"></div>
+    <div><label for="wStat">Statistique White</label><input type="number" id="wStat" value="48.55" step="0.01"></div>
+    <div><label for="wSeuil">Seuil χ² (White)</label><input type="number" id="wSeuil" value="5.99" step="0.01"></div>
+  </div>
+  <button onclick="calculerTests()">Comparer les deux tests</button>
+  <div id="resultatTests" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Comparateur d'écarts-types : MCO classique vs robuste de White</h2>
+  <p class="aide">Une variable par ligne, format <code>nom,t_MCO,t_robuste</code>. Le coefficient est inchangé par la correction : le rapport des écarts-types est l'inverse du rapport des t.</p>
+  <textarea id="variablesSE" rows="4">Ancienneté,23.06,20.78
+Bac+2,6.93,7.94
+Bac+5,18.11,14.75</textarea>
+  <button onclick="calculerSE()">Comparer les écarts-types</button>
+  <div id="resultatSE" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">L'hétéroscédasticité ne biaise jamais les coefficients : elle rend seulement les écarts-types usuels (et donc les tests et intervalles de confiance) incorrects. Le sens de l'erreur (sous-estimation ou surestimation) n'est pas prévisible à l'avance — d'où l'usage professionnel de toujours rapporter les écarts-types robustes sur données individuelles.</p>
+
+<script>
+function calculerTests() {
+  const resDiv = document.getElementById('resultatTests');
+  const bpStat = parseFloat(document.getElementById('bpStat').value);
+  const bpSeuil = parseFloat(document.getElementById('bpSeuil').value);
+  const wStat = parseFloat(document.getElementById('wStat').value);
+  const wSeuil = parseFloat(document.getElementById('wSeuil').value);
+  if ([bpStat,bpSeuil,wStat,wSeuil].some(isNaN)) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const bpRejette = bpStat > bpSeuil;
+  const wRejette = wStat > wSeuil;
+  let out = '<table><tr><th>test</th><th>statistique</th><th>seuil</th><th>décision</th></tr>';
+  out += `<tr><td>Breusch-Pagan</td><td>${bpStat.toFixed(2)}</td><td>${bpSeuil.toFixed(2)}</td><td class="${bpRejette?'alerte':'ok'}">${bpRejette ? 'rejette H₀ (hétéroscédasticité)' : 'ne rejette pas H₀'}</td></tr>`;
+  out += `<tr><td>White</td><td>${wStat.toFixed(2)}</td><td>${wSeuil.toFixed(2)}</td><td class="${wRejette?'alerte':'ok'}">${wRejette ? 'rejette H₀ (hétéroscédasticité)' : 'ne rejette pas H₀'}</td></tr>`;
+  out += '</table>';
+  if (bpRejette === wRejette) {
+    out += `<p>Les deux tests aboutissent à la <strong>même décision</strong>, malgré des statistiques et des degrés de liberté différents : ils reposent sur le même principe de régression auxiliaire, appliqué à des formes légèrement différentes.</p>`;
+  } else {
+    out += `<p>Les deux tests <strong>divergent</strong> ici : cela peut arriver lorsque la forme de l'hétéroscédasticité correspond mieux à l'une des deux spécifications qu'à l'autre.</p>`;
+  }
+  resDiv.innerHTML = out;
+}
+
+function calculerSE() {
+  const resDiv = document.getElementById('resultatSE');
+  try {
+    const lignes = document.getElementById('variablesSE').value.trim().split('\n').filter(l=>l.trim().length);
+    let out = '<table><tr><th>variable</th><th>t MCO</th><th>t robuste</th><th>σ̂ robuste / σ̂ MCO</th><th>lecture</th></tr>';
+    lignes.forEach(l => {
+      const parts = l.split(',');
+      if (parts.length < 3) { out += `<tr><td colspan="5" class="erreur">Ligne invalide : ${l}</td></tr>`; return; }
+      const [nom, tmcoStr, trobStr] = parts;
+      const tmco = parseFloat(tmcoStr), trob = parseFloat(trobStr);
+      if (isNaN(tmco) || isNaN(trob) || tmco === 0 || trob === 0) { out += `<tr><td>${nom}</td><td colspan="4" class="erreur">valeurs invalides</td></tr>`; return; }
+      const ratio = tmco / trob;
+      let lecture, css;
+      if (ratio > 1.005) { lecture = `MCO sous-estimait l'écart-type de ${((ratio-1)*100).toFixed(1)}%`; css = 'hausse'; }
+      else if (ratio < 0.995) { lecture = `MCO surestimait l'écart-type de ${((1-ratio)*100).toFixed(1)}%`; css = 'baisse'; }
+      else { lecture = 'écarts-types quasi identiques'; css = 'ok'; }
+      out += `<tr><td>${nom.trim()}</td><td>${tmco.toFixed(2)}</td><td>${trob.toFixed(2)}</td><td>${ratio.toFixed(3)}</td><td class="${css}">${lecture}</td></tr>`;
+    });
+    out += '</table>';
+    out += '<p class="aide">Rappel : le coefficient estimé (β̂) est strictement identique entre les deux colonnes de t — seul l\'écart-type utilisé pour le calculer change.</p>';
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format (nom,t_MCO,t_robuste par ligne).</p>';
+  }
+}
+
+window.onload = () => { calculerTests(); calculerSE(); };
+</script>
+</body>
+</html>

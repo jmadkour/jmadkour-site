@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — La multicolinéarité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 190px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .surveiller { color: var(--cintu); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — La multicolinéarité</h1>
+<p class="sous-titre">Calculatrice interactive — facteur d'inflation de la variance (VIF)</p>
+
+<div class="panneau">
+  <h2>Calculateur de VIF</h2>
+  <p class="aide">Une variable par ligne, format <code>nom,R2_j</code> (R² de la régression de cette variable sur toutes les autres).</p>
+  <textarea id="variables">Ancienneté,0.012
+Casablanca,0.492
+Tanger,0.519</textarea>
+  <button onclick="calculerVIF()">Calculer les VIF</button>
+  <div id="resultatVIF" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>VIF à partir d'une corrélation (cas à deux variables)</h2>
+  <div class="ligne">
+    <div><label for="rCorr">r (corrélation entre les deux variables)</label><input type="number" id="rCorr" value="0.97" step="0.01" min="-0.99" max="0.99"></div>
+  </div>
+  <button onclick="calculerVIFcorr()">Calculer le VIF</button>
+  <div id="resultatVIFcorr" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Un VIF élevé ne biaise jamais les coefficients : il gonfle seulement leur variance. Ne jamais retirer une variable sur le seul critère d'un VIF élevé sans justification économique.</p>
+
+<script>
+function classifierVIF(v) {
+  if (v < 5) return {classe: 'rien à signaler', css: 'ok'};
+  if (v <= 10) return {classe: 'à surveiller', css: 'surveiller'};
+  return {classe: 'multicolinéarité sérieuse', css: 'alerte'};
+}
+
+function calculerVIF() {
+  const resDiv = document.getElementById('resultatVIF');
+  try {
+    const lignes = document.getElementById('variables').value.trim().split('\n').filter(l=>l.trim().length);
+    let out = '<table><tr><th>variable</th><th>R²ⱼ</th><th>VIF</th><th>lecture</th></tr>';
+    lignes.forEach(l => {
+      const [nom, r2str] = l.split(',');
+      const r2 = parseFloat(r2str);
+      if (isNaN(r2) || r2 < 0 || r2 >= 1) { out += `<tr><td>${nom}</td><td colspan="3" class="alerte">R² invalide</td></tr>`; return; }
+      const vif = 1/(1-r2);
+      const c = classifierVIF(vif);
+      out += `<tr><td>${nom.trim()}</td><td>${r2.toFixed(4)}</td><td>${vif.toFixed(2)}</td><td class="${c.css}">${c.classe}</td></tr>`;
+    });
+    out += '</table>';
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format (nom,R2 par ligne).</p>';
+  }
+}
+
+function calculerVIFcorr() {
+  const resDiv = document.getElementById('resultatVIFcorr');
+  const r = parseFloat(document.getElementById('rCorr').value);
+  if (isNaN(r) || Math.abs(r) >= 1) { resDiv.innerHTML = '<p class="erreur">r doit être strictement entre -1 et 1.</p>'; return; }
+  const vif = 1/(1-r*r);
+  const c = classifierVIF(vif);
+  let out = `<div class="valeur">r² = ${(r*r).toFixed(4)}</div><div class="valeur">VIF = ${vif.toFixed(2)}</div>`;
+  out += `<p class="${c.css}">${c.classe}</p>`;
+  out += `<p class="aide">Écart-type multiplié par √VIF = ${Math.sqrt(vif).toFixed(2)} par rapport à des variables indépendantes.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerVIF(); calculerVIFcorr(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Hétéroscédasticité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Hétéroscédasticité</h1>
+<p class="sous-titre">Calculatrice interactive — test de Breusch-Pagan et poids MCP pour le MPL</p>
+
+<div class="panneau">
+  <h2>Test de Breusch-Pagan (F et LM)</h2>
+  <div class="ligne">
+    <div><label for="n">n</label><input type="number" id="n" value="88" step="1" min="4"></div>
+    <div><label for="k">k (régresseurs)</label><input type="number" id="k" value="3" step="1" min="1"></div>
+    <div><label for="r2u2">R²(û²) auxiliaire</label><input type="number" id="r2u2" value="0.160" step="0.001" min="0" max="1"></div>
+    <div><label for="fcrit">seuil F</label><input type="number" id="fcrit" value="2.72" step="0.01"></div>
+    <div><label for="chicrit">seuil χ²(k)</label><input type="number" id="chicrit" value="7.81" step="0.01"></div>
+  </div>
+  <button onclick="calculerBP()">Calculer</button>
+  <div id="resultatBP" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Poids des MCP pour le modèle de probabilité linéaire</h2>
+  <p class="aide">Une valeur ajustée ŷᵢ par ligne.</p>
+  <textarea id="yhats" rows="3" style="width:100%; padding:0.5em; border:1px solid #ccc; border-radius:4px; font-family:'Courier New',monospace; font-size:0.9em;">0.30
+0.70
+1.05</textarea>
+  <button onclick="calculerPoidsMPL()">Calculer les poids</button>
+  <div id="resultatMPL" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">L'hétéroscédasticité ne biaise jamais les coefficients MCO ; elle invalide seulement l'inférence usuelle. Un rejet du test d'hétéroscédasticité peut aussi signaler une mauvaise forme fonctionnelle plutôt qu'une véritable hétéroscédasticité.</p>
+
+<script>
+function calculerBP() {
+  const resDiv = document.getElementById('resultatBP');
+  const n = parseFloat(document.getElementById('n').value);
+  const k = parseFloat(document.getElementById('k').value);
+  const r2 = parseFloat(document.getElementById('r2u2').value);
+  const fcrit = parseFloat(document.getElementById('fcrit').value);
+  const chicrit = parseFloat(document.getElementById('chicrit').value);
+  if ([n,k,r2,fcrit,chicrit].some(isNaN) || r2 < 0 || r2 >= 1 || n-k-1 <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const F = (r2/k) / ((1-r2)/(n-k-1));
+  const LM = n*r2;
+  const rejetteF = F > fcrit, rejetteLM = LM > chicrit;
+  let out = `<div class="valeur">F = ${F.toFixed(3)}</div><div class="valeur">LM = ${LM.toFixed(3)}</div>`;
+  out += `<p class="${rejetteF ? 'alerte' : 'ok'}">Test F : ${rejetteF ? 'hétéroscédasticité détectée' : 'homoscédasticité non rejetée'}.</p>`;
+  out += `<p class="${rejetteLM ? 'alerte' : 'ok'}">Test LM : ${rejetteLM ? 'hétéroscédasticité détectée' : 'homoscédasticité non rejetée'}.</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerPoidsMPL() {
+  const resDiv = document.getElementById('resultatMPL');
+  try {
+    const lignes = document.getElementById('yhats').value.trim().split('\n').filter(l=>l.trim().length);
+    let out = '<table><tr><th>ŷᵢ</th><th>ĥᵢ = ŷᵢ(1-ŷᵢ)</th><th>MCP possible ?</th></tr>';
+    lignes.forEach(l => {
+      const yhat = parseFloat(l);
+      if (isNaN(yhat)) { out += `<tr><td colspan="3" class="erreur">valeur invalide : ${l}</td></tr>`; return; }
+      const h = yhat*(1-yhat);
+      const possible = h > 0;
+      out += `<tr><td>${yhat}</td><td>${h.toFixed(4)}</td><td class="${possible?'ok':'alerte'}">${possible ? 'oui' : 'non (poids négatif)'}</td></tr>`;
+    });
+    out += '</table>';
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie.</p>';
+  }
+}
+
+window.onload = () => { calculerBP(); calculerPoidsMPL(); };
+</script>
+</body>
+</html>
