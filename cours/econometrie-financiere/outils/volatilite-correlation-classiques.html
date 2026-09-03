@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Volatilité et corrélation EWMA — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Modèles classiques de volatilité et corrélation</h1>
+<p class="sous-titre">Calculatrice interactive — récursion EWMA (variance, covariance, corrélation) et VaR RiskMetrics</p>
+
+<div class="panneau">
+  <h2>Récursion EWMA — variance, covariance et corrélation</h2>
+  <div class="ligne">
+    <div><label for="lambda">λ (persistance)</label><input type="number" id="lambda" value="0.94" step="0.001" min="0" max="0.999"></div>
+    <div><label for="var1_0">Variance initiale actif 1 (%²)</label><input type="number" id="var1_0" value="1.5" step="0.01" min="0"></div>
+    <div><label for="var2_0">Variance initiale actif 2 (%²)</label><input type="number" id="var2_0" value="2.0" step="0.01" min="0"></div>
+    <div><label for="cov_0">Covariance initiale (%²)</label><input type="number" id="cov_0" value="0.8" step="0.01"></div>
+  </div>
+  <p class="aide">Une paire de rendements (r₁, r₂ en %) par ligne, dans l'ordre chronologique. Pour un seul actif, laisser r₂ à 0 et ignorer covariance/corrélation.</p>
+  <textarea id="rendements" rows="4">1.5, -0.8
+2.0, -1.0
+-1.0, 0.5</textarea>
+  <button onclick="calculerEWMA()">Calculer la récursion</button>
+  <div id="resultatEWMA" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>VaR RiskMetrics</h2>
+  <div class="ligne">
+    <div><label for="sigmaVar">Écart-type quotidien σ̂ (%)</label><input type="number" id="sigmaVar" value="1.5620" step="0.0001" min="0"></div>
+    <div><label for="zQuantile">Quantile z (ex. 1,645 à 95 %, 2,326 à 99 %)</label><input type="number" id="zQuantile" value="2.326" step="0.001"></div>
+    <div><label for="portefeuille">Valeur du portefeuille</label><input type="number" id="portefeuille" value="10000000" step="1000" min="0"></div>
+    <div><label for="horizon">Horizon (jours)</label><input type="number" id="horizon" value="10" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerVaR()">Calculer la VaR</button>
+  <div id="resultatVaR" class="resultat-zone"></div>
+</div>
+
+<script>
+function parseLignes(texte) {
+  return texte.trim().split('\n').filter(l => l.trim().length);
+}
+
+function calculerEWMA() {
+  const resDiv = document.getElementById('resultatEWMA');
+  try {
+    const lambda = parseFloat(document.getElementById('lambda').value);
+    let v1 = parseFloat(document.getElementById('var1_0').value);
+    let v2 = parseFloat(document.getElementById('var2_0').value);
+    let c12 = parseFloat(document.getElementById('cov_0').value);
+    if ([lambda, v1, v2, c12].some(isNaN) || lambda <= 0 || lambda >= 1) {
+      resDiv.innerHTML = '<p class="erreur">Valeurs invalides (λ doit être strictement entre 0 et 1).</p>';
+      return;
+    }
+    const lignes = parseLignes(document.getElementById('rendements').value);
+    const paires = lignes.map(l => {
+      const parts = l.split(',').map(v => parseFloat(v.trim()));
+      if (parts.length !== 2 || parts.some(isNaN)) throw new Error('ligne invalide (attendu : r1, r2) : ' + l);
+      return parts;
+    });
+
+    let out = '<table class="res"><tr><th>pas</th><th>r₁</th><th>r₂</th><th>σ²₁</th><th>σ²₂</th><th>σ₁₂</th><th>ρ</th></tr>';
+    out += `<tr><td>0</td><td>—</td><td>—</td><td>${v1.toFixed(4)}</td><td>${v2.toFixed(4)}</td><td>${c12.toFixed(4)}</td><td>${(c12/Math.sqrt(v1*v2)).toFixed(4)}</td></tr>`;
+    paires.forEach((p, i) => {
+      const [r1, r2] = p;
+      v1 = lambda * v1 + (1 - lambda) * r1 * r1;
+      v2 = lambda * v2 + (1 - lambda) * r2 * r2;
+      c12 = lambda * c12 + (1 - lambda) * r1 * r2;
+      const rho = (v1 > 0 && v2 > 0) ? c12 / Math.sqrt(v1 * v2) : NaN;
+      out += `<tr><td>${i+1}</td><td>${r1.toFixed(2)}</td><td>${r2.toFixed(2)}</td><td>${v1.toFixed(4)}</td><td>${v2.toFixed(4)}</td><td>${c12.toFixed(4)}</td><td>${isNaN(rho) ? '—' : rho.toFixed(4)}</td></tr>`;
+    });
+    out += '</table>';
+    out += `<div class="valeur">σ²₁ final = ${v1.toFixed(4)} %²</div>`;
+    out += `<div class="valeur">σ²₂ final = ${v2.toFixed(4)} %²</div>`;
+    out += `<div class="valeur">σ₁ final = ${Math.sqrt(v1).toFixed(4)} %</div>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = `<p class="erreur">${e.message}</p>`;
+  }
+}
+
+function calculerVaR() {
+  const resDiv = document.getElementById('resultatVaR');
+  const sigma = parseFloat(document.getElementById('sigmaVar').value);
+  const z = parseFloat(document.getElementById('zQuantile').value);
+  const V = parseFloat(document.getElementById('portefeuille').value);
+  const h = parseFloat(document.getElementById('horizon').value);
+  if ([sigma, z, V, h].some(isNaN) || sigma < 0 || V < 0 || h <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const VaR1 = z * (sigma / 100) * V;
+  const VaRh = VaR1 * Math.sqrt(h);
+  let out = `<div class="valeur">VaR à 1 jour = ${VaR1.toLocaleString('fr-FR', {maximumFractionDigits: 0})}</div>`;
+  out += `<div class="valeur">VaR à ${h} jour(s) = ${VaRh.toLocaleString('fr-FR', {maximumFractionDigits: 0})}</div>`;
+  out += `<p class="aide">Règle de la racine du temps : VaR<sub>h</sub> = VaR<sub>1</sub> × √h. Valable seulement sous l'hypothèse de rendements i.i.d. à volatilité constante sur l'horizon — une hypothèse fragile juste après un choc (voir le chapitre).</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerEWMA(); calculerVaR(); };
+</script>
+</body>
+</html>
