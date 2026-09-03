@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 16 — Variables dépendantes limitées — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 16 — Variables dépendantes limitées et sélection d'échantillon</h1>
+<p class="sous-titre">Calculatrice interactive — ajustement Tobit, semi-élasticité Poisson et taux de censure</p>
+
+<div class="panneau">
+  <h2>Tobit : du coefficient brut à l'effet marginal</h2>
+  <div class="ligne">
+    <div><label for="betaTobit">Coefficient Tobit β̂ⱼ</label><input type="number" id="betaTobit" value="-894" step="0.01"></div>
+    <div><label for="facteur">Facteur d'ajustement (Φ ou autre, entre 0 et 1)</label><input type="number" id="facteur" value="0.451" step="0.001" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerTobit()">Calculer l'effet ajusté</button>
+  <div id="resultatTobit" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Poisson : semi-élasticité exacte vs approchée</h2>
+  <div class="ligne">
+    <div><label for="betaPoisson">β̂ⱼ</label><input type="number" id="betaPoisson" value="-0.4" step="0.001"></div>
+    <div><label for="deltaX">Δxⱼ</label><input type="number" id="deltaX" value="0.10" step="0.01"></div>
+  </div>
+  <button onclick="calculerPoisson()">Comparer effet exact / approché</button>
+  <div id="resultatPoisson" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Taux de censure ou de sélection</h2>
+  <div class="ligne">
+    <div><label for="nTotal">n (échantillon total)</label><input type="number" id="nTotal" value="1445" step="1" min="1"></div>
+    <div><label for="nSub">n (censurés / sélectionnés)</label><input type="number" id="nSub" value="893" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerTaux()">Calculer le taux</button>
+  <div id="resultatTaux" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Un coefficient Tobit ou Poisson brut n'est presque jamais l'effet marginal directement interprétable : il faut le multiplier par un facteur d'ajustement (Tobit) ou le convertir en semi-élasticité exacte via exp(·)−1 (Poisson).</p>
+
+<script>
+function calculerTobit() {
+  const resDiv = document.getElementById('resultatTobit');
+  const beta = parseFloat(document.getElementById('betaTobit').value);
+  const facteur = parseFloat(document.getElementById('facteur').value);
+  if ([beta,facteur].some(isNaN) || facteur < 0 || facteur > 1) { resDiv.innerHTML = '<p class="erreur">Le facteur doit être compris entre 0 et 1.</p>'; return; }
+  const ajuste = beta * facteur;
+  resDiv.innerHTML = `<div class="valeur">effet ajusté = ${ajuste.toFixed(3)}</div><p>Coefficient brut : ${beta} ; facteur : ${facteur}.</p>`;
+}
+
+function calculerPoisson() {
+  const resDiv = document.getElementById('resultatPoisson');
+  const beta = parseFloat(document.getElementById('betaPoisson').value);
+  const dx = parseFloat(document.getElementById('deltaX').value);
+  if ([beta,dx].some(isNaN)) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const approx = 100 * beta * dx;
+  const exact = 100 * (Math.exp(beta * dx) - 1);
+  resDiv.innerHTML = `<div class="valeur">approché = ${approx.toFixed(3)} %</div><div class="valeur">exact = ${exact.toFixed(3)} %</div><p>Écart : ${(exact-approx).toFixed(3)} point(s) de pourcentage.</p>`;
+}
+
+function calculerTaux() {
+  const resDiv = document.getElementById('resultatTaux');
+  const n = parseFloat(document.getElementById('nTotal').value);
+  const sub = parseFloat(document.getElementById('nSub').value);
+  if ([n,sub].some(isNaN) || n <= 0 || sub < 0 || sub > n) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides (0 ≤ sous-groupe ≤ total).</p>'; return; }
+  const taux = 100 * sub / n;
+  resDiv.innerHTML = `<div class="valeur">taux = ${taux.toFixed(2)} %</div><p>${sub} sur ${n} observations (${n-sub} restantes non censurées / non sélectionnées).</p>`;
+}
+
+window.onload = () => { calculerTobit(); calculerPoisson(); calculerTaux(); };
+</script>
+</body>
+</html>
