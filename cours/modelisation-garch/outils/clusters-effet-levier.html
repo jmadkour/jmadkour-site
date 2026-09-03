@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Regroupement de la volatilité et effet de levier — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Regroupement de la volatilité et effet de levier</h1>
+<p class="sous-titre">Calculatrice interactive — kurtosis expliqué par le regroupement, asymétrie de l'effet de levier, horizon d'agrégation</p>
+
+<div class="panneau">
+  <h2>Part de l'excès de kurtosis expliquée par le regroupement</h2>
+  <div class="ligne">
+    <div><label for="kappaRaw">kurtosis brut κ</label><input type="number" id="kappaRaw" value="6.05" step="0.01" min="3"></div>
+    <div><label for="kappaZ">kurtosis standardisé κ_z (sur z_t = r_t/√h_t)</label><input type="number" id="kappaZ" value="4.66" step="0.01" min="3"></div>
+  </div>
+  <button onclick="calculerKurtosisReduction()">Calculer</button>
+  <div id="resultatKurtosisReduction" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Écart de volatilité de l'effet de levier</h2>
+  <div class="ligne">
+    <div><label for="volUp">volatilité réalisée après une hausse (%)</label><input type="number" id="volUp" value="22" step="0.1"></div>
+    <div><label for="volDown">volatilité réalisée après une baisse (%)</label><input type="number" id="volDown" value="26.18" step="0.1"></div>
+  </div>
+  <button onclick="calculerLevier()">Calculer l'écart</button>
+  <div id="resultatLevier" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Horizon d'agrégation pour un seuil d'excès de kurtosis</h2>
+  <div class="ligne">
+    <div><label for="kappa1H">kurtosis journalier κ₁</label><input type="number" id="kappa1H" value="6.05" step="0.01" min="3"></div>
+    <div><label for="seuilExces">seuil d'excès de kurtosis visé</label><input type="number" id="seuilExces" value="0.5" step="0.01" min="0.0001"></div>
+  </div>
+  <button onclick="calculerHorizon()">Calculer l'horizon h</button>
+  <div id="resultatHorizon" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerKurtosisReduction() {
+  const resDiv = document.getElementById('resultatKurtosisReduction');
+  const kRaw = parseFloat(document.getElementById('kappaRaw').value);
+  const kZ = parseFloat(document.getElementById('kappaZ').value);
+  if ([kRaw, kZ].some(isNaN) || kRaw < 3 || kZ < 3) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (kurtosis ≥ 3).</p>';
+    return;
+  }
+  const excesRaw = kRaw - 3;
+  const excesZ = kZ - 3;
+  const pct = (excesRaw - excesZ) / excesRaw * 100;
+  let out = `<div class="valeur">excès avant = ${excesRaw.toFixed(4)}</div>`;
+  out += `<div class="valeur">excès après = ${excesZ.toFixed(4)}</div>`;
+  out += `<div class="valeur">part expliquée par le regroupement = ${pct.toFixed(2)} %</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerLevier() {
+  const resDiv = document.getElementById('resultatLevier');
+  const volUp = parseFloat(document.getElementById('volUp').value);
+  const volDown = parseFloat(document.getElementById('volDown').value);
+  if ([volUp, volDown].some(isNaN) || volUp <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const ecart = (volDown - volUp) / volUp * 100;
+  let out = `<div class="valeur">écart relatif = ${ecart.toFixed(2)} %</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerHorizon() {
+  const resDiv = document.getElementById('resultatHorizon');
+  const kappa1 = parseFloat(document.getElementById('kappa1H').value);
+  const seuil = parseFloat(document.getElementById('seuilExces').value);
+  if ([kappa1, seuil].some(isNaN) || kappa1 < 3 || seuil <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const exces1 = kappa1 - 3;
+  const h = exces1 / seuil;
+  let out = `<div class="valeur">excès journalier = ${exces1.toFixed(4)}</div>`;
+  out += `<div class="valeur">horizon h = ${h.toFixed(2)} jours</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerKurtosisReduction(); calculerLevier(); calculerHorizon(); };
+</script>
+</body>
+</html>
