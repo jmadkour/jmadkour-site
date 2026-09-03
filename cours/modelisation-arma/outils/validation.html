@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — Validation et résidus — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — La validation, et ce que les résidus révèlent</h1>
+<p class="sous-titre">Calculatrice interactive — Student, Box-Pierce/Ljung-Box, Jarque-Bera et test ARCH</p>
+
+<div class="panneau">
+  <h2>Significativité d'un coefficient (test de Student)</h2>
+  <div class="ligne">
+    <div><label for="coefHat">coefficient estimé</label><input type="number" id="coefHat" value="0.03" step="0.001"></div>
+    <div><label for="coefSe">écart-type</label><input type="number" id="coefSe" value="0.055" step="0.001" min="0.0001"></div>
+  </div>
+  <button onclick="calculerStudent()">Calculer t</button>
+  <div id="resultatStudent" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Box-Pierce et Ljung-Box sur les résidus</h2>
+  <div class="ligne">
+    <div><label for="T14">T</label><input type="number" id="T14" value="400" step="1" min="5"></div>
+    <div><label for="p14">p</label><input type="number" id="p14" value="2" step="1" min="0"></div>
+    <div><label for="q14">q</label><input type="number" id="q14" value="0" step="1" min="0"></div>
+    <div><label for="crit14">valeur critique χ² choisie</label><input type="number" id="crit14" value="18.307" step="0.001"></div>
+  </div>
+  <p class="aide">Autocorrélations des résidus ρ̂_k, une par ligne, dans l'ordre k=1,2,3,...</p>
+  <textarea id="rhos14" rows="6">0.02
+-0.01
+0.03
+-0.02
+0.01
+0.00
+-0.01
+0.02
+0.01
+-0.03
+0.02
+0.01</textarea>
+  <button onclick="calculerLB()">Calculer Q_BP et Q_LB</button>
+  <div id="resultatLB" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Jarque-Bera</h2>
+  <div class="ligne">
+    <div><label for="TJB">T</label><input type="number" id="TJB" value="2000" step="1" min="5"></div>
+    <div><label for="SJB">asymétrie S</label><input type="number" id="SJB" value="-0.3" step="0.01"></div>
+    <div><label for="KJB">kurtosis K</label><input type="number" id="KJB" value="6.5" step="0.01"></div>
+  </div>
+  <button onclick="calculerJB()">Calculer JB</button>
+  <div id="resultatJB" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Test ARCH d'Engle</h2>
+  <div class="ligne">
+    <div><label for="TARCH">T</label><input type="number" id="TARCH" value="1000" step="1" min="5"></div>
+    <div><label for="R2ARCH">R² de la régression ε̂²_t sur ses retards</label><input type="number" id="R2ARCH" value="0.045" step="0.001" min="0" max="1"></div>
+    <div><label for="critARCH">valeur critique χ² choisie (m retards)</label><input type="number" id="critARCH" value="11.070" step="0.001"></div>
+  </div>
+  <button onclick="calculerARCH14()">Calculer T·R²</button>
+  <div id="resultatARCH14" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerStudent() {
+  const resDiv = document.getElementById('resultatStudent');
+  const a = parseFloat(document.getElementById('coefHat').value);
+  const se = parseFloat(document.getElementById('coefSe').value);
+  if ([a, se].some(isNaN) || se <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const t = a / se;
+  const sig = Math.abs(t) > 1.96;
+  let out = `<div class="valeur">t = ${t.toFixed(4)}</div>`;
+  out += `<div class="valeur ${sig ? 'ok' : 'ko'}">${sig ? 'significatif à 5 % (|t|>1,96)' : 'non significatif à 5 %'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerLB() {
+  const resDiv = document.getElementById('resultatLB');
+  const T = parseFloat(document.getElementById('T14').value);
+  const p = parseFloat(document.getElementById('p14').value);
+  const q = parseFloat(document.getElementById('q14').value);
+  const crit = parseFloat(document.getElementById('crit14').value);
+  const rhos = document.getElementById('rhos14').value.trim().split('\n').filter(l => l.trim().length).map(l => parseFloat(l.trim()));
+  if ([T, p, q, crit].some(isNaN) || rhos.some(isNaN) || rhos.length === 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const m = rhos.length;
+  const df = m - p - q;
+  let sumBP = 0, sumLB = 0;
+  rhos.forEach((r, idx) => {
+    const k = idx + 1;
+    sumBP += r * r;
+    sumLB += (r * r) / (T - k);
+  });
+  const QBP = T * sumBP;
+  const QLB = T * (T + 2) * sumLB;
+  let out = `<div class="valeur">m = ${m}, degrés de liberté = ${df}</div>`;
+  out += `<div class="valeur">Q_BP(${m}) = ${QBP.toFixed(4)}</div>`;
+  out += `<div class="valeur">Q_LB(${m}) = ${QLB.toFixed(4)}</div>`;
+  const rejetteBP = QBP > crit;
+  const rejetteLB = QLB > crit;
+  out += `<div class="valeur ${rejetteBP ? 'ko' : 'ok'}">Box-Pierce : ${rejetteBP ? 'rejette H0 (résidus structurés)' : 'ne rejette pas H0 (bruit blanc)'}</div>`;
+  out += `<div class="valeur ${rejetteLB ? 'ko' : 'ok'}">Ljung-Box : ${rejetteLB ? 'rejette H0 (résidus structurés)' : 'ne rejette pas H0 (bruit blanc)'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerJB() {
+  const resDiv = document.getElementById('resultatJB');
+  const T = parseFloat(document.getElementById('TJB').value);
+  const S = parseFloat(document.getElementById('SJB').value);
+  const K = parseFloat(document.getElementById('KJB').value);
+  if ([T, S, K].some(isNaN) || T <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const JB = (T / 6) * (S * S + Math.pow(K - 3, 2) / 4);
+  const critJB = 5.991;
+  const rejette = JB > critJB;
+  let out = `<div class="valeur">JB = ${JB.toFixed(4)}</div>`;
+  out += `<div class="valeur ${rejette ? 'ko' : 'ok'}">${rejette ? 'rejette la normalité (JB > 5,991)' : 'ne rejette pas la normalité'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerARCH14() {
+  const resDiv = document.getElementById('resultatARCH14');
+  const T = parseFloat(document.getElementById('TARCH').value);
+  const R2 = parseFloat(document.getElementById('R2ARCH').value);
+  const crit = parseFloat(document.getElementById('critARCH').value);
+  if ([T, R2, crit].some(isNaN) || T <= 0 || R2 < 0 || R2 > 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const stat = T * R2;
+  const rejette = stat > crit;
+  let out = `<div class="valeur">T·R² = ${stat.toFixed(4)}</div>`;
+  out += `<div class="valeur ${rejette ? 'ko' : 'ok'}">${rejette ? "rejette l'homoscédasticité conditionnelle" : "ne rejette pas l'homoscédasticité conditionnelle"}</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerStudent(); calculerLB(); calculerJB(); calculerARCH14(); };
+</script>
+</body>
+</html>
