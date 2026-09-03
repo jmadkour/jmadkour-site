@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 17 — Mise en œuvre sur Python — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 17 — Mise en œuvre sur Python</h1>
+<p class="sous-titre">Calculatrice interactive — VaR gaussienne vs empirique, piège du kurtosis, degrés de liberté de Ljung-Box</p>
+
+<div class="panneau">
+  <h2>VaR gaussienne et écart avec la VaR empirique</h2>
+  <div class="ligne">
+    <div><label for="cstVaR">constante θ̂</label><input type="number" id="cstVaR" value="0.03" step="0.001"></div>
+    <div><label for="sig2VaR">σ̂_ε²</label><input type="number" id="sig2VaR" value="1.3836" step="0.0001" min="0"></div>
+    <div><label for="quantileVaR">quantile normal (99 % → 2,326)</label><input type="number" id="quantileVaR" value="2.326" step="0.001"></div>
+    <div><label for="VaREmp">VaR empirique (bootstrap)</label><input type="number" id="VaREmp" value="-3.412" step="0.001"></div>
+  </div>
+  <button onclick="calculerVaR17()">Calculer</button>
+  <div id="resultatVaR17" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Piège du kurtosis excédentaire</h2>
+  <div class="ligne">
+    <div><label for="kurtScipy">valeur renvoyée par <code>stats.kurtosis()</code> (fisher=True, par défaut)</label><input type="number" id="kurtScipy" value="3.60" step="0.01"></div>
+  </div>
+  <button onclick="calculerKurtosis17()">Convertir</button>
+  <div id="resultatKurtosis17" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Degrés de liberté d'un test de Ljung-Box</h2>
+  <div class="ligne">
+    <div><label for="mLB17">m (retards testés)</label><input type="number" id="mLB17" value="20" step="1" min="1"></div>
+    <div><label for="pLB17">p</label><input type="number" id="pLB17" value="1" step="1" min="0"></div>
+    <div><label for="qLB17">q</label><input type="number" id="qLB17" value="0" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerDF17()">Calculer</button>
+  <div id="resultatDF17" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerVaR17() {
+  const resDiv = document.getElementById('resultatVaR17');
+  const cst = parseFloat(document.getElementById('cstVaR').value);
+  const sig2 = parseFloat(document.getElementById('sig2VaR').value);
+  const quant = parseFloat(document.getElementById('quantileVaR').value);
+  const VaREmp = parseFloat(document.getElementById('VaREmp').value);
+  if ([cst, sig2, quant, VaREmp].some(isNaN) || sig2 < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const VaRgauss = cst - quant * Math.sqrt(sig2);
+  const ecartRelatif = (Math.abs(VaREmp) - Math.abs(VaRgauss)) / Math.abs(VaRgauss) * 100;
+  let out = `<div class="valeur">VaR gaussienne = ${VaRgauss.toFixed(4)}</div>`;
+  out += `<div class="valeur">écart relatif = ${ecartRelatif.toFixed(2)} %</div>`;
+  const sousEstime = ecartRelatif > 0;
+  out += `<div class="valeur ${sousEstime ? 'ko' : 'ok'}">${sousEstime ? "l'hypothèse gaussienne sous-estime la perte extrême" : "l'hypothèse gaussienne ne sous-estime pas la perte extrême"}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerKurtosis17() {
+  const resDiv = document.getElementById('resultatKurtosis17');
+  const kurtExces = parseFloat(document.getElementById('kurtScipy').value);
+  if (isNaN(kurtExces)) {
+    resDiv.innerHTML = '<p class="erreur">Valeur invalide.</p>';
+    return;
+  }
+  const kurtUsuel = kurtExces + 3;
+  let out = `<div class="valeur">kurtosis excédentaire (fisher=True) = ${kurtExces.toFixed(4)}</div>`;
+  out += `<div class="valeur">kurtosis usuel (fisher=False) = ${kurtUsuel.toFixed(4)}</div>`;
+  out += `<p class="aide">Rappel : une loi normale a un kurtosis usuel de 3, donc un kurtosis excédentaire de 0. Toujours vérifier la convention utilisée par la bibliothèque.</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerDF17() {
+  const resDiv = document.getElementById('resultatDF17');
+  const m = parseFloat(document.getElementById('mLB17').value);
+  const p = parseFloat(document.getElementById('pLB17').value);
+  const q = parseFloat(document.getElementById('qLB17').value);
+  if ([m, p, q].some(isNaN) || m - p - q < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (m − p − q doit être ≥ 1).</p>';
+    return;
+  }
+  const dfCorrect = m - p - q;
+  let out = `<div class="valeur">df correct (avec model_df = p+q) = ${dfCorrect}</div>`;
+  out += `<div class="valeur">df par défaut si model_df oublié = ${m}</div>`;
+  out += `<p class="aide">Oublier model_df rend le test trop conservateur : il compare la statistique à un χ² avec trop de degrés de liberté, donc à une valeur critique trop grande.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerVaR17(); calculerKurtosis17(); calculerDF17(); };
+</script>
+</body>
+</html>
