@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Détecter et identifier un effet ARCH — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Détecter et identifier un effet ARCH</h1>
+<p class="sous-titre">Calculatrice interactive — test ARCH de Engle et Ljung-Box sur les carrés, ARCH à poids décroissants, valeurs critiques du χ²</p>
+
+<div class="panneau">
+  <h2>Test ARCH de Engle (T·R²) et Ljung-Box sur les carrés</h2>
+  <div class="ligne">
+    <div><label for="Tarch">T (observations)</label><input type="number" id="Tarch" value="1500" step="1" min="1"></div>
+    <div><label for="R2arch">R² (régression de ε̂²_t sur ses retards)</label><input type="number" id="R2arch" value="0.146" step="0.001" min="0" max="1"></div>
+    <div><label for="QLB">Q_LB (Ljung-Box sur ε̂²_t, mêmes m et T)</label><input type="number" id="QLB" value="224.7" step="0.1" min="0"></div>
+    <div><label for="mArch">m (nombre de retards)</label><input type="number" id="mArch" value="8" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerTestArch()">Comparer les deux tests</button>
+  <div id="resultatTestArch" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>ARCH à poids décroissants (Engle, 1982)</h2>
+  <div class="ligne">
+    <div><label for="qEngle">q (ordre)</label><input type="number" id="qEngle" value="4" step="1" min="1" max="30"></div>
+    <div><label for="alphaEngle">α (paramètre unique)</label><input type="number" id="alphaEngle" value="0.6" step="0.01" min="0" max="0.9999"></div>
+    <div><label for="omegaEngle">ω</label><input type="number" id="omegaEngle" value="0.05" step="0.001" min="0.0001"></div>
+  </div>
+  <button onclick="calculerPoidsEngle()">Calculer les poids α_i et σ²</button>
+  <div id="resultatPoidsEngle" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Valeur critique et p-value du χ²</h2>
+  <div class="ligne">
+    <div><label for="dfChi2">degrés de liberté</label><input type="number" id="dfChi2" value="20" step="1" min="1"></div>
+    <div><label for="statChi2">statistique observée</label><input type="number" id="statChi2" value="968.1" step="0.1" min="0"></div>
+    <div><label for="seuilChi2">seuil de significativité</label><input type="number" id="seuilChi2" value="0.05" step="0.01" min="0.001" max="0.5"></div>
+  </div>
+  <button onclick="calculerChi2()">Calculer la valeur critique et la p-value</button>
+  <div id="resultatChi2" class="resultat-zone"></div>
+</div>
+
+<script>
+function logGamma(x) {
+  const g = 7;
+  const p = [
+    0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+    771.32342877765313, -176.61502916214059, 12.507343278686905,
+    -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7
+  ];
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - logGamma(1 - x);
+  x -= 1;
+  let a = p[0];
+  const t = x + g + 0.5;
+  for (let i = 1; i < g + 2; i++) a += p[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+function gammaincLower(a, x) {
+  if (x <= 0) return 0;
+  if (x < a + 1) {
+    let sum = 1 / a, term = sum, n = a;
+    for (let i = 0; i < 500; i++) {
+      n += 1; term *= x / n; sum += term;
+      if (Math.abs(term) < Math.abs(sum) * 1e-15) break;
+    }
+    return sum * Math.exp(-x + a * Math.log(x) - logGamma(a));
+  } else {
+    let b = x + 1 - a, c = 1e300, d = 1 / b, h = d;
+    for (let i = 1; i < 500; i++) {
+      const an = -i * (i - a);
+      b += 2;
+      d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300;
+      c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300;
+      d = 1 / d;
+      const del = d * c; h *= del;
+      if (Math.abs(del - 1) < 1e-15) break;
+    }
+    const Q = Math.exp(-x + a * Math.log(x) - logGamma(a)) * h;
+    return 1 - Q;
+  }
+}
+function chi2cdf(x, k) { return gammaincLower(k / 2, x / 2); }
+function chi2crit(k, alpha) {
+  let lo = 0, hi = k + 20 * Math.sqrt(2 * k) + 50;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    const p = 1 - chi2cdf(mid, k);
+    if (p > alpha) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function calculerTestArch() {
+  const resDiv = document.getElementById('resultatTestArch');
+  const T = parseFloat(document.getElementById('Tarch').value);
+  const R2 = parseFloat(document.getElementById('R2arch').value);
+  const QLB = parseFloat(document.getElementById('QLB').value);
+  const m = parseInt(document.getElementById('mArch').value);
+  if ([T, R2, QLB, m].some(isNaN) || T <= 0 || R2 < 0 || R2 > 1 || QLB < 0 || m < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const TR2 = T * R2;
+  const crit = chi2crit(m, 0.05);
+  const pTR2 = 1 - chi2cdf(TR2, m);
+  const pQLB = 1 - chi2cdf(QLB, m);
+  const rejetTR2 = TR2 > crit;
+  const rejetQLB = QLB > crit;
+  let out = `<div class="valeur">T·R² = ${TR2.toFixed(4)}</div>`;
+  out += `<div class="valeur">valeur critique χ²(${m}) à 5% = ${crit.toFixed(3)}</div>`;
+  out += `<table class="res"><tr><th>test</th><th>statistique</th><th>p-value</th><th>conclusion (5%)</th></tr>`;
+  out += `<tr><td>ARCH (T·R²)</td><td>${TR2.toFixed(3)}</td><td>${pTR2.toExponential(3)}</td><td>${rejetTR2 ? 'rejet de H₀' : 'non rejet'}</td></tr>`;
+  out += `<tr><td>Ljung-Box (Q_LB)</td><td>${QLB.toFixed(3)}</td><td>${pQLB.toExponential(3)}</td><td>${rejetQLB ? 'rejet de H₀' : 'non rejet'}</td></tr>`;
+  out += `</table>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerPoidsEngle() {
+  const resDiv = document.getElementById('resultatPoidsEngle');
+  const q = parseInt(document.getElementById('qEngle').value);
+  const alpha = parseFloat(document.getElementById('alphaEngle').value);
+  const omega = parseFloat(document.getElementById('omegaEngle').value);
+  if (isNaN(q) || q < 1 || isNaN(alpha) || alpha < 0 || alpha >= 1 || isNaN(omega) || omega <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (q ≥ 1, 0 ≤ α &lt; 1, ω &gt; 0).</p>';
+    return;
+  }
+  let denom = 0;
+  for (let j = 1; j <= q; j++) denom += (q + 1 - j);
+  const weights = [];
+  for (let i = 1; i <= q; i++) weights.push(alpha * (q + 1 - i) / denom);
+  const somme = weights.reduce((a, b) => a + b, 0);
+  let out = `<div class="valeur">dénominateur Σ(q+1−j) = ${denom}</div>`;
+  out += '<table class="res"><tr><th>i</th><th>α_i</th></tr>';
+  weights.forEach((w, i) => { out += `<tr><td>${i + 1}</td><td>${w.toFixed(4)}</td></tr>`; });
+  out += '</table>';
+  out += `<div class="valeur">Σα_i = ${somme.toFixed(4)} (doit valoir α = ${alpha.toFixed(4)})</div>`;
+  const sigma2 = omega / (1 - alpha);
+  out += `<div class="valeur">σ² = ω/(1−α) = ${sigma2.toFixed(4)}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerChi2() {
+  const resDiv = document.getElementById('resultatChi2');
+  const df = parseInt(document.getElementById('dfChi2').value);
+  const stat = parseFloat(document.getElementById('statChi2').value);
+  const seuil = parseFloat(document.getElementById('seuilChi2').value);
+  if (isNaN(df) || df < 1 || isNaN(stat) || stat < 0 || isNaN(seuil) || seuil <= 0 || seuil >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const crit = chi2crit(df, seuil);
+  const pval = 1 - chi2cdf(stat, df);
+  const rejet = stat > crit;
+  let out = `<div class="valeur">valeur critique χ²(${df}) au seuil ${(seuil * 100).toFixed(1)}% = ${crit.toFixed(3)}</div>`;
+  out += `<div class="valeur">p-value = ${pval.toExponential(4)}</div>`;
+  out += `<div class="valeur ${rejet ? 'ok' : 'ko'}">${rejet ? 'rejet de H₀' : 'non-rejet de H₀'} au seuil ${(seuil * 100).toFixed(1)}%</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerTestArch(); calculerPoidsEngle(); calculerChi2(); };
+</script>
+</body>
+</html>
