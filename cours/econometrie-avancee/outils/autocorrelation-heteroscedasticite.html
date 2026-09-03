@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Autocorrélation et hétéroscédasticité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Autocorrélation et hétéroscédasticité en séries temporelles</h1>
+<p class="sous-titre">Calculatrice interactive — Durbin-Watson, test LM (Breusch-Godfrey / ARCH) et quasi-différenciation</p>
+
+<div class="panneau">
+  <h2>Durbin-Watson → ρ̂ approché</h2>
+  <div class="ligne">
+    <div><label for="dw">DW</label><input type="number" id="dw" value="1.18" step="0.01" min="0" max="4"></div>
+  </div>
+  <button onclick="calculerDW()">Calculer ρ̂</button>
+  <div id="resultatDW" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Test LM (Breusch-Godfrey ou ARCH) : LM = n × R²ₐᵤₓ</h2>
+  <div class="ligne">
+    <div><label for="n">n</label><input type="number" id="n" value="150" step="1" min="1"></div>
+    <div><label for="r2aux">R²ₐᵤₓ</label><input type="number" id="r2aux" value="0.045" step="0.001" min="0" max="1"></div>
+    <div><label for="q">q (retards testés)</label><input type="number" id="q" value="2" step="1" min="1"></div>
+    <div><label for="chicrit">seuil χ²(q)</label><input type="number" id="chicrit" value="5.99" step="0.01"></div>
+  </div>
+  <button onclick="calculerLM()">Calculer LM</button>
+  <div id="resultatLM" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Quasi-différenciation (Cochrane-Orcutt)</h2>
+  <p class="aide">Une valeur de yₜ par ligne (ordre chronologique).</p>
+  <textarea id="serie" rows="5">10
+13
+15
+16
+19</textarea>
+  <div class="ligne">
+    <div><label for="rhoco">ρ̂</label><input type="number" id="rhoco" value="0.6" step="0.01" min="-0.999" max="0.999"></div>
+  </div>
+  <button onclick="calculerQuasiDiff()">Quasi-différencier</button>
+  <div id="resultatQD" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Une statistique LM n'a de sens qu'accompagnée de son nombre de degrés de liberté q : deux valeurs de LM proches peuvent mener à des conclusions opposées si q diffère.</p>
+
+<script>
+function calculerDW() {
+  const resDiv = document.getElementById('resultatDW');
+  const dw = parseFloat(document.getElementById('dw').value);
+  if (isNaN(dw) || dw < 0 || dw > 4) { resDiv.innerHTML = '<p class="erreur">DW doit être compris entre 0 et 4.</p>'; return; }
+  const rho = 1 - dw / 2;
+  let out = `<div class="valeur">ρ̂ ≈ ${rho.toFixed(4)}</div>`;
+  if (rho > 0.05) out += '<p class="alerte">Autocorrélation positive détectée.</p>';
+  else if (rho < -0.05) out += '<p class="alerte">Autocorrélation négative détectée.</p>';
+  else out += '<p class="ok">Pas d’autocorrélation notable (DW proche de 2).</p>';
+  resDiv.innerHTML = out;
+}
+
+function calculerLM() {
+  const resDiv = document.getElementById('resultatLM');
+  const n = parseFloat(document.getElementById('n').value);
+  const r2aux = parseFloat(document.getElementById('r2aux').value);
+  const q = parseFloat(document.getElementById('q').value);
+  const chicrit = parseFloat(document.getElementById('chicrit').value);
+  if ([n,r2aux,q,chicrit].some(isNaN) || r2aux < 0 || r2aux >= 1) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const LM = n * r2aux;
+  const rejette = LM > chicrit;
+  let out = `<div class="valeur">LM = ${LM.toFixed(3)}</div><div class="valeur">df = ${q}</div>`;
+  out += `<p class="${rejette ? 'alerte' : 'ok'}">${rejette ? 'H₀ (pas d’autocorrélation / pas d’effet ARCH) est rejetée.' : 'H₀ n’est pas rejetée.'}</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerQuasiDiff() {
+  const resDiv = document.getElementById('resultatQD');
+  try {
+    const lignes = document.getElementById('serie').value.trim().split('\n').filter(l => l.trim().length);
+    const y = lignes.map(l => parseFloat(l));
+    const rho = parseFloat(document.getElementById('rhoco').value);
+    if (y.some(isNaN) || isNaN(rho) || y.length < 2) { resDiv.innerHTML = '<p class="erreur">Saisie invalide (au moins 2 valeurs).</p>'; return; }
+    let out = '<table><tr><th>t</th><th>yₜ</th><th>yₜ − ρ̂ yₜ₋₁</th></tr>';
+    for (let t = 1; t < y.length; t++) {
+      const qd = y[t] - rho * y[t-1];
+      out += `<tr><td>${t+1}</td><td>${y[t]}</td><td>${qd.toFixed(3)}</td></tr>`;
+    }
+    out += '</table>';
+    out += `<p>${y.length - 1} observation(s) disponible(s) après transformation (Cochrane-Orcutt).</p>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie.</p>';
+  }
+}
+
+window.onload = () => { calculerDW(); calculerLM(); calculerQuasiDiff(); };
+</script>
+</body>
+</html>
