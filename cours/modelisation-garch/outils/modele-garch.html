@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Le modèle GARCH(p,q) de Bollerslev — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cgris); margin: 0.8em 0 0.2em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Le modèle GARCH(p,q) de Bollerslev</h1>
+<p class="sous-titre">Calculatrice interactive — GARCH(1,1), représentation ARCH(∞), comparaison réaction/persistance</p>
+
+<div class="panneau">
+  <h2>GARCH(1,1) : réaction, persistance, variance de long terme</h2>
+  <div class="ligne">
+    <div><label for="omegaG">ω</label><input type="number" id="omegaG" value="0.02" step="0.001" min="0.0001"></div>
+    <div><label for="alphaG">α₁</label><input type="number" id="alphaG" value="0.10" step="0.01" min="0" max="0.999"></div>
+    <div><label for="betaG">β₁</label><input type="number" id="betaG" value="0.85" step="0.01" min="0" max="0.999"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="epsPrevG">ε_{t-1}</label><input type="number" id="epsPrevG" value="-2.5" step="0.1"></div>
+    <div><label for="hPrevG">h_{t-1}</label><input type="number" id="hPrevG" value="1.2" step="0.01" min="0"></div>
+  </div>
+  <button onclick="calculerGarch11()">Calculer h_t, σ² et la demi-vie d'un choc</button>
+  <div id="resultatGarch11" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Le GARCH(1,1) comme ARCH(∞)</h2>
+  <div class="ligne">
+    <div><label for="alphaInf">α₁</label><input type="number" id="alphaInf" value="0.10" step="0.01" min="0" max="0.999"></div>
+    <div><label for="betaInf">β₁</label><input type="number" id="betaInf" value="0.88" step="0.01" min="0" max="0.999"></div>
+    <div><label for="jMax">nombre de retards affichés</label><input type="number" id="jMax" value="5" step="1" min="1" max="30"></div>
+  </div>
+  <button onclick="calculerArchInf()">Calculer les poids α₁β₁ʲ</button>
+  <div id="resultatArchInf" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Comparer deux actifs</h2>
+  <h3>Actif A</h3>
+  <div class="ligne">
+    <div><label for="omegaA">ω_A</label><input type="number" id="omegaA" value="0.01" step="0.001" min="0.0001"></div>
+    <div><label for="alphaA">α₁ᴬ</label><input type="number" id="alphaA" value="0.05" step="0.01" min="0" max="0.999"></div>
+    <div><label for="betaA">β₁ᴬ</label><input type="number" id="betaA" value="0.93" step="0.01" min="0" max="0.999"></div>
+  </div>
+  <h3>Actif B</h3>
+  <div class="ligne">
+    <div><label for="omegaB">ω_B</label><input type="number" id="omegaB" value="0.05" step="0.001" min="0.0001"></div>
+    <div><label for="alphaB">α₁ᴮ</label><input type="number" id="alphaB" value="0.15" step="0.01" min="0" max="0.999"></div>
+    <div><label for="betaB">β₁ᴮ</label><input type="number" id="betaB" value="0.80" step="0.01" min="0" max="0.999"></div>
+  </div>
+  <button onclick="comparerActifs()">Comparer persistance, σ² et demi-vie</button>
+  <div id="resultatComparerActifs" class="resultat-zone"></div>
+</div>
+
+<script>
+function demiVie(persistance) {
+  if (persistance <= 0 || persistance >= 1) return null;
+  return Math.log(0.5) / Math.log(persistance);
+}
+
+function calculerGarch11() {
+  const resDiv = document.getElementById('resultatGarch11');
+  const omega = parseFloat(document.getElementById('omegaG').value);
+  const alpha1 = parseFloat(document.getElementById('alphaG').value);
+  const beta1 = parseFloat(document.getElementById('betaG').value);
+  const epsPrev = parseFloat(document.getElementById('epsPrevG').value);
+  const hPrev = parseFloat(document.getElementById('hPrevG').value);
+  const persistance = alpha1 + beta1;
+  if ([omega, alpha1, beta1, epsPrev, hPrev].some(isNaN) || omega <= 0 || alpha1 < 0 || beta1 < 0 || persistance >= 1 || hPrev < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (ω &gt; 0, α₁,β₁ ≥ 0, α₁+β₁ &lt; 1, h_{t-1} ≥ 0).</p>';
+    return;
+  }
+  const reaction = alpha1 * epsPrev * epsPrev;
+  const persistanceTerme = beta1 * hPrev;
+  const ht = omega + reaction + persistanceTerme;
+  const sigma2 = omega / (1 - persistance);
+  const dv = demiVie(persistance);
+  let out = `<div class="valeur">terme de réaction α₁ε²_{t-1} = ${reaction.toFixed(4)}</div>`;
+  out += `<div class="valeur">terme de persistance β₁h_{t-1} = ${persistanceTerme.toFixed(4)}</div>`;
+  out += `<div class="valeur">h_t = ${ht.toFixed(4)}</div>`;
+  out += `<div class="valeur">persistance α₁+β₁ = ${persistance.toFixed(4)}</div>`;
+  out += `<div class="valeur">σ² = ${sigma2.toFixed(4)}</div>`;
+  out += `<div class="valeur">h_t / σ² = ${(ht / sigma2).toFixed(2)}</div>`;
+  out += `<div class="valeur">demi-vie d'un choc ≈ ${dv.toFixed(1)} jours</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerArchInf() {
+  const resDiv = document.getElementById('resultatArchInf');
+  const alpha1 = parseFloat(document.getElementById('alphaInf').value);
+  const beta1 = parseFloat(document.getElementById('betaInf').value);
+  const jMax = parseInt(document.getElementById('jMax').value);
+  if ([alpha1, beta1].some(isNaN) || alpha1 < 0 || beta1 < 0 || beta1 >= 1 || jMax < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (α₁,β₁ ≥ 0, β₁ &lt; 1).</p>';
+    return;
+  }
+  let out = '<table class="res"><tr><th>j (retard, j=0 ⇒ ε²_{t-1})</th><th>poids α₁β₁ʲ</th></tr>';
+  let somme = 0;
+  for (let j = 0; j < jMax; j++) {
+    const w = alpha1 * Math.pow(beta1, j);
+    somme += w;
+    out += `<tr><td>${j}</td><td>${w.toFixed(6)}</td></tr>`;
+  }
+  out += '</table>';
+  const total = alpha1 / (1 - beta1);
+  out += `<div class="valeur">somme des ${jMax} premiers poids = ${somme.toFixed(4)}</div>`;
+  out += `<div class="valeur">somme infinie α₁/(1−β₁) = ${total.toFixed(4)}</div>`;
+  out += `<div class="valeur">part déjà couverte = ${(somme / total * 100).toFixed(1)} %</div>`;
+  resDiv.innerHTML = out;
+}
+
+function comparerActifs() {
+  const resDiv = document.getElementById('resultatComparerActifs');
+  const omegaA = parseFloat(document.getElementById('omegaA').value);
+  const alphaA = parseFloat(document.getElementById('alphaA').value);
+  const betaA = parseFloat(document.getElementById('betaA').value);
+  const omegaB = parseFloat(document.getElementById('omegaB').value);
+  const alphaB = parseFloat(document.getElementById('alphaB').value);
+  const betaB = parseFloat(document.getElementById('betaB').value);
+  const persA = alphaA + betaA, persB = alphaB + betaB;
+  if ([omegaA, alphaA, betaA, omegaB, alphaB, betaB].some(isNaN) || omegaA <= 0 || omegaB <= 0 || persA >= 1 || persB >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (ω &gt; 0, α₁+β₁ &lt; 1 pour chaque actif).</p>';
+    return;
+  }
+  const sigma2A = omegaA / (1 - persA), sigma2B = omegaB / (1 - persB);
+  const dvA = demiVie(persA), dvB = demiVie(persB);
+  let out = '<table class="res"><tr><th>actif</th><th>α₁+β₁</th><th>σ²</th><th>demi-vie (jours)</th></tr>';
+  out += `<tr><td>A</td><td>${persA.toFixed(4)}</td><td>${sigma2A.toFixed(4)}</td><td>${dvA.toFixed(1)}</td></tr>`;
+  out += `<tr><td>B</td><td>${persB.toFixed(4)}</td><td>${sigma2B.toFixed(4)}</td><td>${dvB.toFixed(1)}</td></tr>`;
+  out += '</table>';
+  const plusPersistant = persA > persB ? 'A' : 'B';
+  const plusReactif = alphaA > alphaB ? 'A' : 'B';
+  out += `<div class="valeur">actif le plus persistant : ${plusPersistant}</div>`;
+  out += `<div class="valeur">actif le plus réactif (α₁ le plus grand) : ${plusReactif}</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerGarch11(); calculerArchInf(); comparerActifs(); };
+</script>
+</body>
+</html>
