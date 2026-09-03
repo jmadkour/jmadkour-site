@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Box et Jenkins, l'identification — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.35em 0.7em; text-align: center; }
+  table.res th { background: #f0eef7; }
+  td.vertex { background: var(--cex); color: white; font-weight: bold; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Box et Jenkins, l'identification</h1>
+<p class="sous-titre">Calculatrice interactive — dépassements attendus par hasard et triangle théorique de l'EACF</p>
+
+<div class="panneau">
+  <h2>Dépassements de bande attendus par hasard</h2>
+  <div class="ligne">
+    <div><label for="Kretards">Nombre de retards testés (K)</label><input type="number" id="Kretards" value="20" step="1" min="1"></div>
+    <div><label for="seuilAlpha">Seuil (α)</label><input type="number" id="seuilAlpha" value="0.05" step="0.01" min="0.001" max="0.5"></div>
+  </div>
+  <button onclick="calculerDepassements()">Calculer</button>
+  <div id="resultatDepassements" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Triangle théorique de l'EACF pour un ARMA(p,q)</h2>
+  <div class="ligne">
+    <div><label for="pEACF">p (ordre AR)</label><input type="number" id="pEACF" value="1" step="1" min="0" max="6"></div>
+    <div><label for="qEACF">q (ordre MA)</label><input type="number" id="qEACF" value="1" step="1" min="0" max="6"></div>
+    <div><label for="RGrille">Nombre de lignes AR à afficher</label><input type="number" id="RGrille" value="3" step="1" min="1" max="8"></div>
+    <div><label for="CGrille">Nombre de colonnes MA à afficher</label><input type="number" id="CGrille" value="4" step="1" min="1" max="8"></div>
+  </div>
+  <button onclick="genererEACF()">Générer le triangle</button>
+  <div id="resultatEACF" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerDepassements() {
+  const resDiv = document.getElementById('resultatDepassements');
+  const K = parseInt(document.getElementById('Kretards').value);
+  const alpha = parseFloat(document.getElementById('seuilAlpha').value);
+  if (isNaN(K) || isNaN(alpha) || K < 1 || alpha <= 0 || alpha >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const attendu = K * alpha;
+  const probAuMoinsUn = 1 - Math.pow(1 - alpha, K);
+  let out = `<div class="valeur">nombre attendu = K×α = ${attendu.toFixed(4)}</div>`;
+  out += `<div class="valeur">P(au moins un dépassement) = 1−(1−α)^K = ${(probAuMoinsUn * 100).toFixed(2)} %</div>`;
+  out += `<p class="aide">Un dépassement isolé, sans structure autour, est donc parfaitement compatible avec un bruit blanc dès que K est de l'ordre de 20 retards à 5 %.</p>`;
+  resDiv.innerHTML = out;
+}
+
+function genererEACF() {
+  const resDiv = document.getElementById('resultatEACF');
+  const p = parseInt(document.getElementById('pEACF').value);
+  const q = parseInt(document.getElementById('qEACF').value);
+  const R = parseInt(document.getElementById('RGrille').value);
+  const C = parseInt(document.getElementById('CGrille').value);
+  if ([p, q, R, C].some(isNaN) || p < 0 || q < 0 || R < 1 || C < 1 || p > R) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (p doit être ≤ au nombre de lignes affichées).</p>';
+    return;
+  }
+  let out = '<table class="res"><tr><th>AR \\ MA</th>';
+  for (let j = 0; j <= C; j++) out += `<th>${j}</th>`;
+  out += '</tr>';
+  for (let i = 0; i <= R; i++) {
+    out += `<tr><th>${i}</th>`;
+    for (let j = 0; j <= C; j++) {
+      const signif = (i < p || j === 0 || j < q);
+      const estSommet = (i === p && j === q);
+      out += `<td class="${estSommet ? 'vertex' : ''}">${signif ? '×' : '∘'}</td>`;
+    }
+    out += '</tr>';
+  }
+  out += '</table>';
+  out += `<div class="valeur">sommet du triangle en (${p}, ${q}) → ARMA(${p},${q})</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerDepassements(); genererEACF(); };
+</script>
+</body>
+</html>
