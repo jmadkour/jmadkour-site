@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Espérance, variance, autocovariance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Espérance, variance et fonction d'autocovariance</h1>
+<p class="sous-titre">Calculatrice interactive — AR(1), MA(1) et système de Yule-Walker pour un AR(2)</p>
+
+<div class="panneau">
+  <h2>AR(1) : moyenne et autocorrélations</h2>
+  <div class="ligne">
+    <div><label for="thetaAR1">θ (constante)</label><input type="number" id="thetaAR1" value="3" step="0.1"></div>
+    <div><label for="alphaAR1">α</label><input type="number" id="alphaAR1" value="0.5" step="0.01" min="-0.999" max="0.999"></div>
+    <div><label for="nbLagsAR1">Nombre de retards à afficher</label><input type="number" id="nbLagsAR1" value="5" step="1" min="1" max="30"></div>
+  </div>
+  <button onclick="calculerAR1()">Calculer</button>
+  <div id="resultatAR1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>MA(1) : autocovariance et autocorrélation</h2>
+  <div class="ligne">
+    <div><label for="betaMA1">β</label><input type="number" id="betaMA1" value="0.6" step="0.01"></div>
+    <div><label for="sigmaMA1">σ_ε²</label><input type="number" id="sigmaMA1" value="2" step="0.1" min="0.0001"></div>
+  </div>
+  <button onclick="calculerMA1_9()">Calculer</button>
+  <div id="resultatMA1_9" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>AR(2) : système de Yule-Walker</h2>
+  <div class="ligne">
+    <div><label for="a1YW">α₁</label><input type="number" id="a1YW" value="0.5" step="0.01"></div>
+    <div><label for="a2YW">α₂</label><input type="number" id="a2YW" value="0.3" step="0.01"></div>
+    <div><label for="nbLagsYW">Nombre de retards à afficher</label><input type="number" id="nbLagsYW" value="6" step="1" min="3" max="30"></div>
+  </div>
+  <button onclick="calculerYW()">Calculer les ρ_k</button>
+  <div id="resultatYW" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerAR1() {
+  const resDiv = document.getElementById('resultatAR1');
+  const theta = parseFloat(document.getElementById('thetaAR1').value);
+  const alpha = parseFloat(document.getElementById('alphaAR1').value);
+  const n = parseInt(document.getElementById('nbLagsAR1').value);
+  if ([theta, alpha, n].some(isNaN) || Math.abs(alpha) >= 1 || n < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (|α| doit être &lt; 1).</p>';
+    return;
+  }
+  const mu = theta / (1 - alpha);
+  let out = `<div class="valeur">μ = θ/(1−α) = ${mu.toFixed(4)}</div>`;
+  out += '<table class="res"><tr><th>k</th><th>ρ_k = α^k</th></tr>';
+  for (let k = 1; k <= n; k++) {
+    out += `<tr><td>${k}</td><td>${Math.pow(alpha, k).toFixed(4)}</td></tr>`;
+  }
+  out += '</table>';
+  resDiv.innerHTML = out;
+}
+
+function calculerMA1_9() {
+  const resDiv = document.getElementById('resultatMA1_9');
+  const beta = parseFloat(document.getElementById('betaMA1').value);
+  const sigma = parseFloat(document.getElementById('sigmaMA1').value);
+  if ([beta, sigma].some(isNaN) || sigma <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const gamma0 = sigma * (1 + beta * beta);
+  const gamma1 = beta * sigma;
+  const rho1 = gamma1 / gamma0;
+  const rho1max = 0.5;
+  let out = `<div class="valeur">γ₀ = ${gamma0.toFixed(4)}</div>`;
+  out += `<div class="valeur">γ₁ = ${gamma1.toFixed(4)}</div>`;
+  out += `<div class="valeur">ρ₁ = ${rho1.toFixed(4)}</div>`;
+  out += `<div class="valeur">γ_k = 0 pour k ≥ 2</div>`;
+  const compat = Math.abs(rho1) <= rho1max + 1e-9;
+  out += `<div class="valeur ${compat ? 'ok' : 'ko'}">|ρ₁| ${compat ? '≤' : '>'} 0,5 (borne max d'un MA(1))</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerYW() {
+  const resDiv = document.getElementById('resultatYW');
+  const a1 = parseFloat(document.getElementById('a1YW').value);
+  const a2 = parseFloat(document.getElementById('a2YW').value);
+  const n = parseInt(document.getElementById('nbLagsYW').value);
+  if ([a1, a2, n].some(isNaN) || n < 3) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  if (Math.abs(1 - a2) < 1e-9) {
+    resDiv.innerHTML = '<p class="erreur">1 − α₂ ≈ 0 : ρ₁ n\'est pas défini (cas dégénéré).</p>';
+    return;
+  }
+  const rho = [1];
+  rho[1] = a1 / (1 - a2);
+  rho[2] = a2 + (a1 * a1) / (1 - a2);
+  for (let k = 3; k <= n; k++) {
+    rho[k] = a1 * rho[k - 1] + a2 * rho[k - 2];
+  }
+  const disc = a1 * a1 + 4 * a2;
+  let out = `<div class="valeur">discriminant α₁²+4α₂ = ${disc.toFixed(4)} (${disc >= 0 ? 'racines réelles' : 'racines complexes'})</div>`;
+  out += '<table class="res"><tr><th>k</th><th>ρ_k</th></tr>';
+  for (let k = 1; k <= n; k++) {
+    out += `<tr><td>${k}</td><td>${rho[k].toFixed(4)}</td></tr>`;
+  }
+  out += '</table>';
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerAR1(); calculerMA1_9(); calculerYW(); };
+</script>
+</body>
+</html>

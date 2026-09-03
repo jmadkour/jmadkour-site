@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — La validation d'un modèle de volatilité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — La validation d'un modèle de volatilité</h1>
+<p class="sous-titre">Calculatrice interactive — Ljung-Box avant/après, Jarque-Bera, test d'Engle-Ng (sign bias)</p>
+
+<div class="panneau">
+  <h2>Ljung-Box : avant et après modélisation</h2>
+  <div class="ligne">
+    <div><label for="qlbAvant">Q_LB(m) sur r_t² (avant)</label><input type="number" id="qlbAvant" value="968.1" step="0.1" min="0"></div>
+    <div><label for="qlbApresZ">Q_LB(m) sur ẑ_t</label><input type="number" id="qlbApresZ" value="9.7" step="0.1" min="0"></div>
+    <div><label for="qlbApresZ2">Q_LB(m) sur ẑ_t²</label><input type="number" id="qlbApresZ2" value="27.1" step="0.1" min="0"></div>
+    <div><label for="mLB">m (retards)</label><input type="number" id="mLB" value="20" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerLjungBoxTriple()">Comparer aux valeurs critiques</button>
+  <div id="resultatLjungBoxTriple" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Jarque-Bera sur les résidus standardisés</h2>
+  <div class="ligne">
+    <div><label for="Tjb">T</label><input type="number" id="Tjb" value="2500" step="1" min="2"></div>
+    <div><label for="Sjb">asymétrie (skewness) S</label><input type="number" id="Sjb" value="0" step="0.01"></div>
+    <div><label for="Kjb">kurtosis K</label><input type="number" id="Kjb" value="4.66" step="0.01"></div>
+  </div>
+  <button onclick="calculerJarqueBera()">Calculer JB</button>
+  <div id="resultatJarqueBera" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Test d'Engle-Ng (sign bias)</h2>
+  <div class="ligne">
+    <div><label for="t1EN">t(a₁) — sign bias</label><input type="number" id="t1EN" value="0.5" step="0.01"></div>
+    <div><label for="t2EN">t(a₂) — negative size bias</label><input type="number" id="t2EN" value="-2.8" step="0.01"></div>
+    <div><label for="t3EN">t(a₃) — positive size bias</label><input type="number" id="t3EN" value="0.4" step="0.01"></div>
+  </div>
+  <button onclick="calculerEngleNg()">Diagnostiquer l'asymétrie résiduelle</button>
+  <div id="resultatEngleNg" class="resultat-zone"></div>
+</div>
+
+<script>
+function logGamma(x) {
+  const g = 7;
+  const p = [
+    0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+    771.32342877765313, -176.61502916214059, 12.507343278686905,
+    -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7
+  ];
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - logGamma(1 - x);
+  x -= 1;
+  let a = p[0];
+  const t = x + g + 0.5;
+  for (let i = 1; i < g + 2; i++) a += p[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+function gammaincLower(a, x) {
+  if (x <= 0) return 0;
+  if (x < a + 1) {
+    let sum = 1 / a, term = sum, n = a;
+    for (let i = 0; i < 500; i++) {
+      n += 1; term *= x / n; sum += term;
+      if (Math.abs(term) < Math.abs(sum) * 1e-15) break;
+    }
+    return sum * Math.exp(-x + a * Math.log(x) - logGamma(a));
+  } else {
+    let b = x + 1 - a, c = 1e300, d = 1 / b, h = d;
+    for (let i = 1; i < 500; i++) {
+      const an = -i * (i - a);
+      b += 2;
+      d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300;
+      c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300;
+      d = 1 / d;
+      const del = d * c; h *= del;
+      if (Math.abs(del - 1) < 1e-15) break;
+    }
+    const Q = Math.exp(-x + a * Math.log(x) - logGamma(a)) * h;
+    return 1 - Q;
+  }
+}
+function chi2cdf(x, k) { return gammaincLower(k / 2, x / 2); }
+function chi2crit(k, alpha) {
+  let lo = 0, hi = k + 20 * Math.sqrt(2 * k) + 50;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    const p = 1 - chi2cdf(mid, k);
+    if (p > alpha) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function calculerLjungBoxTriple() {
+  const resDiv = document.getElementById('resultatLjungBoxTriple');
+  const qAvant = parseFloat(document.getElementById('qlbAvant').value);
+  const qZ = parseFloat(document.getElementById('qlbApresZ').value);
+  const qZ2 = parseFloat(document.getElementById('qlbApresZ2').value);
+  const m = parseInt(document.getElementById('mLB').value);
+  if ([qAvant, qZ, qZ2, m].some(isNaN) || m < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const crit = chi2crit(m, 0.05);
+  let out = `<div class="valeur">valeur critique χ²(${m}) à 5% = ${crit.toFixed(3)}</div>`;
+  out += '<table class="res"><tr><th>série</th><th>Q_LB</th><th>conclusion</th></tr>';
+  [['r_t² (avant)', qAvant], ['ẑ_t', qZ], ['ẑ_t² (après)', qZ2]].forEach(([label, q]) => {
+    const rejet = q > crit;
+    out += `<tr><td>${label}</td><td>${q}</td><td>${rejet ? 'rejet (structure)' : 'non rejet (bruit)'}</td></tr>`;
+  });
+  out += '</table>';
+  const reduction = (qAvant - qZ2) / qAvant * 100;
+  out += `<div class="valeur">réduction r_t² → ẑ_t² = ${reduction.toFixed(1)} %</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerJarqueBera() {
+  const resDiv = document.getElementById('resultatJarqueBera');
+  const T = parseFloat(document.getElementById('Tjb').value);
+  const S = parseFloat(document.getElementById('Sjb').value);
+  const K = parseFloat(document.getElementById('Kjb').value);
+  if ([T, S, K].some(isNaN) || T <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const JB = T / 6 * (S * S + Math.pow(K - 3, 2) / 4);
+  const crit = chi2crit(2, 0.05);
+  const rejet = JB > crit;
+  let out = `<div class="valeur">JB = ${JB.toFixed(3)}</div>`;
+  out += `<div class="valeur">valeur critique χ²(2) à 5% = ${crit.toFixed(3)}</div>`;
+  out += `<div class="valeur ${rejet ? 'ko' : 'ok'}">${rejet ? 'rejet de la normalité' : 'normalité non rejetée'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerEngleNg() {
+  const resDiv = document.getElementById('resultatEngleNg');
+  const t1 = parseFloat(document.getElementById('t1EN').value);
+  const t2 = parseFloat(document.getElementById('t2EN').value);
+  const t3 = parseFloat(document.getElementById('t3EN').value);
+  if ([t1, t2, t3].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const crit = 1.96;
+  const sig1 = Math.abs(t1) > crit, sig2 = Math.abs(t2) > crit, sig3 = Math.abs(t3) > crit;
+  let out = '<table class="res"><tr><th>test</th><th>t</th><th>significatif (5%)</th></tr>';
+  out += `<tr><td>sign bias (a₁)</td><td>${t1}</td><td>${sig1 ? 'oui' : 'non'}</td></tr>`;
+  out += `<tr><td>negative size bias (a₂)</td><td>${t2}</td><td>${sig2 ? 'oui' : 'non'}</td></tr>`;
+  out += `<tr><td>positive size bias (a₃)</td><td>${t3}</td><td>${sig3 ? 'oui' : 'non'}</td></tr>`;
+  out += '</table>';
+  let diagnostic;
+  if (!sig1 && !sig2 && !sig3) diagnostic = 'aucune asymétrie résiduelle détectée : modèle symétrique adéquat';
+  else diagnostic = 'asymétrie résiduelle détectée : passer à un modèle asymétrique (GJR ou EGARCH)';
+  out += `<div class="valeur ${(sig1 || sig2 || sig3) ? 'ko' : 'ok'}">${diagnostic}</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerLjungBoxTriple(); calculerJarqueBera(); calculerEngleNg(); };
+</script>
+</body>
+</html>

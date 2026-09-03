@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — La matrice de pondération spatiale — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea, input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 220px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — La matrice de pondération spatiale</h1>
+<p class="sous-titre">Calculatrice interactive — décalage spatial $Wy$ par contiguïté ou par distance</p>
+
+<div class="panneau">
+  <h2>Décalage spatial par liste de voisinage (contiguïté)</h2>
+  <p class="aide">Une région par ligne : <code>nom: voisin1, voisin2, ...</code></p>
+  <textarea id="adjacence" rows="4">A: B, C
+B: A, D
+C: A, D
+D: B, C</textarea>
+  <label for="valeursAdj">Valeurs de y (une par ligne : <code>nom: valeur</code>)</label>
+  <textarea id="valeursAdj" rows="4">A: 12
+B: 15
+C: 9
+D: 11</textarea>
+  <button onclick="calculerAdjacence()">Calculer W* et Wy</button>
+  <div id="resultatAdj" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Décalage spatial par distance (pour une région cible)</h2>
+  <p class="aide">Une ligne par région voisine potentielle : <code>nom, x, y, valeur</code>. Indiquer aussi les coordonnées de la région cible.</p>
+  <div class="ligne">
+    <div><label for="cibleNom">Nom de la région cible</label><input type="text" id="cibleNom" value="A"></div>
+    <div><label for="cibleX">x cible</label><input type="number" id="cibleX" value="0" step="any"></div>
+    <div><label for="cibleY">y cible</label><input type="number" id="cibleY" value="1" step="any"></div>
+    <div><label for="alpha">α (exposant de décroissance)</label><input type="number" id="alpha" value="1" step="0.1" min="0.1"></div>
+  </div>
+  <textarea id="voisinsDist" rows="4">B, 1, 1, 8
+C, 0, 0, 10
+D, 1, 0, 6</textarea>
+  <button onclick="calculerDistance()">Calculer W* et Wy</button>
+  <div id="resultatDist" class="resultat-zone"></div>
+</div>
+
+<script>
+function parseAdjacence(texte) {
+  const lignes = texte.trim().split('\n').filter(l => l.trim().length);
+  const adj = {};
+  for (const l of lignes) {
+    const [nom, reste] = l.split(':');
+    if (!nom || reste === undefined) throw new Error('format invalide : ' + l);
+    adj[nom.trim()] = reste.split(',').map(s => s.trim()).filter(s => s.length);
+  }
+  return adj;
+}
+
+function parseValeurs(texte) {
+  const lignes = texte.trim().split('\n').filter(l => l.trim().length);
+  const val = {};
+  for (const l of lignes) {
+    const [nom, v] = l.split(':');
+    if (!nom || v === undefined) throw new Error('format invalide : ' + l);
+    const num = parseFloat(v);
+    if (isNaN(num)) throw new Error('valeur non numérique : ' + l);
+    val[nom.trim()] = num;
+  }
+  return val;
+}
+
+function calculerAdjacence() {
+  const resDiv = document.getElementById('resultatAdj');
+  try {
+    const adj = parseAdjacence(document.getElementById('adjacence').value);
+    const y = parseValeurs(document.getElementById('valeursAdj').value);
+    let out = '<table class="res"><tr><th>Région</th><th>Voisins</th><th>Poids w*</th><th>(W*y)</th></tr>';
+    for (const region in adj) {
+      const voisins = adj[region];
+      if (voisins.length === 0) { out += `<tr><td>${region}</td><td colspan="3">aucun voisin</td></tr>`; continue; }
+      const poids = 1 / voisins.length;
+      let wy = 0;
+      const manquants = [];
+      voisins.forEach(v => { if (y[v] === undefined) manquants.push(v); else wy += poids * y[v]; });
+      if (manquants.length) { out += `<tr><td>${region}</td><td>${voisins.join(', ')}</td><td colspan="2">valeur manquante pour ${manquants.join(', ')}</td></tr>`; continue; }
+      out += `<tr><td>${region}</td><td>${voisins.join(', ')}</td><td>${poids.toFixed(4)}</td><td>${wy.toFixed(4)}</td></tr>`;
+    }
+    out += '</table>';
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = `<p class="erreur">${e.message}</p>`;
+  }
+}
+
+function calculerDistance() {
+  const resDiv = document.getElementById('resultatDist');
+  try {
+    const cibleNom = document.getElementById('cibleNom').value.trim();
+    const cx = parseFloat(document.getElementById('cibleX').value);
+    const cy = parseFloat(document.getElementById('cibleY').value);
+    const alpha = parseFloat(document.getElementById('alpha').value);
+    if ([cx, cy, alpha].some(isNaN) || alpha <= 0) throw new Error('coordonnées ou α invalides.');
+    const lignes = document.getElementById('voisinsDist').value.trim().split('\n').filter(l => l.trim().length);
+    const voisins = lignes.map(l => {
+      const parts = l.split(',').map(s => s.trim());
+      if (parts.length !== 4) throw new Error('format invalide : ' + l);
+      const [nom, x, y, val] = parts;
+      const xf = parseFloat(x), yf = parseFloat(y), vf = parseFloat(val);
+      if ([xf, yf, vf].some(isNaN)) throw new Error('valeurs non numériques : ' + l);
+      return { nom, x: xf, y: yf, val: vf };
+    });
+    const poidsBruts = voisins.map(v => {
+      const d = Math.sqrt((v.x - cx) ** 2 + (v.y - cy) ** 2);
+      return { ...v, d, w: d === 0 ? 0 : 1 / Math.pow(d, alpha) };
+    });
+    const somme = poidsBruts.reduce((s, v) => s + v.w, 0);
+    let out = `<table class="res"><tr><th>Voisine</th><th>distance</th><th>w brut</th><th>w* standardisé</th></tr>`;
+    let wy = 0;
+    poidsBruts.forEach(v => {
+      const wstar = somme > 0 ? v.w / somme : 0;
+      wy += wstar * v.val;
+      out += `<tr><td>${v.nom}</td><td>${v.d.toFixed(4)}</td><td>${v.w.toFixed(4)}</td><td>${wstar.toFixed(4)}</td></tr>`;
+    });
+    out += '</table>';
+    out += `<div class="valeur">(W*y)_{${cibleNom}} = ${wy.toFixed(4)}</div>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = `<p class="erreur">${e.message}</p>`;
+  }
+}
+
+window.onload = () => { calculerAdjacence(); calculerDistance(); };
+</script>
+</body>
+</html>

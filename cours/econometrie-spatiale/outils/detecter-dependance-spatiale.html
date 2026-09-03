@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Détecter la dépendance spatiale — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 220px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Détecter la dépendance spatiale</h1>
+<p class="sous-titre">Calculatrice interactive — indice de Moran (I), indice de Geary (C), quadrants et test de significativité</p>
+
+<div class="panneau">
+  <h2>Indice de Moran et indice de Geary</h2>
+  <p class="aide">Matrice de poids $W$ (une ligne par région, valeurs séparées par des virgules) et valeurs de $y$ (une par ligne, dans le même ordre).</p>
+  <div class="ligne">
+    <div>
+      <label for="matriceW">Matrice W (une ligne par région)</label>
+      <textarea id="matriceW" rows="4">0, 0.5, 0.5, 0
+0.5, 0, 0, 0.5
+0.5, 0, 0, 0.5
+0, 0.5, 0.5, 0</textarea>
+    </div>
+    <div>
+      <label for="valeursY">Valeurs de y (une par ligne)</label>
+      <textarea id="valeursY" rows="4">12
+15
+9
+11</textarea>
+    </div>
+  </div>
+  <button onclick="calculerMoranGeary()">Calculer I, C et E[I]</button>
+  <div id="resultatMG" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Test de significativité (approximation normale)</h2>
+  <div class="ligne">
+    <div><label for="nTest">n (nombre d'unités)</label><input type="number" id="nTest" value="30" step="1" min="3"></div>
+    <div><label for="ITest">I observé</label><input type="number" id="ITest" value="0.42" step="0.0001"></div>
+    <div><label for="varITest">Var(I)</label><input type="number" id="varITest" value="0.0087" step="0.0001" min="0.00001"></div>
+  </div>
+  <button onclick="calculerZ()">Calculer z</button>
+  <div id="resultatZ" class="resultat-zone"></div>
+</div>
+
+<script>
+function parseMatrice(texte) {
+  return texte.trim().split('\n').filter(l => l.trim().length).map(l => l.split(',').map(v => parseFloat(v.trim())));
+}
+function parseVecteur(texte) {
+  return texte.trim().split('\n').filter(l => l.trim().length).map(v => parseFloat(v.trim()));
+}
+
+function calculerMoranGeary() {
+  const resDiv = document.getElementById('resultatMG');
+  try {
+    const W = parseMatrice(document.getElementById('matriceW').value);
+    const y = parseVecteur(document.getElementById('valeursY').value);
+    const n = y.length;
+    if (W.length !== n || W.some(row => row.length !== n)) throw new Error(`W doit être une matrice carrée ${n}x${n} (n = nombre de valeurs de y).`);
+    if (y.some(isNaN) || W.some(row => row.some(isNaN))) throw new Error('valeurs non numériques détectées.');
+
+    const ybar = y.reduce((a, b) => a + b, 0) / n;
+    let S0 = 0, numI = 0, numC = 0, denom = 0;
+    for (let i = 0; i < n; i++) {
+      denom += (y[i] - ybar) ** 2;
+      for (let j = 0; j < n; j++) {
+        S0 += W[i][j];
+        numI += W[i][j] * (y[i] - ybar) * (y[j] - ybar);
+        numC += W[i][j] * (y[i] - y[j]) ** 2;
+      }
+    }
+    if (S0 === 0 || denom === 0) throw new Error('S0 ou la variance de y est nulle : calcul impossible.');
+    const I = (n / S0) * (numI / denom);
+    const C = ((n - 1) / (2 * S0)) * (numC / denom);
+    const EI = -1 / (n - 1);
+
+    let out = `<div class="valeur">I = ${I.toFixed(4)}</div><div class="valeur">C = ${C.toFixed(4)}</div><div class="valeur">E[I] = ${EI.toFixed(4)}</div>`;
+    out += `<p>${I > EI ? 'I est supérieur à E[I] : tendance à l\'autocorrélation positive.' : 'I est inférieur ou égal à E[I] : pas de signe net d\'autocorrélation positive.'} ${C < 1 ? 'C < 1 : signe d\'autocorrélation positive.' : (C > 1 ? 'C > 1 : signe d\'autocorrélation négative.' : 'C ≈ 1 : pas de dépendance apparente.')}</p>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = `<p class="erreur">${e.message}</p>`;
+  }
+}
+
+function calculerZ() {
+  const resDiv = document.getElementById('resultatZ');
+  const n = parseFloat(document.getElementById('nTest').value);
+  const I = parseFloat(document.getElementById('ITest').value);
+  const varI = parseFloat(document.getElementById('varITest').value);
+  if ([n, I, varI].some(isNaN) || n < 3 || varI <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const EI = -1 / (n - 1);
+  const z = (I - EI) / Math.sqrt(varI);
+  const rejet = Math.abs(z) > 1.96;
+  let out = `<div class="valeur">E[I] = ${EI.toFixed(4)}</div><div class="valeur">z = ${z.toFixed(4)}</div>`;
+  out += `<p class="${rejet ? 'alerte' : 'ok'}">${rejet ? 'Rejet de H₀ (absence d\'autocorrélation spatiale) au seuil de 5 %.' : 'Non-rejet de H₀ au seuil de 5 %.'}</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerMoranGeary(); calculerZ(); };
+</script>
+</body>
+</html>

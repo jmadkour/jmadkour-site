@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — Variable aléatoire et processus stochastique — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Variable aléatoire et processus stochastique</h1>
+<p class="sous-titre">Calculatrice interactive — rendements logarithmiques cumulés et risque de portefeuille à deux actifs</p>
+
+<div class="panneau">
+  <h2>Cumuler des rendements logarithmiques</h2>
+  <p class="aide">Un rendement logarithmique journalier par ligne (en décimal, ex. 0.012 pour 1,2 %).</p>
+  <textarea id="rendements" rows="5">0.012
+-0.005
+0.008
+-0.003
+0.020</textarea>
+  <button onclick="calculerCumul()">Calculer le rendement cumulé</button>
+  <div id="resultatCumul" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Risque d'un portefeuille à deux actifs</h2>
+  <div class="ligne">
+    <div><label for="wA">Poids actif A</label><input type="number" id="wA" value="0.6" step="0.01" min="0" max="1"></div>
+    <div><label for="sA">σ_A</label><input type="number" id="sA" value="0.02" step="0.001" min="0"></div>
+    <div><label for="sB">σ_B</label><input type="number" id="sB" value="0.03" step="0.001" min="0"></div>
+    <div><label for="covAB">Cov(r_A, r_B)</label><input type="number" id="covAB" value="0.00024" step="0.00001"></div>
+  </div>
+  <button onclick="calculerPortefeuille()">Calculer</button>
+  <div id="resultatPortefeuille" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerCumul() {
+  const resDiv = document.getElementById('resultatCumul');
+  const lignes = document.getElementById('rendements').value.trim().split('\n').filter(l => l.trim().length);
+  const rs = lignes.map(l => parseFloat(l.trim()));
+  if (rs.some(isNaN) || rs.length === 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const cumulLog = rs.reduce((s, r) => s + r, 0);
+  const rendementEquivalent = Math.exp(cumulLog) - 1;
+  const naiveSum = rs.reduce((s, r) => s + r, 0);
+  const composeAsSimple = rs.reduce((p, r) => p * (1 + r), 1) - 1;
+  let out = `<div class="valeur">cumul log = ${cumulLog.toFixed(6)}</div>`;
+  out += `<div class="valeur">rendement simple équivalent = ${(rendementEquivalent*100).toFixed(4)} %</div>`;
+  out += `<p class="aide">Pour comparaison : si ces valeurs étaient des rendements simples, leur composition rigoureuse (produit des (1+rᵢ)) donnerait ${(composeAsSimple*100).toFixed(4)} %, contre ${(naiveSum*100).toFixed(4)} % par simple somme (approximation valable seulement pour de petits rendements).</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerPortefeuille() {
+  const resDiv = document.getElementById('resultatPortefeuille');
+  const wA = parseFloat(document.getElementById('wA').value);
+  const sA = parseFloat(document.getElementById('sA').value);
+  const sB = parseFloat(document.getElementById('sB').value);
+  const cov = parseFloat(document.getElementById('covAB').value);
+  if ([wA, sA, sB, cov].some(isNaN) || wA < 0 || wA > 1 || sA < 0 || sB < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const wB = 1 - wA;
+  const rho = (sA > 0 && sB > 0) ? cov / (sA * sB) : NaN;
+  const varP = wA*wA*sA*sA + wB*wB*sB*sB + 2*wA*wB*cov;
+  const varP0 = wA*wA*sA*sA + wB*wB*sB*sB;
+  let out = '';
+  if (!isNaN(rho)) {
+    out += `<div class="valeur">ρ_AB = ${rho.toFixed(4)}</div>`;
+    if (Math.abs(rho) > 1.0001) out += `<p class="erreur">Attention : |ρ| &gt; 1, ce qui est impossible pour une covariance et des écarts-types cohérents (inégalité de Cauchy-Schwarz violée) — vérifiez les valeurs saisies.</p>`;
+  }
+  out += `<div class="valeur">Var(R_P) = ${varP.toFixed(8)}</div>`;
+  out += `<div class="valeur">σ_P = ${(Math.sqrt(Math.max(varP,0))*100).toFixed(4)} %</div>`;
+  out += `<p class="aide">Si la corrélation avait été nulle (portefeuille non corrélé), Var(R_P) = ${varP0.toFixed(8)} et σ_P = ${(Math.sqrt(varP0)*100).toFixed(4)} %.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerCumul(); calculerPortefeuille(); };
+</script>
+</body>
+</html>

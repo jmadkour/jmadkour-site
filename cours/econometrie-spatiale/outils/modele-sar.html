@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Le modèle SAR — Calculatrice du multiplicateur spatial</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 220px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Le modèle autorégressif spatial (SAR)</h1>
+<p class="sous-titre">Calculatrice interactive — multiplicateur spatial $(I-\rho W)^{-1}$ et condition de stabilité</p>
+
+<div class="panneau">
+  <h2>Multiplicateur spatial : série de Neumann vs matrice exacte</h2>
+  <p class="aide">Matrice $W$ (une ligne par région, valeurs séparées par des virgules).</p>
+  <div class="ligne">
+    <div>
+      <label for="matriceW">Matrice W</label>
+      <textarea id="matriceW" rows="4">0, 0.333333, 0.333333, 0.333333
+0.333333, 0, 0.333333, 0.333333
+0.333333, 0.333333, 0, 0.333333
+0.333333, 0.333333, 0.333333, 0</textarea>
+    </div>
+    <div>
+      <label for="rho">ρ</label><input type="number" id="rho" value="0.3" step="0.01" min="-0.999" max="0.999">
+      <label for="ordre">Ordre de troncature de la série (nombre de termes après I)</label>
+      <input type="number" id="ordre" value="2" step="1" min="0" max="10">
+    </div>
+  </div>
+  <button onclick="calculerMultiplicateur()">Calculer</button>
+  <div id="resultatMult" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Condition de stabilité</h2>
+  <p class="aide">Pour une matrice W standardisée en ligne, la plus grande valeur propre vaut 1 : la condition se réduit à |ρ| &lt; 1.</p>
+  <div class="ligne">
+    <div><label for="rhoTest">ρ à tester</label><input type="number" id="rhoTest" value="1.15" step="0.01"></div>
+  </div>
+  <button onclick="testerStabilite()">Tester</button>
+  <div id="resultatStab" class="resultat-zone"></div>
+</div>
+
+<script>
+function parseMatrice(texte) {
+  return texte.trim().split('\n').filter(l => l.trim().length).map(l => l.split(',').map(v => parseFloat(v.trim())));
+}
+function identite(n) { return Array.from({length:n}, (_,i)=>Array.from({length:n}, (_,j)=> i===j?1:0)); }
+function matMul(A,B) {
+  const n=A.length, m=B[0].length, k=A[0].length;
+  const C = Array.from({length:n}, ()=>Array(m).fill(0));
+  for (let i=0;i<n;i++) for (let j=0;j<m;j++) for (let l=0;l<k;l++) C[i][j]+=A[i][l]*B[l][j];
+  return C;
+}
+function matScale(s,A) { return A.map(row=>row.map(v=>v*s)); }
+function matAdd(A,B) { return A.map((row,i)=>row.map((v,j)=>v+B[i][j])); }
+function matSub(A,B) { return A.map((row,i)=>row.map((v,j)=>v-B[i][j])); }
+function matInv(A) {
+  const n = A.length;
+  const M = A.map((row,i)=>row.concat(identite(n)[i]));
+  for (let col=0; col<n; col++) {
+    let piv = col;
+    for (let r=col; r<n; r++) if (Math.abs(M[r][col]) > Math.abs(M[piv][col])) piv = r;
+    if (Math.abs(M[piv][col]) < 1e-12) throw new Error('matrice singulière : (I-ρW) non inversible pour ce ρ.');
+    [M[col], M[piv]] = [M[piv], M[col]];
+    const pv = M[col][col];
+    for (let c=0; c<2*n; c++) M[col][c] /= pv;
+    for (let r=0; r<n; r++) {
+      if (r === col) continue;
+      const f = M[r][col];
+      for (let c=0; c<2*n; c++) M[r][c] -= f*M[col][c];
+    }
+  }
+  return M.map(row=>row.slice(n));
+}
+function formatMat(A) {
+  let out = '<table class="res">';
+  A.forEach(row => { out += '<tr>' + row.map(v=>`<td>${v.toFixed(4)}</td>`).join('') + '</tr>'; });
+  out += '</table>';
+  return out;
+}
+
+function calculerMultiplicateur() {
+  const resDiv = document.getElementById('resultatMult');
+  try {
+    const W = parseMatrice(document.getElementById('matriceW').value);
+    const n = W.length;
+    if (W.some(row => row.length !== n)) throw new Error('W doit être carrée.');
+    const rho = parseFloat(document.getElementById('rho').value);
+    const ordre = parseInt(document.getElementById('ordre').value, 10);
+    if (isNaN(rho) || isNaN(ordre) || ordre < 0) throw new Error('valeurs invalides.');
+
+    let somme = identite(n);
+    let terme = identite(n);
+    let Wk = identite(n);
+    for (let k = 1; k <= ordre; k++) {
+      Wk = matMul(Wk, W);
+      terme = matScale(Math.pow(rho, k), Wk);
+      somme = matAdd(somme, terme);
+    }
+
+    const rhoW = matScale(rho, W);
+    const ImrhoW = matSub(identite(n), rhoW);
+    const exact = matInv(ImrhoW);
+
+    let out = `<p>Somme tronquée à l'ordre ${ordre} : $I+\\rho W+\\cdots+\\rho^{${ordre}}W^{${ordre}}$</p>`;
+    out += formatMat(somme);
+    out += '<p>Matrice exacte $(I-\\rho W)^{-1}$ :</p>';
+    out += formatMat(exact);
+    let maxDiff = 0;
+    for (let i=0;i<n;i++) for (let j=0;j<n;j++) maxDiff = Math.max(maxDiff, Math.abs(somme[i][j]-exact[i][j]));
+    out += `<div class="valeur">écart maximal = ${maxDiff.toFixed(6)}</div>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = `<p class="erreur">${e.message}</p>`;
+  }
+}
+
+function testerStabilite() {
+  const resDiv = document.getElementById('resultatStab');
+  const rho = parseFloat(document.getElementById('rhoTest').value);
+  if (isNaN(rho)) { resDiv.innerHTML = '<p class="erreur">Valeur invalide.</p>'; return; }
+  const stable = Math.abs(rho) < 1;
+  resDiv.innerHTML = `<div class="valeur">|ρ| = ${Math.abs(rho).toFixed(4)}</div><p class="${stable ? 'ok' : 'alerte'}">${stable ? 'Condition |ρ| < 1 satisfaite : le système est stable, la série de Neumann converge.' : 'Condition |ρ| < 1 violée : le système est explosif, aucun équilibre stable n\'existe pour ce ρ.'}</p>`;
+}
+
+window.onload = () => { calculerMultiplicateur(); testerStabilite(); };
+</script>
+</body>
+</html>

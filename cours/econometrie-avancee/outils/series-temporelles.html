@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Séries temporelles — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Introduction aux séries temporelles</h1>
+<p class="sous-titre">Calculatrice interactive — propension de long terme (FDL) et changement de base d'un indice</p>
+
+<div class="panneau">
+  <h2>Retards échelonnés (FDL) — propension de long terme</h2>
+  <p class="aide">Un coefficient par ligne : δ₀, δ₁, δ₂, ... (propension d'impact en premier).</p>
+  <textarea id="deltas" rows="3">0.30
+0.15
+0.05</textarea>
+  <button onclick="calculerPLT()">Calculer la PLT</button>
+  <div id="resultatPLT" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Nombre indice — changement de base</h2>
+  <div class="ligne">
+    <div><label for="oldindex">Indice année courante (ancienne base)</label><input type="number" id="oldindex" value="150" step="0.01"></div>
+    <div><label for="oldindexnb">Indice de la nouvelle année de base (ancienne base)</label><input type="number" id="oldindexnb" value="120" step="0.01"></div>
+    <div><label for="nominal">Valeur nominale à déflater (optionnel)</label><input type="number" id="nominal" value="8000" step="0.01"></div>
+  </div>
+  <button onclick="calculerIndice()">Calculer</button>
+  <div id="resultatIndice" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Une PLT significative n'exige pas que chaque retard le soit individuellement : la colinéarité entre valeurs consécutives d'une même série dégrade la précision de chaque coefficient sans dégrader celle de leur somme.</p>
+
+<script>
+function calculerPLT() {
+  const resDiv = document.getElementById('resultatPLT');
+  try {
+    const lignes = document.getElementById('deltas').value.trim().split('\n').filter(l => l.trim().length);
+    const valeurs = lignes.map(l => parseFloat(l));
+    if (valeurs.some(isNaN) || valeurs.length === 0) {
+      resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+      return;
+    }
+    const plt = valeurs.reduce((a, b) => a + b, 0);
+    let out = `<div class="valeur">propension d'impact (δ₀) = ${valeurs[0].toFixed(4)}</div>`;
+    out += `<div class="valeur">PLT = ${plt.toFixed(4)}</div>`;
+    out += `<p>Nombre de retards inclus (au-delà de δ₀) : ${valeurs.length - 1}.</p>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie.</p>';
+  }
+}
+
+function calculerIndice() {
+  const resDiv = document.getElementById('resultatIndice');
+  const oldindex = parseFloat(document.getElementById('oldindex').value);
+  const oldindexnb = parseFloat(document.getElementById('oldindexnb').value);
+  const nominal = parseFloat(document.getElementById('nominal').value);
+  if ([oldindex, oldindexnb].some(isNaN) || oldindexnb <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const newindex = 100 * (oldindex / oldindexnb);
+  let out = `<div class="valeur">nouvel indice = ${newindex.toFixed(2)}</div>`;
+  if (!isNaN(nominal)) {
+    const reel = nominal / (oldindex / 100);
+    out += `<div class="valeur">valeur réelle (base d'origine) = ${reel.toFixed(2)}</div>`;
+  }
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerPLT(); calculerIndice(); };
+</script>
+</body>
+</html>

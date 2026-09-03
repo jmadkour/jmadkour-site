@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — Équations simultanées — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — Modèles à équations simultanées</h1>
+<p class="sous-titre">Calculatrice interactive — signe du biais de simultanéité et diagnostic d'identification</p>
+
+<div class="panneau">
+  <h2>Signe du biais de simultanéité</h2>
+  <p class="aide">Système y₁ = α₁y₂ + β₁z₁ + u₁, y₂ = α₂y₁ + β₂z₂ + u₂ (u₁, u₂ non corrélées).</p>
+  <div class="ligne">
+    <div><label for="alpha1">α₁</label><input type="number" id="alpha1" value="0.3" step="0.01"></div>
+    <div><label for="alpha2">α₂</label><input type="number" id="alpha2" value="0.4" step="0.01"></div>
+  </div>
+  <button onclick="calculerBiais()">Calculer Cov(y₂,u₁) ∝ α₂/(1−α₁α₂)</button>
+  <div id="resultatBiais" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Diagnostic d'identification (condition d'ordre)</h2>
+  <div class="ligne">
+    <div><label for="excluOffre">Variable exogène de la demande exclue de l'offre ?</label>
+      <select id="excluOffre"><option value="oui">Oui</option><option value="non">Non</option></select>
+    </div>
+    <div><label for="rangOffre">Son coefficient dans la demande est-il non nul (rang) ?</label>
+      <select id="rangOffre"><option value="oui">Oui</option><option value="non">Non</option></select>
+    </div>
+  </div>
+  <button onclick="calculerIdentification()">Évaluer l'identification de l'offre</button>
+  <div id="resultatIdentification" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">La condition d'ordre (une variable exclue) est nécessaire mais pas suffisante ; la condition de rang (coefficient réellement non nul) est nécessaire et suffisante.</p>
+
+<script>
+function calculerBiais() {
+  const resDiv = document.getElementById('resultatBiais');
+  const a1 = parseFloat(document.getElementById('alpha1').value);
+  const a2 = parseFloat(document.getElementById('alpha2').value);
+  if ([a1,a2].some(isNaN)) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const denom = 1 - a1*a2;
+  if (Math.abs(denom) < 1e-9) { resDiv.innerHTML = '<p class="erreur">1 − α₁α₂ ≈ 0 : système non défini (division par zéro).</p>'; return; }
+  const signeProp = a2 / denom;
+  let out = `<div class="valeur">1 − α₁α₂ = ${denom.toFixed(4)}</div><div class="valeur">Cov(y₂,u₁) ∝ ${signeProp.toFixed(4)}</div>`;
+  out += `<p class="${signeProp > 0 ? 'alerte' : 'ok'}">${signeProp > 0 ? 'Biais MCO positif attendu sur α₁ (les MCO surestiment α₁, ou sous-estiment un effet négatif).' : signeProp < 0 ? 'Biais MCO négatif attendu sur α₁.' : 'Pas de biais de simultanéité dans ce cas limite.'}</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerIdentification() {
+  const resDiv = document.getElementById('resultatIdentification');
+  const exclu = document.getElementById('excluOffre').value;
+  const rang = document.getElementById('rangOffre').value;
+  let out = '';
+  if (exclu === 'non') {
+    out = '<p class="alerte">Condition d’ordre non satisfaite : l’équation d’offre n’est pas identifiée.</p>';
+  } else if (rang === 'non') {
+    out = '<p class="alerte">Condition d’ordre satisfaite, mais condition de rang non vérifiée (coefficient nul) : l’équation d’offre reste non identifiée en pratique.</p>';
+  } else {
+    out = '<p class="ok">Conditions d’ordre et de rang toutes deux satisfaites : l’équation d’offre est identifiée et peut être estimée par 2SLS.</p>';
+  }
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerBiais(); calculerIdentification(); };
+</script>
+</body>
+</html>

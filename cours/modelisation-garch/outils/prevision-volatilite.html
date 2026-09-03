@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — La prévision de volatilité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  svg { max-width: 100%; height: auto; margin-top: 0.6em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — La prévision de volatilité</h1>
+<p class="sous-titre">Calculatrice interactive — prévision h-pas, agrégation multi-jours, densité prédictive</p>
+
+<div class="panneau">
+  <h2>Prévision à un et plusieurs pas</h2>
+  <div class="ligne">
+    <div><label for="omega15">ω</label><input type="number" id="omega15" value="0.0195" step="0.0001"></div>
+    <div><label for="alpha115">α₁</label><input type="number" id="alpha115" value="0.0995" step="0.0001" min="0"></div>
+    <div><label for="beta115">β₁</label><input type="number" id="beta115" value="0.8899" step="0.0001" min="0"></div>
+    <div><label for="hT15">h_T</label><input type="number" id="hT15" value="2.5" step="0.01" min="0"></div>
+    <div><label for="epsT15">ε_T</label><input type="number" id="epsT15" value="-1.8" step="0.01"></div>
+    <div><label for="horizon15">horizon h (jours)</label><input type="number" id="horizon15" value="10" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerPrevision()">Calculer les prévisions</button>
+  <div id="resultatPrevision" class="resultat-zone"></div>
+  <svg id="graphPrevision" viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+
+<div class="panneau">
+  <h2>Variance multi-jours : somme exacte contre règle de la racine du temps</h2>
+  <div class="ligne">
+    <div><label for="H15">horizon H (jours)</label><input type="number" id="H15" value="10" step="1" min="1"></div>
+  </div>
+  <p class="aide">Utilise les paramètres et la prévision à un pas du premier panneau.</p>
+  <button onclick="calculerMultiJours()">Comparer les deux méthodes</button>
+  <div id="resultatMultiJours" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Densité prédictive et quantile conditionnel (VaR)</h2>
+  <div class="ligne">
+    <div><label for="mu15">μ (moyenne conditionnelle)</label><input type="number" id="mu15" value="0.05" step="0.01"></div>
+    <div><label for="alphaVar15">seuil α</label>
+      <select id="alphaVar15">
+        <option value="0.01" selected>1 %</option>
+        <option value="0.05">5 %</option>
+      </select>
+    </div>
+    <div><label for="loi15">loi de z</label>
+      <select id="loi15">
+        <option value="normale">normale</option>
+        <option value="student6" selected>Student, ν = 6</option>
+        <option value="asym">Student asymétrique</option>
+      </select>
+    </div>
+  </div>
+  <p class="aide">Utilise ĥ_{T+1|T} calculée dans le premier panneau.</p>
+  <button onclick="calculerQuantile()">Calculer le quantile</button>
+  <div id="resultatQuantile" class="resultat-zone"></div>
+</div>
+
+<script>
+let etatGarch15 = { hT1: null, sigma2: null, pi: null };
+
+function calculerPrevision() {
+  const resDiv = document.getElementById('resultatPrevision');
+  const omega = parseFloat(document.getElementById('omega15').value);
+  const alpha1 = parseFloat(document.getElementById('alpha115').value);
+  const beta1 = parseFloat(document.getElementById('beta115').value);
+  const hT = parseFloat(document.getElementById('hT15').value);
+  const epsT = parseFloat(document.getElementById('epsT15').value);
+  const horizon = parseInt(document.getElementById('horizon15').value);
+  if ([omega, alpha1, beta1, hT, epsT, horizon].some(isNaN) || omega < 0 || alpha1 < 0 || beta1 < 0 || hT < 0 || horizon < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const pi = alpha1 + beta1;
+  if (pi >= 1) {
+    resDiv.innerHTML = '<p class="erreur">π = α₁+β₁ ≥ 1 : processus non stationnaire (IGARCH ou explosif), pas de σ² fini.</p>';
+    return;
+  }
+  const sigma2 = omega / (1 - pi);
+  const hT1 = omega + alpha1 * epsT * epsT + beta1 * hT;
+  etatGarch15 = { hT1, sigma2, pi };
+
+  function hForecast(h) { return sigma2 + Math.pow(pi, h - 1) * (hT1 - sigma2); }
+
+  let out = `<div class="valeur">π = ${pi.toFixed(4)}</div>`;
+  out += `<div class="valeur">σ² = ${sigma2.toFixed(4)}</div>`;
+  out += `<div class="valeur">ĥ_(T+1|T) = ${hT1.toFixed(4)}</div>`;
+  const demiVie = Math.log(0.5) / Math.log(pi);
+  out += `<div class="valeur">demi-vie ≈ ${demiVie.toFixed(1)} jours</div>`;
+  out += '<table class="res"><tr><th>h</th><th>ĥ_(T+h|T)</th></tr>';
+  const hs = [1, 5, 10, 20, horizon].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
+  const points = [];
+  hs.forEach(h => {
+    const val = hForecast(h);
+    points.push([h, val]);
+    out += `<tr><td>${h}</td><td>${val.toFixed(4)}</td></tr>`;
+  });
+  out += '</table>';
+  resDiv.innerHTML = out;
+
+  // graphique simple : convergence vers sigma2
+  const svg = document.getElementById('graphPrevision');
+  const maxH = Math.max(...hs, 30);
+  const allVals = [];
+  for (let h = 1; h <= maxH; h++) allVals.push(hForecast(h));
+  const yMin = Math.min(sigma2, ...allVals) * 0.95;
+  const yMax = Math.max(sigma2, ...allVals) * 1.05;
+  const W = 600, H = 220, padL = 45, padB = 25, padT = 10, padR = 10;
+  const xScale = h => padL + (h - 1) / (maxH - 1) * (W - padL - padR);
+  const yScale = v => H - padB - (v - yMin) / (yMax - yMin) * (H - padB - padT);
+  let path = '';
+  for (let h = 1; h <= maxH; h++) {
+    const v = hForecast(h);
+    path += (h === 1 ? 'M' : 'L') + xScale(h).toFixed(1) + ',' + yScale(v).toFixed(1) + ' ';
+  }
+  const ySigma = yScale(sigma2);
+  svg.innerHTML = `
+    <line x1="${padL}" y1="${ySigma.toFixed(1)}" x2="${W - padR}" y2="${ySigma.toFixed(1)}" stroke="#B56600" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="${W - padR}" y="${(ySigma - 5).toFixed(1)}" text-anchor="end" font-size="11" fill="#B56600" font-family="Helvetica Neue, Arial, sans-serif">σ²</text>
+    <path d="${path}" fill="none" stroke="#1F6FB2" stroke-width="2"/>
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H - padB}" stroke="#999"/>
+    <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#999"/>
+    <text x="${padL}" y="${H - 5}" font-size="11" fill="#5A5A5A" font-family="Helvetica Neue, Arial, sans-serif">h=1</text>
+    <text x="${(W - padR - 20).toFixed(1)}" y="${H - 5}" font-size="11" fill="#5A5A5A" font-family="Helvetica Neue, Arial, sans-serif">h=${maxH}</text>
+  `;
+}
+
+function calculerMultiJours() {
+  const resDiv = document.getElementById('resultatMultiJours');
+  const H = parseInt(document.getElementById('H15').value);
+  if (isNaN(H) || H < 1) {
+    resDiv.innerHTML = '<p class="erreur">Horizon invalide.</p>';
+    return;
+  }
+  if (etatGarch15.hT1 === null) {
+    resDiv.innerHTML = '<p class="erreur">Calculez d\'abord le premier panneau.</p>';
+    return;
+  }
+  const { hT1, sigma2, pi } = etatGarch15;
+  function hForecast(h) { return sigma2 + Math.pow(pi, h - 1) * (hT1 - sigma2); }
+  let somme = 0;
+  for (let k = 1; k <= H; k++) somme += hForecast(k);
+  const naive = H * hT1;
+  const ecartPct = (naive - somme) / somme * 100;
+  let out = `<div class="valeur">Σ ĥ_(T+k|T), k=1..${H} = ${somme.toFixed(4)}</div>`;
+  out += `<div class="valeur">règle naïve ${H} × ĥ_(T+1|T) = ${naive.toFixed(4)}</div>`;
+  out += `<div class="valeur ${Math.abs(ecartPct) < 0.01 ? '' : (ecartPct > 0 ? 'ko' : 'ko')}">écart = ${ecartPct.toFixed(2)} %</div>`;
+  if (ecartPct > 0.01) {
+    out += `<div class="valeur ko">la règle naïve SURESTIME le risque (période agitée, ĥ_(T+1|T) &gt; σ²)</div>`;
+  } else if (ecartPct < -0.01) {
+    out += `<div class="valeur ko">la règle naïve SOUS-ESTIME le risque (période calme, ĥ_(T+1|T) &lt; σ²)</div>`;
+  } else {
+    out += `<div class="valeur ok">les deux méthodes coïncident (ĥ_(T+1|T) ≈ σ²)</div>`;
+  }
+  resDiv.innerHTML = out;
+}
+
+function calculerQuantile() {
+  const resDiv = document.getElementById('resultatQuantile');
+  const mu = parseFloat(document.getElementById('mu15').value);
+  const alpha = parseFloat(document.getElementById('alphaVar15').value);
+  const loi = document.getElementById('loi15').value;
+  if (isNaN(mu)) {
+    resDiv.innerHTML = '<p class="erreur">Valeur invalide.</p>';
+    return;
+  }
+  if (etatGarch15.hT1 === null) {
+    resDiv.innerHTML = '<p class="erreur">Calculez d\'abord le premier panneau.</p>';
+    return;
+  }
+  // valeurs de z_alpha lues du chapitre 9 (table du cours)
+  const zTable = {
+    '0.01': { normale: -2.33, student6: -2.75, asym: -3.09 },
+    '0.05': { normale: -1.645, student6: -1.94, asym: -2.20 }
+  };
+  const zAlpha = zTable[alpha.toString()][loi];
+  const hT1 = etatGarch15.hT1;
+  const q = mu + Math.sqrt(hT1) * zAlpha;
+  let out = `<div class="valeur">ĥ_(T+1|T) = ${hT1.toFixed(4)}</div>`;
+  out += `<div class="valeur">z_α (${loi}) = ${zAlpha}</div>`;
+  out += `<div class="valeur">q_α = μ + √ĥ_(T+1|T) × z_α = ${q.toFixed(3)}</div>`;
+  const qNormale = mu + Math.sqrt(hT1) * zTable[alpha.toString()].normale;
+  if (loi !== 'normale') {
+    const elargissement = (Math.abs(q) - Math.abs(qNormale)) / Math.abs(qNormale) * 100;
+    out += `<div class="valeur">élargissement vs normale = ${elargissement.toFixed(1)} %</div>`;
+  }
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerPrevision(); calculerMultiJours(); calculerQuantile(); };
+</script>
+</body>
+</html>

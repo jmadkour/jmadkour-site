@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Prévision et évaluation — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Prévision et évaluation des modèles</h1>
+<p class="sous-titre">Calculatrice interactive — AIC/BIC, RMSE/MAE et test de Kupiec</p>
+
+<div class="panneau">
+  <h2>AIC / BIC : comparer deux modèles</h2>
+  <div class="ligne">
+    <div><label for="lnL1">ln L (modèle 1)</label><input type="number" id="lnL1" value="-500" step="0.1"></div>
+    <div><label for="k1">k₁ (paramètres)</label><input type="number" id="k1" value="5" step="1" min="1"></div>
+    <div><label for="lnL2">ln L (modèle 2)</label><input type="number" id="lnL2" value="-495" step="0.1"></div>
+    <div><label for="k2">k₂ (paramètres)</label><input type="number" id="k2" value="8" step="1" min="1"></div>
+    <div><label for="nObs">n (taille d'échantillon)</label><input type="number" id="nObs" value="1000" step="1" min="2"></div>
+  </div>
+  <button onclick="calculerCriteres()">Calculer AIC / BIC</button>
+  <div id="resultatCriteres" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>RMSE / MAE d'une série d'erreurs de prévision</h2>
+  <p class="aide">Une erreur (prévision moins réalisé) par ligne.</p>
+  <textarea id="erreurs" rows="5">0.5
+-0.3
+1.2
+-0.8
+0.4</textarea>
+  <button onclick="calculerErreurs()">Calculer RMSE et MAE</button>
+  <div id="resultatErreurs" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Test de couverture inconditionnelle (Kupiec)</h2>
+  <div class="ligne">
+    <div><label for="tKupiec">T (nombre de jours)</label><input type="number" id="tKupiec" value="500" step="1" min="1"></div>
+    <div><label for="piExp">π_exp (seuil VaR)</label><input type="number" id="piExp" value="0.05" step="0.001" min="0.0001" max="0.9999"></div>
+    <div><label for="n1Kupiec">n₁ (exceptions observées)</label><input type="number" id="n1Kupiec" value="40" step="1" min="0"></div>
+    <div><label for="chi2Crit">Valeur critique χ²(1)</label><input type="number" id="chi2Crit" value="3.841" step="0.001" min="0"></div>
+  </div>
+  <button onclick="calculerKupiec()">Calculer -2 ln LR_uc</button>
+  <div id="resultatKupiec" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerCriteres() {
+  const resDiv = document.getElementById('resultatCriteres');
+  const lnL1 = parseFloat(document.getElementById('lnL1').value);
+  const k1 = parseFloat(document.getElementById('k1').value);
+  const lnL2 = parseFloat(document.getElementById('lnL2').value);
+  const k2 = parseFloat(document.getElementById('k2').value);
+  const n = parseFloat(document.getElementById('nObs').value);
+  if ([lnL1, k1, lnL2, k2, n].some(isNaN) || n < 2) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const aic1 = -2*lnL1 + 2*k1, aic2 = -2*lnL2 + 2*k2;
+  const bic1 = -2*lnL1 + k1*Math.log(n), bic2 = -2*lnL2 + k2*Math.log(n);
+  let out = `<div class="valeur">AIC₁ = ${aic1.toFixed(3)}</div><div class="valeur">AIC₂ = ${aic2.toFixed(3)}</div>`;
+  out += `<p>AIC préfère le ${aic1 < aic2 ? 'modèle 1' : 'modèle 2'} (le plus petit).</p>`;
+  out += `<div class="valeur">BIC₁ = ${bic1.toFixed(3)}</div><div class="valeur">BIC₂ = ${bic2.toFixed(3)}</div>`;
+  out += `<p>BIC préfère le ${bic1 < bic2 ? 'modèle 1' : 'modèle 2'} (le plus petit).</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerErreurs() {
+  const resDiv = document.getElementById('resultatErreurs');
+  const lignes = document.getElementById('erreurs').value.trim().split('\n').filter(l => l.trim().length);
+  const errs = lignes.map(l => parseFloat(l.trim()));
+  if (errs.some(isNaN) || errs.length === 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const rmse = Math.sqrt(errs.reduce((s,e) => s + e*e, 0) / errs.length);
+  const mae = errs.reduce((s,e) => s + Math.abs(e), 0) / errs.length;
+  let out = `<div class="valeur">RMSE = ${rmse.toFixed(4)}</div>`;
+  out += `<div class="valeur">MAE = ${mae.toFixed(4)}</div>`;
+  out += `<div class="valeur">n = ${errs.length}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerKupiec() {
+  const resDiv = document.getElementById('resultatKupiec');
+  const T = parseFloat(document.getElementById('tKupiec').value);
+  const piExp = parseFloat(document.getElementById('piExp').value);
+  const n1 = parseFloat(document.getElementById('n1Kupiec').value);
+  const chi2Crit = parseFloat(document.getElementById('chi2Crit').value);
+  if ([T, piExp, n1, chi2Crit].some(isNaN) || n1 < 0 || n1 > T || piExp <= 0 || piExp >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const n0 = T - n1;
+  const piObs = n1 / T;
+  let out = `<div class="valeur">π̂_obs = ${(piObs*100).toFixed(3)} %</div>`;
+  if (n1 === 0 || n1 === T) {
+    out += `<p class="erreur">n₁=0 ou n₁=T : la statistique de Kupiec n'est pas définie (log de 0). Choisir un n₁ strictement entre 0 et T.</p>`;
+    resDiv.innerHTML = out;
+    return;
+  }
+  const term = n0*Math.log(1-piExp) + n1*Math.log(piExp) - n0*Math.log(1-piObs) - n1*Math.log(piObs);
+  const LRuc = -2 * term;
+  out += `<div class="valeur">-2 ln LR_uc = ${LRuc.toFixed(4)}</div>`;
+  out += LRuc > chi2Crit
+    ? `<p><strong>H₀ rejetée</strong> (${LRuc.toFixed(3)} &gt; ${chi2Crit}) : le modèle de VaR est mal calibré.</p>`
+    : `<p>H₀ non rejetée (${LRuc.toFixed(3)} ≤ ${chi2Crit}) : pas de preuve statistique de mauvaise calibration.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerCriteres(); calculerErreurs(); calculerKupiec(); };
+</script>
+</body>
+</html>

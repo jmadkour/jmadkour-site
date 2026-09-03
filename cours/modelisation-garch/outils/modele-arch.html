@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Le modèle ARCH(q) d'Engle — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; resize: vertical; min-height: 2.4em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Le modèle ARCH(q) d'Engle</h1>
+<p class="sous-titre">Calculatrice interactive — ARCH(1), stationnarité d'un ARCH(q), forme en écart à la moyenne</p>
+
+<div class="panneau">
+  <h2>ARCH(1) : variance conditionnelle et variance de long terme</h2>
+  <div class="ligne">
+    <div><label for="omega1">ω</label><input type="number" id="omega1" value="0.08" step="0.001" min="0.0001"></div>
+    <div><label for="alpha1_1">α₁</label><input type="number" id="alpha1_1" value="0.2" step="0.01" min="0" max="0.9999"></div>
+    <div><label for="epsPrev1">ε_{t-1} (%)</label><input type="number" id="epsPrev1" value="-2.0" step="0.1"></div>
+  </div>
+  <button onclick="calculerArch1()">Calculer h_t et σ²</button>
+  <div id="resultatArch1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Stationnarité d'un ARCH(q)</h2>
+  <div class="ligne">
+    <div><label for="omegaQ">ω</label><input type="number" id="omegaQ" value="0.06" step="0.001" min="0.0001"></div>
+  </div>
+  <label for="alphasQ">liste des α_i (séparés par des virgules)</label>
+  <textarea id="alphasQ" rows="2">0.25, 0.15, 0.10</textarea>
+  <button onclick="calculerArchQ()">Vérifier la stationnarité et calculer σ²</button>
+  <div id="resultatArchQ" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Vérifier la forme en écart à la moyenne</h2>
+  <div class="ligne">
+    <div><label for="omegaEcart">ω</label><input type="number" id="omegaEcart" value="0.08" step="0.001" min="0.0001"></div>
+    <div><label for="alphaEcart">α₁</label><input type="number" id="alphaEcart" value="0.2" step="0.01" min="0" max="0.9999"></div>
+  </div>
+  <label for="epsEcart">série de ε_{t-1} successifs (%, séparés par des virgules)</label>
+  <textarea id="epsEcart" rows="2">-2.0, 0.5, 1.3, -0.8, 2.2</textarea>
+  <button onclick="calculerEcartMoyenne()">Calculer h_t − σ² et α₁(ε²_{t-1} − σ²)</button>
+  <div id="resultatEcartMoyenne" class="resultat-zone"></div>
+</div>
+
+<script>
+function parseListe(str) {
+  return str.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+}
+
+function calculerArch1() {
+  const resDiv = document.getElementById('resultatArch1');
+  const omega = parseFloat(document.getElementById('omega1').value);
+  const alpha1 = parseFloat(document.getElementById('alpha1_1').value);
+  const epsPrev = parseFloat(document.getElementById('epsPrev1').value);
+  if ([omega, alpha1, epsPrev].some(isNaN) || omega <= 0 || alpha1 < 0 || alpha1 >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (ω &gt; 0, 0 ≤ α₁ &lt; 1).</p>';
+    return;
+  }
+  const ht = omega + alpha1 * epsPrev * epsPrev;
+  const sigma2 = omega / (1 - alpha1);
+  const ratio = ht / sigma2;
+  let out = `<div class="valeur">h_t = ${ht.toFixed(4)}</div>`;
+  out += `<div class="valeur">σ² = ${sigma2.toFixed(4)}</div>`;
+  out += `<div class="valeur">h_t / σ² = ${ratio.toFixed(2)}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerArchQ() {
+  const resDiv = document.getElementById('resultatArchQ');
+  const omega = parseFloat(document.getElementById('omegaQ').value);
+  const alphas = parseListe(document.getElementById('alphasQ').value);
+  if (isNaN(omega) || omega <= 0 || alphas.length === 0 || alphas.some(a => a < 0)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (ω &gt; 0, tous les α_i ≥ 0).</p>';
+    return;
+  }
+  const somme = alphas.reduce((a, b) => a + b, 0);
+  const stationnaire = somme < 1;
+  let out = `<div class="valeur">q = ${alphas.length}</div>`;
+  out += `<div class="valeur">Σα_i = ${somme.toFixed(4)}</div>`;
+  out += `<div class="valeur ${stationnaire ? 'ok' : 'ko'}">${stationnaire ? 'stationnaire (Σα_i < 1)' : 'NON stationnaire (Σα_i ≥ 1)'}</div>`;
+  if (stationnaire) {
+    const sigma2 = omega / (1 - somme);
+    out += `<div class="valeur">σ² = ω/(1−Σα_i) = ${sigma2.toFixed(4)}</div>`;
+  } else {
+    const sigma2formal = omega / (1 - somme);
+    out += `<div class="valeur ko">application formelle de la formule : σ² = ${sigma2formal.toFixed(4)} (négative ou infinie ⇒ pas de variance de long terme)</div>`;
+  }
+  resDiv.innerHTML = out;
+}
+
+function calculerEcartMoyenne() {
+  const resDiv = document.getElementById('resultatEcartMoyenne');
+  const omega = parseFloat(document.getElementById('omegaEcart').value);
+  const alpha1 = parseFloat(document.getElementById('alphaEcart').value);
+  const epsList = parseListe(document.getElementById('epsEcart').value);
+  if ([omega, alpha1].some(isNaN) || omega <= 0 || alpha1 < 0 || alpha1 >= 1 || epsList.length === 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (ω &gt; 0, 0 ≤ α₁ &lt; 1, série non vide).</p>';
+    return;
+  }
+  const sigma2 = omega / (1 - alpha1);
+  let out = `<div class="valeur">σ² = ${sigma2.toFixed(4)}</div>`;
+  out += '<table class="res"><tr><th>jour</th><th>ε_{t-1}</th><th>h_t</th><th>h_t − σ²</th><th>α₁(ε²_{t-1} − σ²)</th><th>égalité</th></tr>';
+  epsList.forEach((eps, i) => {
+    const ht = omega + alpha1 * eps * eps;
+    const gauche = ht - sigma2;
+    const droite = alpha1 * (eps * eps - sigma2);
+    const egal = Math.abs(gauche - droite) < 1e-9;
+    out += `<tr><td>${i + 1}</td><td>${eps.toFixed(4)}</td><td>${ht.toFixed(4)}</td><td>${gauche.toFixed(4)}</td><td>${droite.toFixed(4)}</td><td>${egal ? 'oui' : 'non'}</td></tr>`;
+  });
+  out += '</table>';
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerArch1(); calculerArchQ(); calculerEcartMoyenne(); };
+</script>
+</body>
+</html>
