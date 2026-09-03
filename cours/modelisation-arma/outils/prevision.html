@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — Prévision ponctuelle, par intervalle, par densité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — La prévision : ponctuelle, par intervalle, par densité</h1>
+<p class="sous-titre">Calculatrice interactive — prévision et intervalle d'un AR(1), horizon borné d'un MA(q), probabilité sous densité gaussienne</p>
+
+<div class="panneau">
+  <h2>Prévision et intervalle d'un AR(1)</h2>
+  <div class="ligne">
+    <div><label for="thetaAR15">θ</label><input type="number" id="thetaAR15" value="2" step="0.1"></div>
+    <div><label for="alphaAR15">α</label><input type="number" id="alphaAR15" value="0.6" step="0.01" min="-0.999" max="0.999"></div>
+    <div><label for="yTAR15">y_T</label><input type="number" id="yTAR15" value="15" step="0.1"></div>
+    <div><label for="sigAR15">σ_ε²</label><input type="number" id="sigAR15" value="4" step="0.1" min="0.0001"></div>
+    <div><label for="hmaxAR15">horizon maximal H</label><input type="number" id="hmaxAR15" value="10" step="1" min="1" max="40"></div>
+  </div>
+  <button onclick="calculerAR15()">Calculer</button>
+  <div id="resultatAR15" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Horizon borné d'un MA(q)</h2>
+  <div class="ligne">
+    <div><label for="thetaMA15">θ</label><input type="number" id="thetaMA15" value="1" step="0.1"></div>
+  </div>
+  <p class="aide">Coefficients β₁, β₂, ... (un par ligne, dans l'ordre).</p>
+  <textarea id="betasMA15" rows="3">0.4
+0.2</textarea>
+  <p class="aide">Chocs estimés ε̂_T, ε̂_{T-1}, ... (un par ligne, du plus récent au plus ancien).</p>
+  <textarea id="epsMA15" rows="3">0.3
+-0.2</textarea>
+  <div class="ligne">
+    <div><label for="hmaxMA15">horizon maximal H</label><input type="number" id="hmaxMA15" value="5" step="1" min="1" max="20"></div>
+  </div>
+  <button onclick="calculerMA15()">Calculer</button>
+  <div id="resultatMA15" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Probabilité sous densité prédictive gaussienne</h2>
+  <div class="ligne">
+    <div><label for="yhatProb">prévision ŷ</label><input type="number" id="yhatProb" value="0.0004" step="0.0001"></div>
+    <div><label for="sdProb">écart-type √V(e)</label><input type="number" id="sdProb" value="0.01" step="0.001" min="0.0001"></div>
+    <div><label for="seuilProb">seuil</label><input type="number" id="seuilProb" value="0" step="0.0001"></div>
+  </div>
+  <button onclick="calculerProb15()">Calculer P(y &lt; seuil)</button>
+  <div id="resultatProb15" class="resultat-zone"></div>
+</div>
+
+<script>
+function erf(x) {
+  const sign = x >= 0 ? 1 : -1; x = Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t = 1/(1+p*x);
+  const y = 1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(x) { return 0.5*(1+erf(x/Math.sqrt(2))); }
+
+function calculerAR15() {
+  const resDiv = document.getElementById('resultatAR15');
+  const theta = parseFloat(document.getElementById('thetaAR15').value);
+  const alpha = parseFloat(document.getElementById('alphaAR15').value);
+  const yT = parseFloat(document.getElementById('yTAR15').value);
+  const sig2 = parseFloat(document.getElementById('sigAR15').value);
+  const H = parseInt(document.getElementById('hmaxAR15').value);
+  if ([theta, alpha, yT, sig2, H].some(isNaN) || Math.abs(alpha) >= 1 || sig2 <= 0 || H < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (|α| doit être &lt; 1).</p>';
+    return;
+  }
+  const mu = theta / (1 - alpha);
+  const gamma0 = sig2 / (1 - alpha * alpha);
+  let out = `<div class="valeur">μ = ${mu.toFixed(4)}</div>`;
+  out += `<div class="valeur">γ₀ (limite de V(e)) = ${gamma0.toFixed(4)}</div>`;
+  out += '<table class="res"><tr><th>h</th><th>ŷ_{T+h|T}</th><th>V(e_{T+h})</th><th>intervalle 95 %</th></tr>';
+  for (let h = 1; h <= H; h++) {
+    const yhat = mu + Math.pow(alpha, h) * (yT - mu);
+    const Ve = sig2 * (1 - Math.pow(alpha, 2 * h)) / (1 - alpha * alpha);
+    const marge = 1.96 * Math.sqrt(Ve);
+    out += `<tr><td>${h}</td><td>${yhat.toFixed(4)}</td><td>${Ve.toFixed(4)}</td><td>[${(yhat - marge).toFixed(4)} ; ${(yhat + marge).toFixed(4)}]</td></tr>`;
+  }
+  out += '</table>';
+  resDiv.innerHTML = out;
+}
+
+function calculerMA15() {
+  const resDiv = document.getElementById('resultatMA15');
+  const theta = parseFloat(document.getElementById('thetaMA15').value);
+  const betas = document.getElementById('betasMA15').value.trim().split('\n').filter(l => l.trim().length).map(l => parseFloat(l.trim()));
+  const eps = document.getElementById('epsMA15').value.trim().split('\n').filter(l => l.trim().length).map(l => parseFloat(l.trim()));
+  const H = parseInt(document.getElementById('hmaxMA15').value);
+  if (isNaN(theta) || betas.some(isNaN) || eps.some(isNaN) || isNaN(H) || H < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const q = betas.length;
+  // eps[0] = eps_T, eps[1] = eps_{T-1}, ...
+  let out = `<div class="valeur">q = ${q}</div>`;
+  out += '<table class="res"><tr><th>h</th><th>ŷ_{T+h|T}</th></tr>';
+  for (let h = 1; h <= H; h++) {
+    let yhat = theta;
+    // y_{T+h} = theta + eps_{T+h} + sum_{j=1}^{q} beta_j * eps_{T+h-j}
+    // eps_{T+h-j} is known (<=T) iff h-j <= 0 iff j >= h
+    for (let j = h; j <= q; j++) {
+      const lagFromT = j - h; // eps_{T-lagFromT}
+      if (lagFromT < eps.length) {
+        yhat += betas[j - 1] * eps[lagFromT];
+      }
+    }
+    out += `<tr><td>${h}</td><td>${yhat.toFixed(4)}${h > q ? ' (= θ, h>q)' : ''}</td></tr>`;
+  }
+  out += '</table>';
+  resDiv.innerHTML = out;
+}
+
+function calculerProb15() {
+  const resDiv = document.getElementById('resultatProb15');
+  const yhat = parseFloat(document.getElementById('yhatProb').value);
+  const sd = parseFloat(document.getElementById('sdProb').value);
+  const seuil = parseFloat(document.getElementById('seuilProb').value);
+  if ([yhat, sd, seuil].some(isNaN) || sd <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const z = (seuil - yhat) / sd;
+  const p = Phi(z);
+  let out = `<div class="valeur">z = ${z.toFixed(4)}</div>`;
+  out += `<div class="valeur">P(y &lt; ${seuil}) = ${(p * 100).toFixed(2)} %</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerAR15(); calculerMA15(); calculerProb15(); };
+</script>
+</body>
+</html>
