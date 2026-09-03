@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — La dualité GARCH et ARMA sur les carrés — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — La dualité GARCH et ARMA sur les carrés</h1>
+<p class="sous-titre">Calculatrice interactive — GARCH(1,1) → ARMA(1,1), ACF des carrés, comparaison de persistances estimées</p>
+
+<div class="panneau">
+  <h2>Convertir un GARCH(1,1) en ARMA(1,1) sur les carrés</h2>
+  <div class="ligne">
+    <div><label for="omegaD">ω</label><input type="number" id="omegaD" value="0.02" step="0.001" min="0.0001"></div>
+    <div><label for="alphaD">α₁</label><input type="number" id="alphaD" value="0.10" step="0.001" min="0" max="0.999"></div>
+    <div><label for="betaD">β₁</label><input type="number" id="betaD" value="0.85" step="0.001" min="0" max="0.999"></div>
+  </div>
+  <button onclick="calculerDualite()">Convertir</button>
+  <div id="resultatDualite" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Reconstituer l'ACF des carrés à partir de la persistance</h2>
+  <div class="ligne">
+    <div><label for="piAcf">π</label><input type="number" id="piAcf" value="0.99" step="0.001" min="0.001" max="0.999"></div>
+    <div><label for="lagRef">retard de référence</label><input type="number" id="lagRef" value="20" step="1" min="2"></div>
+    <div><label for="rhoRef">ACF connue à ce retard</label><input type="number" id="rhoRef" value="0.82" step="0.001" min="-1" max="1"></div>
+    <div><label for="lagCible">retard cible</label><input type="number" id="lagCible" value="60" step="1" min="2"></div>
+  </div>
+  <button onclick="calculerAcfReconstruit()">Calculer ρ₂ et l'ACF au retard cible</button>
+  <div id="resultatAcfReconstruit" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Comparer deux persistances estimées (MCO contre MLE)</h2>
+  <div class="ligne">
+    <div><label for="piMco">π̂ (MCO, rapide)</label><input type="number" id="piMco" value="0.94" step="0.001" min="0.001" max="0.999"></div>
+    <div><label for="piMle">π̂ (MLE, correct)</label><input type="number" id="piMle" value="0.988" step="0.001" min="0.001" max="0.999"></div>
+  </div>
+  <button onclick="comparerEstimations()">Comparer les demi-vies</button>
+  <div id="resultatComparerEstimations" class="resultat-zone"></div>
+</div>
+
+<script>
+function demiVie(pi) { return Math.log(0.5) / Math.log(pi); }
+
+function calculerDualite() {
+  const resDiv = document.getElementById('resultatDualite');
+  const omega = parseFloat(document.getElementById('omegaD').value);
+  const alpha1 = parseFloat(document.getElementById('alphaD').value);
+  const beta1 = parseFloat(document.getElementById('betaD').value);
+  if ([omega, alpha1, beta1].some(isNaN) || omega <= 0 || alpha1 < 0 || beta1 < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const arCoef = alpha1 + beta1;
+  const maCoef = -beta1;
+  let out = `<div class="valeur">équation : ε²_t = ${omega.toFixed(4)} + ${arCoef.toFixed(4)}·ε²_{t-1} + v_t + (${maCoef.toFixed(4)})·v_{t-1}</div>`;
+  out += `<div class="valeur">coefficient AR = α₁+β₁ = ${arCoef.toFixed(4)}</div>`;
+  out += `<div class="valeur">coefficient MA = −β₁ = ${maCoef.toFixed(4)}</div>`;
+  out += `<div class="valeur ${arCoef < 1 ? 'ok' : 'ko'}">stationnaire (|AR| &lt; 1) : ${arCoef < 1 ? 'oui' : 'non'}</div>`;
+  if (arCoef < 1) {
+    out += `<div class="valeur">σ² = ω/(1−AR) = ${(omega / (1 - arCoef)).toFixed(4)}</div>`;
+  }
+  resDiv.innerHTML = out;
+}
+
+function calculerAcfReconstruit() {
+  const resDiv = document.getElementById('resultatAcfReconstruit');
+  const pi = parseFloat(document.getElementById('piAcf').value);
+  const lagRef = parseInt(document.getElementById('lagRef').value);
+  const rhoRef = parseFloat(document.getElementById('rhoRef').value);
+  const lagCible = parseInt(document.getElementById('lagCible').value);
+  if ([pi, lagRef, rhoRef, lagCible].some(isNaN) || pi <= 0 || pi >= 1 || lagRef < 2 || lagCible < 2) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (0 &lt; π &lt; 1, retards ≥ 2).</p>';
+    return;
+  }
+  const rho2 = rhoRef / Math.pow(pi, lagRef - 2);
+  const rhoCible = rho2 * Math.pow(pi, lagCible - 2);
+  let out = `<div class="valeur">ρ₂ (reconstitué) = ${rho2.toFixed(4)}</div>`;
+  out += `<div class="valeur">ρ(${lagCible}) = ρ₂ · π^${lagCible - 2} = ${rhoCible.toFixed(4)}</div>`;
+  out += `<div class="valeur">demi-vie associée à π = ${demiVie(pi).toFixed(1)} jours</div>`;
+  resDiv.innerHTML = out;
+}
+
+function comparerEstimations() {
+  const resDiv = document.getElementById('resultatComparerEstimations');
+  const piMco = parseFloat(document.getElementById('piMco').value);
+  const piMle = parseFloat(document.getElementById('piMle').value);
+  if ([piMco, piMle].some(isNaN) || piMco <= 0 || piMco >= 1 || piMle <= 0 || piMle >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (0 &lt; π &lt; 1).</p>';
+    return;
+  }
+  const dvMco = demiVie(piMco), dvMle = demiVie(piMle);
+  let out = `<div class="valeur">demi-vie (MCO, π=${piMco}) = ${dvMco.toFixed(1)} jours</div>`;
+  out += `<div class="valeur">demi-vie (MLE, π=${piMle}) = ${dvMle.toFixed(1)} jours</div>`;
+  out += `<div class="valeur">écart = ${(dvMle - dvMco).toFixed(1)} jours</div>`;
+  out += `<div class="valeur">rapport MLE/MCO = ${(dvMle / dvMco).toFixed(2)}</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerDualite(); calculerAcfReconstruit(); comparerEstimations(); };
+</script>
+</body>
+</html>
