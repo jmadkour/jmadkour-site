@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Données de panel (méthodes avancées) — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — Données de panel : méthodes avancées</h1>
+<p class="sous-titre">Calculatrice interactive — transformation within, paramètre λ (effets aléatoires) et test de Hausman</p>
+
+<div class="panneau">
+  <h2>Transformation within (centrage temporel)</h2>
+  <p class="aide">Une valeur par ligne (une série temporelle pour un seul individu).</p>
+  <textarea id="serieWithin" rows="4">10
+12
+11
+15</textarea>
+  <button onclick="calculerWithin()">Centrer</button>
+  <div id="resultatWithin" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Paramètre λ des effets aléatoires</h2>
+  <div class="ligne">
+    <div><label for="su2">σ²ᵤ (variance de l'erreur idiosyncratique)</label><input type="number" id="su2" value="50" step="0.1" min="0.0001"></div>
+    <div><label for="sa2">σ²ₐ (variance de l'effet individuel)</label><input type="number" id="sa2" value="30" step="0.1" min="0"></div>
+    <div><label for="Tval">T (nombre de périodes)</label><input type="number" id="Tval" value="5" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerLambda()">Calculer λ</button>
+  <div id="resultatLambda" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Test de Hausman</h2>
+  <div class="ligne">
+    <div><label for="betaFE">β̂ (effets fixes)</label><input type="number" id="betaFE" value="0.085" step="0.001"></div>
+    <div><label for="betaRE">β̂ (effets aléatoires)</label><input type="number" id="betaRE" value="0.062" step="0.001"></div>
+    <div><label for="Hstat">statistique H</label><input type="number" id="Hstat" value="14.2" step="0.01" min="0"></div>
+    <div><label for="hcrit">seuil χ²(1)</label><input type="number" id="hcrit" value="3.84" step="0.01"></div>
+  </div>
+  <button onclick="calculerHausman()">Évaluer</button>
+  <div id="resultatHausman" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">λ = 0 redonne les MCO groupés, λ = 1 redonne les effets fixes. Pour T = 2, effets fixes et différence première coïncident exactement ; ce n'est plus vrai pour T > 2.</p>
+
+<script>
+function calculerWithin() {
+  const resDiv = document.getElementById('resultatWithin');
+  const lignes = document.getElementById('serieWithin').value.trim().split('\n').filter(l => l.trim().length);
+  const vals = lignes.map(l => parseFloat(l));
+  if (vals.some(isNaN) || vals.length < 2) { resDiv.innerHTML = '<p class="erreur">Au moins 2 valeurs numériques requises.</p>'; return; }
+  const moy = vals.reduce((a,b) => a+b, 0) / vals.length;
+  const centres = vals.map(v => v - moy);
+  const sommeCentres = centres.reduce((a,b) => a+b, 0);
+  let out = `<div class="valeur">moyenne = ${moy.toFixed(4)}</div>`;
+  out += '<table><tr><th>t</th><th>valeur</th><th>centrée</th></tr>';
+  vals.forEach((v,i) => out += `<tr><td>${i+1}</td><td>${v}</td><td>${centres[i].toFixed(4)}</td></tr>`);
+  out += '</table>';
+  out += `<p>Somme des valeurs centrées : ${sommeCentres.toFixed(6)} (doit être nulle, aux arrondis près).</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerLambda() {
+  const resDiv = document.getElementById('resultatLambda');
+  const su2 = parseFloat(document.getElementById('su2').value);
+  const sa2 = parseFloat(document.getElementById('sa2').value);
+  const T = parseFloat(document.getElementById('Tval').value);
+  if ([su2,sa2,T].some(isNaN) || su2 <= 0 || sa2 < 0 || T <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const lambda = 1 - Math.sqrt(su2 / (su2 + T * sa2));
+  let out = `<div class="valeur">λ = ${lambda.toFixed(4)}</div>`;
+  if (lambda < 0.05) out += '<p>λ proche de 0 : proche des MCO groupés.</p>';
+  else if (lambda > 0.95) out += '<p>λ proche de 1 : proche des effets fixes.</p>';
+  else out += '<p>λ intermédiaire : quasi-différenciation partielle.</p>';
+  resDiv.innerHTML = out;
+}
+
+function calculerHausman() {
+  const resDiv = document.getElementById('resultatHausman');
+  const bFE = parseFloat(document.getElementById('betaFE').value);
+  const bRE = parseFloat(document.getElementById('betaRE').value);
+  const H = parseFloat(document.getElementById('Hstat').value);
+  const hcrit = parseFloat(document.getElementById('hcrit').value);
+  if ([bFE,bRE,H,hcrit].some(isNaN)) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const ecart = bFE - bRE;
+  const rejette = H > hcrit;
+  let out = `<div class="valeur">écart FE − RE = ${ecart.toFixed(4)}</div><div class="valeur">H = ${H.toFixed(3)}</div>`;
+  out += `<p class="${rejette ? 'alerte' : 'ok'}">${rejette ? 'H₀ (RE valide) est rejetée : préférer les effets fixes.' : 'H₀ n’est pas rejetée : RE reste défendable (et plus efficace).'}</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerWithin(); calculerLambda(); calculerHausman(); };
+</script>
+</body>
+</html>
