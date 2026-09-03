@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Propriétés statistiques de l'ARCH — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Propriétés statistiques de l'ARCH</h1>
+<p class="sous-titre">Calculatrice interactive — kurtosis d'un ARCH(1), mémoire des carrés, le dilemme persistance/moments</p>
+
+<div class="panneau">
+  <h2>Kurtosis et conditions de validité pour un α₁ donné</h2>
+  <div class="ligne">
+    <div><label for="alphaKurt">α₁</label><input type="number" id="alphaKurt" value="0.3" step="0.01" min="0" max="0.999"></div>
+  </div>
+  <button onclick="calculerKurtosisArch()">Analyser ce α₁</button>
+  <div id="resultatKurtosisArch" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Mémoire des carrés : ACF(k) = α₁ᵏ</h2>
+  <div class="ligne">
+    <div><label for="alphaAcf">α₁</label><input type="number" id="alphaAcf" value="0.85" step="0.01" min="0" max="0.999"></div>
+  </div>
+  <button onclick="calculerAcfArch()">Calculer l'ACF des carrés</button>
+  <div id="resultatAcfArch" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Le dilemme : quel α₁ pour un kurtosis cible ?</h2>
+  <div class="ligne">
+    <div><label for="kappaCible">kurtosis cible κ (&gt; 3)</label><input type="number" id="kappaCible" value="6.05" step="0.01" min="3.0001"></div>
+  </div>
+  <button onclick="calculerDilemme()">Résoudre α₁ et tester la mémoire à 20 jours</button>
+  <div id="resultatDilemme" class="resultat-zone"></div>
+</div>
+
+<script>
+const SEUIL_KURTOSIS = 1 / Math.sqrt(3);
+
+function kappaArch1(a) {
+  return 3 * (1 - a * a) / (1 - 3 * a * a);
+}
+
+function calculerKurtosisArch() {
+  const resDiv = document.getElementById('resultatKurtosisArch');
+  const a = parseFloat(document.getElementById('alphaKurt').value);
+  if (isNaN(a) || a < 0 || a >= 1) {
+    resDiv.innerHTML = '<p class="erreur">α₁ doit être compris entre 0 (inclus) et 1 (exclu).</p>';
+    return;
+  }
+  const stationnaire = a < 1;
+  const kurtFini = 3 * a * a < 1;
+  let out = `<div class="valeur ${stationnaire ? 'ok' : 'ko'}">stationnaire (variance finie) : ${stationnaire ? 'oui' : 'non'}</div>`;
+  out += `<div class="valeur ${kurtFini ? 'ok' : 'ko'}">kurtosis fini : ${kurtFini ? 'oui' : 'non'}</div>`;
+  out += `<div class="valeur">seuil critique 1/√3 = ${SEUIL_KURTOSIS.toFixed(4)}</div>`;
+  if (kurtFini) {
+    out += `<div class="valeur">κ = ${kappaArch1(a).toFixed(4)}</div>`;
+  } else {
+    out += `<div class="valeur ko">κ = infini (3α₁² = ${(3 * a * a).toFixed(4)} ≥ 1)</div>`;
+  }
+  resDiv.innerHTML = out;
+}
+
+function calculerAcfArch() {
+  const resDiv = document.getElementById('resultatAcfArch');
+  const a = parseFloat(document.getElementById('alphaAcf').value);
+  if (isNaN(a) || a < 0 || a >= 1) {
+    resDiv.innerHTML = '<p class="erreur">α₁ doit être compris entre 0 (inclus) et 1 (exclu).</p>';
+    return;
+  }
+  const ks = [1, 5, 10, 20];
+  let out = '<table class="res"><tr><th>k</th><th>Corr(ε²_t, ε²_{t-k}) = α₁ᵏ</th></tr>';
+  ks.forEach(k => {
+    out += `<tr><td>${k}</td><td>${Math.pow(a, k).toFixed(6)}</td></tr>`;
+  });
+  out += '</table>';
+  const kurtFini = 3 * a * a < 1;
+  out += `<div class="valeur ${kurtFini ? 'ok' : 'ko'}">à ce α₁, le kurtosis est ${kurtFini ? ('fini (κ = ' + kappaArch1(a).toFixed(4) + ')') : 'infini'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerDilemme() {
+  const resDiv = document.getElementById('resultatDilemme');
+  const kappa = parseFloat(document.getElementById('kappaCible').value);
+  if (isNaN(kappa) || kappa <= 3) {
+    resDiv.innerHTML = '<p class="erreur">Le kurtosis cible doit être strictement supérieur à 3.</p>';
+    return;
+  }
+  const a2 = (kappa - 3) / (3 * (kappa - 1));
+  const a = Math.sqrt(a2);
+  const kurtFiniOk = a < SEUIL_KURTOSIS;
+  const rho20 = Math.pow(a, 20);
+  let out = `<div class="valeur">α₁ nécessaire = ${a.toFixed(4)}</div>`;
+  out += `<div class="valeur ${kurtFiniOk ? 'ok' : 'ko'}">compatible avec un kurtosis fini : ${kurtFiniOk ? 'oui' : 'non'}</div>`;
+  out += `<div class="valeur">Corr(ε²_t, ε²_{t-20}) à ce α₁ = ${rho20.toExponential(3)}</div>`;
+  const memoireSignificative = rho20 > 0.02;
+  out += `<div class="valeur ${memoireSignificative ? 'ok' : 'ko'}">mémoire encore significative à 20 jours : ${memoireSignificative ? 'oui' : 'non — le dilemme se confirme'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerKurtosisArch(); calculerAcfArch(); calculerDilemme(); };
+</script>
+</body>
+</html>
