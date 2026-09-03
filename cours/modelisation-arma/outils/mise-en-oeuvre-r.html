@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 16 — Mise en œuvre sur R — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 16 — Mise en œuvre sur R</h1>
+<p class="sous-titre">Calculatrice interactive — relire une sortie R : Jarque-Bera, test de Student, comparaison de BIC</p>
+
+<div class="panneau">
+  <h2>Jarque-Bera à partir des statistiques descriptives</h2>
+  <div class="ligne">
+    <div><label for="TJB16">T</label><input type="number" id="TJB16" value="2000" step="1" min="5"></div>
+    <div><label for="SJB16">asymétrie S</label><input type="number" id="SJB16" value="-0.19" step="0.01"></div>
+    <div><label for="KJB16">kurtosis K</label><input type="number" id="KJB16" value="6.60" step="0.01"></div>
+  </div>
+  <button onclick="calculerJB16()">Calculer JB</button>
+  <div id="resultatJB16" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Significativité d'un coefficient estimé (sortie <code>arima()</code>)</h2>
+  <div class="ligne">
+    <div><label for="coefHat16">coefficient estimé</label><input type="number" id="coefHat16" value="0.0192" step="0.0001"></div>
+    <div><label for="coefSe16">écart-type (s.e.)</label><input type="number" id="coefSe16" value="0.0224" step="0.0001" min="0.00001"></div>
+  </div>
+  <button onclick="calculerStudent16()">Calculer t</button>
+  <div id="resultatStudent16" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Comparer le BIC de deux modèles (sortie <code>auto.arima</code> / grille)</h2>
+  <div class="ligne">
+    <div><label for="T16">T</label><input type="number" id="T16" value="2000" step="1" min="2"></div>
+    <div><label for="dk16">écart de paramètres Δk entre les deux modèles</label><input type="number" id="dk16" value="1" step="1" min="0"></div>
+    <div><label for="BICgrand">BIC du modèle avec le plus de paramètres</label><input type="number" id="BICgrand" value="6337.321" step="0.001"></div>
+    <div><label for="BICpetit">BIC du modèle avec le moins de paramètres</label><input type="number" id="BICpetit" value="6330.442" step="0.001"></div>
+  </div>
+  <button onclick="calculerBICcompare()">Comparer</button>
+  <div id="resultatBICcompare" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerJB16() {
+  const resDiv = document.getElementById('resultatJB16');
+  const T = parseFloat(document.getElementById('TJB16').value);
+  const S = parseFloat(document.getElementById('SJB16').value);
+  const K = parseFloat(document.getElementById('KJB16').value);
+  if ([T, S, K].some(isNaN) || T <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const JB = (T / 6) * (S * S + Math.pow(K - 3, 2) / 4);
+  const crit = 5.991;
+  const rejette = JB > crit;
+  let out = `<div class="valeur">JB = ${JB.toFixed(4)}</div>`;
+  out += `<div class="valeur ${rejette ? 'ko' : 'ok'}">${rejette ? 'rejette la normalité (JB > 5,991)' : 'ne rejette pas la normalité'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerStudent16() {
+  const resDiv = document.getElementById('resultatStudent16');
+  const a = parseFloat(document.getElementById('coefHat16').value);
+  const se = parseFloat(document.getElementById('coefSe16').value);
+  if ([a, se].some(isNaN) || se <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const t = a / se;
+  const sig = Math.abs(t) > 1.96;
+  let out = `<div class="valeur">t = ${t.toFixed(4)}</div>`;
+  out += `<div class="valeur ${sig ? 'ok' : 'ko'}">${sig ? 'significatif à 5 % (|t|>1,96)' : 'non significatif à 5 %'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerBICcompare() {
+  const resDiv = document.getElementById('resultatBICcompare');
+  const T = parseFloat(document.getElementById('T16').value);
+  const dk = parseFloat(document.getElementById('dk16').value);
+  const BICg = parseFloat(document.getElementById('BICgrand').value);
+  const BICp = parseFloat(document.getElementById('BICpetit').value);
+  if ([T, dk, BICg, BICp].some(isNaN) || T <= 1 || dk < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const penaliteTheorique = Math.log(T) * dk;
+  const ecartReel = BICg - BICp;
+  const ameliorationAjustement = penaliteTheorique - ecartReel;
+  let out = `<div class="valeur">pénalité théorique = Δk·ln(T) = ${penaliteTheorique.toFixed(4)}</div>`;
+  out += `<div class="valeur">écart réel de BIC = ${ecartReel.toFixed(4)}</div>`;
+  out += `<div class="valeur">amélioration de −2 ln L̂ apportée par les paramètres en plus ≈ ${ameliorationAjustement.toFixed(4)}</div>`;
+  const meilleur = BICp < BICg ? 'le modèle avec le moins de paramètres' : 'le modèle avec le plus de paramètres';
+  out += `<p class="aide">Le BIC le plus bas retient ${meilleur}.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerJB16(); calculerStudent16(); calculerBICcompare(); };
+</script>
+</body>
+</html>
