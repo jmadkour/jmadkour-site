@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 16 — De la volatilité à la Value at Risk — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; resize: vertical; min-height: 2.4em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 16 — De la volatilité à la Value at Risk</h1>
+<p class="sous-titre">Calculatrice interactive — VaR conditionnelle, backtesting (Kupiec, Christoffersen), expected shortfall</p>
+
+<div class="panneau">
+  <h2>VaR conditionnelle et capital réglementaire</h2>
+  <div class="ligne">
+    <div><label for="muVar16">μ (moyenne conditionnelle)</label><input type="number" id="muVar16" value="0.05" step="0.01"></div>
+    <div><label for="hVar16">ĥ_(T+1|T)</label><input type="number" id="hVar16" value="2.5666" step="0.0001" min="0"></div>
+    <div><label for="loiVar16">loi de z</label>
+      <select id="loiVar16">
+        <option value="-2.33">normale (z₀.₀₁ = -2,33)</option>
+        <option value="-2.75" selected>Student ν=6 (z₀.₀₁ = -2,75)</option>
+        <option value="-3.09">Student asymétrique (z₀.₀₁ = -3,09)</option>
+      </select>
+    </div>
+    <div><label for="kVar16">multiplicateur réglementaire k</label><input type="number" id="kVar16" value="3" step="0.5" min="1"></div>
+  </div>
+  <button onclick="calculerVaR()">Calculer la VaR et le capital</button>
+  <div id="resultatVaR" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Backtesting : Kupiec + Christoffersen</h2>
+  <div class="ligne">
+    <div><label for="nBT16">n (observations)</label><input type="number" id="nBT16" value="2500" step="1" min="1"></div>
+    <div><label for="n1BT16">n₁ (dépassements)</label><input type="number" id="n1BT16" value="25" step="1" min="0"></div>
+    <div><label for="alphaBT16">α (seuil)</label><input type="number" id="alphaBT16" value="0.01" step="0.001" min="0.0001" max="0.5"></div>
+    <div><label for="lrindBT16">LR_ind (Christoffersen, saisi)</label><input type="number" id="lrindBT16" value="1.38" step="0.01" min="0"></div>
+  </div>
+  <button onclick="calculerBacktest()">Tester couverture, indépendance, et le test conjoint</button>
+  <div id="resultatBacktest" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Expected shortfall empirique</h2>
+  <label for="pertesES16">pertes lors des dépassements, séparées par des virgules (%)</label>
+  <textarea id="pertesES16" rows="2">1.3, 1.5, 1.8, 2.4, 1.6</textarea>
+  <div class="ligne">
+    <div><label for="varSeuilES16">seuil de VaR (%)</label><input type="number" id="varSeuilES16" value="1.2" step="0.01" min="0"></div>
+  </div>
+  <button onclick="calculerES()">Calculer l'ES empirique</button>
+  <div id="resultatES" class="resultat-zone"></div>
+</div>
+
+<script>
+function logGamma(x) {
+  const g = 7;
+  const p = [
+    0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+    771.32342877765313, -176.61502916214059, 12.507343278686905,
+    -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7
+  ];
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - logGamma(1 - x);
+  x -= 1;
+  let a = p[0];
+  const t = x + g + 0.5;
+  for (let i = 1; i < g + 2; i++) a += p[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+function gammaincLower(a, x) {
+  if (x <= 0) return 0;
+  if (x < a + 1) {
+    let sum = 1 / a, term = sum, n = a;
+    for (let i = 0; i < 500; i++) {
+      n += 1; term *= x / n; sum += term;
+      if (Math.abs(term) < Math.abs(sum) * 1e-15) break;
+    }
+    return sum * Math.exp(-x + a * Math.log(x) - logGamma(a));
+  } else {
+    let b = x + 1 - a, c = 1e300, d = 1 / b, h = d;
+    for (let i = 1; i < 500; i++) {
+      const an = -i * (i - a);
+      b += 2;
+      d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300;
+      c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300;
+      d = 1 / d;
+      const del = d * c; h *= del;
+      if (Math.abs(del - 1) < 1e-15) break;
+    }
+    const Q = Math.exp(-x + a * Math.log(x) - logGamma(a)) * h;
+    return 1 - Q;
+  }
+}
+function chi2cdf(x, k) { return gammaincLower(k / 2, x / 2); }
+function chi2crit(k, alpha) {
+  let lo = 0, hi = k + 20 * Math.sqrt(2 * k) + 50;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    const p = 1 - chi2cdf(mid, k);
+    if (p > alpha) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function calculerVaR() {
+  const resDiv = document.getElementById('resultatVaR');
+  const mu = parseFloat(document.getElementById('muVar16').value);
+  const h = parseFloat(document.getElementById('hVar16').value);
+  const z = parseFloat(document.getElementById('loiVar16').value);
+  const k = parseFloat(document.getElementById('kVar16').value);
+  if ([mu, h, z, k].some(isNaN) || h < 0 || k < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const VaR = -(mu + Math.sqrt(h) * z);
+  const capital = k * VaR;
+  let out = `<div class="valeur">√ĥ_(T+1|T) = ${Math.sqrt(h).toFixed(4)}</div>`;
+  out += `<div class="valeur">VaR = ${VaR.toFixed(3)}</div>`;
+  out += `<div class="valeur">capital = k × VaR = ${capital.toFixed(3)}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerBacktest() {
+  const resDiv = document.getElementById('resultatBacktest');
+  const n = parseInt(document.getElementById('nBT16').value);
+  const n1 = parseInt(document.getElementById('n1BT16').value);
+  const alpha = parseFloat(document.getElementById('alphaBT16').value);
+  const LRind = parseFloat(document.getElementById('lrindBT16').value);
+  if ([n, n1, alpha, LRind].some(isNaN) || n <= 0 || n1 < 0 || n1 > n || alpha <= 0 || alpha >= 1 || LRind < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const piHat = n1 / n;
+  let LRuc;
+  if (n1 === 0) {
+    LRuc = -2 * (n * Math.log(1 - alpha));
+  } else if (n1 === n) {
+    LRuc = -2 * (n * Math.log(alpha));
+  } else {
+    const logL0 = (n - n1) * Math.log(1 - alpha) + n1 * Math.log(alpha);
+    const logL1 = (n - n1) * Math.log(1 - piHat) + n1 * Math.log(piHat);
+    LRuc = -2 * (logL0 - logL1);
+  }
+  const crit1 = chi2crit(1, 0.05);
+  const crit2 = chi2crit(2, 0.05);
+  const LRcc = LRuc + LRind;
+  const rejetUC = LRuc > crit1;
+  const rejetInd = LRind > crit1;
+  const rejetCC = LRcc > crit2;
+  let out = `<div class="valeur">π̂ = n₁/n = ${piHat.toFixed(4)} (contre α = ${alpha})</div>`;
+  out += '<table class="res"><tr><th>test</th><th>statistique</th><th>valeur critique (5%)</th><th>verdict</th></tr>';
+  out += `<tr><td>Kupiec (couverture), χ²₁</td><td>${LRuc.toFixed(3)}</td><td>${crit1.toFixed(3)}</td><td>${rejetUC ? 'rejetée' : 'acceptée'}</td></tr>`;
+  out += `<tr><td>Christoffersen (indépendance), χ²₁</td><td>${LRind.toFixed(3)}</td><td>${crit1.toFixed(3)}</td><td>${rejetInd ? 'rejetée' : 'acceptée'}</td></tr>`;
+  out += `<tr><td>test conjoint LR_cc, χ²₂</td><td>${LRcc.toFixed(3)}</td><td>${crit2.toFixed(3)}</td><td>${rejetCC ? 'rejetée' : 'acceptée'}</td></tr>`;
+  out += '</table>';
+  out += `<div class="valeur ${rejetCC ? 'ko' : 'ok'}">${rejetCC ? 'la VaR est rejetée par le test de couverture conditionnelle' : 'la VaR passe le test de couverture conditionnelle'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerES() {
+  const resDiv = document.getElementById('resultatES');
+  const pertes = document.getElementById('pertesES16').value.split(',')
+    .map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+  const varSeuil = parseFloat(document.getElementById('varSeuilES16').value);
+  if (pertes.length === 0 || isNaN(varSeuil)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const ES = pertes.reduce((a, b) => a + b, 0) / pertes.length;
+  let out = `<div class="valeur">nombre de dépassements = ${pertes.length}</div>`;
+  out += `<div class="valeur">ES empirique = ${ES.toFixed(3)}</div>`;
+  out += `<div class="valeur">VaR (seuil) = ${varSeuil.toFixed(3)}</div>`;
+  out += `<div class="valeur ${ES > varSeuil ? 'ok' : 'ko'}">${ES > varSeuil ? 'ES > VaR, comme attendu' : 'anomalie : ES ≤ VaR'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerVaR(); calculerBacktest(); calculerES(); };
+</script>
+</body>
+</html>
