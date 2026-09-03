@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Le cadre de la variance conditionnelle — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; resize: vertical; min-height: 2.4em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .saut { background: var(--cintu) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Le cadre de la variance conditionnelle</h1>
+<p class="sous-titre">Calculatrice interactive — σ² = E(h_t), décomposition ε_t = √h_t · z_t, fenêtre glissante contre lissage exponentiel</p>
+
+<div class="panneau">
+  <h2>Variance inconditionnelle comme moyenne des variances conditionnelles</h2>
+  <label for="hSeries">série de h_t (%², séparés par des virgules)</label>
+  <textarea id="hSeries" rows="2">1.2, 0.8, 2.1, 1.5, 0.9</textarea>
+  <button onclick="calculerMoyenneH()">Calculer σ² estimé = moyenne(h_t)</button>
+  <div id="resultatMoyenneH" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Décomposition ε_t = √h_t · z_t</h2>
+  <div class="ligne">
+    <div><label for="htDecomp">h_t (%², supposé connu à t−1)</label><input type="number" id="htDecomp" value="2.25" step="0.01" min="0.0001"></div>
+  </div>
+  <label for="zSeries">série de z_t (innovations standardisées, séparées par des virgules)</label>
+  <textarea id="zSeries" rows="2">-0.5, 1.2, 0.3, -1.8, 0.9</textarea>
+  <button onclick="calculerDecomposition()">Calculer ε_t et vérifier la décomposition</button>
+  <div id="resultatDecomposition" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Fenêtre glissante contre lissage exponentiel (RiskMetrics)</h2>
+  <label for="epsSeries">série de ε²_t (%², séparés par des virgules, du plus ancien au plus récent)</label>
+  <textarea id="epsSeries" rows="2">0.5, 0.4, 6.0, 0.3, 0.4, 0.5, 0.6, 0.4</textarea>
+  <div class="ligne">
+    <div><label for="mFenetre">largeur de fenêtre m</label><input type="number" id="mFenetre" value="5" step="1" min="1"></div>
+    <div><label for="lambdaEwma">λ (lissage exponentiel)</label><input type="number" id="lambdaEwma" value="0.94" step="0.01" min="0" max="0.9999"></div>
+    <div><label for="h0Ewma">h_0 (valeur initiale du lissage)</label><input type="number" id="h0Ewma" value="1.0" step="0.01" min="0"></div>
+  </div>
+  <button onclick="calculerFenetreEwma()">Comparer les deux variances</button>
+  <p class="aide">La ligne en orange signale un saut de plus de 30&nbsp;% de la variance en fenêtre glissante d'un jour à l'autre.</p>
+  <div id="resultatFenetreEwma" class="resultat-zone"></div>
+</div>
+
+<script>
+function parseListe(str) {
+  return str.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+}
+
+function calculerMoyenneH() {
+  const resDiv = document.getElementById('resultatMoyenneH');
+  const hs = parseListe(document.getElementById('hSeries').value);
+  if (hs.length === 0) {
+    resDiv.innerHTML = '<p class="erreur">Série vide ou invalide.</p>';
+    return;
+  }
+  const moyenne = hs.reduce((a, b) => a + b, 0) / hs.length;
+  let out = `<div class="valeur">n = ${hs.length} jours</div>`;
+  out += `<div class="valeur">moyenne(h_t) = σ² estimé = ${moyenne.toFixed(4)}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerDecomposition() {
+  const resDiv = document.getElementById('resultatDecomposition');
+  const ht = parseFloat(document.getElementById('htDecomp').value);
+  const zs = parseListe(document.getElementById('zSeries').value);
+  if (isNaN(ht) || ht <= 0 || zs.length === 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (h_t doit être positif, série de z_t non vide).</p>';
+    return;
+  }
+  const sqrtHt = Math.sqrt(ht);
+  const eps = zs.map(z => sqrtHt * z);
+  const meanZ = zs.reduce((a, b) => a + b, 0) / zs.length;
+  const varZ = zs.reduce((a, b) => a + (b - meanZ) ** 2, 0) / zs.length;
+  let out = `<div class="valeur">√h_t = ${sqrtHt.toFixed(4)}</div>`;
+  out += '<table class="res"><tr><th>jour</th><th>z_t</th><th>ε_t = √h_t · z_t</th></tr>';
+  zs.forEach((z, i) => {
+    out += `<tr><td>${i + 1}</td><td>${z.toFixed(4)}</td><td>${eps[i].toFixed(4)}</td></tr>`;
+  });
+  out += '</table>';
+  out += `<div class="valeur">moyenne empirique de z_t = ${meanZ.toFixed(4)} (théorique : 0)</div>`;
+  out += `<div class="valeur">variance empirique de z_t = ${varZ.toFixed(4)} (théorique : 1)</div>`;
+  out += `<div class="valeur">E(ε_t | Ω_{t-1}) théorique = 0</div>`;
+  out += `<div class="valeur">V(ε_t | Ω_{t-1}) théorique = h_t = ${ht.toFixed(4)}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerFenetreEwma() {
+  const resDiv = document.getElementById('resultatFenetreEwma');
+  const eps2 = parseListe(document.getElementById('epsSeries').value);
+  const m = parseInt(document.getElementById('mFenetre').value);
+  const lambda = parseFloat(document.getElementById('lambdaEwma').value);
+  const h0 = parseFloat(document.getElementById('h0Ewma').value);
+  if (eps2.length === 0 || isNaN(m) || m < 1 || eps2.length < m || isNaN(lambda) || lambda < 0 || lambda >= 1 || isNaN(h0) || h0 < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (il faut au moins m observations, 0 ≤ λ &lt; 1, h_0 ≥ 0).</p>';
+    return;
+  }
+  // fenêtre glissante : une valeur par jour à partir du jour m
+  const fenetres = [];
+  for (let t = m - 1; t < eps2.length; t++) {
+    const fen = eps2.slice(t - m + 1, t + 1);
+    fenetres.push(fen.reduce((a, b) => a + b, 0) / m);
+  }
+  // lissage exponentiel : h_t = lambda*h_{t-1} + (1-lambda)*eps2_{t-1}, à partir de h0
+  const ewma = [h0];
+  for (let t = 0; t < eps2.length; t++) {
+    ewma.push(lambda * ewma[ewma.length - 1] + (1 - lambda) * eps2[t]);
+  }
+
+  let out = '<table class="res"><tr><th>jour</th><th>ε²_t</th><th>fenêtre glissante (m=' + m + ')</th><th>lissage exp. (λ=' + lambda.toFixed(2) + ')</th></tr>';
+  for (let t = 0; t < eps2.length; t++) {
+    const fenVal = t >= m - 1 ? fenetres[t - (m - 1)] : null;
+    const fenPrev = t >= m ? fenetres[t - m] : null;
+    let sautClasse = '';
+    if (fenVal !== null && fenPrev !== null) {
+      const variation = Math.abs(fenVal - fenPrev) / fenPrev;
+      if (variation > 0.30) sautClasse = ' class="saut"';
+    }
+    out += `<tr><td>${t + 1}</td><td>${eps2[t].toFixed(4)}</td><td${sautClasse}>${fenVal !== null ? fenVal.toFixed(4) : '—'}</td><td>${ewma[t + 1].toFixed(4)}</td></tr>`;
+  }
+  out += '</table>';
+
+  const hStar = eps2[eps2.length - 1]; // limite si ce dernier choc se répétait indéfiniment
+  out += `<p class="aide">Pour comparaison : si le dernier choc ε²=${hStar.toFixed(4)} se répétait indéfiniment, le lissage exponentiel convergerait vers h* = ${hStar.toFixed(4)} (résolution de h* = λh* + (1−λ)ε²), sans jamais reproduire de saut brutal.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerMoyenneH(); calculerDecomposition(); calculerFenetreEwma(); };
+</script>
+</body>
+</html>
