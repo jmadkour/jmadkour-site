@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Les hypothèses de Gauss-Markov — Diagnostic interactif</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 220px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Les hypothèses de Gauss-Markov</h1>
+<p class="sous-titre">Diagnostic interactif — quelle hypothèse est en jeu ?</p>
+
+<div class="panneau">
+  <h2>Symptôme observé</h2>
+  <div class="ligne">
+    <div>
+      <label for="symptome">Choisir un symptôme</label>
+      <select id="symptome">
+        <option value="omise">Une variable omise est corrélée à la fois à une variable incluse et à y</option>
+        <option value="hetero">La dispersion des résidus augmente avec le niveau de la variable expliquée</option>
+        <option value="groupe">Des observations groupées (même région, même entreprise) partagent un choc non observé</option>
+        <option value="colin_parfaite">Une variable est une combinaison linéaire exacte d'autres variables (X'X non inversible)</option>
+        <option value="colin_forte">Deux variables sont très corrélées (proche de 1) mais pas exactement colinéaires</option>
+        <option value="nonlin_param">Un paramètre apparaît au carré ou en exposant dans le modèle</option>
+        <option value="petit_n">L'échantillon est petit (moins de 30 observations) et la loi des erreurs est inconnue</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="diagnostiquer()">Diagnostiquer</button>
+  <div id="resultatDiagnostic" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Seule une violation de H2 (exogénéité) biaise les coefficients ; toutes les autres situations laissent les coefficients sans biais mais affectent soit le calcul lui-même, soit la fiabilité des écarts-types et des tests.</p>
+
+<script>
+const DIAGNOSTICS = {
+  omise: { hyp: 'H2 — Exogénéité', consequence: 'BIAIS des coefficients (E(β̂)≠β). Aucune correction de l\'écart-type ne répare ce problème : il faut changer le modèle (ajouter la variable omise) ou la méthode.', gravite: 'grave' },
+  hetero: { hyp: 'H3 — Homoscédasticité', consequence: 'Coefficients toujours sans biais, mais écarts-types faussés (tests t et F non fiables). Corrigible par des écarts-types robustes.', gravite: 'moderee' },
+  groupe: { hyp: 'H4 — Indépendance des erreurs', consequence: 'Coefficients toujours sans biais, mais écarts-types faussés par la corrélation intra-groupe. Corrigible par des erreurs-types groupées (chapitre 15).', gravite: 'moderee' },
+  colin_parfaite: { hyp: 'H5 — Pas de colinéarité parfaite (violée)', consequence: 'Calcul IMPOSSIBLE : X\'X non inversible, aucun coefficient ne peut être estimé.', gravite: 'grave' },
+  colin_forte: { hyp: 'Zone grise (H5 techniquement respectée)', consequence: 'Calcul possible mais fragile : coefficients individuels instables, t peu fiables, malgré un F global qui peut rester significatif (chapitre 13).', gravite: 'moderee' },
+  nonlin_param: { hyp: 'H1 — Linéarité (en les paramètres)', consequence: 'Les MCO classiques ne s\'appliquent pas directement : il faut soit transformer le modèle (ex. logarithme), soit utiliser une méthode d\'estimation non linéaire.', gravite: 'grave' },
+  petit_n: { hyp: 'H6 — Normalité des erreurs (hors Gauss-Markov)', consequence: 'Les MCO restent BLUE (H1-H5 suffisent), mais les tests t et F ne sont plus exacts sans normalité à petit échantillon : vérifier l\'histogramme des résidus.', gravite: 'moderee' }
+};
+
+function diagnostiquer() {
+  const resDiv = document.getElementById('resultatDiagnostic');
+  const choix = document.getElementById('symptome').value;
+  const d = DIAGNOSTICS[choix];
+  let out = `<div class="valeur">Hypothèse en jeu : ${d.hyp}</div>`;
+  out += `<p class="${d.gravite === 'grave' ? 'alerte' : 'ok'}">${d.consequence}</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { diagnostiquer(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 21 — Mise en œuvre sur R et Python — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 21 — Mise en œuvre sur R et Python</h1>
+<p class="sous-titre">Calculatrice interactive — lire une sortie de régression, de bout en bout</p>
+
+<div class="panneau">
+  <h2>Intervalle de confiance : tester n'importe quelle valeur</h2>
+  <div class="ligne">
+    <div><label for="borneBasse">Borne basse de l'IC</label><input type="number" id="borneBasse" value="247.65" step="0.01"></div>
+    <div><label for="borneHaute">Borne haute de l'IC</label><input type="number" id="borneHaute" value="293.19" step="0.01"></div>
+    <div><label for="valTest">Valeur à tester (H₀)</label><input type="number" id="valTest" value="250" step="0.01"></div>
+  </div>
+  <button onclick="testerIC()">Tester</button>
+  <div id="resultatIC" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Comparer MCO, robuste et grappe sur une même variable</h2>
+  <p class="aide">Une ligne par correction, format <code>nom,estimation,ecart-type</code>. L'estimation doit être identique sur toutes les lignes.</p>
+  <textarea id="tableauSE" rows="3" style="width:100%; padding:0.5em; border:1px solid #ccc; border-radius:4px; font-family:'Courier New',monospace; font-size:0.9em;">MCO,270.2694,11.72
+Robuste (HC1),270.27,13.00
+Grappe,270.27,15.10</textarea>
+  <button onclick="comparerSE()">Comparer</button>
+  <div id="resultatSE" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Conversion exacte en pourcentage (semi-log)</h2>
+  <div class="ligne">
+    <div><label for="betaPct">β (coefficient semi-log)</label><input type="number" id="betaPct" value="0.4353" step="0.0001"></div>
+  </div>
+  <button onclick="convertirPct()">Convertir</button>
+  <div id="resultatPct" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Le logiciel estime ; tout le reste (diagnostiquer, corriger, interpréter, connaître les limites) reste le travail de l'économètre. Il ne choisit jamais les variables et ne signale jamais l'endogénéité.</p>
+
+<script>
+function testerIC() {
+  const resDiv = document.getElementById('resultatIC');
+  const bas = parseFloat(document.getElementById('borneBasse').value);
+  const haut = parseFloat(document.getElementById('borneHaute').value);
+  const val = parseFloat(document.getElementById('valTest').value);
+  if ([bas,haut,val].some(isNaN) || bas >= haut) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides (borne basse doit être inférieure à la borne haute).</p>'; return; }
+  const centre = (bas + haut) / 2;
+  const demiLargeur = (haut - bas) / 2;
+  const dansIC = val >= bas && val <= haut;
+  let out = `<div class="valeur">centre = ${centre.toFixed(2)}</div><div class="valeur">demi-largeur = ${demiLargeur.toFixed(2)}</div>`;
+  out += `<p class="${dansIC ? 'ok' : 'alerte'}">${dansIC ? `${val} appartient à l'intervalle : H₀ n'est pas rejetée au seuil de 5 %.` : `${val} n'appartient pas à l'intervalle : H₀ est rejetée au seuil de 5 %.`}</p>`;
+  resDiv.innerHTML = out;
+}
+
+function comparerSE() {
+  const resDiv = document.getElementById('resultatSE');
+  try {
+    const lignes = document.getElementById('tableauSE').value.trim().split('\n').filter(l=>l.trim().length);
+    let out = '<table><tr><th>correction</th><th>estimation</th><th>écart-type</th><th>t</th></tr>';
+    let estimations = [];
+    lignes.forEach(l => {
+      const [nom, estStr, seStr] = l.split(',');
+      const est = parseFloat(estStr), se = parseFloat(seStr);
+      if (isNaN(est) || isNaN(se) || se === 0) { out += `<tr><td colspan="4" class="erreur">Ligne invalide : ${l}</td></tr>`; return; }
+      estimations.push(est);
+      const t = est / se;
+      out += `<tr><td>${nom.trim()}</td><td>${est.toFixed(4)}</td><td>${se.toFixed(2)}</td><td>${t.toFixed(2)}</td></tr>`;
+    });
+    out += '</table>';
+    const maxEc = Math.max(...estimations) - Math.min(...estimations);
+    out += `<p>Écart maximal entre les estimations : ${maxEc.toFixed(4)}. ${maxEc < 0.01 ? '<span class="ok">Les coefficients n\\u2019ont pas bougé</span> : seule la précision change entre les corrections.' : '<span class="alerte">Les estimations diffèrent : vérifier qu\\u2019il s\\u2019agit bien du même modèle.</span>'}</p>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format (nom,estimation,ecart-type par ligne).</p>';
+  }
+}
+
+function convertirPct() {
+  const resDiv = document.getElementById('resultatPct');
+  const b = parseFloat(document.getElementById('betaPct').value);
+  if (isNaN(b)) { resDiv.innerHTML = '<p class="erreur">Valeur invalide.</p>'; return; }
+  const approx = 100*b;
+  const exact = 100*(Math.exp(b)-1);
+  resDiv.innerHTML = `<div class="valeur">approximation 100β = ${approx.toFixed(2)} %</div><div class="valeur">exact 100(e^β−1) = ${exact.toFixed(2)} %</div><p>Écart : ${(exact-approx).toFixed(2)} point(s) de pourcentage.</p>`;
+}
+
+window.onload = () => { testerIC(); comparerSE(); convertirPct(); };
+</script>
+</body>
+</html>

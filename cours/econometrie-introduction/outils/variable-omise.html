@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 16 — La variable omise — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 16 — La variable omise</h1>
+<p class="sous-titre">Calculatrice interactive — biais de variable omise et raisonnement sur son signe</p>
+
+<div class="panneau">
+  <h2>Calculer le biais γ·δ</h2>
+  <p class="aide">Vrai modèle : y = β₀ + β₁x + γz + ε. Biais espéré sur le coefficient de x si z est omise : γ × δ, où δ est la pente de la régression de z sur x.</p>
+  <div class="ligne">
+    <div><label for="beta1">β₁ (vrai coefficient de x)</label><input type="number" id="beta1" value="20" step="0.01"></div>
+    <div><label for="gamma">γ (effet de z sur y)</label><input type="number" id="gamma" value="150" step="0.01"></div>
+    <div><label for="delta">δ (pente de z sur x)</label><input type="number" id="delta" value="0.4" step="0.01"></div>
+  </div>
+  <button onclick="calculerBiais()">Calculer</button>
+  <div id="resultatBiais" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Vérifier l'identité sur plusieurs variables omises</h2>
+  <p class="aide">Une variable par ligne, format <code>nom,gamma,delta</code>. Exemple : diplôme du modèle salaire du cours.</p>
+  <textarea id="variablesGD" rows="3" style="width:100%; padding:0.5em; border:1px solid #ccc; border-radius:4px; font-family:'Courier New',monospace; font-size:0.9em;">Bac+2,1099.5705,-0.002907
+Bac+5,3336.9916,0.003025</textarea>
+  <div class="ligne" style="margin-top:0.6em;">
+    <div><label for="ecartObserve">Écart observé entre les deux coefficients (optionnel, pour comparaison)</label><input type="number" id="ecartObserve" value="6.898" step="0.001"></div>
+  </div>
+  <button onclick="calculerSomme()">Sommer les biais</button>
+  <div id="resultatSomme" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Raisonner sur le signe, sans données</h2>
+  <div class="ligne">
+    <div><label for="signeGamma">Signe de γ (effet de la variable omise sur y)</label>
+      <select id="signeGamma"><option value="1">positif (+)</option><option value="-1">négatif (−)</option></select>
+    </div>
+    <div><label for="signeDelta">Signe de δ (liaison de la variable omise avec x)</label>
+      <select id="signeDelta"><option value="1">positif (+)</option><option value="-1">négatif (−)</option></select>
+    </div>
+  </div>
+  <button onclick="raisonnerSigne()">Déterminer le sens du biais</button>
+  <div id="resultatSigne" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Le biais de variable omise ne se détecte par aucun test et ne se corrige par aucune formule appliquée aux données disponibles : il faut soit ajouter la variable, soit la substituer, soit raisonner sur son signe probable.</p>
+
+<script>
+function calculerBiais() {
+  const resDiv = document.getElementById('resultatBiais');
+  const beta1 = parseFloat(document.getElementById('beta1').value);
+  const gamma = parseFloat(document.getElementById('gamma').value);
+  const delta = parseFloat(document.getElementById('delta').value);
+  if ([beta1,gamma,delta].some(isNaN)) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const biais = gamma * delta;
+  const espere = beta1 + biais;
+  let out = `<div class="valeur">biais = γ×δ = ${biais.toFixed(4)}</div><div class="valeur">E(β̂₁ simple) = ${espere.toFixed(4)}</div>`;
+  if (biais === 0) {
+    out += '<p>Le biais est nul : la variable omise n\'a pas d\'effet sur y, ou elle est indépendante de x.</p>';
+  } else if (biais > 0) {
+    out += '<p class="alerte">Surestimation du coefficient : le coefficient simple est plus grand que le vrai β₁.</p>';
+  } else {
+    out += '<p class="alerte">Sous-estimation du coefficient : le coefficient simple est plus petit que le vrai β₁.</p>';
+  }
+  resDiv.innerHTML = out;
+}
+
+function calculerSomme() {
+  const resDiv = document.getElementById('resultatSomme');
+  try {
+    const lignes = document.getElementById('variablesGD').value.trim().split('\n').filter(l=>l.trim().length);
+    let somme = 0;
+    let out = '<table><tr><th>variable omise</th><th>γ</th><th>δ</th><th>γ×δ</th></tr>';
+    lignes.forEach(l => {
+      const [nom, gStr, dStr] = l.split(',');
+      const g = parseFloat(gStr), d = parseFloat(dStr);
+      if (isNaN(g) || isNaN(d)) { out += `<tr><td colspan="4" class="erreur">Ligne invalide : ${l}</td></tr>`; return; }
+      const prod = g * d;
+      somme += prod;
+      out += `<tr><td>${nom.trim()}</td><td>${g}</td><td>${d}</td><td>${prod.toFixed(4)}</td></tr>`;
+    });
+    out += `<tr><td colspan="3"><strong>somme des biais</strong></td><td><strong>${somme.toFixed(4)}</strong></td></tr>`;
+    out += '</table>';
+    const ecart = parseFloat(document.getElementById('ecartObserve').value);
+    if (!isNaN(ecart)) {
+      const diff = Math.abs(somme - ecart);
+      out += `<p>Écart observé fourni : ${ecart}. Différence avec la somme calculée : ${diff.toFixed(4)} — ${diff < 0.01 ? '<span class="ok">l\'identité est vérifiée</span>' : 'écart notable, vérifier les données saisies'}.</p>`;
+    }
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format (nom,gamma,delta par ligne).</p>';
+  }
+}
+
+function raisonnerSigne() {
+  const resDiv = document.getElementById('resultatSigne');
+  const sg = parseInt(document.getElementById('signeGamma').value);
+  const sd = parseInt(document.getElementById('signeDelta').value);
+  const produit = sg * sd;
+  const sens = produit > 0 ? 'surestimation' : 'sous-estimation';
+  const css = produit > 0 ? 'alerte' : 'ok';
+  resDiv.innerHTML = `<p>γ ${sg>0?'positif':'négatif'}, δ ${sd>0?'positif':'négatif'} → <span class="${css}">${sens}</span> du coefficient de la variable incluse.</p>`;
+}
+
+window.onload = () => { calculerBiais(); calculerSomme(); raisonnerSigne(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Les variables qualitatives — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Les variables qualitatives</h1>
+<p class="sous-titre">Calculatrice interactive — indicatrices, changement de référence et interaction</p>
+
+<div class="panneau">
+  <h2>Changer de référence, sans changer les prédictions</h2>
+  <p class="aide">Une modalité par ligne, format <code>nom,ecart_vs_reference</code>. La première ligne (écart = 0) est la référence actuelle.</p>
+  <div class="ligne">
+    <div><label for="intercept">Intercept actuel (β̂₀, salaire de la référence)</label><input type="number" id="intercept" value="4000"></div>
+  </div>
+  <textarea id="modalites">Bac,0
+Bac+2,1100
+Bac+5,3337</textarea>
+  <div class="ligne">
+    <div><label for="nouvelleRef">Nouvelle référence (nom exact)</label><input type="text" id="nouvelleRef" value="Bac+5"></div>
+  </div>
+  <button onclick="calculerReference()">Recalculer avec la nouvelle référence</button>
+  <div id="resultatReference" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Modèle avec interaction</h2>
+  <div class="ligne">
+    <div><label for="b0i">β̂₀</label><input type="number" id="b0i" value="4000"></div>
+    <div><label for="b1i">β̂₁ (pente de A, référence)</label><input type="number" id="b1i" value="200"></div>
+    <div><label for="b2i">β̂₂ (effet du groupe D=1)</label><input type="number" id="b2i" value="1500"></div>
+    <div><label for="b3i">β̂₃ (interaction A×D)</label><input type="number" id="b3i" value="150"></div>
+    <div><label for="Aval">A (valeur)</label><input type="number" id="Aval" value="10"></div>
+  </div>
+  <button onclick="calculerInteraction()">Comparer les deux groupes</button>
+  <div id="resultatInteraction" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Changer la modalité de référence ne change jamais les prédictions du modèle — seulement la façon dont les coefficients doivent être lus.</p>
+
+<script>
+function calculerReference() {
+  const resDiv = document.getElementById('resultatReference');
+  try {
+    const b0 = parseFloat(document.getElementById('intercept').value);
+    const lignes = document.getElementById('modalites').value.trim().split('\n').filter(l=>l.trim().length);
+    const modalites = lignes.map(l => { const [nom,ecart] = l.split(','); return {nom: nom.trim(), ecart: parseFloat(ecart)}; });
+    const preds = modalites.map(m => ({nom: m.nom, pred: b0 + m.ecart}));
+    let out = '<table><tr><th>modalité</th><th>salaire prédit (référence actuelle)</th></tr>';
+    preds.forEach(p => { out += `<tr><td>${p.nom}</td><td>${p.pred.toFixed(2)}</td></tr>`; });
+    out += '</table>';
+    const nouvelleRefNom = document.getElementById('nouvelleRef').value.trim();
+    const nouvelleRefPred = preds.find(p => p.nom === nouvelleRefNom);
+    if (!nouvelleRefPred) { out += '<p class="erreur">Nouvelle référence introuvable parmi les modalités saisies.</p>'; resDiv.innerHTML = out; return; }
+    out += `<p><strong>Avec ${nouvelleRefNom} comme nouvelle référence :</strong> nouvel intercept = ${nouvelleRefPred.pred.toFixed(2)}</p>`;
+    out += '<table><tr><th>modalité</th><th>nouveau coefficient</th><th>salaire reconstruit</th></tr>';
+    preds.forEach(p => {
+      const nouveauCoef = p.pred - nouvelleRefPred.pred;
+      out += `<tr><td>${p.nom}</td><td>${nouveauCoef.toFixed(2)}</td><td>${(nouvelleRefPred.pred+nouveauCoef).toFixed(2)}</td></tr>`;
+    });
+    out += '</table>';
+    out += '<p class="aide">Les salaires reconstruits (dernière colonne) sont identiques à ceux de la première table : le changement de référence ne modifie aucune prédiction.</p>';
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format des modalités.</p>';
+  }
+}
+
+function calculerInteraction() {
+  const resDiv = document.getElementById('resultatInteraction');
+  const b0 = parseFloat(document.getElementById('b0i').value);
+  const b1 = parseFloat(document.getElementById('b1i').value);
+  const b2 = parseFloat(document.getElementById('b2i').value);
+  const b3 = parseFloat(document.getElementById('b3i').value);
+  const A = parseFloat(document.getElementById('Aval').value);
+  if ([b0,b1,b2,b3,A].some(isNaN)) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const yRef = b0 + b1*A;
+  const yGroupe = b0 + b1*A + b2 + b3*A;
+  let out = `<div class="valeur">Ŷ référence (D=0) = ${yRef.toFixed(2)}</div><div class="valeur">Ŷ groupe (D=1) = ${yGroupe.toFixed(2)}</div>`;
+  out += `<p>Rendement de A pour la référence : <strong>${b1}</strong>. Rendement de A pour le groupe D=1 : <strong>${(b1+b3).toFixed(2)}</strong> (soit β̂₁+β̂₃).</p>`;
+  out += '<p class="aide">Rappel : ne jamais lire β̂₁ seul comme "le" rendement de A dans un modèle avec interaction — il ne vaut que pour la référence (D=0).</p>';
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerReference(); calculerInteraction(); };
+</script>
+</body>
+</html>

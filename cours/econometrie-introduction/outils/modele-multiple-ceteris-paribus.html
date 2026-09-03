@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Le modèle multiple et le ceteris paribus — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  textarea { resize: vertical; min-height: 4em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Le modèle multiple et le ceteris paribus</h1>
+<p class="sous-titre">Calculatrice interactive — prédiction multivariée et effet ceteris paribus</p>
+
+<div class="panneau">
+  <h2>Modèle à plusieurs variables</h2>
+  <p class="aide">Un coefficient par ligne, format <code>nom,valeur</code>. Le premier coefficient (intercept) doit avoir le nom "constante".</p>
+  <div class="ligne">
+    <div><label for="coefs">Coefficients β̂</label><textarea id="coefs">constante,3000
+Anciennete,250
+Diplome,900
+Sexe,-350</textarea></div>
+    <div><label for="profil1">Profil 1 (valeurs des variables, même ordre, sans la constante)</label><textarea id="profil1">8,5,0</textarea></div>
+    <div><label for="profil2">Profil 2 (à comparer)</label><textarea id="profil2">8,5,1</textarea></div>
+  </div>
+  <button onclick="calculerCeterisParibus()">Calculer les deux prédictions et l'écart</button>
+  <div id="resultatCeteris" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Un écart entre deux profils n'est interprétable comme l'effet ceteris paribus d'UNE variable que si les profils ne diffèrent que sur cette seule variable ; sinon l'écart combine plusieurs effets à la fois.</p>
+
+<script>
+function calculerCeterisParibus() {
+  const resDiv = document.getElementById('resultatCeteris');
+  try {
+    const lignes = document.getElementById('coefs').value.trim().split('\n').filter(l=>l.trim().length);
+    const noms = [], vals = [];
+    lignes.forEach(l => { const [n,v] = l.split(','); noms.push(n.trim()); vals.push(parseFloat(v)); });
+    if (noms[0].toLowerCase() !== 'constante') { resDiv.innerHTML = '<p class="erreur">Le premier coefficient doit être nommé "constante".</p>'; return; }
+    const b0 = vals[0];
+    const coefsVars = vals.slice(1);
+    const nomsVars = noms.slice(1);
+    const p1 = document.getElementById('profil1').value.split(',').map(s=>parseFloat(s.trim()));
+    const p2 = document.getElementById('profil2').value.split(',').map(s=>parseFloat(s.trim()));
+    if (p1.length !== coefsVars.length || p2.length !== coefsVars.length) {
+      resDiv.innerHTML = '<p class="erreur">Chaque profil doit avoir autant de valeurs que de variables (hors constante).</p>'; return;
+    }
+    function predict(p) { return b0 + coefsVars.reduce((s,c,i)=>s+c*p[i], 0); }
+    const y1 = predict(p1), y2 = predict(p2);
+    let out = '<table><tr><th>variable</th><th>coefficient</th><th>profil 1</th><th>profil 2</th></tr>';
+    nomsVars.forEach((n,i) => { out += `<tr><td>${n}</td><td>${coefsVars[i]}</td><td>${p1[i]}</td><td>${p2[i]}</td></tr>`; });
+    out += '</table>';
+    out += `<div class="valeur">ŷ profil 1 = ${y1.toFixed(2)}</div><div class="valeur">ŷ profil 2 = ${y2.toFixed(2)}</div><div class="valeur">écart = ${(y2-y1).toFixed(2)}</div>`;
+    const diffVars = nomsVars.filter((_,i) => p1[i] !== p2[i]);
+    if (diffVars.length === 1) {
+      out += `<p>Les deux profils ne diffèrent que sur <strong>${diffVars[0]}</strong> : l'écart ci-dessus est directement interprétable comme l'effet ceteris paribus de cette variable.</p>`;
+    } else if (diffVars.length === 0) {
+      out += '<p>Les deux profils sont identiques : écart nul, comme attendu.</p>';
+    } else {
+      out += `<p><strong>Attention</strong> : les deux profils diffèrent sur ${diffVars.length} variables (${diffVars.join(', ')}). L'écart combine donc plusieurs effets à la fois — ce n'est plus l'effet ceteris paribus d'une seule variable.</p>`;
+    }
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format des coefficients et des profils.</p>';
+  }
+}
+
+window.onload = () => { calculerCeterisParibus(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — Les erreurs groupées — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .surveiller { color: var(--cintu); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — Les erreurs groupées</h1>
+<p class="sous-titre">Calculatrice interactive — facteur de Moulton et arbitrage du plan d'enquête</p>
+
+<div class="panneau">
+  <h2>Facteur de Moulton</h2>
+  <div class="ligne">
+    <div><label for="m">m (taille moyenne des grappes)</label><input type="number" id="m" value="20" step="1" min="1"></div>
+    <div><label for="rho">ρ (corrélation intra-grappe)</label><input type="number" id="rho" value="0.2" step="0.01" min="0" max="1"></div>
+    <div><label for="tAffiche">t affiché (calculé sans correction)</label><input type="number" id="tAffiche" value="4" step="0.01"></div>
+    <div><label for="nGrappes">Nombre de grappes disponibles</label><input type="number" id="nGrappes" value="40" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerMoulton()">Calculer</button>
+  <div id="resultatMoulton" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Comparer deux plans d'enquête à effectif total fixé</h2>
+  <div class="ligne">
+    <div><label for="nTotal">Effectif total (ménages)</label><input type="number" id="nTotal" value="400" step="1" min="1"></div>
+    <div><label for="mA">Taille de grappe — Plan A</label><input type="number" id="mA" value="10" step="1" min="1"></div>
+    <div><label for="mB">Taille de grappe — Plan B</label><input type="number" id="mB" value="40" step="1" min="1"></div>
+    <div><label for="rhoPlan">ρ (corrélation intra-grappe)</label><input type="number" id="rhoPlan" value="0.2" step="0.01" min="0" max="1"></div>
+  </div>
+  <button onclick="comparerPlans()">Comparer les deux plans</button>
+  <div id="resultatPlans" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Le regroupement ne biaise jamais les coefficients : il sous-estime systématiquement les écarts-types, contrairement à l'hétéroscédasticité dont le sens de l'erreur n'est pas prévisible. La correction de grappe exige un nombre suffisant de grappes (au moins 40 en règle usuelle), pas seulement un grand effectif total.</p>
+
+<script>
+function moulton(m, rho) { return Math.sqrt(1 + (m - 1) * rho); }
+
+function classifierGrappes(n) {
+  if (n >= 40) return {texte: 'condition respectée (≥ 40 grappes)', css: 'ok'};
+  if (n >= 20) return {texte: 'zone grise : correction possible mais moins fiable', css: 'surveiller'};
+  return {texte: 'condition non respectée : correction peu fiable', css: 'alerte'};
+}
+
+function calculerMoulton() {
+  const resDiv = document.getElementById('resultatMoulton');
+  const m = parseFloat(document.getElementById('m').value);
+  const rho = parseFloat(document.getElementById('rho').value);
+  const tAff = parseFloat(document.getElementById('tAffiche').value);
+  const nG = parseFloat(document.getElementById('nGrappes').value);
+  if ([m,rho,tAff,nG].some(isNaN) || m < 1 || rho < 0 || rho > 1) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const facteur = moulton(m, rho);
+  const tCorrige = tAff / facteur;
+  const seuil = 1.96;
+  const sig = Math.abs(tCorrige) > seuil;
+  const cg = classifierGrappes(nG);
+  let out = `<div class="valeur">facteur de Moulton = ${facteur.toFixed(3)}</div><div class="valeur">t corrigé = ${tCorrige.toFixed(3)}</div>`;
+  const messageSig = sig ? 'Le résultat reste significatif après correction.' : "Le résultat n'est plus significatif au seuil de 1,96 une fois le regroupement pris en compte.";
+  out += `<p class="${sig ? 'ok' : 'alerte'}">${messageSig}</p>`;
+  out += `<p>Grappes disponibles : ${nG}. <span class="${cg.css}">${cg.texte}</span></p>`;
+  resDiv.innerHTML = out;
+}
+
+function comparerPlans() {
+  const resDiv = document.getElementById('resultatPlans');
+  const nTotal = parseFloat(document.getElementById('nTotal').value);
+  const mA = parseFloat(document.getElementById('mA').value);
+  const mB = parseFloat(document.getElementById('mB').value);
+  const rho = parseFloat(document.getElementById('rhoPlan').value);
+  if ([nTotal,mA,mB,rho].some(isNaN) || mA < 1 || mB < 1 || rho < 0 || rho > 1) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const gA = nTotal / mA, gB = nTotal / mB;
+  const fA = moulton(mA, rho), fB = moulton(mB, rho);
+  const cgA = classifierGrappes(gA), cgB = classifierGrappes(gB);
+  let out = '<table><tr><th>plan</th><th>taille de grappe m</th><th>nombre de grappes</th><th>facteur de Moulton</th><th>validité (≥40 grappes)</th></tr>';
+  out += `<tr><td>A</td><td>${mA}</td><td>${gA.toFixed(1)}</td><td>${fA.toFixed(3)}</td><td class="${cgA.css}">${cgA.texte}</td></tr>`;
+  out += `<tr><td>B</td><td>${mB}</td><td>${gB.toFixed(1)}</td><td>${fB.toFixed(3)}</td><td class="${cgB.css}">${cgB.texte}</td></tr>`;
+  out += '</table>';
+  const meilleur = fA < fB ? 'A' : (fB < fA ? 'B' : 'aucun (facteurs identiques)');
+  out += `<p>À effectif total fixé, le plan avec le <strong>facteur de Moulton le plus faible</strong> est le plan ${meilleur} : plus de petites grappes limite la perte d'information due au regroupement, même si cela augmente souvent le coût de collecte.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerMoulton(); comparerPlans(); };
+</script>
+</body>
+</html>

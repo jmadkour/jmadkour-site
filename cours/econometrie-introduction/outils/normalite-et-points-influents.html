@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 17 — Normalité et points influents — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 17 — Normalité et points influents</h1>
+<p class="sous-titre">Calculatrice interactive — test de Jarque-Bera et distance de Cook</p>
+
+<div class="panneau">
+  <h2>Test de Jarque-Bera</h2>
+  <div class="ligne">
+    <div><label for="n">n (taille de l'échantillon)</label><input type="number" id="n" value="500" step="1" min="1"></div>
+    <div><label for="asym">S (asymétrie)</label><input type="number" id="asym" value="0.563" step="0.001"></div>
+    <div><label for="kurt">K (aplatissement)</label><input type="number" id="kurt" value="3.607" step="0.001"></div>
+    <div><label for="seuilJB">seuil χ²₂</label><input type="number" id="seuilJB" value="5.99" step="0.01"></div>
+  </div>
+  <button onclick="calculerJB()">Calculer JB</button>
+  <div id="resultatJB" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Distance de Cook et seuil d'alerte</h2>
+  <div class="ligne">
+    <div><label for="nCook">n (taille de l'échantillon)</label><input type="number" id="nCook" value="500" step="1" min="1"></div>
+    <div><label for="di">Dᵢ (distance de Cook de l'observation)</label><input type="number" id="di" value="0.015" step="0.001"></div>
+  </div>
+  <button onclick="calculerCook()">Évaluer l'observation</button>
+  <div id="resultatCook" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Résidu, levier, influence : classer un point</h2>
+  <div class="ligne">
+    <div><label for="residuFort">Résidu important ?</label>
+      <select id="residuFort"><option value="0">non</option><option value="1">oui</option></select>
+    </div>
+    <div><label for="levierFort">Levier important (position isolée en x) ?</label>
+      <select id="levierFort"><option value="0">non</option><option value="1">oui</option></select>
+    </div>
+  </div>
+  <button onclick="classerPoint()">Classer</button>
+  <div id="resultatPoint" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Un rejet de la normalité n'a de conséquence que sur petit échantillon (moins d'une trentaine d'observations) : le théorème central limite protège les grands échantillons. Une distance de Cook au-delà du seuil est une alerte, jamais un motif automatique de suppression.</p>
+
+<script>
+function calculerJB() {
+  const resDiv = document.getElementById('resultatJB');
+  const n = parseFloat(document.getElementById('n').value);
+  const S = parseFloat(document.getElementById('asym').value);
+  const K = parseFloat(document.getElementById('kurt').value);
+  const seuil = parseFloat(document.getElementById('seuilJB').value);
+  if ([n,S,K,seuil].some(isNaN) || n <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const JB = n * ((S*S)/6 + Math.pow(K-3,2)/24);
+  const rejette = JB > seuil;
+  let out = `<div class="valeur">JB = ${JB.toFixed(3)}</div>`;
+  out += `<p class="${rejette ? 'alerte' : 'ok'}">${rejette ? 'La normalité est rejetée.' : 'La normalité n\\u2019est pas rejetée.'}</p>`;
+  if (rejette) {
+    if (n >= 30) {
+      out += '<p>Avec un échantillon de cette taille (n ≥ 30), le théorème central limite rend ce rejet <strong>sans conséquence pratique</strong> sur les tests et intervalles de confiance des coefficients.</p>';
+    } else {
+      out += '<p class="alerte">Avec un échantillon de moins de 30 observations, ce rejet est <strong>décisif</strong> : les tests usuels ne sont plus valides sans transformation ou rééchantillonnage.</p>';
+    }
+  }
+  resDiv.innerHTML = out;
+}
+
+function calculerCook() {
+  const resDiv = document.getElementById('resultatCook');
+  const n = parseFloat(document.getElementById('nCook').value);
+  const di = parseFloat(document.getElementById('di').value);
+  if ([n,di].some(isNaN) || n <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const seuil = 4 / n;
+  const alerte = di > seuil;
+  let out = `<div class="valeur">seuil 4/n = ${seuil.toFixed(4)}</div><div class="valeur">Dᵢ = ${di.toFixed(4)}</div>`;
+  out += `<p class="${alerte ? 'alerte' : 'ok'}">${alerte ? 'Dépasse le seuil d\\u2019alerte.' : 'Ne dépasse pas le seuil d\\u2019alerte.'}</p>`;
+  if (alerte) {
+    out += '<p>Ce dépassement est un signal d\\u2019alerte, pas un motif de suppression automatique. Poser dans l\\u2019ordre : (1) erreur de saisie ? (2) appartient-il à la population étudiée ? (3) le modèle est-il mal spécifié ? (4) sinon, c\\u2019est une observation légitime à conserver.</p>';
+  }
+  resDiv.innerHTML = out;
+}
+
+function classerPoint() {
+  const resDiv = document.getElementById('resultatPoint');
+  const residu = document.getElementById('residuFort').value === '1';
+  const levier = document.getElementById('levierFort').value === '1';
+  let texte, css;
+  if (residu && levier) { texte = 'Point potentiellement influent : c\'est la combinaison qui peut faire pivoter la droite de régression.'; css = 'alerte'; }
+  else if (levier && !residu) { texte = 'Levier fort sans gros résidu : ce point confirme la droite plutôt que de la menacer.'; css = 'ok'; }
+  else if (residu && !levier) { texte = 'Gros résidu au centre du nuage : la droite en est peu affectée.'; css = 'ok'; }
+  else { texte = 'Point ordinaire : ni levier ni résidu remarquables.'; css = 'ok'; }
+  resDiv.innerHTML = `<p class="${css}">${texte}</p>`;
+}
+
+window.onload = () => { calculerJB(); calculerCook(); classerPoint(); };
+</script>
+</body>
+</html>

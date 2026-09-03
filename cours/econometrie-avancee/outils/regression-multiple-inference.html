@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Régression multiple : inférence — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Régression multiple : inférence</h1>
+<p class="sous-titre">Calculatrice interactive — test t, intervalle de confiance, test F</p>
+
+<div class="panneau">
+  <h2>Test t et intervalle de confiance</h2>
+  <div class="ligne">
+    <div><label for="betaHat">β̂</label><input type="number" id="betaHat" value="2.50" step="0.001"></div>
+    <div><label for="se">écart-type (se)</label><input type="number" id="se" value="0.85" step="0.001"></div>
+    <div><label for="tcrit">seuil critique t</label><input type="number" id="tcrit" value="2.028" step="0.001"></div>
+    <div><label for="valH0">valeur testée par H₀</label><input type="number" id="valH0" value="0" step="0.01"></div>
+  </div>
+  <button onclick="calculerT()">Calculer</button>
+  <div id="resultatT" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Test F de restrictions conjointes</h2>
+  <div class="ligne">
+    <div><label for="ssrR">SSR contraint (SSRr)</label><input type="number" id="ssrR" value="850" step="0.01"></div>
+    <div><label for="ssrUr">SSR non contraint (SSRur)</label><input type="number" id="ssrUr" value="700" step="0.01"></div>
+    <div><label for="q">q (nb. restrictions)</label><input type="number" id="q" value="3" step="1" min="1"></div>
+    <div><label for="n">n</label><input type="number" id="n" value="200" step="1"></div>
+    <div><label for="k">k (régresseurs du modèle non contraint)</label><input type="number" id="k" value="8" step="1"></div>
+    <div><label for="fcrit">seuil critique F</label><input type="number" id="fcrit" value="2.65" step="0.01"></div>
+  </div>
+  <button onclick="calculerF()">Calculer</button>
+  <div id="resultatF" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Significativité statistique et importance économique sont deux choses distinctes : toujours interpréter l'ampleur du coefficient, pas seulement son test t. Le test F, contrairement à des tests t isolés, prend en compte la corrélation entre estimateurs.</p>
+
+<script>
+function calculerT() {
+  const resDiv = document.getElementById('resultatT');
+  const b = parseFloat(document.getElementById('betaHat').value);
+  const se = parseFloat(document.getElementById('se').value);
+  const tcrit = parseFloat(document.getElementById('tcrit').value);
+  const val = parseFloat(document.getElementById('valH0').value);
+  if ([b,se,tcrit,val].some(isNaN) || se <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const lo = b - tcrit*se, hi = b + tcrit*se;
+  const t = (b - val) / se;
+  const rejette = Math.abs(t) > tcrit;
+  let out = `<div class="valeur">IC à 95% : [${lo.toFixed(3)} ; ${hi.toFixed(3)}]</div>`;
+  out += `<div class="valeur">t pour H₀ : β = ${val} est ${t.toFixed(3)}</div>`;
+  out += `<p class="${rejette ? 'alerte' : 'ok'}">${rejette ? `H₀ : β = ${val} est rejetée.` : `H₀ : β = ${val} n'est pas rejetée.`}</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerF() {
+  const resDiv = document.getElementById('resultatF');
+  const ssrR = parseFloat(document.getElementById('ssrR').value);
+  const ssrUr = parseFloat(document.getElementById('ssrUr').value);
+  const q = parseFloat(document.getElementById('q').value);
+  const n = parseFloat(document.getElementById('n').value);
+  const k = parseFloat(document.getElementById('k').value);
+  const fcrit = parseFloat(document.getElementById('fcrit').value);
+  if ([ssrR,ssrUr,q,n,k,fcrit].some(isNaN) || q <= 0 || n-k-1 <= 0) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const F = ((ssrR - ssrUr)/q) / (ssrUr/(n-k-1));
+  const rejette = F > fcrit;
+  let out = `<div class="valeur">F = ${F.toFixed(3)}</div><div class="valeur">df = (${q}, ${n-k-1})</div>`;
+  out += `<p class="${rejette ? 'alerte' : 'ok'}">${rejette ? 'Les restrictions conjointes sont rejetées.' : 'Les restrictions conjointes ne sont pas rejetées.'}</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerT(); calculerF(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — De la théorie au modèle — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  select, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 190px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — De la théorie au modèle</h1>
+<p class="sous-titre">Calculatrice interactive — réfutabilité et droite à deux points</p>
+
+<div class="panneau">
+  <h2>Testeur de réfutabilité</h2>
+  <p class="aide">Choisir le type de contrainte que la théorie impose à $\beta_1$, puis saisir une valeur estimée.</p>
+  <div class="ligne">
+    <div><label for="typeContrainte">Contrainte théorique sur &beta;&#8321;</label>
+      <select id="typeContrainte">
+        <option value="pos">positif seulement (&beta;&#8321; &gt; 0)</option>
+        <option value="neg">négatif seulement (&beta;&#8321; &lt; 0)</option>
+        <option value="bounded" selected>compris entre 0 et 1 (type Keynes)</option>
+      </select>
+    </div>
+    <div><label for="beta1Est">&beta;&#770;&#8321; estimé</label><input type="number" id="beta1Est" value="0.65" step="0.05"></div>
+  </div>
+  <button onclick="testerRefutabilite()">Tester la compatibilité</button>
+  <div id="resultatRefut" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Droite passant par deux points (R1,C1) et (R2,C2)</h2>
+  <p class="aide">Calcule la pente &beta;&#8321; et l'ordonnée à l'origine &beta;&#8320; d'une droite $C=\beta_0+\beta_1 R$ passant exactement par deux observations.</p>
+  <div class="ligne">
+    <div><label for="R1">R1</label><input type="number" id="R1" value="3000"></div>
+    <div><label for="C1">C1</label><input type="number" id="C1" value="2700"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="R2">R2</label><input type="number" id="R2" value="6000"></div>
+    <div><label for="C2">C2</label><input type="number" id="C2" value="4500"></div>
+  </div>
+  <button onclick="calculerDroite()">Calculer &beta;&#8320; et &beta;&#8321;</button>
+  <div id="resultatDroite" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Le testeur de réfutabilité n'est pas un test statistique (celui-ci viendra au chapitre 5) : c'est une simple vérification de cohérence entre une valeur estimée et les bornes que la théorie économique impose a priori aux paramètres.</p>
+
+<script>
+function testerRefutabilite() {
+  const resDiv = document.getElementById('resultatRefut');
+  const type = document.getElementById('typeContrainte').value;
+  const b1 = parseFloat(document.getElementById('beta1Est').value);
+  if (isNaN(b1)) { resDiv.innerHTML = '<p class="erreur">Valeur invalide.</p>'; return; }
+  let compatible, regle;
+  if (type === 'pos') { compatible = b1 > 0; regle = '&beta;&#8321; &gt; 0'; }
+  else if (type === 'neg') { compatible = b1 < 0; regle = '&beta;&#8321; &lt; 0'; }
+  else { compatible = b1 > 0 && b1 < 1; regle = '0 &lt; &beta;&#8321; &lt; 1'; }
+  let out = `<div class="valeur">&beta;&#770;&#8321; = ${b1}</div>`;
+  out += `<p>Règle théorique testée : ${regle}.</p>`;
+  out += compatible
+    ? `<p class="ok">✓ Compatible avec la théorie : ce résultat la corrobore.</p>`
+    : `<p class="alerte">✗ Incompatible avec la théorie : ce résultat la réfute (ou appelle un examen de la spécification/des données avant conclusion définitive).</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerDroite() {
+  const resDiv = document.getElementById('resultatDroite');
+  const R1 = parseFloat(document.getElementById('R1').value);
+  const C1 = parseFloat(document.getElementById('C1').value);
+  const R2 = parseFloat(document.getElementById('R2').value);
+  const C2 = parseFloat(document.getElementById('C2').value);
+  if ([R1,C1,R2,C2].some(isNaN) || R1===R2) {
+    resDiv.innerHTML = '<p class="erreur">R1 et R2 doivent être numériques et distincts.</p>'; return;
+  }
+  const beta1 = (C2-C1)/(R2-R1);
+  const beta0 = C1 - beta1*R1;
+  const checkC2 = beta0 + beta1*R2;
+  let out = `<div class="valeur">&beta;&#8321; = ${beta1.toFixed(4)}</div><div class="valeur">&beta;&#8320; = ${beta0.toFixed(4)}</div>`;
+  out += `<p>Vérification : &beta;&#8320; + &beta;&#8321;&times;R2 = ${checkC2.toFixed(4)} (doit égaler C2 = ${C2}).</p>`;
+  out += `<p class="aide">Avec seulement deux points, la droite passe toujours exactement par les deux (l'ajustement est parfait par construction). Dès qu'un troisième point est ajouté et n'est pas parfaitement aligné, ce calcul simple ne suffit plus : c'est le rôle des moindres carrés ordinaires (chapitre 3) de choisir la droite la plus proche de l'ensemble des points.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { testerRefutabilite(); calculerDroite(); };
+</script>
+</body>
+</html>

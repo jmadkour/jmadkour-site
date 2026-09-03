@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Le modèle économétrique — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  select, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 190px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Le modèle économétrique</h1>
+<p class="sous-titre">Calculatrice interactive — prédiction, résidu et sens du biais</p>
+
+<div class="panneau">
+  <h2>Prédiction et résidu</h2>
+  <div class="ligne">
+    <div><label for="b0">&beta;&#770;&#8320;</label><input type="number" id="b0" value="900"></div>
+    <div><label for="b1">&beta;&#770;&#8321;</label><input type="number" id="b1" value="0.6" step="0.05"></div>
+    <div><label for="xVal">X observé</label><input type="number" id="xVal" value="4500"></div>
+    <div><label for="yVal">Y observé</label><input type="number" id="yVal" value="3800"></div>
+  </div>
+  <button onclick="calculerResidu()">Calculer la prédiction et le résidu</button>
+  <div id="resultatResidu" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Sens du biais dû à une variable omise</h2>
+  <p class="aide">Indiquer le signe du lien entre la variable omise et (i) la variable explicative incluse, (ii) la variable expliquée.</p>
+  <div class="ligne">
+    <div><label for="lienXomise">Variable omise &harr; X inclus</label>
+      <select id="lienXomise"><option value="pos">corrélation positive</option><option value="neg">corrélation négative</option><option value="nulle">indépendantes</option></select>
+    </div>
+    <div><label for="lienYomise">Variable omise &rarr; Y</label>
+      <select id="lienYomise"><option value="pos">effet positif</option><option value="neg">effet négatif</option></select>
+    </div>
+  </div>
+  <button onclick="raisonnerBiais()">Déterminer le sens du biais</button>
+  <div id="resultatBiais" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Ce raisonnement sur le sens du biais est qualitatif : le calcul exact de son ampleur est hors programme de ce chapitre (il sera formalisé au chapitre 16).</p>
+
+<script>
+function calculerResidu() {
+  const resDiv = document.getElementById('resultatResidu');
+  const b0 = parseFloat(document.getElementById('b0').value);
+  const b1 = parseFloat(document.getElementById('b1').value);
+  const x = parseFloat(document.getElementById('xVal').value);
+  const y = parseFloat(document.getElementById('yVal').value);
+  if ([b0,b1,x,y].some(isNaN)) { resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>'; return; }
+  const yhat = b0 + b1*x;
+  const resid = y - yhat;
+  let out = `<div class="valeur">Ŷ = ${yhat.toFixed(2)}</div><div class="valeur">résidu e = ${resid.toFixed(2)}</div>`;
+  out += `<p class="aide">Ce résidu est calculé par rapport à la droite <strong>estimée</strong> ; il approxime, sans jamais l'égaler exactement, l'erreur vraie et inconnue &epsilon; du modèle.</p>`;
+  resDiv.innerHTML = out;
+}
+
+function raisonnerBiais() {
+  const resDiv = document.getElementById('resultatBiais');
+  const lienX = document.getElementById('lienXomise').value;
+  const lienY = document.getElementById('lienYomise').value;
+  let out = '';
+  if (lienX === 'nulle') {
+    out = '<p><strong>Pas de biais</strong> : la variable omise est indépendante de X inclus. L\'exogénéité n\'est pas violée par cette omission — seule la précision de l\'estimation est réduite (davantage de bruit dans &epsilon;), pas sa justesse.</p>';
+  } else {
+    const signeLienX = lienX === 'pos' ? 1 : -1;
+    const signeLienY = lienY === 'pos' ? 1 : -1;
+    const signeBiais = signeLienX * signeLienY;
+    out = `<p>Corrélation variable omise &harr; X : <strong>${lienX==='pos'?'positive':'négative'}</strong>. Effet variable omise &rarr; Y : <strong>${lienY==='pos'?'positif':'négatif'}</strong>.</p>`;
+    out += signeBiais > 0
+      ? '<p><strong>Biais positif</strong> : &beta;&#770;&#8321; tend à <strong>surestimer</strong> l\'effet propre de X (une partie de l\'effet de la variable omise est capturée à tort par X).</p>'
+      : '<p><strong>Biais négatif</strong> : &beta;&#770;&#8321; tend à <strong>sous-estimer</strong> l\'effet propre de X (voire à en inverser le signe apparent si le biais est assez fort).</p>';
+  }
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerResidu(); raisonnerBiais(); };
+</script>
+</body>
+</html>

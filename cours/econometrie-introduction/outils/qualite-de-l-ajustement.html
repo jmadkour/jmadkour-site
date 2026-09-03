@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — La qualité de l'ajustement — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  textarea { resize: vertical; min-height: 4.5em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 190px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .barre { height: 1.4em; border-radius: 3px; display: inline-block; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — La qualité de l'ajustement</h1>
+<p class="sous-titre">Calculatrice interactive — SCT, SCE, SCR, R² et écart-type résiduel</p>
+
+<div class="panneau">
+  <h2>Décomposition de la variance</h2>
+  <p class="aide">Valeurs séparées par des virgules, dans le même ordre pour X et Y. La régression est recalculée automatiquement.</p>
+  <div class="ligne">
+    <div><label for="serieX">X (variable explicative)</label><textarea id="serieX">1,3,5,7</textarea></div>
+    <div><label for="serieY">Y (variable expliquée)</label><textarea id="serieY">4,5,7,8</textarea></div>
+  </div>
+  <button onclick="calculerDecomposition()">Calculer SCT, SCE, SCR, R² et σ̂ε</button>
+  <div id="resultatDecomp" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">R² ne se compare qu'entre modèles portant sur la même variable expliquée : un R² faible sur des données individuelles hétérogènes n'est pas, en lui-même, un mauvais résultat.</p>
+
+<script>
+function mean(a) { return a.reduce((s,v)=>s+v,0)/a.length; }
+function cov(x,y) {
+  const mx = mean(x), my = mean(y);
+  let s = 0;
+  for (let i=0;i<x.length;i++) s += (x[i]-mx)*(y[i]-my);
+  return s/x.length;
+}
+function variance(x) { return cov(x,x); }
+
+function calculerDecomposition() {
+  const resDiv = document.getElementById('resultatDecomp');
+  try {
+    const X = document.getElementById('serieX').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    const Y = document.getElementById('serieY').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    const n = X.length;
+    if (n < 3 || n !== Y.length) { resDiv.innerHTML = '<p class="erreur">X et Y doivent avoir la même longueur (au moins 3 valeurs, pour que n-2 > 0).</p>'; return; }
+    const varX = variance(X);
+    if (varX === 0) { resDiv.innerHTML = '<p class="erreur">V(X) = 0 : la pente n\'est pas identifiable.</p>'; return; }
+    const b1 = cov(X,Y)/varX;
+    const b0 = mean(Y) - b1*mean(X);
+    const mY = mean(Y);
+    const pred = X.map(x => b0 + b1*x);
+    const SCT = Y.reduce((s,y)=>s+(y-mY)**2, 0);
+    const SCE = pred.reduce((s,p)=>s+(p-mY)**2, 0);
+    const SCR = Y.reduce((s,y,i)=>s+(y-pred[i])**2, 0);
+    const R2 = SCT > 0 ? SCE/SCT : NaN;
+    const sigmaHat = Math.sqrt(SCR/(n-2));
+    let out = `<p>Droite estimée : Ŷ = ${b0.toFixed(4)} + ${b1.toFixed(4)}·X (n = ${n}).</p>`;
+    out += `<div class="valeur">SCT = ${SCT.toFixed(4)}</div><div class="valeur">SCE = ${SCE.toFixed(4)}</div><div class="valeur">SCR = ${SCR.toFixed(4)}</div>`;
+    out += `<p>Vérification SCE + SCR = ${(SCE+SCR).toFixed(4)} (doit égaler SCT = ${SCT.toFixed(4)}).</p>`;
+    out += `<div class="valeur">R² = ${R2.toFixed(4)}</div><div class="valeur">σ̂ε = ${sigmaHat.toFixed(4)}</div>`;
+    const pct = Math.round(R2*100);
+    out += `<div style="margin-top:0.6em;"><span class="barre" style="width:${pct*2}px; background:#2E8B57;"></span><span class="barre" style="width:${(100-pct)*2}px; background:#E08000;"></span></div>`;
+    out += `<p class="aide">Barre verte = part expliquée (SCE/SCT), barre orange = part résiduelle (SCR/SCT).</p>`;
+    if (Math.abs(b1) < 1e-9) out += '<p><strong>β̂₁ ≈ 0</strong> : la droite est horizontale, ce qui correspond exactement à R² = 0 (aucune part de variance expliquée par X).</p>';
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format des séries.</p>';
+  }
+}
+
+window.onload = () => { calculerDecomposition(); };
+</script>
+</body>
+</html>
