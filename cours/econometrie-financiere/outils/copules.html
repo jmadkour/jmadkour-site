@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Copules — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Introduction aux copules</h1>
+<p class="sous-titre">Calculatrice interactive — comparaison de copules (Sklar) et impact de la corrélation de crise sur un portefeuille</p>
+
+<div class="panneau">
+  <h2>Théorème de Sklar : trois copules, mêmes marges</h2>
+  <div class="ligne">
+    <div><label for="fx">F_X(x)</label><input type="number" id="fx" value="0.6" step="0.01" min="0" max="1"></div>
+    <div><label for="fy">F_Y(y)</label><input type="number" id="fy" value="0.8" step="0.01" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerSklar()">Calculer F(x,y) pour trois copules</button>
+  <div id="resultatSklar" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Impact de la corrélation de crise sur un portefeuille à deux actifs</h2>
+  <div class="ligne">
+    <div><label for="w1">Poids actif 1</label><input type="number" id="w1" value="0.5" step="0.01" min="0" max="1"></div>
+    <div><label for="s1">σ₁ (%)</label><input type="number" id="s1" value="10" step="0.1" min="0"></div>
+    <div><label for="s2">σ₂ (%)</label><input type="number" id="s2" value="10" step="0.1" min="0"></div>
+    <div><label for="rhoNormal">ρ en période normale</label><input type="number" id="rhoNormal" value="0.3" step="0.01" min="-1" max="1"></div>
+    <div><label for="rhoCrise">ρ effective en crise (dépendance de queue)</label><input type="number" id="rhoCrise" value="0.9" step="0.01" min="-1" max="1"></div>
+  </div>
+  <button onclick="calculerStress()">Calculer</button>
+  <div id="resultatStress" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerSklar() {
+  const resDiv = document.getElementById('resultatSklar');
+  const u = parseFloat(document.getElementById('fx').value);
+  const v = parseFloat(document.getElementById('fy').value);
+  if ([u, v].some(isNaN) || u < 0 || u > 1 || v < 0 || v > 1) {
+    resDiv.innerHTML = '<p class="erreur">F_X et F_Y doivent être compris entre 0 et 1.</p>';
+    return;
+  }
+  const independance = u * v;
+  const comonotone = Math.min(u, v);
+  const contremonotone = Math.max(u + v - 1, 0);
+  let out = '<table class="res"><tr><th>Copule</th><th>Formule</th><th>F(x,y)</th></tr>';
+  out += `<tr><td>Indépendance</td><td>C(u,v)=uv</td><td>${independance.toFixed(4)}</td></tr>`;
+  out += `<tr><td>Comonotone (dépendance parfaite +)</td><td>C(u,v)=min(u,v)</td><td>${comonotone.toFixed(4)}</td></tr>`;
+  out += `<tr><td>Contre-monotone (dépendance parfaite -)</td><td>C(u,v)=max(u+v-1,0)</td><td>${contremonotone.toFixed(4)}</td></tr>`;
+  out += '</table>';
+  out += `<p class="aide">Les trois lignes utilisent exactement les mêmes marges F_X=${u} et F_Y=${v} : seule la copule change, et pourtant F(x,y) varie considérablement — c'est le message central du théorème de Sklar.</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerStress() {
+  const resDiv = document.getElementById('resultatStress');
+  const w1 = parseFloat(document.getElementById('w1').value);
+  const s1 = parseFloat(document.getElementById('s1').value);
+  const s2 = parseFloat(document.getElementById('s2').value);
+  const rhoN = parseFloat(document.getElementById('rhoNormal').value);
+  const rhoC = parseFloat(document.getElementById('rhoCrise').value);
+  if ([w1, s1, s2, rhoN, rhoC].some(isNaN) || w1 < 0 || w1 > 1 || s1 < 0 || s2 < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const w2 = 1 - w1;
+  function portVar(rho) { return w1*w1*s1*s1 + w2*w2*s2*s2 + 2*w1*w2*s1*s2*rho; }
+  const varN = portVar(rhoN), varC = portVar(rhoC);
+  const sdN = Math.sqrt(varN), sdC = Math.sqrt(varC);
+  const hausse = (sdC - sdN) / sdN * 100;
+  let out = `<div class="valeur">σ_P (normal, ρ=${rhoN}) = ${sdN.toFixed(4)} %</div>`;
+  out += `<div class="valeur">σ_P (crise, ρ=${rhoC}) = ${sdC.toFixed(4)} %</div>`;
+  out += `<div class="valeur">hausse du risque = ${hausse.toFixed(2)} %</div>`;
+  out += `<p class="aide">Cette hausse illustre le coût de sous-estimer la dépendance de queue : dimensionner le risque avec ρ=${rhoN} sous-évaluerait la volatilité réelle du portefeuille en période de crise.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerSklar(); calculerStress(); };
+</script>
+</body>
+</html>
