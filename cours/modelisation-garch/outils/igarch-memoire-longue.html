@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — IGARCH, GARCH-M et la mémoire longue — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — IGARCH, GARCH-M et la mémoire longue</h1>
+<p class="sous-titre">Calculatrice interactive — IGARCH et RiskMetrics, opérateur de différenciation fractionnaire, test de la prime de risque</p>
+
+<div class="panneau">
+  <h2>IGARCH : h_t avec β₁ = 1 − α₁</h2>
+  <div class="ligne">
+    <div><label for="omegaI">ω</label><input type="number" id="omegaI" value="0.02" step="0.001" min="0"></div>
+    <div><label for="alphaI">α₁</label><input type="number" id="alphaI" value="0.08" step="0.001" min="0" max="1"></div>
+    <div><label for="epsPrevI">ε_{t-1}</label><input type="number" id="epsPrevI" value="-2.0" step="0.1"></div>
+    <div><label for="hPrevI">h_{t-1}</label><input type="number" id="hPrevI" value="1.5" step="0.01" min="0"></div>
+  </div>
+  <button onclick="calculerIgarch()">Calculer h_t (RiskMetrics : ω=0, α₁=0,06)</button>
+  <div id="resultatIgarch" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Coefficients de l'opérateur (1−L)^d</h2>
+  <div class="ligne">
+    <div><label for="dFrac">d (0 = GARCH, 1 = IGARCH)</label><input type="number" id="dFrac" value="0.4" step="0.01" min="0" max="1"></div>
+    <div><label for="nTermes">nombre de coefficients</label><input type="number" id="nTermes" value="5" step="1" min="1" max="15"></div>
+  </div>
+  <button onclick="calculerFracDiff()">Calculer les coefficients</button>
+  <div id="resultatFracDiff" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Tester la prime de risque d'un GARCH-M</h2>
+  <div class="ligne">
+    <div><label for="deltaHat">δ̂</label><input type="number" id="deltaHat" value="0.05" step="0.001"></div>
+    <div><label for="seDelta">écart-type estimé</label><input type="number" id="seDelta" value="0.04" step="0.001" min="0.0001"></div>
+  </div>
+  <button onclick="calculerTestDelta()">Calculer la statistique de test (bilatéral)</button>
+  <div id="resultatTestDelta" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerIgarch() {
+  const resDiv = document.getElementById('resultatIgarch');
+  const omega = parseFloat(document.getElementById('omegaI').value);
+  const alpha1 = parseFloat(document.getElementById('alphaI').value);
+  const epsPrev = parseFloat(document.getElementById('epsPrevI').value);
+  const hPrev = parseFloat(document.getElementById('hPrevI').value);
+  if ([omega, alpha1, epsPrev, hPrev].some(isNaN) || omega < 0 || alpha1 < 0 || alpha1 > 1 || hPrev < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (ω ≥ 0, 0 ≤ α₁ ≤ 1, h_{t-1} ≥ 0).</p>';
+    return;
+  }
+  const beta1 = 1 - alpha1;
+  const ht = omega + alpha1 * epsPrev * epsPrev + beta1 * hPrev;
+  let out = `<div class="valeur">β₁ = 1−α₁ = ${beta1.toFixed(4)}</div>`;
+  out += `<div class="valeur">π = α₁+β₁ = ${(alpha1 + beta1).toFixed(4)}</div>`;
+  out += `<div class="valeur">h_t = ${ht.toFixed(4)}</div>`;
+  out += `<div class="valeur ko">σ² n'existe pas (π=1, division par zéro)</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerFracDiff() {
+  const resDiv = document.getElementById('resultatFracDiff');
+  const d = parseFloat(document.getElementById('dFrac').value);
+  const n = parseInt(document.getElementById('nTermes').value);
+  if (isNaN(d) || d < 0 || d > 1 || isNaN(n) || n < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (0 ≤ d ≤ 1).</p>';
+    return;
+  }
+  const coeffs = [1];
+  for (let j = 1; j <= n; j++) {
+    coeffs.push(coeffs[j - 1] * (j - 1 - d) / j);
+  }
+  let out = '<table class="res"><tr><th>j</th><th>coefficient de L^j</th></tr>';
+  coeffs.forEach((c, j) => { out += `<tr><td>${j}</td><td>${c.toFixed(5)}</td></tr>`; });
+  out += '</table>';
+  let regime;
+  if (d === 0) regime = 'GARCH ordinaire (mémoire géométrique)';
+  else if (d === 1) regime = 'IGARCH (chocs permanents)';
+  else regime = 'mémoire longue (régime intermédiaire)';
+  out += `<div class="valeur">régime : ${regime}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerTestDelta() {
+  const resDiv = document.getElementById('resultatTestDelta');
+  const deltaHat = parseFloat(document.getElementById('deltaHat').value);
+  const se = parseFloat(document.getElementById('seDelta').value);
+  if ([deltaHat, se].some(isNaN) || se <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (écart-type &gt; 0).</p>';
+    return;
+  }
+  const tStat = deltaHat / se;
+  const critique = 1.96;
+  const significatif = Math.abs(tStat) > critique;
+  let out = `<div class="valeur">t = δ̂/écart-type = ${tStat.toFixed(3)}</div>`;
+  out += `<div class="valeur">valeur critique (5%, bilatéral) = ±${critique}</div>`;
+  out += `<div class="valeur ${significatif ? 'ok' : 'ko'}">${significatif ? 'significatif' : 'non significatif'} au seuil de 5%</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerIgarch(); calculerFracDiff(); calculerTestDelta(); };
+</script>
+</body>
+</html>
