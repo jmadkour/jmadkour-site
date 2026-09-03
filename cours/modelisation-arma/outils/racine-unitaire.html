@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Tests de racine unitaire — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Les tests de racine unitaire</h1>
+<p class="sous-titre">Calculatrice interactive — statistique de Dickey-Fuller, règle de Schwert et croisement ADF/KPSS</p>
+
+<div class="panneau">
+  <h2>Statistique de Dickey-Fuller (DF / ADF)</h2>
+  <div class="ligne">
+    <div><label for="phiHat">φ̂ (estimé)</label><input type="number" id="phiHat" value="-0.08" step="0.001"></div>
+    <div><label for="seHat">écart-type de φ̂</label><input type="number" id="seHat" value="0.035" step="0.001" min="0.0001"></div>
+    <div>
+      <label for="specDF">Spécification</label>
+      <select id="specDF">
+        <option value="0">sans constante ni tendance (crit. −1,95)</option>
+        <option value="1" selected>avec constante (crit. −2,86)</option>
+        <option value="2">avec constante et tendance (crit. −3,41)</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="calculerDF()">Calculer τ</button>
+  <div id="resultatDF" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Règle de Schwert (choix de k pour l'ADF)</h2>
+  <div class="ligne">
+    <div><label for="Tobs">Nombre d'observations T</label><input type="number" id="Tobs" value="250" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerSchwert()">Calculer k_max</button>
+  <div id="resultatSchwert" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Croiser les conclusions ADF / KPSS</h2>
+  <div class="ligne">
+    <div>
+      <label for="adfRejet">Le test ADF rejette-t-il H0 ?</label>
+      <select id="adfRejet"><option value="oui">oui, il rejette</option><option value="non">non, il ne rejette pas</option></select>
+    </div>
+    <div>
+      <label for="kpssRejet">Le test KPSS rejette-t-il H0 ?</label>
+      <select id="kpssRejet"><option value="non">non, il ne rejette pas</option><option value="oui">oui, il rejette</option></select>
+    </div>
+  </div>
+  <button onclick="calculerCroisement()">Conclure</button>
+  <div id="resultatCroisement" class="resultat-zone"></div>
+</div>
+
+<script>
+const CRIT_DF = [-1.95, -2.86, -3.41];
+const NOMS_SPEC = ['sans constante ni tendance', 'avec constante', 'avec constante et tendance'];
+
+function calculerDF() {
+  const resDiv = document.getElementById('resultatDF');
+  const phi = parseFloat(document.getElementById('phiHat').value);
+  const se = parseFloat(document.getElementById('seHat').value);
+  const spec = parseInt(document.getElementById('specDF').value);
+  if ([phi, se].some(isNaN) || se <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (l\'écart-type doit être positif).</p>';
+    return;
+  }
+  const tau = phi / se;
+  const crit = CRIT_DF[spec];
+  const rejette = tau < crit;
+  let out = `<div class="valeur">τ = ${tau.toFixed(4)}</div>`;
+  out += `<div class="valeur">valeur critique (${NOMS_SPEC[spec]}) = ${crit}</div>`;
+  out += `<div class="valeur ${rejette ? 'ok' : 'ko'}">${rejette ? 'on rejette H0 : stationnaire' : 'on ne rejette pas H0 : racine unitaire possible'}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerSchwert() {
+  const resDiv = document.getElementById('resultatSchwert');
+  const T = parseFloat(document.getElementById('Tobs').value);
+  if (isNaN(T) || T <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeur invalide.</p>';
+    return;
+  }
+  const kmax = Math.floor(12 * Math.pow(T / 100, 0.25));
+  resDiv.innerHTML = `<div class="valeur">k_max = ${kmax}</div><p class="aide">k_max = ⌊12 × (T/100)^(1/4)⌋, avec T = ${T}.</p>`;
+}
+
+function calculerCroisement() {
+  const resDiv = document.getElementById('resultatCroisement');
+  const adf = document.getElementById('adfRejet').value;
+  const kpss = document.getElementById('kpssRejet').value;
+  let conclusion, classe;
+  if (adf === 'oui' && kpss === 'non') { conclusion = 'stationnaire, sans ambiguïté'; classe = 'ok'; }
+  else if (adf === 'non' && kpss === 'oui') { conclusion = 'racine unitaire, sans ambiguïté'; classe = 'ok'; }
+  else if (adf === 'non' && kpss === 'non') { conclusion = 'échantillon peu informatif (cas ambigu)'; classe = 'ko'; }
+  else { conclusion = 'mauvaise spécification ou rupture structurelle (cas ambigu)'; classe = 'ko'; }
+  resDiv.innerHTML = `<div class="valeur ${classe}">${conclusion}</div>`;
+}
+
+window.onload = () => { calculerDF(); calculerSchwert(); calculerCroisement(); };
+</script>
+</body>
+</html>
