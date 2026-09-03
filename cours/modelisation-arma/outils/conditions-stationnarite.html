@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Conditions de stationnarité et d'inversibilité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  svg { background: white; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.6em; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Conditions de stationnarité et d'inversibilité</h1>
+<p class="sous-titre">Calculatrice interactive — racines d'un polynôme AR(2) ou MA(2) et cercle unité</p>
+
+<div class="panneau">
+  <h2>Racines et cercle unité</h2>
+  <div class="ligne">
+    <div>
+      <label for="typePoly">Type de polynôme</label>
+      <select id="typePoly">
+        <option value="AR">AR : A(z) = 1 − α₁z − α₂z²</option>
+        <option value="MA">MA : B(z) = 1 + β₁z + β₂z²</option>
+      </select>
+    </div>
+    <div><label for="c1">Coefficient d'ordre 1 (α₁ ou β₁)</label><input type="number" id="c1" value="0.5" step="0.01"></div>
+    <div><label for="c2">Coefficient d'ordre 2 (α₂ ou β₂, laisser 0 pour un ordre 1)</label><input type="number" id="c2" value="0.24" step="0.01"></div>
+  </div>
+  <button onclick="calculerRacines()">Calculer les racines</button>
+  <div id="resultatRacines" class="resultat-zone"></div>
+  <svg id="cercleSVG" width="320" height="320" viewBox="-2.2 -2.2 4.4 4.4"></svg>
+</div>
+
+<script>
+function calculerRacines() {
+  const resDiv = document.getElementById('resultatRacines');
+  const type = document.getElementById('typePoly').value;
+  const c1 = parseFloat(document.getElementById('c1').value);
+  const c2 = parseFloat(document.getElementById('c2').value);
+  if ([c1, c2].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  // Polynôme : type AR -> P(z) = 1 - c1 z - c2 z^2  (racines de -c2 z^2 - c1 z + 1 = 0)
+  // type MA -> P(z) = 1 + c1 z + c2 z^2
+  const a = type === 'AR' ? -c2 : c2;
+  const b = type === 'AR' ? -c1 : c1;
+  const cst = 1;
+  let racines = [];
+  if (Math.abs(a) < 1e-12) {
+    // ordre 1 : b z + 1 = 0
+    if (Math.abs(b) < 1e-12) {
+      resDiv.innerHTML = '<p class="erreur">Polynôme dégénéré (tous les coefficients sont nuls).</p>';
+      return;
+    }
+    racines.push({re: -cst / b, im: 0});
+  } else {
+    const disc = b * b - 4 * a * cst;
+    if (disc >= 0) {
+      const sq = Math.sqrt(disc);
+      racines.push({re: (-b + sq) / (2 * a), im: 0});
+      racines.push({re: (-b - sq) / (2 * a), im: 0});
+    } else {
+      const sq = Math.sqrt(-disc);
+      racines.push({re: -b / (2 * a), im: sq / (2 * a)});
+      racines.push({re: -b / (2 * a), im: -sq / (2 * a)});
+    }
+  }
+  let out = '<table class="res"><tr><th>racine</th><th>partie réelle</th><th>partie imaginaire</th><th>module</th><th>hors du cercle unité ?</th></tr>';
+  let toutesHors = true;
+  racines.forEach((r, i) => {
+    const mod = Math.sqrt(r.re * r.re + r.im * r.im);
+    const hors = mod > 1;
+    if (!hors) toutesHors = false;
+    out += `<tr><td>z${i+1}</td><td>${r.re.toFixed(4)}</td><td>${r.im.toFixed(4)}</td><td>${mod.toFixed(4)}</td><td>${hors ? 'oui' : 'non'}</td></tr>`;
+  });
+  out += '</table>';
+  const proprieteNom = type === 'AR' ? 'stationnaire' : 'inversible';
+  out += `<div class="valeur ${toutesHors ? 'ok' : 'ko'}">${type === 'AR' ? 'A(z)' : 'B(z)'} : processus ${toutesHors ? '' : 'non '}${proprieteNom}</div>`;
+  const Aat1 = type === 'AR' ? (1 - c1 - c2) : (1 + c1 + c2);
+  out += `<div class="valeur">${type === 'AR' ? 'A' : 'B'}(1) = ${Aat1.toFixed(4)}</div>`;
+  resDiv.innerHTML = out;
+  dessinerCercle(racines);
+}
+
+function dessinerCercle(racines) {
+  const svg = document.getElementById('cercleSVG');
+  let elems = '<circle cx="0" cy="0" r="1" fill="none" stroke="#5A5A5A" stroke-width="0.02" stroke-dasharray="0.05,0.05"/>';
+  elems += '<line x1="-2" y1="0" x2="2" y2="0" stroke="#ccc" stroke-width="0.01"/>';
+  elems += '<line x1="0" y1="-2" x2="0" y2="2" stroke="#ccc" stroke-width="0.01"/>';
+  racines.forEach(r => {
+    const mod = Math.sqrt(r.re * r.re + r.im * r.im);
+    const couleur = mod > 1 ? '#2E8B57' : '#b00020';
+    elems += `<circle cx="${r.re}" cy="${-r.im}" r="0.08" fill="${couleur}"/>`;
+  });
+  svg.innerHTML = elems;
+}
+
+window.onload = () => { calculerRacines(); };
+</script>
+</body>
+</html>
