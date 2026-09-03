@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Estimation : MCO et maximum de vraisemblance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #3a2d70; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  td.min { background: var(--cex); color: white; font-weight: bold; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — L'estimation : moindres carrés et maximum de vraisemblance</h1>
+<p class="sous-titre">Calculatrice interactive — biais des MCO sur un AR(1), et minimisation numérique de S(β) pour un MA(1)</p>
+
+<div class="panneau">
+  <h2>Biais des MCO sur un AR(1)</h2>
+  <div class="ligne">
+    <div><label for="alphaBias">α (vrai coefficient)</label><input type="number" id="alphaBias" value="0.7" step="0.01" min="-0.999" max="0.999"></div>
+    <div><label for="TBias">T (nombre d'observations)</label><input type="number" id="TBias" value="1000" step="1" min="2"></div>
+  </div>
+  <button onclick="calculerBiais()">Calculer</button>
+  <div id="resultatBiais" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Reconstruction récursive des chocs d'un MA(1) et minimisation de S(β)</h2>
+  <div class="ligne">
+    <div><label for="thetaMA13">θ</label><input type="number" id="thetaMA13" value="1" step="0.1"></div>
+  </div>
+  <p class="aide">Valeurs observées de y, une par ligne.</p>
+  <textarea id="yMA13" rows="4">1.8
+0.6
+1.9
+0.3</textarea>
+  <div class="ligne">
+    <div><label for="betaMin13">β minimum de la grille</label><input type="number" id="betaMin13" value="0" step="0.1"></div>
+    <div><label for="betaMax13">β maximum de la grille</label><input type="number" id="betaMax13" value="0.9" step="0.1"></div>
+    <div><label for="betaPas13">pas</label><input type="number" id="betaPas13" value="0.1" step="0.05" min="0.01"></div>
+  </div>
+  <button onclick="calculerS()">Balayer la grille de β</button>
+  <div id="resultatS" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerBiais() {
+  const resDiv = document.getElementById('resultatBiais');
+  const alpha = parseFloat(document.getElementById('alphaBias').value);
+  const T = parseFloat(document.getElementById('TBias').value);
+  if (isNaN(alpha) || isNaN(T) || T <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  const biais = (1 + 3 * alpha) / T;
+  const Ealpha = alpha - biais;
+  let out = `<div class="valeur">biais ≈ (1+3α)/T = ${biais.toFixed(6)}</div>`;
+  out += `<div class="valeur">E(α̂) ≈ ${Ealpha.toFixed(6)}</div>`;
+  resDiv.innerHTML = out;
+}
+
+function reconstruireEps(theta, beta, y) {
+  let eps = [0];
+  for (let t = 0; t < y.length; t++) {
+    eps.push(y[t] - theta - beta * eps[eps.length - 1]);
+  }
+  eps = eps.slice(1);
+  const S = eps.reduce((s, e) => s + e * e, 0);
+  return { eps, S };
+}
+
+function calculerS() {
+  const resDiv = document.getElementById('resultatS');
+  const theta = parseFloat(document.getElementById('thetaMA13').value);
+  const y = document.getElementById('yMA13').value.trim().split('\n').filter(l => l.trim().length).map(l => parseFloat(l.trim()));
+  const bmin = parseFloat(document.getElementById('betaMin13').value);
+  const bmax = parseFloat(document.getElementById('betaMax13').value);
+  const pas = parseFloat(document.getElementById('betaPas13').value);
+  if (isNaN(theta) || y.some(isNaN) || y.length < 1 || [bmin, bmax, pas].some(isNaN) || pas <= 0 || bmax < bmin) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  let lignes = [];
+  let minS = Infinity, betaMinS = null;
+  for (let b = bmin; b <= bmax + 1e-9; b += pas) {
+    const bround = Math.round(b * 1e6) / 1e6;
+    const { S } = reconstruireEps(theta, bround, y);
+    lignes.push({ beta: bround, S });
+    if (S < minS) { minS = S; betaMinS = bround; }
+  }
+  let out = '<table class="res"><tr><th>β</th><th>S(β)</th></tr>';
+  lignes.forEach(l => {
+    out += `<tr><td>${l.beta}</td><td class="${l.beta === betaMinS ? 'min' : ''}">${l.S.toFixed(4)}</td></tr>`;
+  });
+  out += '</table>';
+  out += `<div class="valeur">minimum sur la grille : β = ${betaMinS}, S(β) = ${minS.toFixed(4)}</div>`;
+  out += `<p class="aide">Ce balayage n'est qu'illustratif : un vrai algorithme d'optimisation utilise le gradient pour converger vers le minimum exact, sans se limiter à une grille discrète.</p>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerBiais(); calculerS(); };
+</script>
+</body>
+</html>
