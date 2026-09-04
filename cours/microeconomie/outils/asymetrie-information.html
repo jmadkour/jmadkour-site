@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — L'asymétrie d'information — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Application : l'asymétrie d'information</h1>
+<p class="sous-titre">Calculatrice interactive — antisélection et disparition d'un marché (exercice 5), franchise et aléa moral (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Antisélection : le marché des biens d'occasion</h2>
+  <p class="aide">Deux qualités, en proportions égales. L'acheteur ne peut pas les distinguer et raisonne en espérance.</p>
+  <div class="ligne">
+    <div><label for="c10bV">Bonne qualité — valeur vendeur</label><input type="number" id="c10bV" value="3000" step="100"></div>
+    <div><label for="c10bA">Bonne qualité — valeur acheteur</label><input type="number" id="c10bA" value="4200" step="100"></div>
+    <div><label for="c10mV">Mauvaise qualité — valeur vendeur</label><input type="number" id="c10mV" value="1000" step="100"></div>
+    <div><label for="c10mA">Mauvaise qualité — valeur acheteur</label><input type="number" id="c10mA" value="1600" step="100"></div>
+    <div><label for="c10n">Population de bons biens (pour le surplus perdu)</label><input type="number" id="c10n" value="50" step="10"></div>
+  </div>
+  <button onclick="calculerAntiselection()">Calculer</button>
+  <div id="resultatC10" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Franchise et aléa moral</h2>
+  <p class="aide">Prime actuarielle = probabilité de sinistre × coût moyen supporté par l'assureur.</p>
+  <div class="ligne">
+    <div><label for="c10cout">Coût moyen du sinistre</label><input type="number" id="c10cout" value="50000" step="1000"></div>
+    <div><label for="c10probSans">Probabilité de sinistre, sans franchise (%)</label><input type="number" id="c10probSans" value="20" step="1"></div>
+    <div><label for="c10franchise">Franchise</label><input type="number" id="c10franchise" value="5000" step="500"></div>
+    <div><label for="c10probAvec">Probabilité de sinistre, avec franchise (%)</label><input type="number" id="c10probAvec" value="8" step="1"></div>
+  </div>
+  <button onclick="calculerFranchise()">Calculer</button>
+  <div id="resultatFranchise10" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerAntiselection() {
+  var resDiv = document.getElementById('resultatC10');
+  var bV = parseFloat(document.getElementById('c10bV').value);
+  var bA = parseFloat(document.getElementById('c10bA').value);
+  var mV = parseFloat(document.getElementById('c10mV').value);
+  var mA = parseFloat(document.getElementById('c10mA').value);
+  var n = parseFloat(document.getElementById('c10n').value);
+  if ([bV, bA, mV, mA, n].some(isNaN) || bA <= bV || mA <= mV || n < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (la valeur acheteur doit dépasser la valeur vendeur pour chaque qualité).</p>';
+    return;
+  }
+  var surplusB = bA - bV;
+  var surplusM = mA - mV;
+  var esperance = 0.5 * bA + 0.5 * mA;
+  var unravel = esperance < bV;
+
+  var html =
+    '<div class="valeur">surplus bonne qualité : ' + surplusB.toLocaleString('fr-FR') + '</div>' +
+    '<div class="valeur">surplus mauvaise qualité : ' + surplusM.toLocaleString('fr-FR') + '</div>' +
+    '<div class="valeur mid">valeur espérée (acheteur non informé) : ' + esperance.toLocaleString('fr-FR') + '</div>';
+  if (unravel) {
+    html += '<div class="valeur ko">l\'espérance (' + esperance.toLocaleString('fr-FR') + ') est inférieure à la valeur vendeur bonne qualité (' + bV.toLocaleString('fr-FR') + ') : le marché des bons biens disparaît.</div>';
+    html += '<div class="valeur ok">prix final du marché (mauvaise qualité seule) : ' + mA.toLocaleString('fr-FR') + '</div>';
+    var perte = n * surplusB;
+    html += '<div class="valeur ko">surplus total perdu (sur ' + n + ' biens de bonne qualité) : ' + perte.toLocaleString('fr-FR') + '</div>';
+  } else {
+    html += '<div class="valeur ok">l\'espérance dépasse la valeur vendeur bonne qualité : les deux qualités continuent de s\'échanger, pas d\'antisélection complète ici.</div>';
+  }
+  resDiv.innerHTML = html;
+}
+
+function calculerFranchise() {
+  var resDiv = document.getElementById('resultatFranchise10');
+  var cout = parseFloat(document.getElementById('c10cout').value);
+  var probSans = parseFloat(document.getElementById('c10probSans').value) / 100;
+  var franchise = parseFloat(document.getElementById('c10franchise').value);
+  var probAvec = parseFloat(document.getElementById('c10probAvec').value) / 100;
+  if ([cout, probSans, franchise, probAvec].some(isNaN) || cout <= 0 || franchise < 0 || franchise > cout || probSans < 0 || probSans > 1 || probAvec < 0 || probAvec > 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var primeSans = probSans * cout;
+  var coutAssureurAvec = cout - franchise;
+  var primeAvec = probAvec * coutAssureurAvec;
+  var coutTotalSans = primeSans;
+  var coutTotalAvec = primeAvec + probAvec * franchise;
+
+  var html =
+    '<div class="valeur">prime sans franchise : ' + primeSans.toLocaleString('fr-FR') + '</div>' +
+    '<div class="valeur">prime avec franchise : ' + primeAvec.toLocaleString('fr-FR') + '</div><br>' +
+    '<div class="valeur mid">coût total espéré pour l\'assuré, sans franchise : ' + coutTotalSans.toLocaleString('fr-FR') + '</div>' +
+    '<div class="valeur ' + (coutTotalAvec < coutTotalSans ? 'ok' : 'ko') + '">coût total espéré pour l\'assuré, avec franchise : ' + coutTotalAvec.toLocaleString('fr-FR') + '</div>';
+  if (coutTotalAvec < coutTotalSans && primeAvec < primeSans) {
+    html += '<div class="valeur ok">la franchise réduit le coût à la fois pour l\'assureur et pour l\'assuré : l\'incitation à la prudence bénéficie aux deux parties.</div>';
+  }
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerAntiselection(); calculerFranchise(); };
+</script>
+</body>
+</html>
