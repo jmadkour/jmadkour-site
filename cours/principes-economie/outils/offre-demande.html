@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — L'offre et la demande — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco .courbe-demande { stroke: var(--cdef) !important; fill: none; }
+svg.grapheco .courbe-offre { stroke: var(--cintu) !important; fill: none; }
+svg.grapheco .courbe-demande2 { stroke: var(--cdef) !important; fill: none; opacity: 0.45; }
+svg.grapheco .courbe-offre2 { stroke: var(--cintu) !important; fill: none; opacity: 0.45; }
+svg.grapheco .point-equilibre { fill: var(--cex) !important; }
+svg.grapheco .point-equilibre2 { fill: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Les forces du marché : l'offre et la demande</h1>
+<p class="sous-titre">Calculatrice interactive — équilibre d'un marché (exercice 5), deux chocs simultanés (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Équilibre d'un marché</h2>
+  <p class="aide">Demande : $Q_d=a-bP$. Offre : $Q_o=cP-d$. À $P=20$ et $P=28$, comparer $Q_d$ et $Q_o$ pour repérer pénurie ou excédent.</p>
+  <div class="ligne">
+    <div><label for="paramA">a (demande, ordonnée)</label><input type="number" id="paramA" value="200" step="10"></div>
+    <div><label for="paramB">b (demande, pente)</label><input type="number" id="paramB" value="5" step="1"></div>
+    <div><label for="paramC">c (offre, pente)</label><input type="number" id="paramC" value="5" step="1"></div>
+    <div><label for="paramD">d (offre, ordonnée)</label><input type="number" id="paramD" value="40" step="10"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="prixTest1">prix-test 1 (dh)</label><input type="number" id="prixTest1" value="20" step="1"></div>
+    <div><label for="prixTest2">prix-test 2 (dh)</label><input type="number" id="prixTest2" value="28" step="1"></div>
+  </div>
+  <button onclick="calculerEquilibre()">Calculer l'équilibre</button>
+  <div id="resultatEquilibre" class="resultat-zone"></div>
+  <div id="zoneEquilibre"></div>
+</div>
+
+<div class="panneau">
+  <h2>Deux chocs simultanés</h2>
+  <p class="aide">Un choc d'offre ($\Delta d$, en $Q_o=cP-d-\Delta d$) et un choc de demande ($\Delta a$, en $Q_d=a+\Delta a-bP$) appliqués en même temps.</p>
+  <div class="ligne">
+    <div><label for="chocDemande">choc sur la demande Δa (positif = hausse)</label><input type="number" id="chocDemande" value="40" step="10"></div>
+    <div><label for="chocOffre">choc sur l'offre Δd (positif = recul de l'offre)</label><input type="number" id="chocOffre" value="40" step="10"></div>
+  </div>
+  <button onclick="calculerChocs()">Calculer les deux équilibres</button>
+  <div id="resultatChocs" class="resultat-zone"></div>
+  <div id="zoneChocs"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function dessinerMarche(zoneId, courbes, Pmax, Qmax, points) {
+  var W = 460, H = 320, margin = 48;
+  function px(Q) { return margin + (Q / Qmax) * (W - 2 * margin); }
+  function py(P) { return H - margin - (P / Pmax) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+
+  var axeX = svgNS('line');
+  axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin);
+  axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line');
+  axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin);
+  axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+
+  var labX = svgNS('text');
+  labX.setAttribute('x', W - margin); labX.setAttribute('y', H - margin + 22);
+  labX.setAttribute('text-anchor', 'end'); labX.setAttribute('font-size', '11');
+  labX.textContent = 'quantité Q';
+  svg.appendChild(labX);
+  var labY = svgNS('text');
+  labY.setAttribute('x', margin - 8); labY.setAttribute('y', margin - 8);
+  labY.setAttribute('text-anchor', 'end'); labY.setAttribute('font-size', '11');
+  labY.textContent = 'prix P';
+  svg.appendChild(labY);
+
+  courbes.forEach(function (courbe) {
+    var pathD = '';
+    var N = 40;
+    for (var i = 0; i <= N; i++) {
+      var P = (Pmax * i) / N;
+      var Q = courbe.fn(P);
+      if (Q < 0 || Q > Qmax * 1.3) continue;
+      var x = px(Q), y = py(P);
+      pathD += (pathD === '' ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    }
+    var path = svgNS('path');
+    path.setAttribute('d', pathD);
+    path.setAttribute('class', courbe.classe);
+    path.setAttribute('stroke-width', courbe.epaisseur || 2.5);
+    svg.appendChild(path);
+  });
+
+  (points || []).forEach(function (pt) {
+    var x = px(pt.Q), y = py(pt.P);
+    var c = svgNS('circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 5.5);
+    c.setAttribute('class', pt.classe);
+    c.setAttribute('stroke', 'white'); c.setAttribute('stroke-width', '1.5');
+    svg.appendChild(c);
+    var t = svgNS('text');
+    t.setAttribute('x', x + 8); t.setAttribute('y', y - 8);
+    t.setAttribute('font-size', '10'); t.setAttribute('font-weight', 'bold');
+    t.textContent = pt.label;
+    svg.appendChild(t);
+  });
+
+  var zone = document.getElementById(zoneId);
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerEquilibre() {
+  var resDiv = document.getElementById('resultatEquilibre');
+  var a = parseFloat(document.getElementById('paramA').value);
+  var b = parseFloat(document.getElementById('paramB').value);
+  var c = parseFloat(document.getElementById('paramC').value);
+  var d = parseFloat(document.getElementById('paramD').value);
+  var p1 = parseFloat(document.getElementById('prixTest1').value);
+  var p2 = parseFloat(document.getElementById('prixTest2').value);
+
+  var vals = [a, b, c, d, p1, p2];
+  if (vals.some(isNaN) || b <= 0 || c <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneEquilibre').innerHTML = '';
+    return;
+  }
+
+  var Pstar = (a + d) / (b + c);
+  var Qstar = a - b * Pstar;
+
+  function situation(P) {
+    var Qd = a - b * P, Qo = c * P - d;
+    var ecart = Qd - Qo;
+    var texte = ecart > 0.01 ? ('pénurie de ' + ecart.toFixed(1)) : (ecart < -0.01 ? ('excédent de ' + (-ecart).toFixed(1)) : 'équilibre');
+    return { Qd: Qd, Qo: Qo, texte: texte };
+  }
+  var s1 = situation(p1), s2 = situation(p2);
+
+  resDiv.innerHTML =
+    '<div class="valeur ok">P* = ' + Pstar.toFixed(2) + ' dh, Q* = ' + Qstar.toFixed(2) + '</div><br>' +
+    '<div class="valeur">à P=' + p1 + ' : Qd=' + s1.Qd.toFixed(1) + ', Qo=' + s1.Qo.toFixed(1) + ' → ' + s1.texte + '</div>' +
+    '<div class="valeur">à P=' + p2 + ' : Qd=' + s2.Qd.toFixed(1) + ', Qo=' + s2.Qo.toFixed(1) + ' → ' + s2.texte + '</div>';
+
+  var Pmax = Math.max(Pstar, p1, p2, a / b, d / c === Infinity ? 0 : (d + 1) / c) * 1.3;
+  var Qmax = Math.max(a, c * Pmax) * 1.05;
+
+  dessinerMarche('zoneEquilibre', [
+    { fn: function (P) { return a - b * P; }, classe: 'courbe-demande' },
+    { fn: function (P) { return c * P - d; }, classe: 'courbe-offre' }
+  ], Pmax, Qmax, [
+    { P: Pstar, Q: Qstar, classe: 'point-equilibre', label: 'équilibre' }
+  ]);
+}
+
+function calculerChocs() {
+  var resDiv = document.getElementById('resultatChocs');
+  var a = parseFloat(document.getElementById('paramA').value);
+  var b = parseFloat(document.getElementById('paramB').value);
+  var c = parseFloat(document.getElementById('paramC').value);
+  var d = parseFloat(document.getElementById('paramD').value);
+  var chocD = parseFloat(document.getElementById('chocDemande').value);
+  var chocO = parseFloat(document.getElementById('chocOffre').value);
+
+  var vals = [a, b, c, d, chocD, chocO];
+  if (vals.some(isNaN) || b <= 0 || c <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneChocs').innerHTML = '';
+    return;
+  }
+
+  var P0 = (a + d) / (b + c);
+  var Q0 = a - b * P0;
+
+  var aNouveau = a + chocD;
+  var dNouveau = d + chocO;
+  var P1 = (aNouveau + dNouveau) / (b + c);
+  var Q1 = aNouveau - b * P1;
+
+  var deltaP = P1 - P0, deltaQ = Q1 - Q0;
+
+  resDiv.innerHTML =
+    '<div class="valeur">équilibre initial : P₀=' + P0.toFixed(2) + ', Q₀=' + Q0.toFixed(2) + '</div>' +
+    '<div class="valeur mid">équilibre après les deux chocs : P₁=' + P1.toFixed(2) + ', Q₁=' + Q1.toFixed(2) + '</div><br>' +
+    '<div class="valeur ' + (deltaP > 0.01 ? 'ko' : (deltaP < -0.01 ? 'ok' : '')) + '">variation du prix : ' + (deltaP >= 0 ? '+' : '') + deltaP.toFixed(2) + '</div>' +
+    '<div class="valeur ' + (Math.abs(deltaQ) < 0.05 ? 'mid' : (deltaQ > 0 ? 'ok' : 'ko')) + '">variation de la quantité : ' + (deltaQ >= 0 ? '+' : '') + deltaQ.toFixed(2) + (Math.abs(deltaQ) < 0.05 ? ' (quasi inchangée : cas ambigu illustré)' : '') + '</div>';
+
+  var Pmax = Math.max(P0, P1) * 1.4;
+  var Qmax = Math.max(a, aNouveau, c * Pmax) * 1.05;
+
+  dessinerMarche('zoneChocs', [
+    { fn: function (P) { return a - b * P; }, classe: 'courbe-demande2', epaisseur: 2 },
+    { fn: function (P) { return c * P - d; }, classe: 'courbe-offre2', epaisseur: 2 },
+    { fn: function (P) { return aNouveau - b * P; }, classe: 'courbe-demande', epaisseur: 2.5 },
+    { fn: function (P) { return c * P - dNouveau; }, classe: 'courbe-offre', epaisseur: 2.5 }
+  ], Pmax, Qmax, [
+    { P: P0, Q: Q0, classe: 'point-equilibre', label: 'avant' },
+    { P: P1, Q: Q1, classe: 'point-equilibre2', label: 'après' }
+  ]);
+}
+
+window.onload = function () { calculerEquilibre(); calculerChocs(); };
+</script>
+</body>
+</html>
