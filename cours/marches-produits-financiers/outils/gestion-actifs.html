@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — La gestion collective d'actifs — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Application : la gestion collective d'actifs</h1>
+<p class="sous-titre">Calculatrice interactive — valeur liquidative et décote d'un fonds fermé (exercice 5), frais « deux et vingt » et high-water mark (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Valeur liquidative et décote d'un fonds fermé</h2>
+  <div class="ligne">
+    <div><label for="g2_actifs">Portefeuille (actifs)</label><input type="number" id="g2_actifs" value="850" step="10"></div>
+    <div><label for="g2_dettes">Dettes</label><input type="number" id="g2_dettes" value="50" step="5"></div>
+    <div><label for="g2_parts">Nombre de parts (millions)</label><input type="number" id="g2_parts" value="40" step="1"></div>
+    <div><label for="g2_cours">Cours de bourse</label><input type="number" id="g2_cours" value="17" step="0.5"></div>
+  </div>
+  <button onclick="calculerVL()">Calculer</button>
+  <div id="resultatVL" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Frais « deux et vingt » et high-water mark</h2>
+  <div class="ligne">
+    <div><label for="g2_capital">Capital initial</label><input type="number" id="g2_capital" value="10" step="1"></div>
+    <div><label for="g2_rend1">Rendement brut année 1 (%)</label><input type="number" id="g2_rend1" value="-10" step="1"></div>
+    <div><label for="g2_rend2">Rendement brut année 2 (%)</label><input type="number" id="g2_rend2" value="25" step="1"></div>
+    <div><label for="g2_gestion">Frais de gestion (%)</label><input type="number" id="g2_gestion" value="2" step="0.5"></div>
+    <div><label for="g2_perf">Commission de performance (%)</label><input type="number" id="g2_perf" value="20" step="1"></div>
+  </div>
+  <button onclick="calculerFrais()">Calculer</button>
+  <div id="resultatFrais" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerVL() {
+  var resDiv = document.getElementById('resultatVL');
+  var actifs = parseFloat(document.getElementById('g2_actifs').value);
+  var dettes = parseFloat(document.getElementById('g2_dettes').value);
+  var parts = parseFloat(document.getElementById('g2_parts').value);
+  var cours = parseFloat(document.getElementById('g2_cours').value);
+  if ([actifs, dettes, parts, cours].some(isNaN) || parts <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var VL = (actifs - dettes) / parts;
+  var ecart = (VL - cours) / VL * 100;
+  var profitPart = VL - cours;
+
+  var html = '<div class="valeur mid">valeur liquidative : ' + VL.toFixed(2) + '</div>';
+  if (ecart > 0) {
+    html += '<div class="valeur ko">décote de ' + ecart.toFixed(1) + '% (cours &lt; VL)</div>';
+    html += '<div class="valeur ok">profit instantané par part si liquidation au prorata : ' + profitPart.toFixed(2) + '</div>';
+  } else if (ecart < 0) {
+    html += '<div class="valeur ok">surcote de ' + Math.abs(ecart).toFixed(1) + '% (cours &gt; VL)</div>';
+    html += '<div class="valeur ko">perte instantanée par part si liquidation au prorata : ' + Math.abs(profitPart).toFixed(2) + '</div>';
+  } else {
+    html += '<div class="valeur ok">cours exactement égal à la valeur liquidative.</div>';
+  }
+  resDiv.innerHTML = html;
+}
+
+function calculerFrais() {
+  var resDiv = document.getElementById('resultatFrais');
+  var capital = parseFloat(document.getElementById('g2_capital').value);
+  var rend1 = parseFloat(document.getElementById('g2_rend1').value) / 100;
+  var rend2 = parseFloat(document.getElementById('g2_rend2').value) / 100;
+  var fraisGestion = parseFloat(document.getElementById('g2_gestion').value) / 100;
+  var fraisPerf = parseFloat(document.getElementById('g2_perf').value) / 100;
+  if ([capital, rend1, rend2, fraisGestion, fraisPerf].some(isNaN) || capital <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var brut1 = capital * (1 + rend1);
+  var fg1 = brut1 * fraisGestion;
+  var net1 = brut1 - fg1;
+  var HWM = Math.max(capital, net1);
+
+  var brut2 = net1 * (1 + rend2);
+  var fg2 = brut2 * fraisGestion;
+  var apresGestion2 = brut2 - fg2;
+
+  var gainAuDessusHWM = Math.max(0, apresGestion2 - HWM);
+  var commissionAvecHWM = fraisPerf * gainAuDessusHWM;
+  var netFinalAvecHWM = apresGestion2 - commissionAvecHWM;
+
+  var gainAnnee2 = Math.max(0, apresGestion2 - net1);
+  var commissionSansHWM = fraisPerf * gainAnnee2;
+  var netFinalSansHWM = apresGestion2 - commissionSansHWM;
+
+  var html =
+    '<div class="valeur">valeur nette fin année 1 : ' + net1.toFixed(4) + '</div>' +
+    '<div class="valeur mid">high-water mark : ' + HWM.toFixed(4) + '</div>' +
+    '<div class="valeur">valeur brute fin année 2 : ' + brut2.toFixed(4) + '</div>' +
+    '<div class="valeur">valeur après frais de gestion (année 2) : ' + apresGestion2.toFixed(4) + '</div><br>' +
+    '<div class="valeur ok">avec high-water mark : commission perf=' + commissionAvecHWM.toFixed(4) + ', valeur nette finale=' + netFinalAvecHWM.toFixed(4) + '</div>' +
+    '<div class="valeur mid">sans high-water mark : commission perf=' + commissionSansHWM.toFixed(4) + ', valeur nette finale=' + netFinalSansHWM.toFixed(4) + '</div>' +
+    '<div class="valeur ok">avantage du high-water mark pour l\'investisseur : ' + (netFinalAvecHWM - netFinalSansHWM).toFixed(4) + '</div>';
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerVL(); calculerFrais(); };
+</script>
+</body>
+</html>
