@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — Marshall et l'école néoclassique — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  svg.surplus, svg.pigou { width: 100%; height: auto; margin-top: 0.8em; }
+  .surplus text, .pigou text { font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.surplus text, .pigou text { fill: var(--fg) !important; }
+.surplus .axe, .pigou .axe { stroke: var(--cgris) !important; }
+.surplus .demande { stroke: var(--cdef) !important; }
+.surplus .aire { fill: var(--cex) !important; opacity: 0.35; }
+.surplus .prixligne { stroke: var(--cintu) !important; }
+.pigou .cmp { stroke: var(--cdef) !important; }
+.pigou .cms { stroke: var(--danger) !important; }
+.pigou .prixligne { stroke: var(--cintu) !important; }
+.pigou .point-prive { fill: var(--cdef) !important; }
+.pigou .point-social { fill: var(--cex) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — Marshall et l'école néoclassique</h1>
+<p class="sous-titre">Calculatrice interactive — le surplus du consommateur et l'élasticité (exercice 5) et la taxe pigouvienne (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Demande, surplus du consommateur et élasticité</h2>
+  <p class="aide">Demande linéaire P(q) = a − b·q. Entrer l'ordonnée à l'origine a, la pente b, et le prix effectivement payé.</p>
+  <div class="ligne">
+    <div><label for="paramA">a (ordonnée à l'origine)</label><input type="number" id="paramA" value="100" step="5"></div>
+    <div><label for="paramB">b (pente)</label><input type="number" id="paramB" value="2" step="0.5"></div>
+    <div><label for="prixPaye">prix payé p*</label><input type="number" id="prixPaye" value="60" step="5"></div>
+  </div>
+  <button onclick="calculerSurplus()">Calculer le surplus et l'élasticité</button>
+  <div id="resultatSurplus" class="resultat-zone"></div>
+  <div id="zoneSurplus"></div>
+</div>
+
+<div class="panneau">
+  <h2>La taxe pigouvienne</h2>
+  <p class="aide">Coût marginal privé Cmp(q) = c0 + c1·q, dommage marginal externe constant d, prix de marché p. La firme choisit q tel que son coût marginal (éventuellement taxé) égale p.</p>
+  <div class="ligne">
+    <div><label for="c0">c0 (coût marginal fixe)</label><input type="number" id="c0" value="20" step="5"></div>
+    <div><label for="c1">c1 (pente du coût marginal)</label><input type="number" id="c1" value="2" step="0.5"></div>
+    <div><label for="dommage">dommage marginal d</label><input type="number" id="dommage" value="10" step="1"></div>
+    <div><label for="prixMarche">prix de marché p</label><input type="number" id="prixMarche" value="60" step="5"></div>
+  </div>
+  <button onclick="calculerPigou()">Calculer la taxe pigouvienne</button>
+  <div id="resultatPigou" class="resultat-zone"></div>
+  <div id="zonePigou"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function calculerSurplus() {
+  var resDiv = document.getElementById('resultatSurplus');
+  var zone = document.getElementById('zoneSurplus');
+  var a = parseFloat(document.getElementById('paramA').value);
+  var b = parseFloat(document.getElementById('paramB').value);
+  var pStar = parseFloat(document.getElementById('prixPaye').value);
+  if ([a, b, pStar].some(isNaN) || b <= 0 || pStar <= 0 || pStar >= a) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (le prix doit être positif et inférieur à a).</p>';
+    zone.innerHTML = '';
+    return;
+  }
+  var qStar = (a - pStar) / b;
+  var surplus = 0.5 * (a - pStar) * qStar;
+  var dQdP = -1 / b;
+  var elasticite = dQdP * (pStar / qStar);
+  resDiv.innerHTML = '<div class="valeur">q* = ' + qStar.toFixed(2) + '</div>' +
+    '<div class="valeur ok">surplus du consommateur = ' + surplus.toFixed(1) + '</div>' +
+    '<div class="valeur">élasticité-prix = ' + elasticite.toFixed(2) + '</div>' +
+    '<div class="valeur ' + (Math.abs(elasticite) > 1 ? 'ko' : 'ok') + '">demande ' + (Math.abs(elasticite) > 1 ? 'élastique' : 'inélastique') + ' en ce point</div>';
+
+  var W = 460, H = 260, margin = 45;
+  var qMax = a / b;
+  function xOf(q) { return margin + (q / qMax) * (W - 2 * margin); }
+  function yOf(p) { return H - margin - (p / a) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'surplus');
+  var axeX = svgNS('line');
+  axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin);
+  axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line');
+  axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin);
+  axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+
+  var aire = svgNS('polygon');
+  aire.setAttribute('points', xOf(0) + ',' + yOf(a) + ' ' + xOf(qStar) + ',' + yOf(pStar) + ' ' + xOf(0) + ',' + yOf(pStar));
+  aire.setAttribute('class', 'aire');
+  svg.appendChild(aire);
+
+  var demande = svgNS('line');
+  demande.setAttribute('x1', xOf(0)); demande.setAttribute('y1', yOf(a));
+  demande.setAttribute('x2', xOf(qMax)); demande.setAttribute('y2', yOf(0));
+  demande.setAttribute('class', 'demande'); demande.setAttribute('stroke-width', '2.5');
+  svg.appendChild(demande);
+
+  var ligneP = svgNS('line');
+  ligneP.setAttribute('x1', xOf(0)); ligneP.setAttribute('y1', yOf(pStar));
+  ligneP.setAttribute('x2', xOf(qStar)); ligneP.setAttribute('y2', yOf(pStar));
+  ligneP.setAttribute('class', 'prixligne'); ligneP.setAttribute('stroke-width', '1.5'); ligneP.setAttribute('stroke-dasharray', '4,3');
+  svg.appendChild(ligneP);
+  var ligneQ = svgNS('line');
+  ligneQ.setAttribute('x1', xOf(qStar)); ligneQ.setAttribute('y1', yOf(pStar));
+  ligneQ.setAttribute('x2', xOf(qStar)); ligneQ.setAttribute('y2', yOf(0));
+  ligneQ.setAttribute('class', 'prixligne'); ligneQ.setAttribute('stroke-width', '1.5'); ligneQ.setAttribute('stroke-dasharray', '4,3');
+  svg.appendChild(ligneQ);
+
+  var labP = svgNS('text');
+  labP.setAttribute('x', margin - 6); labP.setAttribute('y', yOf(pStar) + 4);
+  labP.setAttribute('text-anchor', 'end'); labP.setAttribute('font-size', '11');
+  labP.textContent = 'p*=' + pStar.toFixed(0);
+  svg.appendChild(labP);
+  var labQ = svgNS('text');
+  labQ.setAttribute('x', xOf(qStar)); labQ.setAttribute('y', H - margin + 16);
+  labQ.setAttribute('text-anchor', 'middle'); labQ.setAttribute('font-size', '11');
+  labQ.textContent = 'q*=' + qStar.toFixed(1);
+  svg.appendChild(labQ);
+  var labS = svgNS('text');
+  labS.setAttribute('x', xOf(qStar / 3)); labS.setAttribute('y', yOf((a + pStar) / 2));
+  labS.setAttribute('text-anchor', 'middle'); labS.setAttribute('font-size', '11'); labS.setAttribute('font-weight', 'bold');
+  labS.textContent = 'S';
+  svg.appendChild(labS);
+
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerPigou() {
+  var resDiv = document.getElementById('resultatPigou');
+  var zone = document.getElementById('zonePigou');
+  var c0 = parseFloat(document.getElementById('c0').value);
+  var c1 = parseFloat(document.getElementById('c1').value);
+  var d = parseFloat(document.getElementById('dommage').value);
+  var p = parseFloat(document.getElementById('prixMarche').value);
+  if ([c0, c1, d, p].some(isNaN) || c1 <= 0 || p <= c0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (le prix doit dépasser le coût fixe c0).</p>';
+    zone.innerHTML = '';
+    return;
+  }
+  var qPrive = (p - c0) / c1;
+  var qSocial = (p - c0 - d) / c1;
+  var qAvecTaxe = qSocial;
+  resDiv.innerHTML = '<div class="valeur">q (sans intervention) = ' + qPrive.toFixed(2) + '</div>' +
+    '<div class="valeur ok">q (optimum social) = ' + qSocial.toFixed(2) + '</div>' +
+    '<div class="valeur">taxe pigouvienne = ' + d.toFixed(1) + '</div>' +
+    '<div class="valeur ok">q avec taxe = ' + qAvecTaxe.toFixed(2) + ' — égal à l\'optimum social</div>';
+
+  var W = 460, H = 260, margin = 45;
+  var qMax = qPrive * 1.4;
+  function xOf(q) { return margin + (q / qMax) * (W - 2 * margin); }
+  var maxP = c0 + c1 * qMax + d;
+  function yOf(pv) { return H - margin - (pv / maxP) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'pigou');
+  var axeX = svgNS('line');
+  axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin);
+  axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line');
+  axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin);
+  axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+
+  function ligne(classe, y0, y1) {
+    var l = svgNS('line');
+    l.setAttribute('x1', xOf(0)); l.setAttribute('y1', yOf(y0));
+    l.setAttribute('x2', xOf(qMax)); l.setAttribute('y2', yOf(y1));
+    l.setAttribute('class', classe); l.setAttribute('stroke-width', '2.5');
+    svg.appendChild(l);
+  }
+  ligne('cmp', c0, c0 + c1 * qMax);
+  ligne('cms', c0 + d, c0 + d + c1 * qMax);
+
+  var ligneP = svgNS('line');
+  ligneP.setAttribute('x1', xOf(0)); ligneP.setAttribute('y1', yOf(p));
+  ligneP.setAttribute('x2', xOf(qMax)); ligneP.setAttribute('y2', yOf(p));
+  ligneP.setAttribute('class', 'prixligne'); ligneP.setAttribute('stroke-width', '1.5'); ligneP.setAttribute('stroke-dasharray', '4,3');
+  svg.appendChild(ligneP);
+
+  [['point-prive', qPrive, 'q privé'], ['point-social', qSocial, 'q social']].forEach(function (it) {
+    var c = svgNS('circle');
+    c.setAttribute('cx', xOf(it[1])); c.setAttribute('cy', yOf(p)); c.setAttribute('r', 4);
+    c.setAttribute('class', it[0]);
+    svg.appendChild(c);
+    var t = svgNS('text');
+    t.setAttribute('x', xOf(it[1])); t.setAttribute('y', H - margin + 16);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '10');
+    t.textContent = it[2];
+    svg.appendChild(t);
+  });
+
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+window.onload = function () { calculerSurplus(); calculerPigou(); };
+</script>
+</body>
+</html>
