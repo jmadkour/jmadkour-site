@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — L'économie ouverte — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.grapheco rect.barre-s { fill: var(--cdef); }
+  svg.grapheco rect.barre-i { fill: var(--cintu); }
+  svg.grapheco rect.barre-xn { fill: var(--cex); }
+  svg.grapheco rect.barre-ppa { fill: var(--cgris); }
+  svg.grapheco rect.barre-observe { fill: var(--cdef); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco rect.barre-s { fill: var(--cdef) !important; }
+svg.grapheco rect.barre-i { fill: var(--cintu) !important; }
+svg.grapheco rect.barre-xn { fill: var(--cex) !important; }
+svg.grapheco rect.barre-ppa { fill: var(--cgris) !important; }
+svg.grapheco rect.barre-observe { fill: var(--cdef) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Application : l'économie ouverte</h1>
+<p class="sous-titre">Calculatrice interactive — S = I + XN (exercice 5), parité de pouvoir d'achat et taux de change réel (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Économie ouverte : S = I + XN</h2>
+  <p class="aide">$XN=Y-C-I-G$. $S=Y-C-G$. Vérification : $S=I+XN$.</p>
+  <div class="ligne">
+    <div><label for="eoY">Y (PIB)</label><input type="number" id="eoY" value="5000" step="100"></div>
+    <div><label for="eoC">C (consommation)</label><input type="number" id="eoC" value="3000" step="100"></div>
+    <div><label for="eoG">G (dépenses publiques)</label><input type="number" id="eoG" value="800" step="100"></div>
+    <div><label for="eoI">I (investissement)</label><input type="number" id="eoI" value="900" step="100"></div>
+  </div>
+  <button onclick="calculerEconomieOuverte()">Calculer</button>
+  <div id="resultatEconomieOuverte" class="resultat-zone"></div>
+  <div id="zoneEconomieOuverte"></div>
+</div>
+
+<div class="panneau">
+  <h2>Parité de pouvoir d'achat et taux de change réel</h2>
+  <p class="aide">Taux PPA $=$ prix du panier intérieur / prix du panier étranger. Taux réel $=$ taux nominal $\times\, P_{\text{int}}/P_{\text{ext}}$.</p>
+  <div class="ligne">
+    <div><label for="ppaPanierInt">prix du panier au Maroc (dh)</label><input type="number" id="ppaPanierInt" value="150" step="5"></div>
+    <div><label for="ppaPanierExt">prix du panier en zone euro (€)</label><input type="number" id="ppaPanierExt" value="12" step="1"></div>
+    <div><label for="ppaTauxObserve">taux de change observé (dh/€)</label><input type="number" id="ppaTauxObserve" value="11" step="0.5"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="ppaPint">indice des prix au Maroc</label><input type="number" id="ppaPint" value="108" step="1"></div>
+    <div><label for="ppaPext">indice des prix en zone euro</label><input type="number" id="ppaPext" value="100" step="1"></div>
+  </div>
+  <button onclick="calculerPPA()">Calculer</button>
+  <div id="resultatPPA" class="resultat-zone"></div>
+  <div id="zonePPA"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function dessinerBarres(zoneId, items, W, H) {
+  var margin = 45, barW = Math.min(80, (W - 2 * margin - (items.length - 1) * 18) / items.length);
+  var vMax = Math.max.apply(null, items.map(function (it) { return it.valeur; }));
+  var vMin = Math.min.apply(null, items.map(function (it) { return it.valeur; }));
+  var maxV = Math.max(vMax, 0) * 1.2 || 1;
+  var minV = Math.min(vMin, 0) * 1.2;
+  var span = maxV - minV || 1;
+  function yOf(v) { return H - margin - ((v - minV) / span) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  var axe = svgNS('line');
+  axe.setAttribute('x1', margin); axe.setAttribute('x2', W - margin);
+  axe.setAttribute('y1', yOf(0)); axe.setAttribute('y2', yOf(0));
+  axe.setAttribute('class', 'axe'); axe.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axe);
+  items.forEach(function (it, i) {
+    var x = margin + 12 + i * (barW + 18);
+    var y0 = yOf(0), y1 = yOf(it.valeur);
+    var yTop = Math.min(y0, y1), h = Math.abs(y1 - y0);
+    var r = svgNS('rect');
+    r.setAttribute('x', x); r.setAttribute('y', yTop);
+    r.setAttribute('width', barW); r.setAttribute('height', Math.max(h, 1));
+    r.setAttribute('class', it.classe);
+    svg.appendChild(r);
+    var t = svgNS('text');
+    t.setAttribute('x', x + barW / 2); t.setAttribute('y', it.valeur >= 0 ? yTop - 6 : yTop + h + 14);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '11'); t.setAttribute('font-weight', 'bold');
+    t.textContent = it.valeur.toLocaleString('fr-FR', {maximumFractionDigits: 2});
+    svg.appendChild(t);
+    var tl = svgNS('text');
+    tl.setAttribute('x', x + barW / 2); tl.setAttribute('y', H - margin + 16);
+    tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('font-size', '10');
+    tl.textContent = it.label;
+    svg.appendChild(tl);
+  });
+  var zone = document.getElementById(zoneId);
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerEconomieOuverte() {
+  var resDiv = document.getElementById('resultatEconomieOuverte');
+  var Y = parseFloat(document.getElementById('eoY').value);
+  var C = parseFloat(document.getElementById('eoC').value);
+  var G = parseFloat(document.getElementById('eoG').value);
+  var I = parseFloat(document.getElementById('eoI').value);
+  var vals = [Y, C, G, I];
+  if (vals.some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneEconomieOuverte').innerHTML = '';
+    return;
+  }
+  var XN = Y - C - I - G;
+  var S = Y - C - G;
+
+  resDiv.innerHTML =
+    '<div class="valeur">XN = ' + Y.toFixed(0) + '−' + C.toFixed(0) + '−' + I.toFixed(0) + '−' + G.toFixed(0) + ' = ' + XN.toFixed(1) + '</div>' +
+    '<div class="valeur ' + (XN >= 0 ? 'ok' : 'ko') + '">' + (XN >= 0 ? 'excédent commercial' : 'déficit commercial') + '</div><br>' +
+    '<div class="valeur mid">S = Y−C−G = ' + S.toFixed(1) + '</div>' +
+    '<div class="valeur">vérification : I + XN = ' + I.toFixed(1) + ' + ' + XN.toFixed(1) + ' = ' + (I + XN).toFixed(1) + (Math.abs(S - (I + XN)) < 0.01 ? ' = S ✓' : ' ≠ S ⚠') + '</div>';
+
+  dessinerBarres('zoneEconomieOuverte', [
+    { label: 'S', valeur: S, classe: 'barre-s' },
+    { label: 'I', valeur: I, classe: 'barre-i' },
+    { label: 'XN', valeur: XN, classe: 'barre-xn' }
+  ], 380, 280);
+}
+
+function calculerPPA() {
+  var resDiv = document.getElementById('resultatPPA');
+  var panierInt = parseFloat(document.getElementById('ppaPanierInt').value);
+  var panierExt = parseFloat(document.getElementById('ppaPanierExt').value);
+  var tauxObserve = parseFloat(document.getElementById('ppaTauxObserve').value);
+  var Pint = parseFloat(document.getElementById('ppaPint').value);
+  var Pext = parseFloat(document.getElementById('ppaPext').value);
+  var vals = [panierInt, panierExt, tauxObserve, Pint, Pext];
+  if (vals.some(isNaN) || panierExt <= 0 || Pext <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zonePPA').innerHTML = '';
+    return;
+  }
+  var tauxPPA = panierInt / panierExt;
+  var tauxReel = tauxObserve * Pint / Pext;
+  var ecart = tauxObserve - tauxPPA;
+
+  resDiv.innerHTML =
+    '<div class="valeur">taux PPA = ' + panierInt.toFixed(0) + '/' + panierExt.toFixed(0) + ' = ' + tauxPPA.toFixed(3) + ' dh/€</div>' +
+    '<div class="valeur mid">taux observé = ' + tauxObserve.toFixed(2) + ' dh/€</div>' +
+    '<div class="valeur ' + (ecart < 0 ? 'ok' : 'ko') + '">' + (ecart < 0 ? 'dirham surévalué' : (ecart > 0 ? 'dirham sous-évalué' : 'dirham à sa valeur PPA')) + ' (écart = ' + ecart.toFixed(3) + ')</div><br>' +
+    '<div class="valeur">taux de change réel = ' + tauxObserve.toFixed(2) + ' × ' + Pint.toFixed(0) + '/' + Pext.toFixed(0) + ' = ' + tauxReel.toFixed(3) + '</div>';
+
+  dessinerBarres('zonePPA', [
+    { label: 'taux PPA', valeur: tauxPPA, classe: 'barre-ppa' },
+    { label: 'taux observé', valeur: tauxObserve, classe: 'barre-observe' }
+  ], 340, 260);
+}
+
+window.onload = function () { calculerEconomieOuverte(); calculerPPA(); };
+</script>
+</body>
+</html>
