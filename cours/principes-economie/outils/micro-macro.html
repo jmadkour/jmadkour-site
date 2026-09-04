@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Micro et macro — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.recap { border-collapse: collapse; margin-top: 0.6em; font-size: 0.92em; }
+  table.recap th, table.recap td { border: 1px solid #ccc; padding: 0.35em 0.7em; text-align: right; }
+  table.recap th:first-child, table.recap td:first-child { text-align: left; }
+  table.recap th { background: rgba(0,0,0,0.04); }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.recap th, table.recap td { border-color: var(--border) !important; }
+table.recap th { background: var(--code-bg) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco .courbe-demande { stroke: var(--cdef) !important; fill: none; }
+svg.grapheco .courbe-offre { stroke: var(--cintu) !important; fill: none; }
+svg.grapheco .zone-consommateur { fill: var(--cdef) !important; opacity: 0.22; }
+svg.grapheco .zone-producteur { fill: var(--cintu) !important; opacity: 0.22; }
+svg.grapheco .zone-recette { fill: var(--cex) !important; opacity: 0.3; }
+svg.grapheco .zone-perte { fill: var(--danger) !important; opacity: 0.4; }
+svg.grapheco .ligne-plafond { stroke: var(--danger) !important; }
+svg.grapheco .ligne-plancher { stroke: var(--cex) !important; }
+svg.grapheco .ligne-monde { stroke: var(--cex) !important; }
+svg.grapheco .ligne-taxe { stroke: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Application : micro et macro, le bilan chiffré</h1>
+<p class="sous-titre">Calculatrice interactive — plafond et plancher de prix (exercice 5), taxe et ouverture comparées (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Encadrement de prix : plafond et plancher, même marché</h2>
+  <p class="aide">Demande : $Q_d=a-bP$. Offre : $Q_o=cP-d$. Le surplus total ne dépend, à quantité échangée donnée, que de cette quantité — pas du prix auquel elle s'échange.</p>
+  <div class="ligne">
+    <div><label for="epA">a</label><input type="number" id="epA" value="250" step="10"></div>
+    <div><label for="epB">b</label><input type="number" id="epB" value="5" step="1"></div>
+    <div><label for="epC">c</label><input type="number" id="epC" value="5" step="1"></div>
+    <div><label for="epD">d</label><input type="number" id="epD" value="50" step="10"></div>
+    <div><label for="epPlafond">prix plafond</label><input type="number" id="epPlafond" value="25" step="1"></div>
+    <div><label for="epPlancher">prix plancher</label><input type="number" id="epPlancher" value="35" step="1"></div>
+  </div>
+  <button onclick="calculerEncadrement()">Calculer</button>
+  <div id="resultatEncadrement" class="resultat-zone"></div>
+  <div id="zoneEncadrement"></div>
+</div>
+
+<div class="panneau">
+  <h2>Taxe et ouverture commerciale : les trois surplus comparés</h2>
+  <p class="aide">Demande : $Q_d=a-bP$. Offre : $Q_o=cP-d$. Une taxe est une entrave ; l'ouverture au commerce en est une levée — leurs effets sur le surplus total sont de signe opposé.</p>
+  <div class="ligne">
+    <div><label for="toA">a</label><input type="number" id="toA" value="180" step="10"></div>
+    <div><label for="toB">b</label><input type="number" id="toB" value="4" step="1"></div>
+    <div><label for="toC">c</label><input type="number" id="toC" value="4" step="1"></div>
+    <div><label for="toD">d</label><input type="number" id="toD" value="20" step="10"></div>
+    <div><label for="toTaxe">montant de la taxe</label><input type="number" id="toTaxe" value="6" step="1"></div>
+    <div><label for="toPmonde">prix mondial</label><input type="number" id="toPmonde" value="15" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div>
+      <label for="toScenario">graphique affiché</label>
+      <select id="toScenario" onchange="dessinerScenario()">
+        <option value="taxe">scénario : taxe</option>
+        <option value="ouverture">scénario : ouverture</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="calculerTaxeOuverture()">Calculer</button>
+  <div id="resultatTaxeOuverture" class="resultat-zone"></div>
+  <div id="zoneTaxeOuverture"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function demandeP(Q, a, b) { return (a - Q) / b; }
+function offreP(Q, c, d) { return (Q + d) / c; }
+
+function surplusC(Q, P, cons0, a, b) { return 0.5 * (cons0 + demandeP(Q, a, b)) * Q - P * Q; }
+function surplusP(Q, P, cout0, c, d) { return P * Q - 0.5 * (cout0 + offreP(Q, c, d)) * Q; }
+
+function dessinerAxes(svg, margin, W, H) {
+  var axeX = svgNS('line'); axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin); axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line'); axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin); axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+}
+
+function dessinerCourbes(svg, px, py, Qmax, a, b, c, d) {
+  ['demande', 'offre'].forEach(function (nom) {
+    var pathD = '';
+    for (var i = 0; i <= 2; i++) {
+      var Q = (Qmax * i) / 2;
+      var P = nom === 'demande' ? demandeP(Q, a, b) : offreP(Q, c, d);
+      if (P < 0) continue;
+      pathD += (pathD === '' ? 'M' : 'L') + px(Q).toFixed(1) + ',' + py(P).toFixed(1) + ' ';
+    }
+    var path = svgNS('path');
+    path.setAttribute('d', pathD);
+    path.setAttribute('class', nom === 'demande' ? 'courbe-demande' : 'courbe-offre');
+    path.setAttribute('stroke-width', '2.5');
+    svg.appendChild(path);
+  });
+}
+
+/* ---------- Panneau 1 : plafond / plancher ---------- */
+
+function calculerEncadrement() {
+  var resDiv = document.getElementById('resultatEncadrement');
+  var a = parseFloat(document.getElementById('epA').value);
+  var b = parseFloat(document.getElementById('epB').value);
+  var c = parseFloat(document.getElementById('epC').value);
+  var d = parseFloat(document.getElementById('epD').value);
+  var plafond = parseFloat(document.getElementById('epPlafond').value);
+  var plancher = parseFloat(document.getElementById('epPlancher').value);
+  var vals = [a, b, c, d, plafond, plancher];
+  if (vals.some(isNaN) || b <= 0 || c <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneEncadrement').innerHTML = '';
+    return;
+  }
+  var Pauto = (a + d) / (b + c);
+  var Qauto = a - b * Pauto;
+  var cons0 = demandeP(0, a, b), cout0 = offreP(0, c, d);
+  var totalAuto = surplusC(Qauto, Pauto, cons0, a, b) + surplusP(Qauto, Pauto, cout0, c, d);
+
+  var QdPlafond = Math.max(0, a - b * plafond), QoPlafond = c * plafond - d;
+  var QPlafond = Math.max(0, Math.min(QdPlafond, QoPlafond));
+  var penurie = QdPlafond - QoPlafond;
+  var totalPlafond = surplusC(QPlafond, plafond, cons0, a, b) + surplusP(QPlafond, plafond, cout0, c, d);
+
+  var QdPlancher = Math.max(0, a - b * plancher), QoPlancher = c * plancher - d;
+  var QPlancher = Math.max(0, Math.min(QdPlancher, QoPlancher));
+  var excedent = QoPlancher - QdPlancher;
+  var totalPlancher = surplusC(QPlancher, plancher, cons0, a, b) + surplusP(QPlancher, plancher, cout0, c, d);
+
+  var html = '<div class="valeur">équilibre libre : P*=' + Pauto.toFixed(2) + ', Q*=' + Qauto.toFixed(2) + ', surplus total=' + totalAuto.toFixed(1) + '</div><br>';
+  if (plafond < Pauto) {
+    html += '<div class="valeur ' + (penurie > 0 ? 'ko' : 'ok') + '">plafond ' + plafond.toFixed(1) + ' : Qd=' + QdPlafond.toFixed(1) + ', Qo=' + QoPlafond.toFixed(1) + ', échangé=' + QPlafond.toFixed(1) + ', pénurie=' + Math.max(0, penurie).toFixed(1) + ', surplus total=' + totalPlafond.toFixed(1) + '</div><br>';
+  } else {
+    html += '<div class="valeur">plafond ' + plafond.toFixed(1) + ' ≥ P* : sans effet (aucune contrainte)</div><br>';
+  }
+  if (plancher > Pauto) {
+    html += '<div class="valeur ' + (excedent > 0 ? 'ko' : 'ok') + '">plancher ' + plancher.toFixed(1) + ' : Qd=' + QdPlancher.toFixed(1) + ', Qo=' + QoPlancher.toFixed(1) + ', échangé=' + QPlancher.toFixed(1) + ', excédent=' + Math.max(0, excedent).toFixed(1) + ', surplus total=' + totalPlancher.toFixed(1) + '</div>';
+  } else {
+    html += '<div class="valeur">plancher ' + plancher.toFixed(1) + ' ≤ P* : sans effet (aucune contrainte)</div>';
+  }
+  if (plafond < Pauto && plancher > Pauto) {
+    var ecartQ = Math.abs(QPlafond - QPlancher);
+    var ecartS = Math.abs(totalPlafond - totalPlancher);
+    html += '<br><p class="aide">Écart entre les deux quantités échangées : ' + ecartQ.toFixed(2) + '. Écart entre les deux surplus totaux : ' + ecartS.toFixed(2) + (ecartQ < 0.005 ? ' — quantités identiques, donc surplus totaux identiques, comme au chapitre.' : '.') + '</p>';
+  }
+  resDiv.innerHTML = html;
+
+  var W = 460, H = 320, margin = 48;
+  var Pmax = Math.max(cons0, cout0, plafond, plancher) * 1.15;
+  var Qmax = Math.max(Qauto, QdPlafond, QoPlancher) * 1.25;
+  function px(Q) { return margin + (Q / Qmax) * (W - 2 * margin); }
+  function py(P) { return H - margin - (P / Pmax) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  dessinerAxes(svg, margin, W, H);
+  dessinerCourbes(svg, px, py, Qmax, a, b, c, d);
+
+  if (plafond < Pauto) {
+    var lp = svgNS('line');
+    lp.setAttribute('x1', margin); lp.setAttribute('x2', W - margin);
+    lp.setAttribute('y1', py(plafond)); lp.setAttribute('y2', py(plafond));
+    lp.setAttribute('class', 'ligne-plafond'); lp.setAttribute('stroke-width', '2'); lp.setAttribute('stroke-dasharray', '6,4');
+    svg.appendChild(lp);
+  }
+  if (plancher > Pauto) {
+    var lf = svgNS('line');
+    lf.setAttribute('x1', margin); lf.setAttribute('x2', W - margin);
+    lf.setAttribute('y1', py(plancher)); lf.setAttribute('y2', py(plancher));
+    lf.setAttribute('class', 'ligne-plancher'); lf.setAttribute('stroke-width', '2'); lf.setAttribute('stroke-dasharray', '6,4');
+    svg.appendChild(lf);
+  }
+
+  document.getElementById('zoneEncadrement').innerHTML = '';
+  document.getElementById('zoneEncadrement').appendChild(svg);
+}
+
+/* ---------- Panneau 2 : taxe et ouverture ---------- */
+
+var dernierCalcul = null;
+
+function calculerTaxeOuverture() {
+  var resDiv = document.getElementById('resultatTaxeOuverture');
+  var a = parseFloat(document.getElementById('toA').value);
+  var b = parseFloat(document.getElementById('toB').value);
+  var c = parseFloat(document.getElementById('toC').value);
+  var d = parseFloat(document.getElementById('toD').value);
+  var taxe = parseFloat(document.getElementById('toTaxe').value);
+  var Pmonde = parseFloat(document.getElementById('toPmonde').value);
+  var vals = [a, b, c, d, taxe, Pmonde];
+  if (vals.some(isNaN) || b <= 0 || c <= 0 || taxe < 0 || Pmonde < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneTaxeOuverture').innerHTML = '';
+    return;
+  }
+  var cons0 = demandeP(0, a, b), cout0 = offreP(0, c, d);
+  var Pauto = (a + d) / (b + c);
+  var Qauto = a - b * Pauto;
+  var totalAuto = surplusC(Qauto, Pauto, cons0, a, b) + surplusP(Qauto, Pauto, cout0, c, d);
+
+  var Ppaye = (a + d + c * taxe) / (b + c);
+  var Precu = Ppaye - taxe;
+  var Qtaxe = a - b * Ppaye;
+  var csTaxe = surplusC(Qtaxe, Ppaye, cons0, a, b);
+  var psTaxe = surplusP(Qtaxe, Precu, cout0, c, d);
+  var recette = taxe * Qtaxe;
+  var totalTaxe = csTaxe + psTaxe + recette;
+  var dwl = totalAuto - totalTaxe;
+
+  var QdMonde = Math.max(0, a - b * Pmonde), QoMonde = Math.max(0, c * Pmonde - d);
+  var csMonde = surplusC(QdMonde, Pmonde, cons0, a, b);
+  var psMonde = surplusP(QoMonde, Pmonde, cout0, c, d);
+  var totalMonde = csMonde + psMonde;
+  var estImportateur = Pmonde < Pauto;
+  var volumeEchange = Math.abs(QdMonde - QoMonde);
+
+  dernierCalcul = { a: a, b: b, c: c, d: d, cons0: cons0, cout0: cout0, Pauto: Pauto, Qauto: Qauto,
+    Ppaye: Ppaye, Precu: Precu, Qtaxe: Qtaxe, taxe: taxe,
+    Pmonde: Pmonde, QdMonde: QdMonde, QoMonde: QoMonde, estImportateur: estImportateur };
+
+  resDiv.innerHTML =
+    '<table class="recap"><tr><th>Situation</th><th>Prix</th><th>Quantité</th><th>Surplus total</th></tr>' +
+    '<tr><td>Autarcie (équilibre libre)</td><td>' + Pauto.toFixed(2) + '</td><td>' + Qauto.toFixed(1) + '</td><td>' + totalAuto.toFixed(1) + '</td></tr>' +
+    '<tr><td>Après taxe de ' + taxe.toFixed(1) + '</td><td>' + Ppaye.toFixed(2) + ' / ' + Precu.toFixed(2) + '</td><td>' + Qtaxe.toFixed(1) + '</td><td>' + totalTaxe.toFixed(1) + '</td></tr>' +
+    '<tr><td>Après ouverture (P monde=' + Pmonde.toFixed(1) + ')</td><td>' + Pmonde.toFixed(2) + '</td><td>' + (estImportateur ? QdMonde.toFixed(1) : QoMonde.toFixed(1)) + '</td><td>' + totalMonde.toFixed(1) + '</td></tr></table>' +
+    '<div class="valeur ko">taxe : perte sèche = ' + dwl.toFixed(1) + '</div>' +
+    '<div class="valeur ' + (totalMonde - totalAuto >= 0 ? 'ok' : 'ko') + '">ouverture (' + (estImportateur ? 'importateur' : 'exportateur') + ', volume=' + volumeEchange.toFixed(1) + ') : variation de surplus = ' + (totalMonde - totalAuto >= 0 ? '+' : '') + (totalMonde - totalAuto).toFixed(1) + '</div>' +
+    '<p class="aide">Conforme au chapitre : la taxe (une entrave) réduit le surplus total, l\'ouverture (une levée de contrainte) l\'augmente.</p>';
+
+  dessinerScenario();
+}
+
+function dessinerScenario() {
+  if (!dernierCalcul) return;
+  var k = dernierCalcul;
+  var scenario = document.getElementById('toScenario').value;
+  var W = 460, H = 320, margin = 48;
+  var Pmax, Qmax;
+  if (scenario === 'taxe') {
+    Pmax = Math.max(k.cons0, k.cout0, k.Ppaye) * 1.15;
+    Qmax = Math.max(k.Qauto, k.Qtaxe) * 1.3;
+  } else {
+    Pmax = Math.max(k.cons0, k.cout0, k.Pmonde) * 1.15;
+    Qmax = Math.max(k.Qauto, k.QdMonde, k.QoMonde) * 1.3;
+  }
+  function px(Q) { return margin + (Q / Qmax) * (W - 2 * margin); }
+  function py(P) { return H - margin - (P / Pmax) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  dessinerAxes(svg, margin, W, H);
+
+  if (scenario === 'taxe') {
+    var tri = svgNS('polygon');
+    tri.setAttribute('points', px(k.Qtaxe) + ',' + py(k.Ppaye) + ' ' + px(k.Qauto) + ',' + py(k.Pauto) + ' ' + px(k.Qtaxe) + ',' + py(k.Precu));
+    tri.setAttribute('class', 'zone-perte'); svg.appendChild(tri);
+  } else {
+    if (k.estImportateur) {
+      var zC = svgNS('polygon');
+      zC.setAttribute('points', px(0) + ',' + py(k.cons0) + ' ' + px(k.QdMonde) + ',' + py(k.Pmonde) + ' ' + px(0) + ',' + py(k.Pmonde));
+      zC.setAttribute('class', 'zone-consommateur'); svg.appendChild(zC);
+    } else {
+      var zP = svgNS('polygon');
+      zP.setAttribute('points', px(0) + ',' + py(k.cout0) + ' ' + px(k.QoMonde) + ',' + py(k.Pmonde) + ' ' + px(0) + ',' + py(k.Pmonde));
+      zP.setAttribute('class', 'zone-producteur'); svg.appendChild(zP);
+    }
+  }
+
+  dessinerCourbes(svg, px, py, Qmax, k.a, k.b, k.c, k.d);
+
+  if (scenario === 'taxe') {
+    [[k.Ppaye, 'ligne-taxe'], [k.Precu, 'ligne-taxe']].forEach(function (pr) {
+      var l = svgNS('line');
+      l.setAttribute('x1', margin); l.setAttribute('x2', W - margin);
+      l.setAttribute('y1', py(pr[0])); l.setAttribute('y2', py(pr[0]));
+      l.setAttribute('class', pr[1]); l.setAttribute('stroke-width', '2'); l.setAttribute('stroke-dasharray', '6,4');
+      svg.appendChild(l);
+    });
+  } else {
+    var lm = svgNS('line');
+    lm.setAttribute('x1', margin); lm.setAttribute('x2', W - margin);
+    lm.setAttribute('y1', py(k.Pmonde)); lm.setAttribute('y2', py(k.Pmonde));
+    lm.setAttribute('class', 'ligne-monde'); lm.setAttribute('stroke-width', '2'); lm.setAttribute('stroke-dasharray', '6,4');
+    svg.appendChild(lm);
+  }
+
+  document.getElementById('zoneTaxeOuverture').innerHTML = '';
+  document.getElementById('zoneTaxeOuverture').appendChild(svg);
+}
+
+window.onload = function () { calculerEncadrement(); calculerTaxeOuverture(); };
+</script>
+</body>
+</html>
