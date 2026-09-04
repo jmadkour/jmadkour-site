@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — L'entreprise en concurrence parfaite — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  .legende { font-size: 0.82em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: 0.4em; }
+  .legende span { display: inline-block; margin-right: 1em; }
+  .legende .puce { display: inline-block; width: 0.9em; height: 0.9em; border-radius: 2px; margin-right: 0.3em; vertical-align: middle; }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .legende { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco .courbe-cm { stroke: var(--cgris) !important; fill: none; }
+svg.grapheco .courbe-cmoyen { stroke: var(--cdef) !important; fill: none; }
+svg.grapheco .courbe-cvm { stroke: var(--cex) !important; fill: none; }
+svg.grapheco .ligne-prix { stroke: var(--cintu) !important; }
+svg.grapheco .point-q { fill: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Application : l'entreprise en concurrence parfaite</h1>
+<p class="sous-titre">Calculatrice interactive — décision de production P=Cm et seuils d'arrêt (exercice 5), équilibre de long terme (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Décision de production : P = Cm, arrêter ou continuer</h2>
+  <p class="aide">Coût total $CT(q)=CF+aq+bq^{2}$. L'entreprise produit tant que $Cm\le P$. Comparer $P$ à $CVM_{\min}$ (arrêt court terme) et à $CM_{\min}$ (sortie long terme).</p>
+  <div class="ligne">
+    <div><label for="d4CF">CF</label><input type="number" id="d4CF" value="120" step="10"></div>
+    <div><label for="d4a">a</label><input type="number" id="d4a" value="30" step="5"></div>
+    <div><label for="d4b">b</label><input type="number" id="d4b" value="5" step="1"></div>
+    <div><label for="d4P">prix de marché P</label><input type="number" id="d4P" value="60" step="5"></div>
+    <div><label for="d4qmax">q maximum affiché</label><input type="number" id="d4qmax" value="8" step="1"></div>
+  </div>
+  <button onclick="calculerDecision()">Calculer</button>
+  <div id="resultatDecision" class="resultat-zone"></div>
+  <div id="zoneDecision"></div>
+  <div class="legende">
+    <span><span class="puce" style="background:var(--cgris)"></span>Cm</span>
+    <span><span class="puce" style="background:var(--cdef)"></span>CM</span>
+    <span><span class="puce" style="background:var(--cex)"></span>CVM</span>
+    <span><span class="puce" style="background:var(--cintu)"></span>prix P</span>
+  </div>
+</div>
+
+<div class="panneau">
+  <h2>Équilibre de long terme et nombre d'entreprises</h2>
+  <p class="aide">Prix de long terme $=CM_{\min}$ d'une entreprise représentative. Demande de marché $Q_d=A-BP$. Nombre d'entreprises $=Q_d(P_{LT})/q_{\text{firme}}$.</p>
+  <div class="ligne">
+    <div><label for="e4CF">CF (entreprise)</label><input type="number" id="e4CF" value="120" step="10"></div>
+    <div><label for="e4a">a</label><input type="number" id="e4a" value="30" step="5"></div>
+    <div><label for="e4b">b</label><input type="number" id="e4b" value="5" step="1"></div>
+    <div><label for="e4A">A (demande)</label><input type="number" id="e4A" value="5000" step="100"></div>
+    <div><label for="e4B">B (demande)</label><input type="number" id="e4B" value="40" step="5"></div>
+  </div>
+  <button onclick="calculerLT()">Calculer</button>
+  <div id="resultatLT" class="resultat-zone"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function tableCouts(CF, a, b, qmax) {
+  var lignes = [];
+  var prevCT = CF;
+  for (var q = 1; q <= qmax; q++) {
+    var CT = CF + a * q + b * q * q;
+    var CM = CT / q;
+    var CVM = (a * q + b * q * q) / q;
+    var Cm = CT - prevCT;
+    lignes.push({ q: q, CT: CT, CM: CM, CVM: CVM, Cm: Cm });
+    prevCT = CT;
+  }
+  return lignes;
+}
+
+function dessinerAxesQC(svg, margin, W, H) {
+  var axeX = svgNS('line'); axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin); axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line'); axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin); axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+  var lblX = svgNS('text'); lblX.setAttribute('x', W - margin); lblX.setAttribute('y', H - margin + 28);
+  lblX.setAttribute('text-anchor', 'end'); lblX.setAttribute('font-size', '11'); lblX.textContent = 'q';
+  svg.appendChild(lblX);
+  var lblY = svgNS('text'); lblY.setAttribute('x', margin); lblY.setAttribute('y', margin - 10);
+  lblY.setAttribute('text-anchor', 'start'); lblY.setAttribute('font-size', '11'); lblY.textContent = 'coût / prix (dh)';
+  svg.appendChild(lblY);
+}
+
+function calculerDecision() {
+  var resDiv = document.getElementById('resultatDecision');
+  var CF = parseFloat(document.getElementById('d4CF').value);
+  var a = parseFloat(document.getElementById('d4a').value);
+  var b = parseFloat(document.getElementById('d4b').value);
+  var P = parseFloat(document.getElementById('d4P').value);
+  var qmax = parseInt(document.getElementById('d4qmax').value, 10);
+  var vals = [CF, a, b, P, qmax];
+  if (vals.some(isNaN) || CF < 0 || b <= 0 || P < 0 || qmax < 2 || qmax > 30) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (2 ≤ q maximum ≤ 30).</p>';
+    document.getElementById('zoneDecision').innerHTML = '';
+    return;
+  }
+  var lignes = tableCouts(CF, a, b, qmax);
+  var qChoisi = 0;
+  lignes.forEach(function (l) { if (l.Cm <= P) qChoisi = l.q; });
+  var CVMmin = Math.min.apply(null, lignes.map(function (l) { return l.CVM; }));
+  var CMmin = Math.min.apply(null, lignes.map(function (l) { return l.CM; }));
+
+  var decisionCT, decisionLT, profit;
+  if (P < CVMmin) {
+    decisionCT = 'arrêt temporaire (P < CVM minimal = ' + CVMmin.toFixed(2) + ')';
+    profit = -CF;
+    qChoisi = 0;
+  } else {
+    profit = P * qChoisi - (CF + a * qChoisi + b * qChoisi * qChoisi);
+    decisionCT = 'produire q=' + qChoisi + ' (P ≥ CVM minimal)';
+  }
+  decisionLT = (P < CMmin) ? 'sortir à long terme (P < CM minimal = ' + CMmin.toFixed(2) + ')' : 'rester à long terme (P ≥ CM minimal = ' + CMmin.toFixed(2) + ')';
+
+  resDiv.innerHTML =
+    '<div class="valeur">CVM minimal = ' + CVMmin.toFixed(2) + ' ; CM minimal = ' + CMmin.toFixed(2) + '</div><br>' +
+    '<div class="valeur mid">décision de court terme : ' + decisionCT + '</div>' +
+    '<div class="valeur ' + (P < CMmin ? 'ko' : 'ok') + '">décision de long terme : ' + decisionLT + '</div>' +
+    '<div class="valeur ' + (profit >= 0 ? 'ok' : 'ko') + '">profit = ' + profit.toFixed(2) + '</div>';
+
+  var W = 480, H = 320, margin = 55;
+  var Qmax = qmax + 0.5;
+  var Cmax = Math.max.apply(null, lignes.map(function (l) { return Math.max(l.CM, l.Cm, P); })) * 1.2;
+  function px(q) { return margin + ((q - 0.5) / Qmax) * (W - 2 * margin); }
+  function py(c) { return H - margin - (c / Cmax) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  dessinerAxesQC(svg, margin, W, H);
+
+  function tracer(cle, classe) {
+    var d = '';
+    lignes.forEach(function (l, i) { d += (i === 0 ? 'M' : 'L') + px(l.q).toFixed(1) + ',' + py(l[cle]).toFixed(1) + ' '; });
+    var path = svgNS('path');
+    path.setAttribute('d', d); path.setAttribute('class', classe); path.setAttribute('stroke-width', '2.5');
+    svg.appendChild(path);
+  }
+  tracer('Cm', 'courbe-cm');
+  tracer('CM', 'courbe-cmoyen');
+  tracer('CVM', 'courbe-cvm');
+
+  var ligneP = svgNS('line');
+  ligneP.setAttribute('x1', margin); ligneP.setAttribute('x2', W - margin);
+  ligneP.setAttribute('y1', py(P)); ligneP.setAttribute('y2', py(P));
+  ligneP.setAttribute('class', 'ligne-prix'); ligneP.setAttribute('stroke-width', '2'); ligneP.setAttribute('stroke-dasharray', '6,3');
+  svg.appendChild(ligneP);
+
+  if (qChoisi > 0) {
+    var pt = svgNS('circle');
+    pt.setAttribute('cx', px(qChoisi)); pt.setAttribute('cy', py(P)); pt.setAttribute('r', 5);
+    pt.setAttribute('class', 'point-q');
+    svg.appendChild(pt);
+  }
+
+  document.getElementById('zoneDecision').innerHTML = '';
+  document.getElementById('zoneDecision').appendChild(svg);
+}
+
+function calculerLT() {
+  var resDiv = document.getElementById('resultatLT');
+  var CF = parseFloat(document.getElementById('e4CF').value);
+  var a = parseFloat(document.getElementById('e4a').value);
+  var b = parseFloat(document.getElementById('e4b').value);
+  var A = parseFloat(document.getElementById('e4A').value);
+  var B = parseFloat(document.getElementById('e4B').value);
+  var vals = [CF, a, b, A, B];
+  if (vals.some(isNaN) || CF < 0 || b <= 0 || B <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var lignes = tableCouts(CF, a, b, 60);
+  var CMmin = Infinity, qFirme = 1;
+  lignes.forEach(function (l) { if (l.CM < CMmin) { CMmin = l.CM; qFirme = l.q; } });
+
+  var Plt = CMmin;
+  var Qtot = A - B * Plt;
+  var nbEntreprises = Qtot / qFirme;
+
+  var html =
+    '<div class="valeur ok">prix de long terme = CM minimal = ' + Plt.toFixed(2) + ' (atteint à q=' + qFirme + ')</div>' +
+    '<div class="valeur">quantité par entreprise = ' + qFirme + '</div>';
+  if (Qtot > 0) {
+    html += '<div class="valeur mid">quantité totale demandée = ' + Qtot.toFixed(1) + ' → nombre d\'entreprises ≈ ' + nbEntreprises.toFixed(1) + '</div>';
+  } else {
+    html += '<div class="valeur ko">à ce prix, la demande totale est négative ou nulle : ce marché ne peut pas soutenir cette structure de coûts avec ces paramètres de demande.</div>';
+  }
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerDecision(); calculerLT(); };
+</script>
+</body>
+</html>
