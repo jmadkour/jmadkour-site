@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Consommateurs, producteurs et efficacité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco .courbe-demande { stroke: var(--cdef) !important; fill: none; }
+svg.grapheco .courbe-offre { stroke: var(--cintu) !important; fill: none; }
+svg.grapheco .zone-consommateur { fill: var(--cdef) !important; opacity: 0.25; }
+svg.grapheco .zone-producteur { fill: var(--cintu) !important; opacity: 0.25; }
+svg.grapheco .zone-perte { fill: var(--danger) !important; opacity: 0.35; }
+svg.grapheco .ligne-prix { stroke: var(--cex) !important; }
+svg.grapheco .ligne-quota { stroke: var(--danger) !important; }
+svg.grapheco .point-equilibre { fill: var(--cex) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Consommateurs, producteurs et efficacité des marchés</h1>
+<p class="sous-titre">Calculatrice interactive — surplus du consommateur et du producteur (exercice 5), contingentement et valeur perdue (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Surplus du consommateur, du producteur et surplus total</h2>
+  <p class="aide">Demande : $Q_d=a-bP$. Offre : $Q_o=cP-d$.</p>
+  <div class="ligne">
+    <div><label for="surplusA">a (demande, ordonnée)</label><input type="number" id="surplusA" value="180" step="10"></div>
+    <div><label for="surplusB">b (demande, pente)</label><input type="number" id="surplusB" value="3" step="1"></div>
+    <div><label for="surplusC">c (offre, pente)</label><input type="number" id="surplusC" value="3" step="1"></div>
+    <div><label for="surplusD">d (offre, ordonnée)</label><input type="number" id="surplusD" value="60" step="10"></div>
+  </div>
+  <button onclick="calculerSurplus()">Calculer</button>
+  <div id="resultatSurplus" class="resultat-zone"></div>
+  <div id="zoneSurplus"></div>
+</div>
+
+<div class="panneau">
+  <h2>Contingentement et valeur non captée</h2>
+  <p class="aide">Un quota limite la quantité échangée en dessous de l'équilibre : une partie du surplus total possible n'est jamais créée.</p>
+  <div class="ligne">
+    <div><label for="quota">quantité imposée par le quota</label><input type="number" id="quota" value="40" step="5"></div>
+  </div>
+  <button onclick="calculerQuota()">Calculer</button>
+  <div id="resultatQuota" class="resultat-zone"></div>
+  <div id="zoneQuota"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function getParams() {
+  return {
+    a: parseFloat(document.getElementById('surplusA').value),
+    b: parseFloat(document.getElementById('surplusB').value),
+    c: parseFloat(document.getElementById('surplusC').value),
+    d: parseFloat(document.getElementById('surplusD').value)
+  };
+}
+
+function demandeP(Q, a, b) { return (a - Q) / b; }
+function offreP(Q, c, d) { return (Q + d) / c; }
+
+function dessinerBase(svg, Pmax, Qmax, margin, W, H) {
+  var axeX = svgNS('line');
+  axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin);
+  axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line');
+  axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin);
+  axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+  var labX = svgNS('text');
+  labX.setAttribute('x', W - margin); labX.setAttribute('y', H - margin + 22);
+  labX.setAttribute('text-anchor', 'end'); labX.setAttribute('font-size', '11');
+  labX.textContent = 'quantité Q';
+  svg.appendChild(labX);
+  var labY = svgNS('text');
+  labY.setAttribute('x', margin - 8); labY.setAttribute('y', margin - 8);
+  labY.setAttribute('text-anchor', 'end'); labY.setAttribute('font-size', '11');
+  labY.textContent = 'prix P';
+  svg.appendChild(labY);
+}
+
+function calculerSurplus() {
+  var resDiv = document.getElementById('resultatSurplus');
+  var p = getParams();
+  var vals = [p.a, p.b, p.c, p.d];
+  if (vals.some(isNaN) || p.b <= 0 || p.c <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneSurplus').innerHTML = '';
+    return;
+  }
+  var Pstar = (p.a + p.d) / (p.b + p.c);
+  var Qstar = p.a - p.b * Pstar;
+  var consentement0 = demandeP(0, p.a, p.b);
+  var cout0 = offreP(0, p.c, p.d);
+  var surplusC = 0.5 * Qstar * (consentement0 - Pstar);
+  var surplusP = 0.5 * Qstar * (Pstar - cout0);
+  var surplusTotal = surplusC + surplusP;
+
+  resDiv.innerHTML =
+    '<div class="valeur ok">P* = ' + Pstar.toFixed(2) + ', Q* = ' + Qstar.toFixed(2) + '</div><br>' +
+    '<div class="valeur">consentement au 1er kg = ' + consentement0.toFixed(1) + ' ; coût du 1er kg = ' + cout0.toFixed(1) + '</div>' +
+    '<div class="valeur">surplus consommateur = ' + surplusC.toFixed(1) + '</div>' +
+    '<div class="valeur mid">surplus producteur = ' + surplusP.toFixed(1) + '</div>' +
+    '<div class="valeur ok">surplus total = ' + surplusTotal.toFixed(1) + '</div>';
+
+  var W = 460, H = 320, margin = 48;
+  var Pmax = Math.max(consentement0, cout0) * 1.15;
+  var Qmax = Qstar * 1.3;
+  function px(Q) { return margin + (Q / Qmax) * (W - 2 * margin); }
+  function py(P) { return H - margin - (P / Pmax) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  dessinerBase(svg, Pmax, Qmax, margin, W, H);
+
+  var triC = svgNS('polygon');
+  triC.setAttribute('points', px(0) + ',' + py(consentement0) + ' ' + px(Qstar) + ',' + py(Pstar) + ' ' + px(0) + ',' + py(Pstar));
+  triC.setAttribute('class', 'zone-consommateur');
+  svg.appendChild(triC);
+
+  var triP = svgNS('polygon');
+  triP.setAttribute('points', px(0) + ',' + py(cout0) + ' ' + px(Qstar) + ',' + py(Pstar) + ' ' + px(0) + ',' + py(Pstar));
+  triP.setAttribute('class', 'zone-producteur');
+  svg.appendChild(triP);
+
+  ['demande', 'offre'].forEach(function (nom) {
+    var pathD = '';
+    var N = 2;
+    for (var i = 0; i <= N; i++) {
+      var Q = (Qmax * i) / N;
+      var P = nom === 'demande' ? demandeP(Q, p.a, p.b) : offreP(Q, p.c, p.d);
+      if (P < 0) continue;
+      pathD += (pathD === '' ? 'M' : 'L') + px(Q).toFixed(1) + ',' + py(P).toFixed(1) + ' ';
+    }
+    var path = svgNS('path');
+    path.setAttribute('d', pathD);
+    path.setAttribute('class', nom === 'demande' ? 'courbe-demande' : 'courbe-offre');
+    path.setAttribute('stroke-width', '2.5');
+    svg.appendChild(path);
+  });
+
+  var c = svgNS('circle');
+  c.setAttribute('cx', px(Qstar)); c.setAttribute('cy', py(Pstar)); c.setAttribute('r', 5);
+  c.setAttribute('class', 'point-equilibre'); c.setAttribute('stroke', 'white'); c.setAttribute('stroke-width', '1.5');
+  svg.appendChild(c);
+
+  document.getElementById('zoneSurplus').innerHTML = '';
+  document.getElementById('zoneSurplus').appendChild(svg);
+}
+
+function calculerQuota() {
+  var resDiv = document.getElementById('resultatQuota');
+  var p = getParams();
+  var Q0 = parseFloat(document.getElementById('quota').value);
+
+  var vals = [p.a, p.b, p.c, p.d, Q0];
+  if (vals.some(isNaN) || p.b <= 0 || p.c <= 0 || Q0 < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneQuota').innerHTML = '';
+    return;
+  }
+
+  var Pstar = (p.a + p.d) / (p.b + p.c);
+  var Qstar = p.a - p.b * Pstar;
+  var consentement0 = demandeP(0, p.a, p.b);
+  var cout0 = offreP(0, p.c, p.d);
+  var surplusTotalEquilibre = 0.5 * Qstar * (consentement0 - cout0);
+
+  if (Q0 > Qstar) {
+    resDiv.innerHTML = '<p class="erreur">Le quota doit être inférieur à Q* = ' + Qstar.toFixed(1) + '.</p>';
+    document.getElementById('zoneQuota').innerHTML = '';
+    return;
+  }
+
+  var demQ0 = demandeP(Q0, p.a, p.b), offQ0 = offreP(Q0, p.c, p.d);
+  var base1 = consentement0 - cout0, base2 = demQ0 - offQ0;
+  var surplusQuota = ((base1 + base2) / 2) * Q0;
+  var perte = surplusTotalEquilibre - surplusQuota;
+
+  resDiv.innerHTML =
+    '<div class="valeur">au quota (Q=' + Q0 + ') : consentement=' + demQ0.toFixed(1) + ', coût=' + offQ0.toFixed(1) + '</div>' +
+    '<div class="valeur mid">surplus réalisable avec le quota = ' + surplusQuota.toFixed(1) + '</div>' +
+    '<div class="valeur ok">surplus total à l\'équilibre (sans quota) = ' + surplusTotalEquilibre.toFixed(1) + '</div>' +
+    '<div class="valeur ko">valeur non captée à cause du quota = ' + perte.toFixed(1) + '</div>';
+
+  var W = 460, H = 320, margin = 48;
+  var Pmax = Math.max(consentement0, cout0) * 1.15;
+  var Qmax = Qstar * 1.3;
+  function px(Q) { return margin + (Q / Qmax) * (W - 2 * margin); }
+  function py(P) { return H - margin - (P / Pmax) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  dessinerBase(svg, Pmax, Qmax, margin, W, H);
+
+  var trap = svgNS('polygon');
+  trap.setAttribute('points', px(0) + ',' + py(consentement0) + ' ' + px(Q0) + ',' + py(demQ0) + ' ' + px(Q0) + ',' + py(offQ0) + ' ' + px(0) + ',' + py(cout0));
+  trap.setAttribute('class', 'zone-consommateur');
+  svg.appendChild(trap);
+
+  var triPerte = svgNS('polygon');
+  triPerte.setAttribute('points', px(Q0) + ',' + py(demQ0) + ' ' + px(Q0) + ',' + py(offQ0) + ' ' + px(Qstar) + ',' + py(Pstar));
+  triPerte.setAttribute('class', 'zone-perte');
+  svg.appendChild(triPerte);
+
+  ['demande', 'offre'].forEach(function (nom) {
+    var pathD = '';
+    var N = 2;
+    for (var i = 0; i <= N; i++) {
+      var Q = (Qmax * i) / N;
+      var P = nom === 'demande' ? demandeP(Q, p.a, p.b) : offreP(Q, p.c, p.d);
+      if (P < 0) continue;
+      pathD += (pathD === '' ? 'M' : 'L') + px(Q).toFixed(1) + ',' + py(P).toFixed(1) + ' ';
+    }
+    var path = svgNS('path');
+    path.setAttribute('d', pathD);
+    path.setAttribute('class', nom === 'demande' ? 'courbe-demande' : 'courbe-offre');
+    path.setAttribute('stroke-width', '2.5');
+    svg.appendChild(path);
+  });
+
+  var lq = svgNS('line');
+  lq.setAttribute('x1', px(Q0)); lq.setAttribute('x2', px(Q0));
+  lq.setAttribute('y1', margin); lq.setAttribute('y2', H - margin);
+  lq.setAttribute('class', 'ligne-quota'); lq.setAttribute('stroke-width', '1.8'); lq.setAttribute('stroke-dasharray', '5,4');
+  svg.appendChild(lq);
+
+  var ce = svgNS('circle');
+  ce.setAttribute('cx', px(Qstar)); ce.setAttribute('cy', py(Pstar)); ce.setAttribute('r', 5);
+  ce.setAttribute('class', 'point-equilibre'); ce.setAttribute('stroke', 'white'); ce.setAttribute('stroke-width', '1.5');
+  svg.appendChild(ce);
+
+  document.getElementById('zoneQuota').innerHTML = '';
+  document.getElementById('zoneQuota').appendChild(svg);
+}
+
+window.onload = function () { calculerSurplus(); calculerQuota(); };
+</script>
+</body>
+</html>
