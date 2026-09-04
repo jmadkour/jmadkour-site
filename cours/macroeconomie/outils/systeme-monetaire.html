@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Le système monétaire — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.recap { border-collapse: collapse; margin-top: 0.6em; font-size: 0.92em; }
+  table.recap th, table.recap td { border: 1px solid #ccc; padding: 0.35em 0.7em; text-align: right; }
+  table.recap th:first-child, table.recap td:first-child { text-align: left; }
+  table.recap th { background: rgba(0,0,0,0.04); }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.grapheco rect.barre-depot { fill: var(--cdef); }
+  svg.grapheco rect.barre-reserves { fill: var(--cgris); }
+  svg.grapheco rect.barre-pret { fill: var(--cex); }
+  svg.grapheco rect.barre-theorique { fill: var(--cdef); }
+  svg.grapheco rect.barre-reel { fill: var(--cintu); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.recap th, table.recap td { border-color: var(--border) !important; }
+table.recap th { background: var(--code-bg) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco rect.barre-depot { fill: var(--cdef) !important; }
+svg.grapheco rect.barre-reserves { fill: var(--cgris) !important; }
+svg.grapheco rect.barre-pret { fill: var(--cex) !important; }
+svg.grapheco rect.barre-theorique { fill: var(--cdef) !important; }
+svg.grapheco rect.barre-reel { fill: var(--cintu) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Application : le système monétaire</h1>
+<p class="sous-titre">Calculatrice interactive — multiplicateur monétaire et étapes de création (exercice 5), open market et réserves excédentaires (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Multiplicateur monétaire et étapes de création</h2>
+  <p class="aide">Multiplicateur $=1/\text{taux de réserves}$. À chaque étape, la banque conserve une fraction en réserves et prête le reste.</p>
+  <div class="ligne">
+    <div><label for="mmDepot">dépôt initial</label><input type="number" id="mmDepot" value="3000" step="100"></div>
+    <div><label for="mmTaux">taux de réserves (%)</label><input type="number" id="mmTaux" value="25" step="1"></div>
+  </div>
+  <button onclick="calculerMultiplicateur()">Calculer</button>
+  <div id="resultatMultiplicateur" class="resultat-zone"></div>
+  <div id="zoneMultiplicateur"></div>
+</div>
+
+<div class="panneau">
+  <h2>Open market et réserves excédentaires</h2>
+  <p class="aide">La banque centrale injecte un montant ; le multiplicateur théorique utilise le taux obligatoire, le multiplicateur effectif utilise le taux réellement détenu par les banques.</p>
+  <div class="ligne">
+    <div><label for="omInjection">injection (open market)</label><input type="number" id="omInjection" value="500" step="50"></div>
+    <div><label for="omTauxOblig">taux de réserves obligatoire (%)</label><input type="number" id="omTauxOblig" value="10" step="1"></div>
+    <div><label for="omTauxEffectif">taux de réserves effectif des banques (%)</label><input type="number" id="omTauxEffectif" value="15" step="1"></div>
+  </div>
+  <button onclick="calculerOpenMarket()">Calculer</button>
+  <div id="resultatOpenMarket" class="resultat-zone"></div>
+  <div id="zoneOpenMarket"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function dessinerBarres(zoneId, items, W, H) {
+  var margin = 45, barW = Math.min(80, (W - 2 * margin - (items.length - 1) * 18) / items.length);
+  var maxV = Math.max.apply(null, items.map(function (it) { return it.valeur; })) * 1.2;
+  if (maxV <= 0) maxV = 1;
+  function yOf(v) { return H - margin - (v / maxV) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  var axe = svgNS('line');
+  axe.setAttribute('x1', margin); axe.setAttribute('x2', W - margin);
+  axe.setAttribute('y1', H - margin); axe.setAttribute('y2', H - margin);
+  axe.setAttribute('class', 'axe'); axe.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axe);
+  items.forEach(function (it, i) {
+    var x = margin + 12 + i * (barW + 18);
+    var y = yOf(it.valeur);
+    var h = (H - margin) - y;
+    var r = svgNS('rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', barW); r.setAttribute('height', Math.max(h, 1));
+    r.setAttribute('class', it.classe);
+    svg.appendChild(r);
+    var t = svgNS('text');
+    t.setAttribute('x', x + barW / 2); t.setAttribute('y', y - 6);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '11'); t.setAttribute('font-weight', 'bold');
+    t.textContent = it.valeur.toLocaleString('fr-FR', {maximumFractionDigits: 1});
+    svg.appendChild(t);
+    var tl = svgNS('text');
+    tl.setAttribute('x', x + barW / 2); tl.setAttribute('y', H - margin + 16);
+    tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('font-size', '10');
+    tl.textContent = it.label;
+    svg.appendChild(tl);
+  });
+  var zone = document.getElementById(zoneId);
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerMultiplicateur() {
+  var resDiv = document.getElementById('resultatMultiplicateur');
+  var depot = parseFloat(document.getElementById('mmDepot').value);
+  var tauxPct = parseFloat(document.getElementById('mmTaux').value);
+  var vals = [depot, tauxPct];
+  if (vals.some(isNaN) || depot <= 0 || tauxPct <= 0 || tauxPct > 100) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (le taux doit être strictement entre 0 et 100%).</p>';
+    document.getElementById('zoneMultiplicateur').innerHTML = '';
+    return;
+  }
+  var taux = tauxPct / 100;
+  var multiplicateur = 1 / taux;
+  var total = depot * multiplicateur;
+
+  var etapes = [];
+  var d = depot;
+  for (var i = 1; i <= 3; i++) {
+    var r = d * taux;
+    var pret = d - r;
+    etapes.push({ etape: i, depot: d, reserves: r, pret: pret });
+    d = pret;
+  }
+
+  var tableHtml = '<table class="recap"><tr><th>Étape</th><th>Dépôt</th><th>Réserves</th><th>Prêt</th></tr>';
+  etapes.forEach(function (e) {
+    tableHtml += '<tr><td>' + e.etape + '</td><td>' + e.depot.toFixed(2) + '</td><td>' + e.reserves.toFixed(2) + '</td><td>' + e.pret.toFixed(2) + '</td></tr>';
+  });
+  tableHtml += '</table>';
+
+  resDiv.innerHTML =
+    '<div class="valeur">multiplicateur = 1/' + taux.toFixed(2) + ' = ' + multiplicateur.toFixed(2) + '</div>' +
+    '<div class="valeur ok">total des dépôts cumulés = ' + depot.toFixed(0) + ' × ' + multiplicateur.toFixed(2) + ' = ' + total.toFixed(2) + '</div>' +
+    tableHtml;
+
+  var items = [];
+  etapes.forEach(function (e) {
+    items.push({ label: 'dépôt ' + e.etape, valeur: e.depot, classe: 'barre-depot' });
+    items.push({ label: 'réserves ' + e.etape, valeur: e.reserves, classe: 'barre-reserves' });
+    items.push({ label: 'prêt ' + e.etape, valeur: e.pret, classe: 'barre-pret' });
+  });
+  dessinerBarres('zoneMultiplicateur', items, 520, 300);
+}
+
+function calculerOpenMarket() {
+  var resDiv = document.getElementById('resultatOpenMarket');
+  var injection = parseFloat(document.getElementById('omInjection').value);
+  var tauxObligPct = parseFloat(document.getElementById('omTauxOblig').value);
+  var tauxEffectifPct = parseFloat(document.getElementById('omTauxEffectif').value);
+  var vals = [injection, tauxObligPct, tauxEffectifPct];
+  if (vals.some(isNaN) || injection <= 0 || tauxObligPct <= 0 || tauxObligPct > 100 || tauxEffectifPct <= 0 || tauxEffectifPct > 100 || tauxEffectifPct < tauxObligPct) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (le taux effectif doit être supérieur ou égal au taux obligatoire).</p>';
+    document.getElementById('zoneOpenMarket').innerHTML = '';
+    return;
+  }
+  var multTheorique = 100 / tauxObligPct;
+  var multEffectif = 100 / tauxEffectifPct;
+  var expansionTheorique = injection * multTheorique;
+  var expansionReelle = injection * multEffectif;
+  var ecart = expansionTheorique - expansionReelle;
+
+  resDiv.innerHTML =
+    '<div class="valeur">multiplicateur théorique = ' + multTheorique.toFixed(2) + ' → expansion théorique = ' + expansionTheorique.toFixed(2) + '</div>' +
+    '<div class="valeur mid">multiplicateur effectif = ' + multEffectif.toFixed(2) + ' → expansion réelle = ' + expansionReelle.toFixed(2) + '</div><br>' +
+    '<div class="valeur ko">écart = ' + ecart.toFixed(2) + ' — les réserves excédentaires des banques réduisent l\'expansion monétaire par rapport au potentiel théorique</div>';
+
+  dessinerBarres('zoneOpenMarket', [
+    { label: 'expansion théorique', valeur: expansionTheorique, classe: 'barre-theorique' },
+    { label: 'expansion réelle', valeur: expansionReelle, classe: 'barre-reel' }
+  ], 380, 260);
+}
+
+window.onload = function () { calculerMultiplicateur(); calculerOpenMarket(); };
+</script>
+</body>
+</html>
