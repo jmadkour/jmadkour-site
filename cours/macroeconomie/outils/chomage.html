@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Le chômage — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.grapheco rect.barre-avant { fill: var(--cgris); }
+  svg.grapheco rect.barre-apres { fill: var(--cdef); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco rect.barre-avant { fill: var(--cgris) !important; }
+svg.grapheco rect.barre-apres { fill: var(--cdef) !important; }
+svg.grapheco .courbe-demande { stroke: var(--cdef) !important; fill: none; }
+svg.grapheco .courbe-offre { stroke: var(--cintu) !important; fill: none; }
+svg.grapheco .zone-chomage { fill: var(--danger) !important; opacity: 0.25; }
+svg.grapheco .ligne-min { stroke: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Application : le chômage</h1>
+<p class="sous-titre">Calculatrice interactive — taux de chômage, taux d'activité et découragement (exercice 5), salaire minimum et chômage structurel (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Taux de chômage et taux d'activité, avant/après découragement</h2>
+  <p class="aide">Taux de chômage $=$ chômeurs / population active. Taux d'activité $=$ population active / population en âge de travailler.</p>
+  <div class="ligne">
+    <div><label for="chPopAge">population en âge de travailler</label><input type="number" id="chPopAge" value="3000" step="100"></div>
+    <div><label for="chPopActive">population active</label><input type="number" id="chPopActive" value="2100" step="50"></div>
+    <div><label for="chChomeurs">dont chômeurs</label><input type="number" id="chChomeurs" value="147" step="1"></div>
+    <div><label for="chDecourages">travailleurs découragés (deviennent inactifs)</label><input type="number" id="chDecourages" value="50" step="1"></div>
+  </div>
+  <button onclick="calculerChomage()">Calculer</button>
+  <div id="resultatChomage" class="resultat-zone"></div>
+  <div id="zoneChomage"></div>
+</div>
+
+<div class="panneau">
+  <h2>Marché du travail et salaire minimum</h2>
+  <p class="aide">Demande de travail : $L_d=a-bw$. Offre de travail : $L_s=c+dw$.</p>
+  <div class="ligne">
+    <div><label for="mtA">a (demande)</label><input type="number" id="mtA" value="900" step="50"></div>
+    <div><label for="mtB">b (demande)</label><input type="number" id="mtB" value="6" step="1"></div>
+    <div><label for="mtC">c (offre)</label><input type="number" id="mtC" value="300" step="50"></div>
+    <div><label for="mtD">d (offre)</label><input type="number" id="mtD" value="9" step="1"></div>
+    <div><label for="mtWmin">salaire minimum</label><input type="number" id="mtWmin" value="50" step="1"></div>
+  </div>
+  <button onclick="calculerMarcheTravail()">Calculer</button>
+  <div id="resultatMarcheTravail" class="resultat-zone"></div>
+  <div id="zoneMarcheTravail"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function dessinerBarres(zoneId, items, W, H) {
+  var margin = 45, barW = Math.min(80, (W - 2 * margin - (items.length - 1) * 18) / items.length);
+  var maxV = Math.max.apply(null, items.map(function (it) { return it.valeur; })) * 1.2;
+  if (maxV <= 0) maxV = 1;
+  function yOf(v) { return H - margin - (v / maxV) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  var axe = svgNS('line');
+  axe.setAttribute('x1', margin); axe.setAttribute('x2', W - margin);
+  axe.setAttribute('y1', H - margin); axe.setAttribute('y2', H - margin);
+  axe.setAttribute('class', 'axe'); axe.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axe);
+  items.forEach(function (it, i) {
+    var x = margin + 12 + i * (barW + 18);
+    var y = yOf(it.valeur);
+    var h = (H - margin) - y;
+    var r = svgNS('rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', barW); r.setAttribute('height', Math.max(h, 1));
+    r.setAttribute('class', it.classe);
+    svg.appendChild(r);
+    var t = svgNS('text');
+    t.setAttribute('x', x + barW / 2); t.setAttribute('y', y - 6);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '11'); t.setAttribute('font-weight', 'bold');
+    t.textContent = it.valeur.toLocaleString('fr-FR', {maximumFractionDigits: 2});
+    svg.appendChild(t);
+    var tl = svgNS('text');
+    tl.setAttribute('x', x + barW / 2); tl.setAttribute('y', H - margin + 16);
+    tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('font-size', '10');
+    tl.textContent = it.label;
+    svg.appendChild(tl);
+  });
+  var zone = document.getElementById(zoneId);
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerChomage() {
+  var resDiv = document.getElementById('resultatChomage');
+  var popAge = parseFloat(document.getElementById('chPopAge').value);
+  var popActive = parseFloat(document.getElementById('chPopActive').value);
+  var chomeurs = parseFloat(document.getElementById('chChomeurs').value);
+  var decourages = parseFloat(document.getElementById('chDecourages').value);
+  var vals = [popAge, popActive, chomeurs, decourages];
+  if (vals.some(isNaN) || popAge <= 0 || popActive <= 0 || popActive > popAge || chomeurs < 0 || chomeurs > popActive || decourages < 0 || decourages > chomeurs) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (vérifier les bornes : chômeurs ≤ population active ≤ population en âge de travailler, découragés ≤ chômeurs).</p>';
+    document.getElementById('zoneChomage').innerHTML = '';
+    return;
+  }
+  var tauxChomageAvant = chomeurs / popActive * 100;
+  var tauxActiviteAvant = popActive / popAge * 100;
+  var popActiveApres = popActive - decourages;
+  var chomeursApres = chomeurs - decourages;
+  var tauxChomageApres = popActiveApres > 0 ? chomeursApres / popActiveApres * 100 : 0;
+  var tauxActiviteApres = popActiveApres / popAge * 100;
+
+  resDiv.innerHTML =
+    '<div class="valeur">avant : taux de chômage = ' + tauxChomageAvant.toFixed(2) + '%, taux d\'activité = ' + tauxActiviteAvant.toFixed(2) + '%</div><br>' +
+    '<div class="valeur mid">après ' + decourages.toFixed(0) + ' découragés : taux de chômage = ' + tauxChomageApres.toFixed(2) + '%, taux d\'activité = ' + tauxActiviteApres.toFixed(2) + '%</div><br>' +
+    '<div class="valeur ko">le taux de chômage baisse de ' + (tauxChomageAvant - tauxChomageApres).toFixed(2) + ' point SANS création d\'emploi — le taux d\'activité baisse aussi, révélant le découragement</div>';
+
+  dessinerBarres('zoneChomage', [
+    { label: 'chômage, avant', valeur: tauxChomageAvant, classe: 'barre-avant' },
+    { label: 'chômage, après', valeur: tauxChomageApres, classe: 'barre-apres' },
+    { label: 'activité, avant', valeur: tauxActiviteAvant, classe: 'barre-avant' },
+    { label: 'activité, après', valeur: tauxActiviteApres, classe: 'barre-apres' }
+  ], 460, 300);
+}
+
+function tauxOffre(L, c, d) { return (L - c) / d; }
+function tauxDemande(L, a, b) { return (a - L) / b; }
+
+function calculerMarcheTravail() {
+  var resDiv = document.getElementById('resultatMarcheTravail');
+  var a = parseFloat(document.getElementById('mtA').value);
+  var b = parseFloat(document.getElementById('mtB').value);
+  var c = parseFloat(document.getElementById('mtC').value);
+  var d = parseFloat(document.getElementById('mtD').value);
+  var wmin = parseFloat(document.getElementById('mtWmin').value);
+  var vals = [a, b, c, d, wmin];
+  if (vals.some(isNaN) || b <= 0 || d <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneMarcheTravail').innerHTML = '';
+    return;
+  }
+  var wEq = (a - c) / (b + d), lEq = a - b * wEq;
+  var ldMin = Math.max(0, a - b * wmin), lsMin = c + d * wmin;
+  var chomageStruct = lsMin - ldMin;
+
+  resDiv.innerHTML =
+    '<div class="valeur">équilibre : w*=' + wEq.toFixed(2) + ', L*=' + lEq.toFixed(1) + '</div><br>' +
+    (wmin > wEq ?
+      '<div class="valeur mid">au salaire minimum ' + wmin.toFixed(1) + ' : Ld=' + ldMin.toFixed(1) + ', Ls=' + lsMin.toFixed(1) + '</div>' +
+      '<div class="valeur ko">chômage structurel = ' + chomageStruct.toFixed(1) + '</div>'
+      : '<div class="valeur">le salaire minimum (' + wmin.toFixed(1) + ') est en dessous ou égal au salaire d\'équilibre : sans effet.</div>');
+
+  var W = 460, H = 320, margin = 55;
+  var Lmax = Math.max(lEq, ldMin, lsMin) * 1.3;
+  var Wmax = Math.max(wEq, wmin) * 1.4;
+  function px(L) { return margin + (L / Lmax) * (W - 2 * margin); }
+  function py(w) { return H - margin - (w / Wmax) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  var axeX = svgNS('line'); axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin); axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line'); axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin); axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+  var lblX = svgNS('text'); lblX.setAttribute('x', W - margin); lblX.setAttribute('y', H - margin + 28);
+  lblX.setAttribute('text-anchor', 'end'); lblX.setAttribute('font-size', '11'); lblX.textContent = 'L (emploi)';
+  svg.appendChild(lblX);
+  var lblY = svgNS('text'); lblY.setAttribute('x', margin); lblY.setAttribute('y', margin - 10);
+  lblY.setAttribute('text-anchor', 'start'); lblY.setAttribute('font-size', '11'); lblY.textContent = 'w (salaire)';
+  svg.appendChild(lblY);
+
+  if (wmin > wEq) {
+    var zChom = svgNS('rect');
+    zChom.setAttribute('x', px(ldMin)); zChom.setAttribute('y', py(wmin));
+    zChom.setAttribute('width', px(lsMin) - px(ldMin)); zChom.setAttribute('height', (H - margin) - py(wmin));
+    zChom.setAttribute('class', 'zone-chomage');
+    svg.appendChild(zChom);
+  }
+
+  ['demande', 'offre'].forEach(function (nom) {
+    var pathD = '';
+    for (var i = 0; i <= 40; i++) {
+      var L = (Lmax * i) / 40;
+      var w = nom === 'demande' ? tauxDemande(L, a, b) : tauxOffre(L, c, d);
+      if (w < 0) continue;
+      pathD += (pathD === '' ? 'M' : 'L') + px(L).toFixed(1) + ',' + py(w).toFixed(1) + ' ';
+    }
+    var path = svgNS('path');
+    path.setAttribute('d', pathD);
+    path.setAttribute('class', nom === 'demande' ? 'courbe-demande' : 'courbe-offre');
+    path.setAttribute('stroke-width', '2.5');
+    svg.appendChild(path);
+  });
+
+  if (wmin > wEq) {
+    var lm = svgNS('line');
+    lm.setAttribute('x1', margin); lm.setAttribute('x2', W - margin);
+    lm.setAttribute('y1', py(wmin)); lm.setAttribute('y2', py(wmin));
+    lm.setAttribute('class', 'ligne-min'); lm.setAttribute('stroke-width', '2'); lm.setAttribute('stroke-dasharray', '6,4');
+    svg.appendChild(lm);
+  }
+
+  document.getElementById('zoneMarcheTravail').innerHTML = '';
+  document.getElementById('zoneMarcheTravail').appendChild(svg);
+}
+
+window.onload = function () { calculerChomage(); calculerMarcheTravail(); };
+</script>
+</body>
+</html>
