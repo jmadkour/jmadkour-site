@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — La compensation centrale — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Application : la compensation centrale</h1>
+<p class="sous-titre">Calculatrice interactive — netting bilatéral contre netting multilatéral (exercice 5), la cascade de défaut à l'œuvre (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Netting bilatéral contre netting multilatéral</h2>
+  <div class="ligne">
+    <div style="flex:2;"><label for="d5_obligations">Obligations (format A-B:montant, séparées par des virgules ; A doit le montant à B)</label><input type="text" id="d5_obligations" value="A-B:90,B-C:55,C-A:40"></div>
+  </div>
+  <button onclick="calculerNettingMultilateral()">Calculer</button>
+  <p class="aide">La chambre calcule, pour chaque membre, sa position nette : la somme de ce qu'il doit (négatif) et de ce qui lui est dû (positif) sur l'ensemble de ses contreparties.</p>
+  <div id="resultatMultilateral" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>La cascade de défaut à l'œuvre</h2>
+  <div class="ligne">
+    <div><label for="d5_perte">Perte de liquidation du défaillant</label><input type="number" id="d5_perte" value="15" step="1"></div>
+    <div><label for="d5_marge">Marge initiale du défaillant</label><input type="number" id="d5_marge" value="8" step="1"></div>
+    <div><label for="d5_fdg">Contribution du défaillant au fonds de garantie</label><input type="number" id="d5_fdg" value="3" step="1"></div>
+    <div><label for="d5_skin">Skin in the game (fonds propres chambre)</label><input type="number" id="d5_skin" value="2" step="1"></div>
+    <div><label for="d5_pool">Pool des membres survivants (fonds de garantie)</label><input type="number" id="d5_pool" value="20" step="1"></div>
+  </div>
+  <button onclick="calculerCascade()">Calculer</button>
+  <div id="resultatCascade" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerNettingMultilateral() {
+  var resDiv = document.getElementById('resultatMultilateral');
+  var raw = document.getElementById('d5_obligations').value.trim();
+  var edges = raw.split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; });
+  var net = {};
+  var order = [];
+  var brut = 0;
+  var parsedEdges = [];
+  var erreur = false;
+  edges.forEach(function (e) {
+    var m = e.match(/^([A-Za-z0-9]+)-([A-Za-z0-9]+):([0-9.]+)$/);
+    if (!m) { erreur = true; return; }
+    var from = m[1], to = m[2], montant = parseFloat(m[3]);
+    if (isNaN(montant)) { erreur = true; return; }
+    parsedEdges.push([from, to, montant]);
+    brut += montant;
+    if (!(from in net)) { net[from] = 0; order.push(from); }
+    if (!(to in net)) { net[to] = 0; order.push(to); }
+    net[from] -= montant;
+    net[to] += montant;
+  });
+  if (erreur || parsedEdges.length === 0) {
+    resDiv.innerHTML = '<p class="erreur">Format invalide. Utiliser par exemple : A-B:90,B-C:55,C-A:40</p>';
+    return;
+  }
+
+  var html = '<table class="tabres"><tr><th>obligation</th><th>montant</th></tr>';
+  parsedEdges.forEach(function (e) { html += '<tr><td>' + e[0] + ' doit à ' + e[1] + '</td><td>' + e[2].toLocaleString('fr-FR') + '</td></tr>'; });
+  html += '</table>';
+  html += '<div class="valeur ko">exposition brute (bilatérale) = ' + brut.toLocaleString('fr-FR') + '</div>';
+
+  html += '<table class="tabres"><tr><th>membre</th><th>position nette</th></tr>';
+  var expoMultilat = 0;
+  var sommeNets = 0;
+  order.forEach(function (p) {
+    var v = net[p];
+    sommeNets += v;
+    if (v < 0) expoMultilat += -v;
+    html += '<tr><td>' + p + '</td><td>' + (v >= 0 ? '+' : '') + v.toLocaleString('fr-FR') + (v < 0 ? ' (doit net à la chambre)' : v > 0 ? ' (créditeur net)' : '') + '</td></tr>';
+  });
+  html += '</table>';
+  html += '<div class="valeur mid">somme des positions nettes = ' + sommeNets.toLocaleString('fr-FR') + ' (doit être nulle sur un circuit fermé)</div>';
+  html += '<div class="valeur ok">exposition avec netting multilatéral = ' + expoMultilat.toLocaleString('fr-FR') + '</div>';
+  var reduction = brut - expoMultilat;
+  var reductionPct = brut > 0 ? reduction / brut * 100 : 0;
+  html += '<div class="valeur">réduction = ' + reduction.toLocaleString('fr-FR') + ' (' + reductionPct.toFixed(1) + '%)</div>';
+  resDiv.innerHTML = html;
+}
+
+function calculerCascade() {
+  var resDiv = document.getElementById('resultatCascade');
+  var perte = parseFloat(document.getElementById('d5_perte').value);
+  var marge = parseFloat(document.getElementById('d5_marge').value);
+  var fdg = parseFloat(document.getElementById('d5_fdg').value);
+  var skin = parseFloat(document.getElementById('d5_skin').value);
+  var pool = parseFloat(document.getElementById('d5_pool').value);
+  if ([perte, marge, fdg, skin, pool].some(isNaN) || perte < 0 || marge < 0 || fdg < 0 || skin < 0 || pool <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var etapes = [
+    ['marge initiale du défaillant', marge],
+    ['contribution du défaillant au fonds de garantie', fdg],
+    ['skin in the game de la chambre', skin]
+  ];
+  var reste = perte;
+  var html = '<table class="tabres"><tr><th>étape</th><th>ressource</th><th>perte restante</th></tr>';
+  html += '<tr><td colspan="2">perte initiale à couvrir</td><td>' + reste.toLocaleString('fr-FR') + '</td></tr>';
+  etapes.forEach(function (et) {
+    reste = Math.max(reste - et[1], 0);
+    html += '<tr><td>' + et[0] + '</td><td>' + et[1].toLocaleString('fr-FR') + '</td><td>' + reste.toLocaleString('fr-FR') + '</td></tr>';
+  });
+  html += '</table>';
+
+  var utiliseSurvivants = Math.max(reste, 0);
+  var poolPct = utiliseSurvivants / pool * 100;
+  if (reste <= 0) {
+    html += '<div class="valeur ok">la perte est intégralement absorbée avant d\'atteindre les membres survivants</div>';
+  } else {
+    html += '<div class="valeur ko">montant prélevé sur le pool des survivants = ' + utiliseSurvivants.toLocaleString('fr-FR') + '</div>';
+    html += '<div class="valeur mid">soit ' + poolPct.toFixed(1) + '% du pool de ' + pool.toLocaleString('fr-FR') + '</div>';
+    if (poolPct >= 100) {
+      html += '<div class="valeur ko">le pool des survivants est intégralement épuisé — des appels supplémentaires seraient nécessaires</div>';
+    }
+  }
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerNettingMultilateral(); calculerCascade(); };
+</script>
+</body>
+</html>
