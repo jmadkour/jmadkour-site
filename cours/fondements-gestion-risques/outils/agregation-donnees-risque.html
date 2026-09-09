@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — BCBS 239 et l'agrégation des données de risque — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Application : agrégation des données de risque (BCBS 239)</h1>
+<p class="sous-titre">Calculatrice interactive — exposition consolidée à une contrepartie (exercice 5), erreur de saisie et masquage d'un dépassement de seuil (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Exposition consolidée à une contrepartie unique</h2>
+  <div class="ligne">
+    <div><label for="d6_subA">Filiale A (millions)</label><input type="number" id="d6_subA" value="120" step="5"></div>
+    <div><label for="d6_subB">Filiale B (millions)</label><input type="number" id="d6_subB" value="95" step="5"></div>
+    <div><label for="d6_subC">Filiale C (millions)</label><input type="number" id="d6_subC" value="60" step="5"></div>
+    <div><label for="d6_subD">Filiale D (millions, rapport hebdo)</label><input type="number" id="d6_subD" value="40" step="5"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="d6_capitalGroupe">Capital du groupe (millions)</label><input type="number" id="d6_capitalGroupe" value="1000" step="50"></div>
+    <div><label for="d6_pctLimite">Limite contrepartie unique (% du capital)</label><input type="number" id="d6_pctLimite" value="25" step="1"></div>
+    <div><label for="d6_limiteLocale">Limite locale par filiale (millions)</label><input type="number" id="d6_limiteLocale" value="150" step="10"></div>
+    <div><label for="d6_subD_reel">Filiale D — exposition réelle (millions)</label><input type="number" id="d6_subD_reel" value="90" step="5"></div>
+  </div>
+  <button onclick="calculerAgregation()">Calculer</button>
+  <div id="resultatAgregation" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Erreur de saisie manuelle et masquage d'un dépassement de seuil</h2>
+  <div class="ligne">
+    <div><label for="d6b_p1">Salle 1 (millions, +longue/−courte)</label><input type="number" id="d6b_p1" value="45" step="1"></div>
+    <div><label for="d6b_p2">Salle 2 réelle (millions)</label><input type="number" id="d6b_p2" value="30" step="1"></div>
+    <div><label for="d6b_p3">Salle 3 (millions)</label><input type="number" id="d6b_p3" value="18" step="1"></div>
+    <div><label for="d6b_p4">Salle 4 (millions)</label><input type="number" id="d6b_p4" value="-12" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="d6b_p5">Salle 5 (millions)</label><input type="number" id="d6b_p5" value="25" step="1"></div>
+    <div><label for="d6b_p2err">Salle 2 rapportée après erreur (millions)</label><input type="number" id="d6b_p2err" value="-30" step="1"></div>
+    <div><label for="d6b_seuil">Seuil d'alerte (millions, valeur absolue)</label><input type="number" id="d6b_seuil" value="50" step="5"></div>
+  </div>
+  <button onclick="calculerErreurSaisie()">Calculer</button>
+  <div id="resultatErreurSaisie" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerAgregation() {
+  var resDiv = document.getElementById('resultatAgregation');
+  var subA = parseFloat(document.getElementById('d6_subA').value);
+  var subB = parseFloat(document.getElementById('d6_subB').value);
+  var subC = parseFloat(document.getElementById('d6_subC').value);
+  var subD = parseFloat(document.getElementById('d6_subD').value);
+  var capitalGroupe = parseFloat(document.getElementById('d6_capitalGroupe').value);
+  var pctLimite = parseFloat(document.getElementById('d6_pctLimite').value) / 100;
+  var limiteLocale = parseFloat(document.getElementById('d6_limiteLocale').value);
+  var subD_reel = parseFloat(document.getElementById('d6_subD_reel').value);
+
+  if ([subA, subB, subC, subD, capitalGroupe, pctLimite, limiteLocale, subD_reel].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var expoGroupe = subA + subB + subC + subD;
+  var limiteGroupe = pctLimite * capitalGroupe;
+  var depassement = expoGroupe - limiteGroupe;
+  var depassementPct = limiteGroupe !== 0 ? depassement / limiteGroupe : NaN;
+
+  var expoReel = subA + subB + subC + subD_reel;
+  var depassementReel = expoReel - limiteGroupe;
+  var depassementReelPct = limiteGroupe !== 0 ? depassementReel / limiteGroupe : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>exposition agrégée (rapport hebdo)</th><td>' + expoGroupe.toFixed(1) + '</td></tr>';
+  html += '<tr><th>limite groupe</th><td>' + limiteGroupe.toFixed(1) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (depassement > 0 ? 'ko' : 'ok') + '">' + (depassement > 0 ? 'dépassement = ' + depassement.toFixed(1) + ' (' + (depassementPct * 100).toFixed(2) + '%)' : 'pas de dépassement') + '</div>';
+
+  var filiales = [['A', subA], ['B', subB], ['C', subC], ['D', subD]];
+  var aucuneLocale = filiales.every(function (f) { return f[1] < limiteLocale; });
+  html += '<p class="aide">Filiales vs limite locale (' + limiteLocale.toFixed(0) + ') : ' + filiales.map(function (f) { return f[0] + '=' + f[1].toFixed(0) + (f[1] < limiteLocale ? ' (sous limite)' : ' (DÉPASSE)'); }).join(', ') + '.</p>';
+  html += '<div class="valeur ' + (aucuneLocale ? 'ko' : 'mid') + '">' + (aucuneLocale ? 'aucune filiale ne déclenche d\'alerte locale, malgré le dépassement au niveau groupe' : 'au moins une filiale dépasse déjà sa limite locale') + '</div>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th></th><th>rapport hebdo (D=' + subD.toFixed(0) + ')</th><th>exposition réelle (D=' + subD_reel.toFixed(0) + ')</th></tr>';
+  html += '<tr><th>exposition groupe</th><td>' + expoGroupe.toFixed(1) + '</td><td>' + expoReel.toFixed(1) + '</td></tr>';
+  html += '<tr><th>dépassement</th><td>' + depassement.toFixed(1) + '</td><td>' + depassementReel.toFixed(1) + '</td></tr>';
+  html += '<tr><th>dépassement (%)</th><td>' + (depassementPct * 100).toFixed(2) + '%</td><td>' + (depassementReelPct * 100).toFixed(2) + '%</td></tr>';
+  html += '</table>';
+  var sousEstimation = depassementReel - depassement;
+  html += '<div class="valeur ' + (sousEstimation > 0 ? 'ko' : 'ok') + '">sous-estimation du dépassement due au retard de reporting = ' + sousEstimation.toFixed(1) + ' millions</div>';
+  resDiv.innerHTML = html;
+}
+
+function calculerErreurSaisie() {
+  var resDiv = document.getElementById('resultatErreurSaisie');
+  var p1 = parseFloat(document.getElementById('d6b_p1').value);
+  var p2 = parseFloat(document.getElementById('d6b_p2').value);
+  var p3 = parseFloat(document.getElementById('d6b_p3').value);
+  var p4 = parseFloat(document.getElementById('d6b_p4').value);
+  var p5 = parseFloat(document.getElementById('d6b_p5').value);
+  var p2err = parseFloat(document.getElementById('d6b_p2err').value);
+  var seuil = parseFloat(document.getElementById('d6b_seuil').value);
+
+  if ([p1, p2, p3, p4, p5, p2err, seuil].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var reel = p1 + p2 + p3 + p4 + p5;
+  var rapporte = p1 + p2err + p3 + p4 + p5;
+  var breachReel = Math.abs(reel) > seuil;
+  var breachRapporte = Math.abs(rapporte) > seuil;
+  var ecart = reel - rapporte;
+  var ecartPct = reel !== 0 ? ecart / reel : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th></th><th>exposition</th><th>seuil franchi ?</th></tr>';
+  html += '<tr><th>exposition réelle</th><td>' + reel.toFixed(1) + '</td><td>' + (breachReel ? 'OUI' : 'non') + '</td></tr>';
+  html += '<tr><th>exposition rapportée (avec erreur)</th><td>' + rapporte.toFixed(1) + '</td><td>' + (breachRapporte ? 'OUI' : 'non') + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">écart = ' + ecart.toFixed(1) + ' (' + (ecartPct * 100).toFixed(2) + '% de l\'exposition réelle)</div>';
+  var masque = breachReel && !breachRapporte;
+  html += '<div class="valeur ' + (masque ? 'ko' : 'ok') + '">' + (masque ? 'l\'erreur MASQUE un dépassement de seuil réel' : (breachReel === breachRapporte ? 'l\'erreur ne change pas la conclusion sur le seuil' : 'l\'erreur déclenche une fausse alerte')) + '</div>';
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerAgregation(); calculerErreurSaisie(); };
+</script>
+</body>
+</html>
