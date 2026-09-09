@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Les stratégies des fonds spéculatifs — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Application : les stratégies des fonds spéculatifs</h1>
+<p class="sous-titre">Calculatrice interactive — frais « 2 et 20 » sous high-water mark (exercice 5), double couche de frais d'un fonds de fonds (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Frais « 2 et 20 » sous high-water mark, sur trois ans</h2>
+  <div class="ligne">
+    <div><label for="c8_aum0">Actifs initiaux (M$)</label><input type="number" id="c8_aum0" value="100" step="10"></div>
+    <div><label for="c8_fg">Commission de gestion (%)</label><input type="number" id="c8_fg" value="2" step="0.1"></div>
+    <div><label for="c8_fp">Commission de performance (%)</label><input type="number" id="c8_fp" value="20" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c8_r1">Rendement brut année 1 (%)</label><input type="number" id="c8_r1" value="20" step="1"></div>
+    <div><label for="c8_r2">Rendement brut année 2 (%)</label><input type="number" id="c8_r2" value="-15" step="1"></div>
+    <div><label for="c8_r3">Rendement brut année 3 (%)</label><input type="number" id="c8_r3" value="25" step="1"></div>
+  </div>
+  <button onclick="calculerHWM()">Calculer</button>
+  <div id="resultatHWM" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Double couche de frais d'un fonds de fonds</h2>
+  <div class="ligne">
+    <div><label for="c8b_rendementBrut">Rendement brut du fonds sous-jacent (%)</label><input type="number" id="c8b_rendementBrut" value="12" step="0.5"></div>
+    <div><label for="c8b_fgSJ">Frais de gestion sous-jacents (%)</label><input type="number" id="c8b_fgSJ" value="2" step="0.1"></div>
+    <div><label for="c8b_fpSJ">Frais de performance sous-jacents (%)</label><input type="number" id="c8b_fpSJ" value="20" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c8b_fgFdF">Frais de gestion du fonds de fonds (%)</label><input type="number" id="c8b_fgFdF" value="1" step="0.1"></div>
+    <div><label for="c8b_fpFdF">Frais de performance du fonds de fonds (%)</label><input type="number" id="c8b_fpFdF" value="10" step="1"></div>
+  </div>
+  <button onclick="calculerDoubleFrais()">Calculer</button>
+  <div id="resultatDoubleFrais" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerHWM() {
+  var resDiv = document.getElementById('resultatHWM');
+  var aum0 = parseFloat(document.getElementById('c8_aum0').value);
+  var fraisGestion = parseFloat(document.getElementById('c8_fg').value) / 100;
+  var fraisPerf = parseFloat(document.getElementById('c8_fp').value) / 100;
+  var rendements = [
+    parseFloat(document.getElementById('c8_r1').value) / 100,
+    parseFloat(document.getElementById('c8_r2').value) / 100,
+    parseFloat(document.getElementById('c8_r3').value) / 100
+  ];
+
+  if ([aum0, fraisGestion, fraisPerf].concat(rendements).some(isNaN) || aum0 <= 0 || fraisGestion < 0 || fraisPerf < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var aum = aum0, hwm = aum0;
+  var historique = [];
+  var hwmSerie = [aum0];
+  var netSerie = [aum0];
+  rendements.forEach(function (r) {
+    var debut = aum;
+    var brut = debut * (1 + r);
+    var fg = debut * fraisGestion;
+    var gainHWM = Math.max(0, brut - hwm);
+    var fp = fraisPerf * gainHWM;
+    var net = brut - fg - fp;
+    historique.push({ debut: debut, brut: brut, fg: fg, fp: fp, net: net, hwmAvant: hwm });
+    aum = net;
+    hwm = Math.max(hwm, net);
+    hwmSerie.push(hwm);
+    netSerie.push(net);
+  });
+
+  var rendementBrutCumule = rendements.reduce(function (acc, r) { return acc * (1 + r); }, 1) - 1;
+  var rendementNetCumule = aum / aum0 - 1;
+
+  var html = '';
+  html += '<table class="tabres"><tr><th>année</th><th>début</th><th>brut</th><th>frais gestion</th><th>frais perf.</th><th>net</th></tr>';
+  historique.forEach(function (h, i) {
+    html += '<tr><td>' + (i + 1) + '</td><td>' + h.debut.toFixed(2) + '</td><td>' + h.brut.toFixed(2) + '</td><td>' + h.fg.toFixed(2) + '</td><td>' + h.fp.toFixed(2) + '</td><td>' + h.net.toFixed(2) + '</td></tr>';
+  });
+  html += '</table>';
+  html += '<div class="valeur mid">rendement net cumulé = ' + (rendementNetCumule * 100).toFixed(2) + '% (rendement brut cumulé = ' + (rendementBrutCumule * 100).toFixed(2) + '%)</div>';
+
+  html += dessinerHWM(netSerie, hwmSerie);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerHWM(netSerie, hwmSerie) {
+  var largeur = 460, hauteur = 220, margeG = 45, margeB = 30, margeH = 15, margeD = 15;
+  var nMax = netSerie.length - 1;
+  var maxY = Math.max.apply(null, hwmSerie.concat(netSerie)) * 1.1;
+  var minY = Math.min.apply(null, hwmSerie.concat(netSerie)) * 0.92;
+  function xDe(t) { return margeG + (t / nMax) * (largeur - margeG - margeD); }
+  function yDe(v) { return (hauteur - margeB) - ((v - minY) / (maxY - minY)) * (hauteur - margeB - margeH); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + (hauteur - margeB) + '" x2="' + (largeur - margeD) + '" y2="' + (hauteur - margeB) + '" stroke="#888" stroke-width="1"/>';
+
+  var ptsNet = '', ptsHwm = '';
+  for (var i = 0; i <= nMax; i++) {
+    ptsNet += xDe(i).toFixed(1) + ',' + yDe(netSerie[i]).toFixed(1) + ' ';
+    ptsHwm += xDe(i).toFixed(1) + ',' + yDe(hwmSerie[i]).toFixed(1) + ' ';
+  }
+  svg += '<polyline points="' + ptsHwm + '" fill="none" stroke="var(--cintu, #E08000)" stroke-width="1.5" stroke-dasharray="4,3"/>';
+  svg += '<polyline points="' + ptsNet + '" fill="none" stroke="var(--ceco, #1F6FB2)" stroke-width="2"/>';
+  for (var j = 0; j <= nMax; j++) {
+    svg += '<circle cx="' + xDe(j).toFixed(1) + '" cy="' + yDe(netSerie[j]).toFixed(1) + '" r="3" fill="var(--ceco, #1F6FB2)"/>';
+    svg += '<text x="' + xDe(j).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">an ' + j + '</text>';
+  }
+  svg += '<text x="' + (largeur - margeD) + '" y="' + (margeH + 8) + '" font-size="9" text-anchor="end" fill="var(--ceco, #1F6FB2)">valeur nette</text>';
+  svg += '<text x="' + (largeur - margeD) + '" y="' + (margeH + 20) + '" font-size="9" text-anchor="end" fill="var(--cintu, #E08000)">high-water mark</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerDoubleFrais() {
+  var resDiv = document.getElementById('resultatDoubleFrais');
+  var rendementBrut = parseFloat(document.getElementById('c8b_rendementBrut').value) / 100;
+  var fgSJ = parseFloat(document.getElementById('c8b_fgSJ').value) / 100;
+  var fpSJ = parseFloat(document.getElementById('c8b_fpSJ').value) / 100;
+  var fgFdF = parseFloat(document.getElementById('c8b_fgFdF').value) / 100;
+  var fpFdF = parseFloat(document.getElementById('c8b_fpFdF').value) / 100;
+
+  if ([rendementBrut, fgSJ, fpSJ, fgFdF, fpFdF].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var base = 100;
+  var brutSJ = base * (1 + rendementBrut);
+  var fraisGSJ = base * fgSJ;
+  var fraisPSJ = fpSJ * Math.max(0, brutSJ - base);
+  var netSJ = brutSJ - fraisGSJ - fraisPSJ;
+  var rendementNetSJ = netSJ / base - 1;
+
+  var brutFdF = base * (1 + rendementNetSJ);
+  var fraisGFdF = base * fgFdF;
+  var fraisPFdF = fpFdF * Math.max(0, brutFdF - base);
+  var netFdF = brutFdF - fraisGFdF - fraisPFdF;
+  var rendementNetFdF = netFdF / base - 1;
+
+  var coutTotal = rendementBrut - rendementNetFdF;
+  var coutCoucheFdF = rendementNetSJ - rendementNetFdF;
+  var coutCoucheSJ = rendementBrut - rendementNetSJ;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>rendement brut sous-jacent</th><td>' + (rendementBrut * 100).toFixed(2) + '%</td></tr>';
+  html += '<tr><th>rendement net (investisseur direct)</th><td>' + (rendementNetSJ * 100).toFixed(2) + '%</td></tr>';
+  html += '<tr><th>rendement net final (via fonds de fonds)</th><td>' + (rendementNetFdF * 100).toFixed(2) + '%</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ko">coût total de la double couche = ' + (coutTotal * 100).toFixed(2) + ' pts</div>';
+  html += '<div class="valeur mid">dont couche fonds sous-jacent = ' + (coutCoucheSJ * 100).toFixed(2) + ' pts, couche fonds de fonds = ' + (coutCoucheFdF * 100).toFixed(2) + ' pts</div>';
+
+  html += dessinerBarresDoubleFrais(rendementBrut * 100, rendementNetSJ * 100, rendementNetFdF * 100);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresDoubleFrais(brut, netSJ, netFdF) {
+  var largeur = 320, hauteur = 220, marge = 40;
+  var maxVal = Math.max(brut, netSJ, netFdF, 1) * 1.2;
+  var libelles = ['brut', 'net direct', 'net via FdF'];
+  var valeurs = [brut, netSJ, netFdF];
+  var largeurBarre = 60;
+  var espace = (largeur - 2 * marge) / libelles.length;
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var h = (Math.max(valeurs[i], 0) / maxVal) * (hauteur - 2 * marge);
+    var y = yAxe - h;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="var(--ceco, #1F6FB2)" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="11" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(2) + '%</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 15) + '" font-size="10" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerHWM(); calculerDoubleFrais(); };
+</script>
+</body>
+</html>
