@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Le risque de portefeuille — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Application : le risque de portefeuille</h1>
+<p class="sous-titre">Calculatrice interactive — VaR d'un portefeuille à deux devises (exercice 5), décomposition de la VaR façon Barings (exercice 6)</p>
+
+<div class="panneau">
+  <h2>VaR de portefeuille à deux devises non corrélées</h2>
+  <div class="ligne">
+    <div><label for="c4_xA">Position A (millions US$)</label><input type="number" id="c4_xA" value="2" step="0.1"></div>
+    <div><label for="c4_volA">Volatilité A (%)</label><input type="number" id="c4_volA" value="5" step="0.1"></div>
+    <div><label for="c4_xB">Position B (millions US$)</label><input type="number" id="c4_xB" value="1" step="0.1"></div>
+    <div><label for="c4_volB">Volatilité B (%)</label><input type="number" id="c4_volB" value="12" step="0.1"></div>
+    <div><label for="c4_alpha">Quantile α (95%=1,65 ; 99%=2,33)</label><input type="number" id="c4_alpha" value="1.65" step="0.01"></div>
+  </div>
+  <p class="aide">Les deux positions sont supposées non corrélées.</p>
+  <button onclick="calculerVarPortefeuille()">Calculer</button>
+  <div id="resultatVarPortefeuille" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Décomposition de la VaR d'un portefeuille (façon Barings)</h2>
+  <div class="ligne">
+    <div><label for="c4b_varTotale">VaR totale (millions US$)</label><input type="number" id="c4b_varTotale" value="835" step="1"></div>
+    <div><label for="c4b_partA">Part de la position A (%)</label><input type="number" id="c4b_partA" value="82.4" step="0.1"></div>
+    <div><label for="c4b_perteReelle">Perte réellement subie (millions US$)</label><input type="number" id="c4b_perteReelle" value="1300" step="1"></div>
+  </div>
+  <p class="aide">La part de la position B est déduite automatiquement (100 % − part de A).</p>
+  <button onclick="calculerBarings()">Calculer</button>
+  <div id="resultatBarings" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerVarPortefeuille() {
+  var resDiv = document.getElementById('resultatVarPortefeuille');
+  var xA = parseFloat(document.getElementById('c4_xA').value);
+  var volA = parseFloat(document.getElementById('c4_volA').value) / 100;
+  var xB = parseFloat(document.getElementById('c4_xB').value);
+  var volB = parseFloat(document.getElementById('c4_volB').value) / 100;
+  var alpha = parseFloat(document.getElementById('c4_alpha').value);
+
+  if ([xA, volA, xB, volB, alpha].some(isNaN) || xA < 0 || xB < 0 || volA < 0 || volB < 0 || alpha < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var varA = alpha * volA * xA;
+  var varB = alpha * volB * xB;
+  var varNonDiv = varA + varB;
+
+  var sigmaP2 = xA * xA * volA * volA + xB * xB * volB * volB;
+  var sigmaP = Math.sqrt(sigmaP2);
+  var varDiv = alpha * sigmaP;
+  var beneficeDiv = varNonDiv - varDiv;
+
+  var covA = xA * volA * volA, covB = xB * volB * volB;
+  var dVarA = sigmaP > 0 ? alpha * covA / sigmaP : 0;
+  var dVarB = sigmaP > 0 ? alpha * covB / sigmaP : 0;
+  var cvarA = dVarA * xA, cvarB = dVarB * xB;
+  var partA = varDiv > 0 ? cvarA / varDiv : 0;
+  var partB = varDiv > 0 ? cvarB / varDiv : 0;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>VaR individuelle A</th><td>' + (varA * 1e6).toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' $</td></tr>';
+  html += '<tr><th>VaR individuelle B</th><td>' + (varB * 1e6).toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' $</td></tr>';
+  html += '<tr><th>VaR non diversifiée</th><td>' + (varNonDiv * 1e6).toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' $</td></tr>';
+  html += '<tr><th>VaR diversifiée</th><td>' + (varDiv * 1e6).toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' $</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">bénéfice de diversification = ' + (beneficeDiv * 1e6).toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' $</div>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th></th><th>VaR marginale</th><th>VaR composante</th><th>part</th></tr>';
+  html += '<tr><td>A</td><td>' + dVarA.toFixed(4) + '</td><td>' + (cvarA * 1e6).toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' $</td><td>' + (partA * 100).toFixed(1) + '%</td></tr>';
+  html += '<tr><td>B</td><td>' + dVarB.toFixed(4) + '</td><td>' + (cvarB * 1e6).toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' $</td><td>' + (partB * 100).toFixed(1) + '%</td></tr>';
+  html += '</table>';
+
+  var sommeCvar = cvarA + cvarB;
+  var ecartAdditivite = Math.abs(sommeCvar - varDiv);
+  html += '<div class="valeur ' + (ecartAdditivite < 1e-6 ? 'ok' : 'ko') + '">somme des VaR composantes = ' + (sommeCvar * 1e6).toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' $ (additivité ' + (ecartAdditivite < 1e-6 ? 'vérifiée' : 'en écart') + ')</div>';
+
+  html += dessinerComposantes(['A', 'B'], [cvarA * 1e6, cvarB * 1e6], varDiv * 1e6);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerComposantes(libelles, valeurs, total) {
+  var largeur = 460, hauteur = 90, marge = 10;
+  var maxTotal = total > 0 ? total : Math.max.apply(null, valeurs.map(Math.abs)) || 1;
+  var x = marge;
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="100">';
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--cintu, #E08000)'];
+  for (var i = 0; i < libelles.length; i++) {
+    var w = Math.max(0, (valeurs[i] / maxTotal) * (largeur - 2 * marge));
+    svg += '<rect x="' + x.toFixed(1) + '" y="20" width="' + w.toFixed(1) + '" height="30" fill="' + couleurs[i % couleurs.length] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + w / 2).toFixed(1) + '" y="40" font-size="11" text-anchor="middle" fill="white">' + libelles[i] + '</text>';
+    svg += '<text x="' + (x + w / 2).toFixed(1) + '" y="65" font-size="10" text-anchor="middle" fill="currentColor">' + Math.round(valeurs[i]).toLocaleString('fr-FR') + ' $</text>';
+    x += w;
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerBarings() {
+  var resDiv = document.getElementById('resultatBarings');
+  var varTotale = parseFloat(document.getElementById('c4b_varTotale').value);
+  var partA = parseFloat(document.getElementById('c4b_partA').value) / 100;
+  var perteReelle = parseFloat(document.getElementById('c4b_perteReelle').value);
+
+  if ([varTotale, partA, perteReelle].some(isNaN) || varTotale < 0 || partA < 0 || partA > 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (la part de A doit être entre 0 et 100 %).</p>';
+    return;
+  }
+
+  var partB = 1 - partA;
+  var cvarA = varTotale * partA;
+  var cvarB = varTotale * partB;
+  var ratioPerte = varTotale > 0 ? perteReelle / varTotale : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>VaR composante A (' + (partA * 100).toFixed(1) + '%)</th><td>' + cvarA.toFixed(1) + ' M$</td></tr>';
+  html += '<tr><th>VaR composante B (' + (partB * 100).toFixed(1) + '%)</th><td>' + cvarB.toFixed(1) + ' M$</td></tr>';
+  html += '<tr><th>somme</th><td>' + (cvarA + cvarB).toFixed(1) + ' M$</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (ratioPerte > 3 ? 'ko' : (ratioPerte > 1 ? 'mid' : 'ok')) + '">perte réelle / VaR totale = ' + (isNaN(ratioPerte) ? 'n/d' : ratioPerte.toFixed(2)) + '</div>';
+
+  html += dessinerComposantes(['A', 'B'], [cvarA, cvarB], varTotale);
+
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerVarPortefeuille(); calculerBarings(); };
+</script>
+</body>
+</html>
