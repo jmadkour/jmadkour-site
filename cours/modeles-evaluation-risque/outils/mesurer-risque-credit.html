@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Mesurer le risque de crédit — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Application : mesurer le risque de crédit</h1>
+<p class="sous-titre">Calculatrice interactive — formule de Vasicek et capital réglementaire (exercice 5), sensibilité du capital à la corrélation (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Formule de Vasicek</h2>
+  <p class="aide">$\mathrm{DR}(\alpha)=\Phi\!\left(\dfrac{\Phi^{-1}(\mathrm{PD})+\sqrt{\rho}\,\Phi^{-1}(\alpha)}{\sqrt{1-\rho}}\right)$, $K=\mathrm{LGD}\times[\mathrm{DR}(\alpha)-\mathrm{PD}]\times\mathrm{EAD}$.</p>
+  <div class="ligne">
+    <div><label for="c5_pd">PD (%)</label><input type="number" id="c5_pd" value="2" step="0.5"></div>
+    <div><label for="c5_lgd">LGD (%)</label><input type="number" id="c5_lgd" value="45" step="5"></div>
+    <div><label for="c5_ead">EAD (M$)</label><input type="number" id="c5_ead" value="100" step="10"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c5_rho">Corrélation d'actifs $\rho$</label><input type="number" id="c5_rho" value="0.12" step="0.01" min="0" max="0.99"></div>
+    <div><label for="c5_alpha">Seuil de confiance $\alpha$ (%)</label><input type="number" id="c5_alpha" value="99.9" step="0.1"></div>
+  </div>
+  <button onclick="calculerVasicek()">Calculer</button>
+  <div id="resultatVasicek" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Sensibilité du capital à la corrélation</h2>
+  <p class="aide">Compare le capital de Vasicek pour deux hypothèses de $\rho$, PD/LGD/EAD/$\alpha$ inchangés.</p>
+  <div class="ligne">
+    <div><label for="c5b_rho1">$\rho_1$</label><input type="number" id="c5b_rho1" value="0.12" step="0.01" min="0" max="0.99"></div>
+    <div><label for="c5b_rho2">$\rho_2$</label><input type="number" id="c5b_rho2" value="0.24" step="0.01" min="0" max="0.99"></div>
+  </div>
+  <button onclick="calculerSensibilite()">Calculer</button>
+  <div id="resultatSensibilite" class="resultat-zone"></div>
+</div>
+
+<script>
+function erf(x) {
+  var sign = x >= 0 ? 1 : -1; x = Math.abs(x);
+  var a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+  var t = 1 / (1 + p * x);
+  var y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  return sign * y;
+}
+function Phi(x) { return 0.5 * (1 + erf(x / Math.sqrt(2))); }
+
+function inverseNormale(p) {
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var plow = 0.02425, phigh = 1 - plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+           ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+           (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+}
+
+function DR(PD, rho, alpha) {
+  var num = inverseNormale(PD) + Math.sqrt(rho) * inverseNormale(alpha);
+  var den = Math.sqrt(1 - rho);
+  return Phi(num / den);
+}
+
+function calculerVasicek() {
+  var resDiv = document.getElementById('resultatVasicek');
+  var PD = parseFloat(document.getElementById('c5_pd').value) / 100;
+  var LGD = parseFloat(document.getElementById('c5_lgd').value) / 100;
+  var EAD = parseFloat(document.getElementById('c5_ead').value);
+  var rho = parseFloat(document.getElementById('c5_rho').value);
+  var alpha = parseFloat(document.getElementById('c5_alpha').value) / 100;
+
+  if ([PD, LGD, EAD, rho, alpha].some(isNaN) || PD <= 0 || PD >= 1 || LGD < 0 || LGD > 1 || EAD <= 0 || rho < 0 || rho >= 1 || alpha <= 0 || alpha >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var dr = DR(PD, rho, alpha);
+  var K = LGD * (dr - PD) * EAD;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>$\\Phi^{-1}(\\mathrm{PD})$</th><td>' + inverseNormale(PD).toFixed(4) + '</td></tr>';
+  html += '<tr><th>$\\Phi^{-1}(\\alpha)$</th><td>' + inverseNormale(alpha).toFixed(4) + '</td></tr>';
+  html += '<tr><th>$\\mathrm{DR}(\\alpha)$</th><td>' + (dr * 100).toFixed(4) + '%</td></tr>';
+  html += '<tr><th>perte inattendue $\\mathrm{DR}(\\alpha)-\\mathrm{PD}$</th><td>' + ((dr - PD) * 100).toFixed(4) + '%</td></tr>';
+  html += '<tr><th>capital $K$</th><td>' + K.toFixed(4) + ' M$</td></tr>';
+  html += '</table>';
+
+  var ratio = dr / PD;
+  html += '<div class="valeur mid">$\\mathrm{DR}(\\alpha)$ est ' + ratio.toFixed(2) + '&times; la PD</div>';
+
+  html += dessinerBarresVasicek(PD, dr);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresVasicek(PD, dr) {
+  var largeur = 260, hauteur = 200, marge = 40;
+  var valeurs = [PD * 100, dr * 100];
+  var libelles = ['PD', 'DR(α)'];
+  var maxVal = Math.max.apply(null, valeurs.concat([0.0001])) * 1.25;
+  var largeurBarre = 55;
+  var espace = (largeur - 2 * marge) / libelles.length;
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--cdef, #4A3B8C)'];
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var hBrute = (valeurs[i] / maxVal) * (hauteur - 2 * marge);
+    var h = Math.max(hBrute, 1);
+    var y = yAxe - h;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="10" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(2) + '%</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerSensibilite() {
+  var resDiv = document.getElementById('resultatSensibilite');
+  var PD = parseFloat(document.getElementById('c5_pd').value) / 100;
+  var LGD = parseFloat(document.getElementById('c5_lgd').value) / 100;
+  var EAD = parseFloat(document.getElementById('c5_ead').value);
+  var alpha = parseFloat(document.getElementById('c5_alpha').value) / 100;
+  var rho1 = parseFloat(document.getElementById('c5b_rho1').value);
+  var rho2 = parseFloat(document.getElementById('c5b_rho2').value);
+
+  if ([PD, LGD, EAD, alpha, rho1, rho2].some(isNaN) || PD <= 0 || PD >= 1 || LGD < 0 || LGD > 1 || EAD <= 0 || alpha <= 0 || alpha >= 1 || rho1 < 0 || rho1 >= 1 || rho2 < 0 || rho2 >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides. (Les paramètres PD/LGD/EAD/&alpha; utilisés sont ceux du premier panneau.)</p>';
+    return;
+  }
+
+  var dr1 = DR(PD, rho1, alpha), K1 = LGD * (dr1 - PD) * EAD;
+  var dr2 = DR(PD, rho2, alpha), K2 = LGD * (dr2 - PD) * EAD;
+  var facteur = K1 > 0 ? K2 / K1 : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th></th><th>$\\rho_1=' + rho1.toFixed(2) + '$</th><th>$\\rho_2=' + rho2.toFixed(2) + '$</th></tr>';
+  html += '<tr><th>$\\mathrm{DR}(\\alpha)$</th><td>' + (dr1 * 100).toFixed(4) + '%</td><td>' + (dr2 * 100).toFixed(4) + '%</td></tr>';
+  html += '<tr><th>capital $K$</th><td>' + K1.toFixed(4) + ' M$</td><td>' + K2.toFixed(4) + ' M$</td></tr>';
+  html += '</table>';
+
+  var couleur = facteur > 1.5 ? 'ko' : (facteur > 1.1 ? 'mid' : 'ok');
+  html += '<div class="valeur ' + couleur + '">facteur multiplicatif du capital : &times;' + facteur.toFixed(2) + '</div>';
+
+  html += dessinerBarresSensibilite(rho1, K1, rho2, K2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresSensibilite(rho1, K1, rho2, K2) {
+  var largeur = 260, hauteur = 200, marge = 40;
+  var valeurs = [K1, K2];
+  var libelles = ['ρ=' + rho1.toFixed(2), 'ρ=' + rho2.toFixed(2)];
+  var maxVal = Math.max.apply(null, valeurs.concat([0.0001])) * 1.25;
+  var largeurBarre = 55;
+  var espace = (largeur - 2 * marge) / libelles.length;
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--danger, #b00020)'];
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var hBrute = (valeurs[i] / maxVal) * (hauteur - 2 * marge);
+    var h = Math.max(hBrute, valeurs[i] > 0 ? 1 : 0.5);
+    var y = yAxe - h;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="10" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(2) + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerVasicek(); calculerSensibilite(); };
+</script>
+</body>
+</html>
