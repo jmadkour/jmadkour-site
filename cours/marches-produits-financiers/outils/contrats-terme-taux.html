@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 18 — Les contrats à terme sur taux d'intérêt — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 18 — Application : les contrats à terme sur taux d'intérêt</h1>
+<p class="sous-titre">Calculatrice interactive — moins-disant à la livraison et prix plein (exercice 5), contrat eurodollar et couverture par duration (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Moins-disant à la livraison et prix plein</h2>
+  <div class="ligne">
+    <div><label for="d18_prixReglement">Prix de règlement du contrat</label><input type="number" id="d18_prixReglement" value="125.00" step="0.01"></div>
+    <div><label for="d18_prixA">Prix comptant obligation A</label><input type="number" id="d18_prixA" value="118.50" step="0.01"></div>
+    <div><label for="d18_facteurA">Facteur de concordance A</label><input type="number" id="d18_facteurA" value="0.92" step="0.01"></div>
+    <div><label for="d18_prixB">Prix comptant obligation B</label><input type="number" id="d18_prixB" value="134.00" step="0.01"></div>
+    <div><label for="d18_facteurB">Facteur de concordance B</label><input type="number" id="d18_facteurB" value="1.05" step="0.01"></div>
+    <div><label for="d18_interetsLivraison">Intérêts courus à la livraison</label><input type="number" id="d18_interetsLivraison" value="1.10" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="d18_coupon">Coupon annuel (%, 30/360)</label><input type="number" id="d18_coupon" value="6" step="0.1"></div>
+    <div><label for="d18_mois">Mois écoulés depuis le coupon</label><input type="number" id="d18_mois" value="4" step="1"></div>
+    <div><label for="d18_jours">Jours supplémentaires écoulés</label><input type="number" id="d18_jours" value="15" step="1"></div>
+    <div><label for="d18_prixCote">Prix coté</label><input type="number" id="d18_prixCote" value="99.50" step="0.01"></div>
+  </div>
+  <button onclick="calculerLivraison()">Calculer</button>
+  <div id="resultatLivraison" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Contrat eurodollar et couverture par duration</h2>
+  <div class="ligne">
+    <div><label for="d18b_taux1">Taux initial (%)</label><input type="number" id="d18b_taux1" value="4.32" step="0.01"></div>
+    <div><label for="d18b_taux2">Taux après choc (%)</label><input type="number" id="d18b_taux2" value="4.57" step="0.01"></div>
+    <div><label for="d18b_nContrats">Nombre de contrats (acheteur)</label><input type="number" id="d18b_nContrats" value="10" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="d18b_P">Valeur du portefeuille P</label><input type="number" id="d18b_P" value="20000000" step="100000"></div>
+    <div><label for="d18b_DP">Duration modifiée du portefeuille D_P</label><input type="number" id="d18b_DP" value="6.0" step="0.1"></div>
+    <div><label for="d18b_F">Valeur du contrat F</label><input type="number" id="d18b_F" value="125000" step="1000"></div>
+    <div><label for="d18b_DF">Duration du moins-disant D_F</label><input type="number" id="d18b_DF" value="8.0" step="0.1"></div>
+  </div>
+  <button onclick="calculerEurodollarDuration()">Calculer</button>
+  <div id="resultatEurodollarDuration" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerLivraison() {
+  var resDiv = document.getElementById('resultatLivraison');
+  var prixReglement = parseFloat(document.getElementById('d18_prixReglement').value);
+  var prixA = parseFloat(document.getElementById('d18_prixA').value);
+  var facteurA = parseFloat(document.getElementById('d18_facteurA').value);
+  var prixB = parseFloat(document.getElementById('d18_prixB').value);
+  var facteurB = parseFloat(document.getElementById('d18_facteurB').value);
+  var interetsLivraison = parseFloat(document.getElementById('d18_interetsLivraison').value);
+  var coupon = parseFloat(document.getElementById('d18_coupon').value);
+  var mois = parseFloat(document.getElementById('d18_mois').value);
+  var jours = parseFloat(document.getElementById('d18_jours').value);
+  var prixCote = parseFloat(document.getElementById('d18_prixCote').value);
+
+  if ([prixReglement, prixA, facteurA, prixB, facteurB, interetsLivraison, coupon, mois, jours, prixCote].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var coutA = prixA - prixReglement * facteurA;
+  var coutB = prixB - prixReglement * facteurB;
+  var moinsDisant = coutA < coutB ? 'A' : 'B';
+  var facteurMoinsDisant = coutA < coutB ? facteurA : facteurB;
+  var montantRecu = prixReglement * facteurMoinsDisant + interetsLivraison;
+
+  var joursEcoules = mois * 30 + jours;
+  var fractionAnnee = joursEcoules / 360;
+  var interetsCourus = coupon * fractionAnnee;
+  var prixPlein = prixCote + interetsCourus;
+
+  var html = '';
+  html += '<table class="tabres"><tr><th></th><th>coût net de livraison</th></tr>';
+  html += '<tr><th>obligation A</th><td>' + coutA.toFixed(4) + '</td></tr>';
+  html += '<tr><th>obligation B</th><td>' + coutB.toFixed(4) + '</td></tr></table>';
+  html += '<div class="valeur ok">moins-disant à la livraison = obligation ' + moinsDisant + '</div>';
+  html += '<div class="valeur mid">montant total reçu par le vendeur = ' + montantRecu.toFixed(4) + '</div>';
+  html += '<table class="tabres">';
+  html += '<tr><th>jours écoulés (30/360)</th><td>' + joursEcoules.toFixed(0) + '</td></tr>';
+  html += '<tr><th>fraction d\'année</th><td>' + fractionAnnee.toFixed(4) + '</td></tr>';
+  html += '<tr><th>intérêts courus</th><td>' + interetsCourus.toFixed(4) + '</td></tr>';
+  html += '<tr><th>prix plein</th><td>' + prixPlein.toFixed(4) + '</td></tr>';
+  html += '</table>';
+  resDiv.innerHTML = html;
+}
+
+function calculerEurodollarDuration() {
+  var resDiv = document.getElementById('resultatEurodollarDuration');
+  var taux1 = parseFloat(document.getElementById('d18b_taux1').value);
+  var taux2 = parseFloat(document.getElementById('d18b_taux2').value);
+  var nContrats = parseFloat(document.getElementById('d18b_nContrats').value);
+  var P = parseFloat(document.getElementById('d18b_P').value);
+  var DP = parseFloat(document.getElementById('d18b_DP').value);
+  var F = parseFloat(document.getElementById('d18b_F').value);
+  var DF = parseFloat(document.getElementById('d18b_DF').value);
+
+  if ([taux1, taux2, nContrats, P, DP, F, DF].some(isNaN) || F === 0 || DF === 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var prixCote1 = 100 - taux1;
+  var prixCote2 = 100 - taux2;
+  var variationPointsBase = (prixCote1 - prixCote2) * 100;
+  var variationValeur = -variationPointsBase * 25 * nContrats;
+
+  var Nstar = -(P * DP) / (F * DF);
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>prix coté initial</th><td>' + prixCote1.toFixed(2) + '</td></tr>';
+  html += '<tr><th>prix coté après choc</th><td>' + prixCote2.toFixed(2) + '</td></tr>';
+  html += '<tr><th>variation (points de base)</th><td>' + variationPointsBase.toFixed(2) + '</td></tr>';
+  html += '<tr><th>variation de valeur (' + nContrats + ' contrats, acheteur)</th><td>' + variationValeur.toFixed(2) + ' USD</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (Nstar < 0 ? 'ko' : 'ok') + '">N* = ' + Nstar.toFixed(2) + ' (' + (Nstar < 0 ? 'vente' : 'achat') + ' de ' + Math.abs(Nstar).toFixed(0) + ' contrats)</div>';
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerLivraison(); calculerEurodollarDuration(); };
+</script>
+</body>
+</html>
