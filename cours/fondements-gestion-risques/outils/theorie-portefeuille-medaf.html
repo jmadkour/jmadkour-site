@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — La théorie moderne du portefeuille et le MEDAF — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  #graphiqueFrontiere { width: 100%; max-width: 560px; height: auto; margin-top: 0.8em; background: white; border-radius: 6px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+#graphiqueFrontiere { background: var(--card-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Application : théorie du portefeuille et MEDAF</h1>
+<p class="sous-titre">Calculatrice interactive — diversification et ratio de Sharpe (exercice 5), MEDAF/SML et mesures de performance (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Diversification et ratio de Sharpe (portefeuille à deux actifs)</h2>
+  <div class="ligne">
+    <div><label for="d4_wA">Poids de l'actif A (%)</label><input type="number" id="d4_wA" value="60" step="1"></div>
+    <div><label for="d4_ERA">Rendement espéré de A (%)</label><input type="number" id="d4_ERA" value="12" step="0.5"></div>
+    <div><label for="d4_sigA">Écart-type de A (%)</label><input type="number" id="d4_sigA" value="25" step="0.5"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="d4_ERB">Rendement espéré de B (%)</label><input type="number" id="d4_ERB" value="8" step="0.5"></div>
+    <div><label for="d4_sigB">Écart-type de B (%)</label><input type="number" id="d4_sigB" value="15" step="0.5"></div>
+    <div><label for="d4_rho">Corrélation ρ(A,B)</label><input type="number" id="d4_rho" value="0.3" step="0.05" min="-1" max="1"></div>
+    <div><label for="d4_rf">Taux sans risque r_f (%)</label><input type="number" id="d4_rf" value="3" step="0.25"></div>
+  </div>
+  <button onclick="calculerDiversification()">Calculer</button>
+  <div id="resultatDiversification" class="resultat-zone"></div>
+  <svg id="graphiqueFrontiere" viewBox="0 0 560 340" xmlns="http://www.w3.org/2000/svg"></svg>
+  <p class="aide">Le graphique trace la frontière des combinaisons (A,B) pour ρ variable de −1 à 1 (courbe grise), place le portefeuille effectif (point orange) et le cas ρ=1 sans bénéfice de diversification (point gris).</p>
+</div>
+
+<div class="panneau">
+  <h2>MEDAF, SML et mesures de performance</h2>
+  <div class="ligne">
+    <div><label for="d4b_rf">Taux sans risque r_f (%)</label><input type="number" id="d4b_rf" value="3" step="0.25"></div>
+    <div><label for="d4b_ERM">Rendement espéré du marché (%)</label><input type="number" id="d4b_ERM" value="9" step="0.25"></div>
+    <div><label for="d4b_sigM">Écart-type du marché σ_M (%)</label><input type="number" id="d4b_sigM" value="12" step="0.5"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="d4b_betaP">Bêta du fonds P</label><input type="number" id="d4b_betaP" value="1.2" step="0.05"></div>
+    <div><label for="d4b_ERP">Rendement espéré du fonds P (%)</label><input type="number" id="d4b_ERP" value="13" step="0.25"></div>
+    <div><label for="d4b_sigP">Écart-type du fonds P σ_P (%)</label><input type="number" id="d4b_sigP" value="18" step="0.5"></div>
+  </div>
+  <button onclick="calculerMedaf()">Calculer</button>
+  <div id="resultatMedaf" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerDiversification() {
+  var resDiv = document.getElementById('resultatDiversification');
+  var wA = parseFloat(document.getElementById('d4_wA').value) / 100;
+  var ERA = parseFloat(document.getElementById('d4_ERA').value) / 100;
+  var sigA = parseFloat(document.getElementById('d4_sigA').value) / 100;
+  var ERB = parseFloat(document.getElementById('d4_ERB').value) / 100;
+  var sigB = parseFloat(document.getElementById('d4_sigB').value) / 100;
+  var rho = parseFloat(document.getElementById('d4_rho').value);
+  var rf = parseFloat(document.getElementById('d4_rf').value) / 100;
+
+  if ([wA, ERA, sigA, ERB, sigB, rho, rf].some(isNaN) || wA < 0 || wA > 1 || rho < -1 || rho > 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (le poids de A doit être entre 0 et 100, la corrélation entre -1 et 1).</p>';
+    document.getElementById('graphiqueFrontiere').innerHTML = '';
+    return;
+  }
+
+  var wB = 1 - wA;
+  var cov = rho * sigA * sigB;
+  var varP = wA * wA * sigA * sigA + wB * wB * sigB * sigB + 2 * wA * wB * cov;
+  var sigP = Math.sqrt(varP);
+  var ERP = wA * ERA + wB * ERB;
+  var moyennePonderee = wA * sigA + wB * sigB;
+  var beneficePoints = moyennePonderee - sigP;
+  var beneficeRelatif = moyennePonderee > 0 ? beneficePoints / moyennePonderee : 0;
+
+  var sharpeA = sigA > 0 ? (ERA - rf) / sigA : NaN;
+  var sharpeB = sigB > 0 ? (ERB - rf) / sigB : NaN;
+  var sharpeP = sigP > 0 ? (ERP - rf) / sigP : NaN;
+
+  var sigPRho1 = wA * sigA + wB * sigB;
+
+  var html = '';
+  html += '<div class="valeur">Cov(A,B) = ' + cov.toFixed(5) + '</div>';
+  html += '<div class="valeur mid">σ_P = ' + (sigP * 100).toFixed(2) + '%</div>';
+  html += '<div class="valeur">E(R_P) = ' + (ERP * 100).toFixed(2) + '%</div>';
+  html += '<table class="tabres">';
+  html += '<tr><th>moyenne pondérée des écarts-types</th><td>' + (moyennePonderee * 100).toFixed(2) + '%</td></tr>';
+  html += '<tr><th>bénéfice de diversification</th><td>' + (beneficePoints * 100).toFixed(2) + ' pts (' + (beneficeRelatif * 100).toFixed(2) + '%)</td></tr>';
+  html += '<tr><th>σ_P si ρ=1 (sans diversification)</th><td>' + (sigPRho1 * 100).toFixed(2) + '%</td></tr>';
+  html += '</table>';
+  html += '<table class="tabres">';
+  html += '<tr><th>Sharpe A</th><td>' + sharpeA.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Sharpe B</th><td>' + sharpeB.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Sharpe P</th><td>' + sharpeP.toFixed(4) + '</td></tr>';
+  html += '</table>';
+  var meilleur = (sharpeP > sharpeA && sharpeP > sharpeB);
+  html += '<div class="valeur ' + (meilleur ? 'ok' : 'ko') + '">' + (meilleur ? 'le portefeuille diversifié bat les deux actifs pris isolément' : 'le portefeuille ne bat pas les deux actifs pris isolément') + '</div>';
+  resDiv.innerHTML = html;
+
+  dessinerFrontiere(wA, sigA, sigB, cov, sigP, sigPRho1);
+}
+
+function dessinerFrontiere(wA, sigA, sigB, covEffective, sigPEffective, sigPRho1) {
+  var svg = document.getElementById('graphiqueFrontiere');
+  var W = 560, H = 340, marge = 46;
+  var sigMax = Math.max(sigA, sigB, sigPRho1) * 1.15;
+  if (sigMax <= 0) sigMax = 1;
+
+  function xPix(w) { return marge + w * (W - 2 * marge); }
+  function yPix(sig) { return H - marge - (sig / sigMax) * (H - 2 * marge); }
+
+  var pts = [];
+  var n = 60;
+  for (var i = 0; i <= n; i++) {
+    var w = i / n;
+    var wb = 1 - w;
+    var v = w * w * sigA * sigA + wb * wb * sigB * sigB + 2 * w * wb * covEffective;
+    var s = Math.sqrt(Math.max(v, 0));
+    pts.push([xPix(w), yPix(s)]);
+  }
+  var pathD = 'M ' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' L ');
+
+  var svgNs = 'http://www.w3.org/2000/svg';
+  var content = '';
+  content += '<line x1="' + marge + '" y1="' + (H - marge) + '" x2="' + (W - marge) + '" y2="' + (H - marge) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1"/>';
+  content += '<line x1="' + marge + '" y1="' + marge + '" x2="' + marge + '" y2="' + (H - marge) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1"/>';
+  content += '<text x="' + (W / 2) + '" y="' + (H - 10) + '" font-size="12" fill="var(--cgris,#5A5A5A)" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif">poids de A (0 → 1)</text>';
+  content += '<text x="14" y="' + (H / 2) + '" font-size="12" fill="var(--cgris,#5A5A5A)" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif" transform="rotate(-90 14 ' + (H / 2) + ')">σ du portefeuille</text>';
+  content += '<path d="' + pathD + '" fill="none" stroke="var(--cgris,#999)" stroke-width="2"/>';
+
+  var xEff = xPix(wA), yEff = yPix(sigPEffective);
+  content += '<circle cx="' + xEff.toFixed(1) + '" cy="' + yEff.toFixed(1) + '" r="6" fill="var(--cintu,#E08000)"/>';
+  content += '<text x="' + (xEff + 10).toFixed(1) + '" y="' + (yEff - 6).toFixed(1) + '" font-size="12" fill="var(--cintu,#E08000)" font-family="Helvetica Neue, Arial, sans-serif">portefeuille (ρ effectif)</text>';
+
+  var xRho1 = xPix(wA), yRho1 = yPix(sigPRho1);
+  content += '<circle cx="' + xRho1.toFixed(1) + '" cy="' + yRho1.toFixed(1) + '" r="5" fill="var(--cgris,#5A5A5A)"/>';
+  content += '<text x="' + (xRho1 + 10).toFixed(1) + '" y="' + (yRho1 + 14).toFixed(1) + '" font-size="12" fill="var(--cgris,#5A5A5A)" font-family="Helvetica Neue, Arial, sans-serif">cas ρ=1 (aucun bénéfice)</text>';
+
+  svg.innerHTML = content;
+}
+
+function calculerMedaf() {
+  var resDiv = document.getElementById('resultatMedaf');
+  var rf = parseFloat(document.getElementById('d4b_rf').value) / 100;
+  var ERM = parseFloat(document.getElementById('d4b_ERM').value) / 100;
+  var sigM = parseFloat(document.getElementById('d4b_sigM').value) / 100;
+  var betaP = parseFloat(document.getElementById('d4b_betaP').value);
+  var ERP = parseFloat(document.getElementById('d4b_ERP').value) / 100;
+  var sigP = parseFloat(document.getElementById('d4b_sigP').value) / 100;
+
+  if ([rf, ERM, sigM, betaP, ERP, sigP].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var prime = ERM - rf;
+  var ERP_CAPM = rf + betaP * prime;
+  var alpha = ERP - ERP_CAPM;
+  var treynor = betaP !== 0 ? (ERP - rf) / betaP : NaN;
+  var sharpe = sigP > 0 ? (ERP - rf) / sigP : NaN;
+
+  var sysVol = betaP * sigM;
+  var specVolCarre = sigP * sigP - sysVol * sysVol;
+  var specVol = specVolCarre >= 0 ? Math.sqrt(specVolCarre) : NaN;
+
+  var html = '';
+  html += '<div class="valeur">prime de risque du marché = ' + (prime * 100).toFixed(2) + '%</div>';
+  html += '<div class="valeur">E(R_P) selon le MEDAF = ' + (ERP_CAPM * 100).toFixed(2) + '%</div>';
+  html += '<div class="valeur ' + (alpha >= 0 ? 'ok' : 'ko') + '">alpha de Jensen = ' + (alpha >= 0 ? '+' : '') + (alpha * 100).toFixed(2) + '% (' + (alpha >= 0 ? 'au-dessus de la SML' : 'en dessous de la SML') + ')</div>';
+  html += '<table class="tabres">';
+  html += '<tr><th>ratio de Treynor</th><td>' + (treynor * 100).toFixed(2) + ' (pts par unité de β)</td></tr>';
+  html += '<tr><th>ratio de Sharpe</th><td>' + sharpe.toFixed(4) + '</td></tr>';
+  html += '</table>';
+  if (!isNaN(specVol)) {
+    html += '<table class="tabres">';
+    html += '<tr><th>composante systématique (β×σ_M)</th><td>' + (sysVol * 100).toFixed(2) + '%</td></tr>';
+    html += '<tr><th>composante spécifique</th><td>' + (specVol * 100).toFixed(2) + '%</td></tr>';
+    html += '</table>';
+    html += '<p class="aide">Seule la composante systématique est rémunérée par le MEDAF ; c\'est elle que reflète le ratio de Treynor, pertinent lorsque P n\'est qu\'une ligne dans un portefeuille déjà diversifié.</p>';
+  } else {
+    html += '<p class="erreur">σ_P est inférieur à β×σ_M : décomposition impossible avec ces valeurs (la composante spécifique serait négative).</p>';
+  }
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerDiversification(); calculerMedaf(); };
+</script>
+</body>
+</html>
