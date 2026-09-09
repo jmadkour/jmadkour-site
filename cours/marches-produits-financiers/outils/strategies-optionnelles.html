@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Les stratégies optionnelles — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — Application : les stratégies optionnelles</h1>
+<p class="sous-titre">Calculatrice interactive — un écart haussier sur calls (exercice 5), un produit à capital garanti (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Un écart haussier sur calls</h2>
+  <div class="ligne">
+    <div><label for="d13_K1">K1 (call acheté)</label><input type="number" id="d13_K1" value="95" step="1"></div>
+    <div><label for="d13_primeAchat">Prime payée (K1)</label><input type="number" id="d13_primeAchat" value="8" step="0.5"></div>
+    <div><label for="d13_K2">K2 (call vendu)</label><input type="number" id="d13_K2" value="105" step="1"></div>
+    <div><label for="d13_primeVente">Prime encaissée (K2)</label><input type="number" id="d13_primeVente" value="3" step="0.5"></div>
+    <div style="flex:2;"><label for="d13_scenarios">Scénarios S_T (liste)</label><input type="text" id="d13_scenarios" value="85,95,100,105,115"></div>
+  </div>
+  <button onclick="calculerEcart()">Calculer</button>
+  <div id="resultatEcart" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Un produit à capital garanti</h2>
+  <div class="ligne">
+    <div><label for="d13_nominal">Nominal garanti</label><input type="number" id="d13_nominal" value="100" step="10"></div>
+    <div><label for="d13_r">Taux sans risque r (%)</label><input type="number" id="d13_r" value="4" step="0.1"></div>
+    <div><label for="d13_T">Échéance T (années)</label><input type="number" id="d13_T" value="5" step="1"></div>
+    <div><label for="d13_callPrice100">Coût d'un call à participation 100%</label><input type="number" id="d13_callPrice100" value="25" step="1"></div>
+    <div><label for="d13_hausse">Hausse de l'indice sur la période (%)</label><input type="number" id="d13_hausse" value="40" step="5"></div>
+  </div>
+  <button onclick="calculerCapitalGaranti()">Calculer</button>
+  <div id="resultatCapitalGaranti" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerEcart() {
+  var resDiv = document.getElementById('resultatEcart');
+  var K1 = parseFloat(document.getElementById('d13_K1').value);
+  var primeAchat = parseFloat(document.getElementById('d13_primeAchat').value);
+  var K2 = parseFloat(document.getElementById('d13_K2').value);
+  var primeVente = parseFloat(document.getElementById('d13_primeVente').value);
+  var scenarios = document.getElementById('d13_scenarios').value.split(',').map(function (s) { return parseFloat(s.trim()); }).filter(function (x) { return !isNaN(x); });
+  if ([K1, primeAchat, K2, primeVente].some(isNaN) || scenarios.length === 0 || K2 <= K1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (il faut K2 &gt; K1).</p>';
+    return;
+  }
+  var coutNet = primeAchat - primeVente;
+  var html = '<div class="valeur">coût net = ' + coutNet.toFixed(2) + '</div>';
+  html += '<table class="tabres"><tr><th>S_T</th><th>gain brut</th><th>profit net</th></tr>';
+  scenarios.forEach(function (ST) {
+    var brut = Math.max(ST - K1, 0) - Math.max(ST - K2, 0);
+    var net = brut - coutNet;
+    html += '<tr><td>' + ST + '</td><td>' + brut.toFixed(2) + '</td><td>' + net.toFixed(2) + '</td></tr>';
+  });
+  html += '</table>';
+  var gainMax = (K2 - K1) - coutNet;
+  var perteMax = -coutNet;
+  var breakeven = K1 + coutNet;
+  html += '<div class="valeur ok">gain maximal = ' + gainMax.toFixed(2) + ' (pour S_T ≥ ' + K2 + ')</div>';
+  html += '<div class="valeur ko">perte maximale = ' + perteMax.toFixed(2) + ' (pour S_T ≤ ' + K1 + ')</div>';
+  html += '<div class="valeur mid">seuil de rentabilité = ' + breakeven.toFixed(2) + '</div>';
+  resDiv.innerHTML = html;
+}
+
+function calculerCapitalGaranti() {
+  var resDiv = document.getElementById('resultatCapitalGaranti');
+  var nominal = parseFloat(document.getElementById('d13_nominal').value);
+  var r = parseFloat(document.getElementById('d13_r').value) / 100;
+  var T = parseFloat(document.getElementById('d13_T').value);
+  var callPrice100 = parseFloat(document.getElementById('d13_callPrice100').value);
+  var hausse = parseFloat(document.getElementById('d13_hausse').value) / 100;
+  if ([nominal, r, T, callPrice100, hausse].some(isNaN) || nominal <= 0 || callPrice100 <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var VA = nominal * Math.exp(-r * T);
+  var reliquat = nominal - VA;
+  var participation = reliquat / callPrice100;
+  var gainSiHausse = nominal * participation * hausse;
+  var totalSiHausse = nominal + gainSiHausse;
+
+  var html = '';
+  html += '<div class="valeur">valeur actuelle du nominal (obligation zéro-coupon) = ' + VA.toFixed(2) + '</div>';
+  html += '<div class="valeur mid">reliquat pour les options = ' + reliquat.toFixed(2) + '</div>';
+  html += '<div class="valeur ok">taux de participation = ' + (participation * 100).toFixed(2) + '%</div>';
+  html += '<table class="tabres">';
+  html += '<tr><th>si l\'indice progresse de ' + (hausse * 100).toFixed(0) + '%</th><td>' + totalSiHausse.toFixed(2) + '</td></tr>';
+  html += '<tr><th>si l\'indice recule</th><td>' + nominal.toFixed(2) + ' (nominal garanti)</td></tr>';
+  html += '</table>';
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerEcart(); calculerCapitalGaranti(); };
+</script>
+</body>
+</html>
