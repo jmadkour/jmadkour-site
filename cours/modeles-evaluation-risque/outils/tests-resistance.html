@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Les tests de résistance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Application : les tests de résistance</h1>
+<p class="sous-titre">Calculatrice interactive — test de résistance inversé (exercice 5), trois paliers d'un test réglementaire (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Test de résistance inversé</h2>
+  <p class="aide">$\mathrm{Pertes}(x)=x\times\text{Exposition}$ ; nouveau ratio $=\dfrac{E_0-\mathrm{Pertes}(x)}{\mathrm{RWA}}$. Le seuil de rupture $x^\ast$ vérifie ratio$(x^\ast)=$ seuil minimal.</p>
+  <div class="ligne">
+    <div><label for="c7_e0">Fonds propres $E_0$ (Mds €)</label><input type="number" id="c7_e0" value="8" step="0.5"></div>
+    <div><label for="c7_rwa">RWA (Mds €)</label><input type="number" id="c7_rwa" value="100" step="5"></div>
+    <div><label for="c7_seuil">Seuil minimal (%)</label><input type="number" id="c7_seuil" value="5" step="0.5"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c7_exp">Exposition immobilière (Mds €)</label><input type="number" id="c7_exp" value="40" step="5"></div>
+    <div><label for="c7_choc1">Choc scénario 1 (%)</label><input type="number" id="c7_choc1" value="5" step="0.5"></div>
+    <div><label for="c7_choc2">Choc scénario 2 (%)</label><input type="number" id="c7_choc2" value="10" step="0.5"></div>
+  </div>
+  <button onclick="calculerReverseStress()">Calculer</button>
+  <div id="resultatReverse" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Trois paliers d'un test de résistance réglementaire</h2>
+  <p class="aide">Ratio $\mathrm{CET1}=\dfrac{C_0-\text{pertes}}{\mathrm{RWA}}$ pour chaque scénario ; besoin de capital additionnel $=\max(0,\ \text{seuil}\times \mathrm{RWA}-(C_0-\text{pertes}))$.</p>
+  <div class="ligne">
+    <div><label for="c7b_c0">Capital CET1 initial $C_0$ (Mds €)</label><input type="number" id="c7b_c0" value="10" step="0.5"></div>
+    <div><label for="c7b_seuilmin">Seuil CET1 minimal (%)</label><input type="number" id="c7b_seuilmin" value="4.5" step="0.5"></div>
+  </div>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Central</h3>
+      <label for="c7b_pertesC">Pertes cumulées (Mds €)</label><input type="number" id="c7b_pertesC" value="2" step="1">
+      <label for="c7b_rwaC">RWA à l'horizon (Mds €)</label><input type="number" id="c7b_rwaC" value="125" step="5">
+    </div>
+    <div class="bloc">
+      <h3>Adverse</h3>
+      <label for="c7b_pertesA">Pertes cumulées (Mds €)</label><input type="number" id="c7b_pertesA" value="6" step="1">
+      <label for="c7b_rwaA">RWA à l'horizon (Mds €)</label><input type="number" id="c7b_rwaA" value="130" step="5">
+    </div>
+    <div class="bloc">
+      <h3>Sévèrement adverse</h3>
+      <label for="c7b_pertesS">Pertes cumulées (Mds €)</label><input type="number" id="c7b_pertesS" value="12" step="1">
+      <label for="c7b_rwaS">RWA à l'horizon (Mds €)</label><input type="number" id="c7b_rwaS" value="140" step="5">
+    </div>
+  </div>
+  <button onclick="calculerStressReglementaire()">Calculer</button>
+  <div id="resultatStress" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerReverseStress() {
+  var resDiv = document.getElementById('resultatReverse');
+  var E0 = parseFloat(document.getElementById('c7_e0').value);
+  var RWA = parseFloat(document.getElementById('c7_rwa').value);
+  var seuil = parseFloat(document.getElementById('c7_seuil').value) / 100;
+  var exposition = parseFloat(document.getElementById('c7_exp').value);
+  var choc1 = parseFloat(document.getElementById('c7_choc1').value) / 100;
+  var choc2 = parseFloat(document.getElementById('c7_choc2').value) / 100;
+
+  if ([E0, RWA, seuil, exposition, choc1, choc2].some(isNaN) || RWA <= 0 || exposition < 0 || seuil <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  function ratioApres(choc) {
+    var pertes = choc * exposition;
+    var E = E0 - pertes;
+    return E / RWA;
+  }
+  var ratioInitial = E0 / RWA;
+  var r1 = ratioApres(choc1);
+  var r2 = ratioApres(choc2);
+  var xEtoile = (E0 - seuil * RWA) / exposition;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>ratio initial</th><td>' + (ratioInitial * 100).toFixed(2) + '%</td></tr>';
+  html += '<tr><th>ratio après choc ' + (choc1 * 100).toFixed(1) + '%</th><td>' + (r1 * 100).toFixed(2) + '% — ' + (r1 >= seuil ? 'conforme' : 'non conforme') + '</td></tr>';
+  html += '<tr><th>ratio après choc ' + (choc2 * 100).toFixed(1) + '%</th><td>' + (r2 * 100).toFixed(2) + '% — ' + (r2 >= seuil ? 'conforme' : 'non conforme') + '</td></tr>';
+  html += '<tr><th>seuil de rupture $x^\\ast$</th><td>' + (xEtoile * 100).toFixed(3) + '%</td></tr>';
+  html += '</table>';
+
+  var couleur = (xEtoile <= Math.min(choc1, choc2)) ? 'ko' : (xEtoile >= Math.max(choc1, choc2) ? 'ok' : 'mid');
+  html += '<div class="valeur ' + couleur + '">le ratio franchit le seuil minimal dès un choc de ' + (xEtoile * 100).toFixed(2) + '%</div>';
+
+  html += dessinerCourbeReverse(E0, RWA, seuil, exposition, choc1, choc2, xEtoile);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCourbeReverse(E0, RWA, seuil, exposition, choc1, choc2, xEtoile) {
+  var largeur = 320, hauteur = 220, margeG = 45, margeD = 15, margeH = 15, margeB = 35;
+  var xMax = Math.max(choc1, choc2, xEtoile) * 1.3;
+  if (xMax <= 0) xMax = 0.1;
+  var ratioInitial = E0 / RWA;
+  var yMax = Math.max(ratioInitial, seuil) * 1.15;
+
+  function xPix(x) { return margeG + (x / xMax) * (largeur - margeG - margeD); }
+  function yPix(y) { return (hauteur - margeB) - (y / yMax) * (hauteur - margeB - margeH); }
+
+  var x0 = 0, y0 = ratioInitial;
+  var pente = -exposition / RWA;
+  var xEnd = xMax, yEnd = ratioInitial + pente * xEnd;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + xPix(0) + '" y1="' + yPix(0) + '" x2="' + xPix(0) + '" y2="' + yPix(yMax) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + xPix(0) + '" y1="' + yPix(0) + '" x2="' + xPix(xMax) + '" y2="' + yPix(0) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + xPix(x0).toFixed(1) + '" y1="' + yPix(y0).toFixed(1) + '" x2="' + xPix(xEnd).toFixed(1) + '" y2="' + yPix(yEnd).toFixed(1) + '" stroke="var(--cdef, #4A3B8C)" stroke-width="2"/>';
+  svg += '<line x1="' + xPix(0) + '" y1="' + yPix(seuil).toFixed(1) + '" x2="' + xPix(xMax) + '" y2="' + yPix(seuil).toFixed(1) + '" stroke="red" stroke-width="1.5" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (xPix(0) + 3) + '" y="' + (yPix(seuil) - 4).toFixed(1) + '" font-size="9" fill="red">seuil</text>';
+  svg += '<circle cx="' + xPix(xEtoile).toFixed(1) + '" cy="' + yPix(seuil).toFixed(1) + '" r="3.5" fill="var(--cex, #2E8B57)"/>';
+  svg += '<text x="' + (xPix(xEtoile) + 4).toFixed(1) + '" y="' + (yPix(seuil) - 6).toFixed(1) + '" font-size="9" fill="var(--cex, #2E8B57)">x*=' + (xEtoile * 100).toFixed(1) + '%</text>';
+  svg += '<text x="' + margeG + '" y="' + (hauteur - 5) + '" font-size="9" fill="currentColor">choc x (% exposition)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerStressReglementaire() {
+  var resDiv = document.getElementById('resultatStress');
+  var C0 = parseFloat(document.getElementById('c7b_c0').value);
+  var seuilMin = parseFloat(document.getElementById('c7b_seuilmin').value) / 100;
+
+  var scenarios = [
+    { nom: 'Central', pertes: parseFloat(document.getElementById('c7b_pertesC').value), rwa: parseFloat(document.getElementById('c7b_rwaC').value) },
+    { nom: 'Adverse', pertes: parseFloat(document.getElementById('c7b_pertesA').value), rwa: parseFloat(document.getElementById('c7b_rwaA').value) },
+    { nom: 'Sévèrement adverse', pertes: parseFloat(document.getElementById('c7b_pertesS').value), rwa: parseFloat(document.getElementById('c7b_rwaS').value) }
+  ];
+
+  if (isNaN(C0) || isNaN(seuilMin) || scenarios.some(function (s) { return isNaN(s.pertes) || isNaN(s.rwa) || s.rwa <= 0; })) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  scenarios.forEach(function (s) {
+    s.capital = C0 - s.pertes;
+    s.ratio = s.capital / s.rwa;
+    s.conforme = s.ratio >= seuilMin;
+    s.manque = Math.max(0, seuilMin * s.rwa - s.capital);
+  });
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Scénario</th><th>Capital restant</th><th>Ratio CET1</th><th>Statut</th><th>Besoin additionnel</th></tr>';
+  scenarios.forEach(function (s) {
+    html += '<tr><td>' + s.nom + '</td><td>' + s.capital.toFixed(2) + ' Mds€</td><td>' + (s.ratio * 100).toFixed(3) + '%</td><td>' + (s.conforme ? 'conforme' : 'non conforme') + '</td><td>' + s.manque.toFixed(2) + ' Mds€</td></tr>';
+  });
+  html += '</table>';
+
+  var nbNonConforme = scenarios.filter(function (s) { return !s.conforme; }).length;
+  var couleur = nbNonConforme === 0 ? 'ok' : (nbNonConforme === scenarios.length ? 'ko' : 'mid');
+  html += '<div class="valeur ' + couleur + '">' + nbNonConforme + ' scénario(s) sur ' + scenarios.length + ' non conforme(s) au seuil de ' + (seuilMin * 100).toFixed(1) + '%</div>';
+
+  html += dessinerBarresStress(scenarios, seuilMin);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresStress(scenarios, seuilMin) {
+  var largeur = 320, hauteur = 230, margeG = 42, margeD = 15, margeH = 15, margeB = 40;
+  var valeurs = scenarios.map(function (s) { return s.ratio * 100; });
+  var seuilPct = seuilMin * 100;
+  var yMax = Math.max.apply(null, valeurs.concat([seuilPct])) * 1.25;
+  var yMin = Math.min.apply(null, valeurs.concat([0])) * 1.25;
+  if (yMin > 0) yMin = 0;
+
+  function yPix(y) { return margeH + (yMax - y) / (yMax - yMin) * (hauteur - margeH - margeB); }
+  var yAxeZero = yPix(0);
+  var largeurBarre = 55;
+  var espace = (largeur - margeG - margeD) / scenarios.length;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yAxeZero.toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yAxeZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  var ySeuil = yPix(seuilPct);
+  svg += '<line x1="' + margeG + '" y1="' + ySeuil.toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + ySeuil.toFixed(1) + '" stroke="red" stroke-width="1.5" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (margeG + 2) + '" y="' + (ySeuil - 3).toFixed(1) + '" font-size="8" fill="red">seuil ' + seuilPct.toFixed(1) + '%</text>';
+
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--cintu, #E08000)', 'var(--cex, #2E8B57)'];
+  for (var i = 0; i < scenarios.length; i++) {
+    var x = margeG + i * espace + (espace - largeurBarre) / 2;
+    var v = valeurs[i];
+    var yTop = yPix(Math.max(v, 0));
+    var yBot = yPix(Math.min(v, 0));
+    var h = Math.max(yBot - yTop, 1);
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    var yLabel = v >= 0 ? (yTop - 5) : (yBot + 12);
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + yLabel.toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '%</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="8" text-anchor="middle" fill="currentColor">' + scenarios[i].nom + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerReverseStress(); calculerStressReglementaire(); };
+</script>
+</body>
+</html>
