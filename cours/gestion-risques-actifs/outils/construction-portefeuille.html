@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — La construction de portefeuille — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Application : la construction de portefeuille</h1>
+<p class="sous-titre">Calculatrice interactive — coût de transaction annualisé (exercice 5), dispersion entre comptes (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Coût de transaction annualisé et durée de détention</h2>
+  <div class="ligne">
+    <div><label for="c3_alpha">Alpha brut annuel (%)</label><input type="number" id="c3_alpha" value="4" step="0.1"></div>
+    <div><label for="c3_cout">Coût de transaction aller-retour (%)</label><input type="number" id="c3_cout" value="1.5" step="0.1"></div>
+  </div>
+  <button onclick="calculerCoutTransaction()">Calculer</button>
+  <div id="resultatCoutTransaction" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Dispersion entre comptes gérés séparément</h2>
+  <div class="ligne">
+    <div><label for="c3b_betaBas">Bêta le plus faible</label><input type="number" id="c3b_betaBas" value="0.9" step="0.01"></div>
+    <div><label for="c3b_betaHaut">Bêta le plus élevé</label><input type="number" id="c3b_betaHaut" value="1.1" step="0.01"></div>
+    <div><label for="c3b_rMarche">Rendement du marché (%)</label><input type="number" id="c3b_rMarche" value="35" step="1"></div>
+  </div>
+  <button onclick="calculerDispersion()">Calculer</button>
+  <div id="resultatDispersion" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerCoutTransaction() {
+  var resDiv = document.getElementById('resultatCoutTransaction');
+  var alpha = parseFloat(document.getElementById('c3_alpha').value);
+  var cout = parseFloat(document.getElementById('c3_cout').value);
+
+  if ([alpha, cout].some(isNaN) || cout < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var durees = [0.5, 1, 2];
+  var libelles = ['6 mois', '1 an', '2 ans'];
+  var resultats = durees.map(function (t) {
+    var coutAnnualise = cout / t;
+    var profitAnnualise = alpha - coutAnnualise;
+    return { t: t, coutAnnualise: coutAnnualise, profitAnnualise: profitAnnualise };
+  });
+
+  var ratioCout = (cout > 0) ? (resultats[0].coutAnnualise / resultats[2].coutAnnualise) : NaN;
+  var tBreakeven = (alpha > 0) ? (cout / alpha) : NaN;
+
+  var html = '';
+  html += '<table class="tabres"><tr><th>durée</th><th>coût annualisé</th><th>profit annualisé</th></tr>';
+  for (var i = 0; i < resultats.length; i++) {
+    html += '<tr><td>' + libelles[i] + '</td><td>' + resultats[i].coutAnnualise.toFixed(2) + '%</td><td>' + resultats[i].profitAnnualise.toFixed(2) + '%</td></tr>';
+  }
+  html += '</table>';
+  html += '<div class="valeur mid">rapport coût annualisé (6 mois / 2 ans) = ' + (isNaN(ratioCout) ? 'n/d' : ratioCout.toFixed(2)) + '</div>';
+  html += '<div class="valeur ' + (tBreakeven >= 0 && tBreakeven <= 10 ? 'ok' : 'ko') + '">durée minimale pour un profit annualisé nul = ' + (isNaN(tBreakeven) ? 'n/d' : (tBreakeven * 12).toFixed(1) + ' mois (' + tBreakeven.toFixed(3) + ' an)') + '</div>';
+
+  html += dessinerBarres(libelles, resultats.map(function (r) { return r.profitAnnualise; }), alpha);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarres(libelles, valeurs, alphaBrut) {
+  var largeur = 460, hauteur = 220, marge = 40;
+  var maxVal = Math.max(alphaBrut, Math.max.apply(null, valeurs)) * 1.15;
+  if (maxVal <= 0) maxVal = 1;
+  var largeurBarre = 70;
+  var espace = (largeur - 2 * marge) / libelles.length;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  var yAxe = hauteur - marge;
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+
+  var yAlpha = yAxe - (alphaBrut / maxVal) * (hauteur - 2 * marge);
+  svg += '<line x1="' + marge + '" y1="' + yAlpha.toFixed(1) + '" x2="' + (largeur - 10) + '" y2="' + yAlpha.toFixed(1) + '" stroke="var(--cintu, #E08000)" stroke-width="1.5" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur - 12) + '" y="' + (yAlpha - 4).toFixed(1) + '" font-size="10" text-anchor="end" fill="var(--cintu, #E08000)">alpha brut</text>';
+
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var v = valeurs[i];
+    var h = Math.abs(v) / maxVal * (hauteur - 2 * marge);
+    var y = v >= 0 ? (yAxe - h) : yAxe;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="var(--ceco, #1F6FB2)" opacity="0.8"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="11" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '%</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 15) + '" font-size="10" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerDispersion() {
+  var resDiv = document.getElementById('resultatDispersion');
+  var betaBas = parseFloat(document.getElementById('c3b_betaBas').value);
+  var betaHaut = parseFloat(document.getElementById('c3b_betaHaut').value);
+  var rMarche = parseFloat(document.getElementById('c3b_rMarche').value);
+
+  if ([betaBas, betaHaut, rMarche].some(isNaN) || betaHaut < betaBas) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (le bêta le plus élevé doit être supérieur au bêta le plus faible).</p>';
+    return;
+  }
+
+  var ecartBeta = betaHaut - betaBas;
+  var dispersion = ecartBeta * rMarche;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>écart de bêta</th><td>' + ecartBeta.toFixed(2) + '</td></tr>';
+  html += '<tr><th>dispersion imputable au bêta</th><td>' + dispersion.toFixed(2) + ' pts</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (Math.abs(dispersion) < 2 ? 'ok' : (Math.abs(dispersion) < 6 ? 'mid' : 'ko')) + '">dispersion = ' + (dispersion >= 0 ? '+' : '') + dispersion.toFixed(2) + ' points</div>';
+
+  html += dessinerBandes(betaBas, betaHaut, rMarche);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBandes(betaBas, betaHaut, rMarche) {
+  var largeur = 460, hauteur = 140, marge = 60;
+  var rBas = betaBas * rMarche, rHaut = betaHaut * rMarche;
+  var rMin = Math.min(rBas, rHaut, 0) - Math.abs(rMarche) * 0.15;
+  var rMax = Math.max(rBas, rHaut, 0) + Math.abs(rMarche) * 0.15;
+  if (rMax === rMin) { rMax += 1; rMin -= 1; }
+  var echelle = (largeur - 2 * marge) / (rMax - rMin);
+  function xDe(v) { return marge + (v - rMin) * echelle; }
+
+  var y = hauteur / 2;
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="150">';
+  svg += '<line x1="' + marge + '" y1="' + y + '" x2="' + (largeur - 20) + '" y2="' + y + '" stroke="#888" stroke-width="1"/>';
+
+  var x0 = xDe(0);
+  svg += '<line x1="' + x0.toFixed(1) + '" y1="' + (y - 30) + '" x2="' + x0.toFixed(1) + '" y2="' + (y + 30) + '" stroke="#aaa" stroke-dasharray="3,3"/>';
+  svg += '<text x="' + x0.toFixed(1) + '" y="' + (y + 44) + '" font-size="10" text-anchor="middle" fill="currentColor">0</text>';
+
+  var xBas = xDe(Math.min(rBas, rHaut)), xHaut = xDe(Math.max(rBas, rHaut));
+  svg += '<line x1="' + xBas.toFixed(1) + '" y1="' + y + '" x2="' + xHaut.toFixed(1) + '" y2="' + y + '" stroke="var(--ceco, #1F6FB2)" stroke-width="6" stroke-linecap="round"/>';
+  svg += '<text x="' + xBas.toFixed(1) + '" y="' + (y - 12) + '" font-size="10" text-anchor="middle" fill="currentColor">' + Math.min(rBas, rHaut).toFixed(2) + '%</text>';
+  svg += '<text x="' + xHaut.toFixed(1) + '" y="' + (y - 12) + '" font-size="10" text-anchor="middle" fill="currentColor">' + Math.max(rBas, rHaut).toFixed(2) + '%</text>';
+  svg += '<text x="' + ((xBas + xHaut) / 2).toFixed(1) + '" y="' + (y + 28) + '" font-size="11" text-anchor="middle" fill="var(--ceco, #1F6FB2)" font-weight="bold">dispersion = ' + Math.abs(rHaut - rBas).toFixed(2) + ' pts</text>';
+
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCoutTransaction(); calculerDispersion(); };
+</script>
+</body>
+</html>
