@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Les mécanismes de transfert du risque de crédit — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Application : les mécanismes de transfert du risque de crédit</h1>
+<p class="sous-titre">Calculatrice interactive — cascade de pertes dans une titrisation (exercice 5), netting et collatéral (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Cascade de pertes dans une titrisation</h2>
+  <div class="ligne">
+    <div><label for="d3_portefeuille">Portefeuille titrisé</label><input type="number" id="d3_portefeuille" value="500000000" step="10000000"></div>
+    <div><label for="d3_partEquity">Part equity (%)</label><input type="number" id="d3_partEquity" value="5" step="1"></div>
+    <div><label for="d3_partMezzanine">Part mezzanine (%)</label><input type="number" id="d3_partMezzanine" value="15" step="1"></div>
+    <div><label for="d3_partSenior">Part senior (%)</label><input type="number" id="d3_partSenior" value="80" step="1"></div>
+    <div><label for="d3_pertes">Pertes réalisées</label><input type="number" id="d3_pertes" value="40000000" step="1000000"></div>
+  </div>
+  <button onclick="calculerCascade()">Calculer</button>
+  <div id="resultatCascade" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Netting et collatéral</h2>
+  <div class="ligne">
+    <div><label for="d3b_doitA">La banque doit à la contrepartie</label><input type="number" id="d3b_doitA" value="80000000" step="1000000"></div>
+    <div><label for="d3b_doitB">La contrepartie doit à la banque</label><input type="number" id="d3b_doitB" value="130000000" step="1000000"></div>
+    <div><label for="d3b_collateralNominal">Collatéral nominal déposé</label><input type="number" id="d3b_collateralNominal" value="45000000" step="1000000"></div>
+    <div><label for="d3b_decote">Décote (%)</label><input type="number" id="d3b_decote" value="10" step="1"></div>
+  </div>
+  <button onclick="calculerNetting()">Calculer</button>
+  <div id="resultatNetting" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerCascade() {
+  var resDiv = document.getElementById('resultatCascade');
+  var portefeuille = parseFloat(document.getElementById('d3_portefeuille').value);
+  var partEquity = parseFloat(document.getElementById('d3_partEquity').value) / 100;
+  var partMezzanine = parseFloat(document.getElementById('d3_partMezzanine').value) / 100;
+  var partSenior = parseFloat(document.getElementById('d3_partSenior').value) / 100;
+  var pertes = parseFloat(document.getElementById('d3_pertes').value);
+
+  if ([portefeuille, partEquity, partMezzanine, partSenior, pertes].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var equity = portefeuille * partEquity;
+  var mezzanine = portefeuille * partMezzanine;
+  var senior = portefeuille * partSenior;
+
+  var absorbeParEquity = Math.min(pertes, equity);
+  var resteApresEquity = pertes - absorbeParEquity;
+  var absorbeParMezzanine = Math.min(resteApresEquity, mezzanine);
+  var resteApresMezzanine = resteApresEquity - absorbeParMezzanine;
+  var absorbeParSenior = Math.min(resteApresMezzanine, senior);
+
+  var html = '';
+  html += '<table class="tabres"><tr><th>tranche</th><th>montant</th><th>perte absorbée</th><th>% de la tranche</th></tr>';
+  html += '<tr><td>equity</td><td>' + equity.toFixed(0) + '</td><td>' + absorbeParEquity.toFixed(0) + '</td><td>' + (absorbeParEquity / equity * 100).toFixed(1) + '%</td></tr>';
+  html += '<tr><td>mezzanine</td><td>' + mezzanine.toFixed(0) + '</td><td>' + absorbeParMezzanine.toFixed(0) + '</td><td>' + (absorbeParMezzanine / mezzanine * 100).toFixed(1) + '%</td></tr>';
+  html += '<tr><td>senior</td><td>' + senior.toFixed(0) + '</td><td>' + absorbeParSenior.toFixed(0) + '</td><td>' + (absorbeParSenior / senior * 100).toFixed(1) + '%</td></tr>';
+  html += '</table>';
+  html += (absorbeParEquity === equity
+    ? '<div class="valeur ko">tranche equity totalement épuisée</div>'
+    : '<div class="valeur ok">tranche equity partiellement entamée</div>');
+  resDiv.innerHTML = html;
+}
+
+function calculerNetting() {
+  var resDiv = document.getElementById('resultatNetting');
+  var doitA = parseFloat(document.getElementById('d3b_doitA').value);
+  var doitB = parseFloat(document.getElementById('d3b_doitB').value);
+  var collateralNominal = parseFloat(document.getElementById('d3b_collateralNominal').value);
+  var decote = parseFloat(document.getElementById('d3b_decote').value) / 100;
+
+  if ([doitA, doitB, collateralNominal, decote].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var expositionBrute = doitB;
+  var expositionNette = doitB - doitA;
+  var reduction = expositionBrute !== 0 ? (expositionBrute - expositionNette) / expositionBrute : NaN;
+  var collateralEffectif = collateralNominal * (1 - decote);
+  var resteExpose = expositionNette - collateralEffectif;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>exposition brute</th><td>' + expositionBrute.toFixed(0) + '</td></tr>';
+  html += '<tr><th>exposition nette (après netting)</th><td>' + expositionNette.toFixed(0) + '</td></tr>';
+  html += '<tr><th>réduction</th><td>' + (reduction * 100).toFixed(2) + '%</td></tr>';
+  html += '<tr><th>collatéral effectif (après décote)</th><td>' + collateralEffectif.toFixed(0) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">reste exposé = ' + resteExpose.toFixed(0) + '</div>';
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerCascade(); calculerNetting(); };
+</script>
+</body>
+</html>
