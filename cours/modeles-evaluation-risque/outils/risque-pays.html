@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Le risque pays — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Application : le risque pays</h1>
+<p class="sous-titre">Calculatrice interactive — volatilité de la croissance et dynamique de la dette (exercice 5), décomposition d'un spread souverain (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Volatilité de la croissance et dynamique de la dette</h2>
+  <p class="aide">Deux trajectoires de même moyenne arithmétique : stable à $\bar g$ chaque année, volatile alternant $\bar g+a$ et $\bar g-a$. $d_t=d_{t-1}\times\dfrac{1+r}{1+g_t}-\text{solde primaire}$.</p>
+  <div class="ligne">
+    <div><label for="c4_d0">Dette/PIB initiale (%)</label><input type="number" id="c4_d0" value="80" step="5"></div>
+    <div><label for="c4_r">Taux d'intérêt réel $r$ (%)</label><input type="number" id="c4_r" value="3" step="0.5"></div>
+    <div><label for="c4_pb">Solde primaire (% PIB)</label><input type="number" id="c4_pb" value="0" step="0.5"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c4_g">Croissance moyenne $\bar g$ (%)</label><input type="number" id="c4_g" value="2" step="0.5"></div>
+    <div><label for="c4_a">Amplitude de la volatilité $a$ (points)</label><input type="number" id="c4_a" value="4" step="0.5" min="0"></div>
+    <div><label for="c4_h">Horizon (années, pair)</label><input type="number" id="c4_h" value="10" step="2" min="2"></div>
+  </div>
+  <button onclick="calculerDette()">Calculer</button>
+  <div id="resultatDette" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Décomposer un spread souverain</h2>
+  <p class="aide">Approximation usuelle : composante défaut $\approx PD\times LGD$. Le résiduel rémunère liquidité, aversion au risque, transfert/convertibilité.</p>
+  <div class="ligne">
+    <div><label for="c4b_spread">Spread observé (points de base)</label><input type="number" id="c4b_spread" value="450" step="10"></div>
+    <div><label for="c4b_pd">Probabilité de défaut à 1 an (%)</label><input type="number" id="c4b_pd" value="4" step="0.5"></div>
+    <div><label for="c4b_lgd">LGD (%)</label><input type="number" id="c4b_lgd" value="70" step="5"></div>
+  </div>
+  <button onclick="calculerSpread()">Calculer</button>
+  <div id="resultatSpread" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerDette() {
+  var resDiv = document.getElementById('resultatDette');
+  var d0 = parseFloat(document.getElementById('c4_d0').value) / 100;
+  var r = parseFloat(document.getElementById('c4_r').value) / 100;
+  var pb = parseFloat(document.getElementById('c4_pb').value) / 100;
+  var g = parseFloat(document.getElementById('c4_g').value) / 100;
+  var a = parseFloat(document.getElementById('c4_a').value) / 100;
+  var h = parseInt(document.getElementById('c4_h').value, 10);
+
+  if ([d0, r, pb, g, a, h].some(isNaN) || d0 < 0 || h < 2 || h % 2 !== 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (l\'horizon doit être un nombre pair d\'années).</p>';
+    return;
+  }
+
+  var stableRates = [], volatileRates = [];
+  for (var i = 0; i < h; i++) { stableRates.push(g); }
+  for (var i = 0; i < h / 2; i++) { volatileRates.push(g + a); volatileRates.push(g - a); }
+
+  function dynamique(rates) {
+    var d = d0, path = [d0];
+    rates.forEach(function (gt) { d = d * (1 + r) / (1 + gt) - pb; path.push(d); });
+    return path;
+  }
+
+  var pathStable = dynamique(stableRates);
+  var pathVolatile = dynamique(volatileRates);
+  var cumStable = stableRates.reduce(function (v, gt) { return v * (1 + gt); }, 1);
+  var cumVolatile = volatileRates.reduce(function (v, gt) { return v * (1 + gt); }, 1);
+  var geoStable = Math.pow(cumStable, 1 / h) - 1;
+  var geoVolatile = Math.pow(cumVolatile, 1 / h) - 1;
+
+  var finalStable = pathStable[pathStable.length - 1];
+  var finalVolatile = pathVolatile[pathVolatile.length - 1];
+  var ecart = (finalVolatile - finalStable) * 100;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>croissance géométrique moyenne, stable</th><td>' + (geoStable * 100).toFixed(4) + '%</td></tr>';
+  html += '<tr><th>croissance géométrique moyenne, volatile</th><td>' + (geoVolatile * 100).toFixed(4) + '%</td></tr>';
+  html += '<tr><th>dette/PIB après ' + h + ' ans, stable</th><td>' + (finalStable * 100).toFixed(4) + '%</td></tr>';
+  html += '<tr><th>dette/PIB après ' + h + ' ans, volatile</th><td>' + (finalVolatile * 100).toFixed(4) + '%</td></tr>';
+  html += '</table>';
+
+  var couleur = ecart > 0 ? 'mid' : 'ok';
+  html += '<div class="valeur ' + couleur + '">écart dû à la seule volatilité : +' + ecart.toFixed(3) + ' point de PIB</div>';
+
+  html += dessinerTrajectoires(pathStable, pathVolatile);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerTrajectoires(pathStable, pathVolatile) {
+  var largeur = 420, hauteur = 220, margeG = 45, margeD = 15, margeH = 15, margeB = 30;
+  var n = pathStable.length;
+  var allVals = pathStable.concat(pathVolatile).map(function (v) { return v * 100; });
+  var maxVal = Math.max.apply(null, allVals) * 1.03;
+  var minVal = Math.min.apply(null, allVals) * 0.97;
+
+  function xPix(i) { return margeG + (i / (n - 1)) * (largeur - margeG - margeD); }
+  function yPix(v) { return hauteur - margeB - ((v - minVal) / (maxVal - minVal)) * (hauteur - margeB - margeH); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + (hauteur - margeB) + '" x2="' + (largeur - margeD) + '" y2="' + (hauteur - margeB) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + margeH + '" x2="' + margeG + '" y2="' + (hauteur - margeB) + '" stroke="#888" stroke-width="1"/>';
+
+  function tracer(path, couleur, tiret) {
+    var d = '';
+    for (var i = 0; i < path.length; i++) {
+      var x = xPix(i), y = yPix(path[i] * 100);
+      d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    }
+    return '<path d="' + d + '" fill="none" stroke="' + couleur + '" stroke-width="2"' + (tiret ? ' stroke-dasharray="5,3"' : '') + '/>';
+  }
+
+  svg += tracer(pathStable, 'var(--ceco, #1F6FB2)', false);
+  svg += tracer(pathVolatile, 'var(--cintu, #E08000)', true);
+
+  svg += '<text x="' + margeG + '" y="' + (margeH + 8) + '" font-size="8.5" fill="var(--ceco, #1F6FB2)">stable</text>';
+  svg += '<text x="' + margeG + '" y="' + (margeH + 20) + '" font-size="8.5" fill="var(--cintu, #E08000)">volatile</text>';
+  svg += '<text x="' + margeG + '" y="' + (hauteur - 5) + '" font-size="8.5" fill="currentColor">année 0</text>';
+  svg += '<text x="' + (largeur - margeD) + '" y="' + (hauteur - 5) + '" font-size="8.5" text-anchor="end" fill="currentColor">année ' + (n - 1) + '</text>';
+
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerSpread() {
+  var resDiv = document.getElementById('resultatSpread');
+  var spread = parseFloat(document.getElementById('c4b_spread').value);
+  var pd = parseFloat(document.getElementById('c4b_pd').value) / 100;
+  var lgd = parseFloat(document.getElementById('c4b_lgd').value) / 100;
+
+  if ([spread, pd, lgd].some(isNaN) || spread < 0 || pd < 0 || pd > 1 || lgd < 0 || lgd > 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var composanteDefaut = pd * lgd * 10000;
+  var residuel = spread - composanteDefaut;
+  var partResiduelle = spread > 0 ? (residuel / spread * 100) : 0;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>spread observé</th><td>' + spread.toFixed(1) + ' pb</td></tr>';
+  html += '<tr><th>composante perte attendue ($PD\\times LGD$)</th><td>' + composanteDefaut.toFixed(1) + ' pb</td></tr>';
+  html += '<tr><th>composante résiduelle</th><td>' + residuel.toFixed(1) + ' pb</td></tr>';
+  html += '</table>';
+
+  var couleur = Math.abs(partResiduelle) > 40 ? 'ko' : (Math.abs(partResiduelle) > 15 ? 'mid' : 'ok');
+  html += '<div class="valeur ' + couleur + '">part résiduelle (non liée au défaut) : ' + partResiduelle.toFixed(1) + '%</div>';
+  if (residuel < 0) {
+    html += '<p class="aide">Composante résiduelle négative : la perte attendue de défaut implicite (PD×LGD) dépasse le spread observé — vérifier la cohérence des paramètres.</p>';
+  }
+
+  html += dessinerBarreSpread(composanteDefaut, residuel);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarreSpread(composanteDefaut, residuel) {
+  var largeur = 260, hauteur = 220, marge = 35;
+  var total = Math.max(composanteDefaut + Math.max(residuel, 0), 1);
+  var largeurBarre = 90;
+  var x = largeur / 2 - largeurBarre / 2;
+  var yAxe = hauteur - marge;
+  var hauteurDispo = hauteur - 2 * marge;
+
+  var hDefaut = Math.max((composanteDefaut / total) * hauteurDispo, 0);
+  var hResiduel = Math.max((Math.max(residuel, 0) / total) * hauteurDispo, 0);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + (marge - 10) + '" y1="' + yAxe + '" x2="' + (largeur - 15) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+
+  var yDefautTop = yAxe - hDefaut;
+  svg += '<rect x="' + x.toFixed(1) + '" y="' + yDefautTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + hDefaut.toFixed(1) + '" fill="var(--ceco, #1F6FB2)" opacity="0.85"/>';
+  svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yDefautTop + hDefaut / 2 + 3).toFixed(1) + '" font-size="9" text-anchor="middle" fill="white">' + composanteDefaut.toFixed(0) + ' pb</text>';
+
+  var yResiduelTop = yDefautTop - hResiduel;
+  svg += '<rect x="' + x.toFixed(1) + '" y="' + yResiduelTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + hResiduel.toFixed(1) + '" fill="var(--cintu, #E08000)" opacity="0.85"/>';
+  svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yResiduelTop + hResiduel / 2 + 3).toFixed(1) + '" font-size="9" text-anchor="middle" fill="white">' + Math.max(residuel, 0).toFixed(0) + ' pb</text>';
+
+  svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 15) + '" font-size="9" text-anchor="middle" fill="currentColor">spread</text>';
+  svg += '<text x="' + (x - 15) + '" y="' + (yDefautTop + hDefaut / 2 + 3) + '" font-size="8" text-anchor="end" fill="var(--ceco, #1F6FB2)">perte attendue</text>';
+  svg += '<text x="' + (x - 15) + '" y="' + (yResiduelTop + hResiduel / 2 + 3) + '" font-size="8" text-anchor="end" fill="var(--cintu, #E08000)">résiduel</text>';
+
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerDette(); calculerSpread(); };
+</script>
+</body>
+</html>
