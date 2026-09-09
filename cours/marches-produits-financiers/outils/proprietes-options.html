@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — Les propriétés des options — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — Application : les propriétés des options</h1>
+<p class="sous-titre">Calculatrice interactive — bornes d'un call et détection d'arbitrage (exercice 5), parité call-put et détection d'arbitrage (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Bornes d'un call européen et détection d'arbitrage</h2>
+  <div class="ligne">
+    <div><label for="d12_S0">Cours comptant S0</label><input type="number" id="d12_S0" value="50" step="1"></div>
+    <div><label for="d12_K">Prix d'exercice K</label><input type="number" id="d12_K" value="48" step="1"></div>
+    <div><label for="d12_r">Taux sans risque r (%)</label><input type="number" id="d12_r" value="5" step="0.1"></div>
+    <div><label for="d12_T">Échéance T (années)</label><input type="number" id="d12_T" value="0.5" step="0.05"></div>
+    <div><label for="d12_cObs">Prix observé du call</label><input type="number" id="d12_cObs" value="1.5" step="0.1"></div>
+  </div>
+  <button onclick="calculerBornes()">Calculer</button>
+  <div id="resultatBornes" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Parité call-put et détection d'arbitrage</h2>
+  <div class="ligne">
+    <div><label for="d12b_S0">Cours comptant S0</label><input type="number" id="d12b_S0" value="60" step="1"></div>
+    <div><label for="d12b_K">Prix d'exercice K</label><input type="number" id="d12b_K" value="58" step="1"></div>
+    <div><label for="d12b_r">Taux sans risque r (%)</label><input type="number" id="d12b_r" value="4" step="0.1"></div>
+    <div><label for="d12b_T">Échéance T (années)</label><input type="number" id="d12b_T" value="0.25" step="0.05"></div>
+    <div><label for="d12b_c">Prix du call c</label><input type="number" id="d12b_c" value="5.0" step="0.1"></div>
+    <div><label for="d12b_pObs">Prix observé du put</label><input type="number" id="d12b_pObs" value="2.6" step="0.1"></div>
+  </div>
+  <button onclick="calculerParite()">Calculer</button>
+  <div id="resultatParite" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerBornes() {
+  var resDiv = document.getElementById('resultatBornes');
+  var S0 = parseFloat(document.getElementById('d12_S0').value);
+  var K = parseFloat(document.getElementById('d12_K').value);
+  var r = parseFloat(document.getElementById('d12_r').value) / 100;
+  var T = parseFloat(document.getElementById('d12_T').value);
+  var cObs = parseFloat(document.getElementById('d12_cObs').value);
+  if ([S0, K, r, T, cObs].some(isNaN) || S0 <= 0 || T < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var Ke = K * Math.exp(-r * T);
+  var borneInf = Math.max(S0 - Ke, 0);
+  var borneSup = S0;
+
+  var html = '';
+  html += '<div class="valeur">Ke^(-rT) = ' + Ke.toFixed(2) + '</div>';
+  html += '<div class="valeur mid">borne inférieure = ' + borneInf.toFixed(2) + '</div>';
+  html += '<div class="valeur mid">borne supérieure = ' + borneSup.toFixed(2) + '</div>';
+
+  if (cObs < borneInf - 0.0001) {
+    var placement = (S0 - cObs) * Math.exp(r * T);
+    var profitMin = placement - K;
+    html += '<div class="valeur ko">le call observé (' + cObs.toFixed(2) + ') viole la borne inférieure : arbitrage possible</div>';
+    html += '<p class="aide">Acheter le call, vendre l\'action à découvert, placer ' + (S0 - cObs).toFixed(2) + ' au taux sans risque.</p>';
+    html += '<div class="valeur ok">profit minimal garanti à l\'échéance = ' + profitMin.toFixed(2) + '</div>';
+  } else if (cObs > borneSup + 0.0001) {
+    html += '<div class="valeur ko">le call observé (' + cObs.toFixed(2) + ') viole la borne supérieure : arbitrage possible (vendre le call, acheter l\'action)</div>';
+  } else {
+    html += '<div class="valeur ok">le prix observé (' + cObs.toFixed(2) + ') respecte les bornes : aucun arbitrage sur les seules bornes</div>';
+  }
+  resDiv.innerHTML = html;
+}
+
+function calculerParite() {
+  var resDiv = document.getElementById('resultatParite');
+  var S0 = parseFloat(document.getElementById('d12b_S0').value);
+  var K = parseFloat(document.getElementById('d12b_K').value);
+  var r = parseFloat(document.getElementById('d12b_r').value) / 100;
+  var T = parseFloat(document.getElementById('d12b_T').value);
+  var c = parseFloat(document.getElementById('d12b_c').value);
+  var pObs = parseFloat(document.getElementById('d12b_pObs').value);
+  if ([S0, K, r, T, c, pObs].some(isNaN) || S0 <= 0 || T < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var Ke = K * Math.exp(-r * T);
+  var pTheorique = c + Ke - S0;
+  var portefeuilleA = c + Ke;
+  var portefeuilleB = pObs + S0;
+  var ecart = portefeuilleB - portefeuilleA;
+
+  var html = '';
+  html += '<div class="valeur">prix théorique du put (parité) = ' + pTheorique.toFixed(4) + '</div>';
+  html += '<table class="tabres">';
+  html += '<tr><th>portefeuille A (call + liquidités)</th><td>' + portefeuilleA.toFixed(4) + '</td></tr>';
+  html += '<tr><th>portefeuille B (put observé + action)</th><td>' + portefeuilleB.toFixed(4) + '</td></tr>';
+  html += '</table>';
+
+  if (Math.abs(ecart) < 0.0001) {
+    html += '<div class="valeur ok">parité respectée : aucun arbitrage</div>';
+  } else if (ecart > 0) {
+    html += '<div class="valeur ko">le portefeuille B (put + action) est plus cher de ' + ecart.toFixed(4) + '</div>';
+    html += '<p class="aide">Vendre le put à découvert et l\'action à découvert (encaisser ' + portefeuilleB.toFixed(2) + '), acheter le call et placer ' + Ke.toFixed(2) + ' (payer ' + portefeuilleA.toFixed(2) + ').</p>';
+    html += '<div class="valeur ok">profit immédiat capturé à la date 0 = ' + ecart.toFixed(4) + '</div>';
+  } else {
+    html += '<div class="valeur ko">le portefeuille A (call + liquidités) est plus cher de ' + (-ecart).toFixed(4) + '</div>';
+    html += '<p class="aide">Vendre le call à découvert et emprunter ' + Ke.toFixed(2) + ' (encaisser ' + portefeuilleA.toFixed(2) + '), acheter le put et l\'action (payer ' + portefeuilleB.toFixed(2) + ').</p>';
+    html += '<div class="valeur ok">profit immédiat capturé à la date 0 = ' + (-ecart).toFixed(4) + '</div>';
+  }
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerBornes(); calculerParite(); };
+</script>
+</body>
+</html>
