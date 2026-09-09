@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — Les mesures du risque financier — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Application : les mesures du risque financier</h1>
+<p class="sous-titre">Calculatrice interactive — non-sous-additivité de la VaR (exercice 5), VaR à 99&nbsp;% contre expected shortfall à 97,5&nbsp;% (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La VaR n'est pas sous-additive</h2>
+  <p class="aide">$n$ obligations indépendantes, chacune de probabilité de défaut $p$, occasionnant une perte fixe en cas de défaut. Calcule la VaR individuelle et la VaR du portefeuille combiné au seuil choisi.</p>
+  <div class="ligne">
+    <div><label for="i1_n">Nombre d'obligations</label><input type="number" id="i1_n" value="2" step="1" min="1"></div>
+    <div><label for="i1_p">Probabilité de défaut par obligation (%)</label><input type="number" id="i1_p" value="4" step="0.5"></div>
+    <div><label for="i1_perte">Perte en cas de défaut (par obligation)</label><input type="number" id="i1_perte" value="100" step="10"></div>
+    <div><label for="i1_conf">Seuil de confiance de la VaR (%)</label><input type="number" id="i1_conf" value="95" step="1"></div>
+  </div>
+  <button onclick="calculerSousAdditivite()">Calculer</button>
+  <div id="resultatSousAdd" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>VaR à 99&nbsp;% contre expected shortfall à 97,5&nbsp;%</h2>
+  <p class="aide">Sous hypothèse de normalité des rendements. Compare le quantile unique de la VaR à la moyenne de toute la queue au-delà du seuil de l'ES.</p>
+  <div class="ligne">
+    <div><label for="i2_v">Valeur du portefeuille (M$)</label><input type="number" id="i2_v" value="10" step="1"></div>
+    <div><label for="i2_sigma">Volatilité quotidienne (%)</label><input type="number" id="i2_sigma" value="2" step="0.1"></div>
+    <div><label for="i2_var">Seuil de confiance de la VaR (%)</label><input type="number" id="i2_var" value="99" step="0.5"></div>
+    <div><label for="i2_es">Seuil de confiance de l'ES (%)</label><input type="number" id="i2_es" value="97.5" step="0.5"></div>
+  </div>
+  <button onclick="calculerVarEs()">Calculer</button>
+  <div id="resultatVarEs" class="resultat-zone"></div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------
+// Inverse de la fonction de répartition normale centrée réduite
+// (algorithme d'Acklam, approximation rationnelle par morceaux).
+// ---------------------------------------------------------------------
+function inverseNormale(p) {
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var plow = 0.02425, phigh = 1 - plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+           ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+           (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+}
+
+function densiteNormale(z) {
+  return Math.exp(-z * z / 2) / Math.sqrt(2 * Math.PI);
+}
+
+function coefBinomial(n, k) {
+  var r = 1;
+  for (var i = 0; i < k; i++) { r = r * (n - i) / (i + 1); }
+  return r;
+}
+
+function probaBinomiale(n, p, k) {
+  return coefBinomial(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+}
+
+// VaR d'un portefeuille de n obligations i.i.d. : plus petite perte L telle
+// que P(perte <= L) >= alpha, où la perte ne peut valoir que k * perteUnitaire.
+function varBinomiale(n, p, perteUnitaire, alpha) {
+  var cumul = 0;
+  for (var k = 0; k <= n; k++) {
+    cumul += probaBinomiale(n, p, k);
+    if (cumul >= alpha - 1e-12) { return { var: k * perteUnitaire, k: k, cumul: cumul }; }
+  }
+  return { var: n * perteUnitaire, k: n, cumul: 1 };
+}
+
+function calculerSousAdditivite() {
+  var resDiv = document.getElementById('resultatSousAdd');
+  var n = parseInt(document.getElementById('i1_n').value, 10);
+  var p = parseFloat(document.getElementById('i1_p').value) / 100;
+  var perte = parseFloat(document.getElementById('i1_perte').value);
+  var conf = parseFloat(document.getElementById('i1_conf').value) / 100;
+
+  if ([n, p, perte, conf].some(isNaN) || n < 1 || p < 0 || p > 1 || perte <= 0 || conf <= 0 || conf >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var varIndividuelle = varBinomiale(1, p, perte, conf);
+  var varCombinee = varBinomiale(n, p, perte, conf);
+  var sommeVarIndiv = n * varIndividuelle.var;
+  var violation = varCombinee.var > sommeVarIndiv + 1e-9;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>VaR d\'une obligation isolée</th><td>' + varIndividuelle.var.toFixed(2) + '</td></tr>';
+  html += '<tr><th>somme des ' + n + ' VaR individuelles</th><td>' + sommeVarIndiv.toFixed(2) + '</td></tr>';
+  html += '<tr><th>VaR du portefeuille combiné (' + n + ' obligations)</th><td>' + varCombinee.var.toFixed(2) + '</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>défauts $k$</th><th>P(exactement $k$)</th><th>P(perte $\\le k\\times$perte unitaire)</th></tr>';
+  var cumul = 0;
+  for (var k = 0; k <= n; k++) {
+    var pk = probaBinomiale(n, p, k);
+    cumul += pk;
+    html += '<tr><td>' + k + '</td><td>' + (pk * 100).toFixed(4) + '%</td><td>' + (cumul * 100).toFixed(4) + '%</td></tr>';
+  }
+  html += '</table>';
+
+  if (violation) {
+    html += '<div class="valeur ko">VaR(portefeuille) = ' + varCombinee.var.toFixed(2) + ' &gt; somme des VaR individuelles = ' + sommeVarIndiv.toFixed(2) + ' — sous-additivité violée</div>';
+  } else {
+    html += '<div class="valeur ok">VaR(portefeuille) = ' + varCombinee.var.toFixed(2) + ' &le; somme des VaR individuelles = ' + sommeVarIndiv.toFixed(2) + ' — sous-additivité vérifiée sur ce cas</div>';
+  }
+
+  html += dessinerBarresSousAdditivite(varIndividuelle.var, sommeVarIndiv, varCombinee.var, n);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresSousAdditivite(varIndiv, sommeVarIndiv, varCombinee, n) {
+  var largeur = 360, hauteur = 220, marge = 45;
+  var valeurs = [varIndiv, sommeVarIndiv, varCombinee];
+  var libelles = ['VaR (1 obligation)', 'somme des ' + n + ' VaR', 'VaR portefeuille'];
+  var maxVal = Math.max.apply(null, valeurs.concat([1])) * 1.25;
+  var largeurBarre = 60;
+  var espace = (largeur - 2 * marge) / libelles.length;
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--cintu, #E08000)', 'var(--danger, #b00020)'];
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var hBrute = (valeurs[i] / maxVal) * (hauteur - 2 * marge);
+    var h = Math.max(hBrute, valeurs[i] > 0 ? 1 : 0.5);
+    var y = yAxe - h;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="10" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(1) + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 14) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerVarEs() {
+  var resDiv = document.getElementById('resultatVarEs');
+  var V = parseFloat(document.getElementById('i2_v').value);
+  var sigma = parseFloat(document.getElementById('i2_sigma').value) / 100;
+  var alphaVar = parseFloat(document.getElementById('i2_var').value) / 100;
+  var alphaEs = parseFloat(document.getElementById('i2_es').value) / 100;
+
+  if ([V, sigma, alphaVar, alphaEs].some(isNaN) || V <= 0 || sigma <= 0 || alphaVar <= 0 || alphaVar >= 1 || alphaEs <= 0 || alphaEs >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var zVar = inverseNormale(alphaVar);
+  var zEs = inverseNormale(alphaEs);
+  var VaR = zVar * sigma * V;
+  var ES = densiteNormale(zEs) / (1 - alphaEs) * sigma * V;
+  var ecartRelatif = (ES - VaR) / VaR * 100;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>quantile $z$ pour la VaR à ' + (alphaVar * 100).toFixed(1) + '%</th><td>' + zVar.toFixed(4) + '</td></tr>';
+  html += '<tr><th>VaR</th><td>' + VaR.toFixed(4) + ' M$</td></tr>';
+  html += '<tr><th>quantile $z$ pour l\'ES à ' + (alphaEs * 100).toFixed(1) + '%</th><td>' + zEs.toFixed(4) + '</td></tr>';
+  html += '<tr><th>densité $\\varphi(z)$ au quantile de l\'ES</th><td>' + densiteNormale(zEs).toFixed(4) + '</td></tr>';
+  html += '<tr><th>ES</th><td>' + ES.toFixed(4) + ' M$</td></tr>';
+  html += '</table>';
+
+  var couleurEcart = Math.abs(ecartRelatif) < 2 ? 'ok' : (Math.abs(ecartRelatif) < 10 ? 'mid' : 'ko');
+  html += '<div class="valeur ' + couleurEcart + '">écart relatif ES vs VaR : ' + ecartRelatif.toFixed(2) + '%</div>';
+
+  html += dessinerBarresVarEs(VaR, ES, alphaVar, alphaEs);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresVarEs(VaR, ES, alphaVar, alphaEs) {
+  var largeur = 300, hauteur = 220, marge = 45;
+  var valeurs = [VaR, ES];
+  var libelles = ['VaR ' + (alphaVar * 100).toFixed(1) + '%', 'ES ' + (alphaEs * 100).toFixed(1) + '%'];
+  var maxVal = Math.max.apply(null, valeurs.concat([0.0001])) * 1.3;
+  var largeurBarre = 65;
+  var espace = (largeur - 2 * marge) / libelles.length;
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--cintu, #E08000)'];
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var hBrute = (valeurs[i] / maxVal) * (hauteur - 2 * marge);
+    var h = Math.max(hBrute, 1);
+    var y = yAxe - h;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="10" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(4) + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerSousAdditivite(); calculerVarEs(); };
+</script>
+</body>
+</html>
