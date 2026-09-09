@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Les marchés des changes — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Application : les marchés des changes</h1>
+<p class="sous-titre">Calculatrice interactive — la parité des taux d'intérêt couverte (exercice 5), le portage / carry trade (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La parité des taux d'intérêt couverte</h2>
+  <div class="ligne">
+    <div><label for="d8_S">Cours comptant S (contrepartie pour 1 directrice)</label><input type="number" id="d8_S" value="10.50" step="0.01"></div>
+    <div><label for="d8_rd">Taux directrice (%)</label><input type="number" id="d8_rd" value="2" step="0.1"></div>
+    <div><label for="d8_rc">Taux contrepartie (%)</label><input type="number" id="d8_rc" value="6" step="0.1"></div>
+    <div><label for="d8_montant">Montant à régler (devise directrice)</label><input type="number" id="d8_montant" value="2000000" step="10000"></div>
+  </div>
+  <button onclick="calculerParite()">Calculer</button>
+  <div id="resultatParite" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Le portage (carry trade)</h2>
+  <div class="ligne">
+    <div><label for="d8_emprunt">Montant emprunté (devise à faible taux)</label><input type="number" id="d8_emprunt" value="1000000" step="10000"></div>
+    <div><label for="d8_rEmprunt">Taux d'emprunt (%)</label><input type="number" id="d8_rEmprunt" value="1" step="0.1"></div>
+    <div><label for="d8_S0">Cours comptant S0 (unités H pour 1 devise empruntée)</label><input type="number" id="d8_S0" value="10" step="0.1"></div>
+    <div><label for="d8_rPlacement">Taux de placement en H (%)</label><input type="number" id="d8_rPlacement" value="7" step="0.1"></div>
+    <div><label for="d8_S1">Cours à un an S1</label><input type="number" id="d8_S1" value="10.3" step="0.1"></div>
+  </div>
+  <button onclick="calculerPortage()">Calculer</button>
+  <div id="resultatPortage" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerParite() {
+  var resDiv = document.getElementById('resultatParite');
+  var S = parseFloat(document.getElementById('d8_S').value);
+  var rd = parseFloat(document.getElementById('d8_rd').value) / 100;
+  var rc = parseFloat(document.getElementById('d8_rc').value) / 100;
+  var montant = parseFloat(document.getElementById('d8_montant').value);
+  if ([S, rd, rc, montant].some(isNaN) || S <= 0 || montant <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var F = S * (1 + rc) / (1 + rd);
+  var coutCouvert = montant * F;
+  var coutComptant = montant * S;
+  var sensContrepartie = rc > rd ? 'déport' : (rc < rd ? 'report' : 'ni report ni déport (taux identiques)');
+
+  var Xdirectrice = montant / (1 + rd);
+  var Xcontrepartie = Xdirectrice * S;
+  var finalContrepartie = Xcontrepartie * (1 + rc);
+
+  var html = '';
+  html += '<div class="valeur">taux à terme F = ' + F.toFixed(4) + '</div>';
+  html += '<div class="valeur mid">la devise de contrepartie cote en ' + sensContrepartie + '</div>';
+  html += '<table class="tabres">';
+  html += '<tr><th>coût couvert (F)</th><td>' + coutCouvert.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + '</td></tr>';
+  html += '<tr><th>coût au comptant actuel (référence)</th><td>' + coutComptant.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + '</td></tr>';
+  html += '<tr><th>écart</th><td>' + (coutCouvert - coutComptant).toLocaleString('fr-FR', {maximumFractionDigits: 0}) + '</td></tr>';
+  html += '</table>';
+  html += '<p class="aide">Vérification par le marché monétaire : placer ' + Xdirectrice.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + ' en devise directrice, convertir en ' + Xcontrepartie.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + ' de contrepartie, puis placer un an : ' + finalContrepartie.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' — identique au coût couvert.</p>';
+  resDiv.innerHTML = html;
+}
+
+function calculerPortage() {
+  var resDiv = document.getElementById('resultatPortage');
+  var emprunt = parseFloat(document.getElementById('d8_emprunt').value);
+  var rEmprunt = parseFloat(document.getElementById('d8_rEmprunt').value) / 100;
+  var S0 = parseFloat(document.getElementById('d8_S0').value);
+  var rPlacement = parseFloat(document.getElementById('d8_rPlacement').value) / 100;
+  var S1 = parseFloat(document.getElementById('d8_S1').value);
+  if ([emprunt, rEmprunt, S0, rPlacement, S1].some(isNaN) || S0 <= 0 || S1 <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var capitalH = emprunt * S0 * (1 + rPlacement);
+  var remboursement = emprunt * (1 + rEmprunt);
+  var obtenu = capitalH / S1;
+  var gain = obtenu - remboursement;
+  var S1seuil = capitalH / remboursement;
+  var depreciationSeuil = (S1seuil - S0) / S0 * 100;
+
+  var html = '';
+  html += '<div class="valeur">capital en devise H après un an = ' + capitalH.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + '</div>';
+  html += '<div class="valeur">remboursement dû = ' + remboursement.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + '</div>';
+  html += '<div class="valeur ' + (gain >= 0 ? 'ok' : 'ko') + '">résultat net à S1 = ' + S1 + ' : ' + (gain >= 0 ? '+' : '') + gain.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + '</div>';
+  html += '<div class="valeur mid">cours de dépréciation seuil S1 = ' + S1seuil.toFixed(4) + ' (dépréciation de ' + depreciationSeuil.toFixed(2) + '% par rapport à S0)</div>';
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerParite(); calculerPortage(); };
+</script>
+</body>
+</html>
