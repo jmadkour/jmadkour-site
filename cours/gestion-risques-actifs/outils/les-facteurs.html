@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Les facteurs — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Application : les facteurs macroéconomiques</h1>
+<p class="sous-titre">Calculatrice interactive — amortir le cycle économique (exercice 5), gains réguliers et perte massive de la vente de volatilité (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Amortir le cycle économique par un mélange actions/obligations</h2>
+  <div class="ligne">
+    <div><label for="c1_wActions">Poids actions (%)</label><input type="number" id="c1_wActions" value="70" step="5"></div>
+    <div><label for="c1_actionsExpansion">Actions — expansion (%)</label><input type="number" id="c1_actionsExpansion" value="12.4" step="0.1"></div>
+    <div><label for="c1_actionsRecession">Actions — récession (%)</label><input type="number" id="c1_actionsRecession" value="5.6" step="0.1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c1_obligExpansion">Emprunts d'État — expansion (%)</label><input type="number" id="c1_obligExpansion" value="5.9" step="0.1"></div>
+    <div><label for="c1_obligRecession">Emprunts d'État — récession (%)</label><input type="number" id="c1_obligRecession" value="12.3" step="0.1"></div>
+  </div>
+  <button onclick="calculerCycle()">Calculer</button>
+  <div id="resultatCycle" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Vente de volatilité : gains réguliers, perte massive</h2>
+  <div class="ligne">
+    <div><label for="c1b_rMensuel">Rendement mensuel régulier (%)</label><input type="number" id="c1b_rMensuel" value="2" step="0.1"></div>
+    <div><label for="c1b_nMois">Nombre de mois de gains</label><input type="number" id="c1b_nMois" value="24" step="1"></div>
+    <div><label for="c1b_choc">Perte lors du choc (%)</label><input type="number" id="c1b_choc" value="70" step="5"></div>
+  </div>
+  <button onclick="calculerVenteVolatilite()">Calculer</button>
+  <div id="resultatVenteVolatilite" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerCycle() {
+  var resDiv = document.getElementById('resultatCycle');
+  var wActions = parseFloat(document.getElementById('c1_wActions').value) / 100;
+  var actionsExpansion = parseFloat(document.getElementById('c1_actionsExpansion').value) / 100;
+  var actionsRecession = parseFloat(document.getElementById('c1_actionsRecession').value) / 100;
+  var obligExpansion = parseFloat(document.getElementById('c1_obligExpansion').value) / 100;
+  var obligRecession = parseFloat(document.getElementById('c1_obligRecession').value) / 100;
+
+  if ([wActions, actionsExpansion, actionsRecession, obligExpansion, obligRecession].some(isNaN) || wActions < 0 || wActions > 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (le poids des actions doit être entre 0 et 100).</p>';
+    return;
+  }
+
+  var wObligations = 1 - wActions;
+  var rExpansion = wActions * actionsExpansion + wObligations * obligExpansion;
+  var rRecession = wActions * actionsRecession + wObligations * obligRecession;
+  var ecartPortefeuille = rExpansion - rRecession;
+  var ecart100Actions = actionsExpansion - actionsRecession;
+  var reduction = ecart100Actions !== 0 ? (ecart100Actions - ecartPortefeuille) / ecart100Actions : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>rendement en expansion</th><td>' + (rExpansion * 100).toFixed(2) + '%</td></tr>';
+  html += '<tr><th>rendement en récession</th><td>' + (rRecession * 100).toFixed(2) + '%</td></tr>';
+  html += '</table>';
+  html += '<table class="tabres">';
+  html += '<tr><th>écart portefeuille (' + (wActions * 100).toFixed(0) + '/' + (wObligations * 100).toFixed(0) + ')</th><td>' + (ecartPortefeuille * 100).toFixed(2) + ' pts</td></tr>';
+  html += '<tr><th>écart 100% actions</th><td>' + (ecart100Actions * 100).toFixed(2) + ' pts</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">réduction de la sensibilité au cycle = ' + (reduction * 100).toFixed(2) + '%</div>';
+  resDiv.innerHTML = html;
+}
+
+function calculerVenteVolatilite() {
+  var resDiv = document.getElementById('resultatVenteVolatilite');
+  var rMensuel = parseFloat(document.getElementById('c1b_rMensuel').value) / 100;
+  var nMois = parseFloat(document.getElementById('c1b_nMois').value);
+  var choc = parseFloat(document.getElementById('c1b_choc').value) / 100;
+
+  if ([rMensuel, nMois, choc].some(isNaN) || nMois < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var valeurApresGains = Math.pow(1 + rMensuel, nMois);
+  var valeurFinale = valeurApresGains * (1 - choc);
+  var rendementCumule = valeurFinale - 1;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>valeur après ' + nMois.toFixed(0) + ' mois de gains</th><td>' + valeurApresGains.toFixed(4) + '</td></tr>';
+  html += '<tr><th>valeur finale après le choc</th><td>' + valeurFinale.toFixed(4) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (rendementCumule < 0 ? 'ko' : 'ok') + '">rendement cumulé sur l\'ensemble de la période = ' + (rendementCumule >= 0 ? '+' : '') + (rendementCumule * 100).toFixed(2) + '%</div>';
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerCycle(); calculerVenteVolatilite(); };
+</script>
+</body>
+</html>
