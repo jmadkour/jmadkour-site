@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Signaux d'alerte, le cas Madoff — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Application : le cas Madoff</h1>
+<p class="sous-titre">Calculatrice interactive — le raisonnement de Markopolos (exercice 5), mécanique d'une chaîne de Ponzi (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le raisonnement de Markopolos : un test statistique de vraisemblance</h2>
+  <div class="ligne">
+    <div><label for="c10_n">Nombre de mois observés</label><input type="number" id="c10_n" value="200" step="1"></div>
+    <div><label for="c10_p">Probabilité « légitime » d'un mois positif (%)</label><input type="number" id="c10_p" value="65" step="1"></div>
+    <div><label for="c10_observes">Mois positifs réellement observés</label><input type="number" id="c10_observes" value="196" step="1"></div>
+  </div>
+  <button onclick="calculerMarkopolos()">Calculer</button>
+  <div id="resultatMarkopolos" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>La mécanique d'une chaîne de Ponzi</h2>
+  <div class="ligne">
+    <div><label for="c10b_aum0">Actifs déclarés initiaux (M$)</label><input type="number" id="c10b_aum0" value="1000" step="50"></div>
+    <div><label for="c10b_cash0">Liquidités réelles initiales (M$)</label><input type="number" id="c10b_cash0" value="200" step="10"></div>
+    <div><label for="c10b_rendement">Rendement fictif crédité (%/an)</label><input type="number" id="c10b_rendement" value="10" step="0.5"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c10b_rachat">Taux de rachat annuel (%)</label><input type="number" id="c10b_rachat" value="12" step="0.5"></div>
+    <div><label for="c10b_apports">Nouveaux apports annuels (M$)</label><input type="number" id="c10b_apports" value="100" step="10"></div>
+    <div><label for="c10b_nAnnees">Nombre d'années à simuler</label><input type="number" id="c10b_nAnnees" value="8" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerPonzi()">Calculer</button>
+  <div id="resultatPonzi" class="resultat-zone"></div>
+</div>
+
+<script>
+function erf(x) {
+  var sign = x >= 0 ? 1 : -1;
+  x = Math.abs(x);
+  var a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+  var t = 1 / (1 + p * x);
+  var y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  return sign * y;
+}
+
+function calculerMarkopolos() {
+  var resDiv = document.getElementById('resultatMarkopolos');
+  var n = parseInt(document.getElementById('c10_n').value, 10);
+  var p = parseFloat(document.getElementById('c10_p').value) / 100;
+  var observes = parseInt(document.getElementById('c10_observes').value, 10);
+
+  if ([n, p, observes].some(isNaN) || n <= 0 || p <= 0 || p >= 1 || observes < 0 || observes > n) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (mois observés entre 0 et n, probabilité entre 0 et 100%).</p>';
+    return;
+  }
+
+  var moyenne = n * p;
+  var variance = n * p * (1 - p);
+  var ecartType = Math.sqrt(variance);
+  var z = (observes - 0.5 - moyenne) / ecartType;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>nombre de mois positifs attendus</th><td>' + moyenne.toFixed(1) + '</td></tr>';
+  html += '<tr><th>écart-type attendu</th><td>' + ecartType.toFixed(3) + '</td></tr>';
+  html += '<tr><th>score z (avec correction de continuité)</th><td>' + z.toFixed(3) + '</td></tr>';
+  html += '</table>';
+
+  if (Math.abs(z) <= 6) {
+    var probExacte = 1 - 0.5 * (1 + erf(z / Math.sqrt(2)));
+    html += '<div class="valeur mid">P(Z > z) ≈ ' + (probExacte * 100).toExponential(3) + '%</div>';
+  } else {
+    var logPhi = -0.5 * z * z - 0.5 * Math.log(2 * Math.PI);
+    var logTail = logPhi - Math.log(Math.abs(z));
+    var log10Tail = logTail / Math.log(10);
+    html += '<div class="valeur ko">P(Z > z) ≈ 10^' + log10Tail.toFixed(1) + ' (approximation asymptotique de la queue normale)</div>';
+  }
+  html += '<div class="valeur ' + (z > 3 ? 'ko' : (z > 1.5 ? 'mid' : 'ok')) + '">' + (z > 3 ? 'résultat statistiquement extrême : incompatible avec la stratégie annoncée' : 'résultat plausible sous l\'hypothèse légitime') + '</div>';
+
+  resDiv.innerHTML = html;
+}
+
+function calculerPonzi() {
+  var resDiv = document.getElementById('resultatPonzi');
+  var aum0 = parseFloat(document.getElementById('c10b_aum0').value);
+  var cash0 = parseFloat(document.getElementById('c10b_cash0').value);
+  var rendement = parseFloat(document.getElementById('c10b_rendement').value) / 100;
+  var tauxRachat = parseFloat(document.getElementById('c10b_rachat').value) / 100;
+  var apports = parseFloat(document.getElementById('c10b_apports').value);
+  var nAnnees = parseInt(document.getElementById('c10b_nAnnees').value, 10);
+
+  if ([aum0, cash0, rendement, tauxRachat, apports, nAnnees].some(isNaN) || aum0 <= 0 || nAnnees < 1 || nAnnees > 60) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var aum = aum0, cash = cash0;
+  var historique = [];
+  var anneeEffondrement = null;
+  for (var t = 1; t <= nAnnees; t++) {
+    var aumApresRendement = aum * (1 + rendement);
+    var rachats = tauxRachat * aumApresRendement;
+    var nouveauCash = cash - rachats + apports;
+    var nouveauAum = aumApresRendement - rachats + apports;
+    historique.push({ annee: t, aumApresRendement: aumApresRendement, rachats: rachats, cash: nouveauCash, aum: nouveauAum });
+    cash = nouveauCash;
+    aum = nouveauAum;
+    if (cash < 0 && anneeEffondrement === null) { anneeEffondrement = t; }
+  }
+
+  var html = '';
+  html += '<table class="tabres"><tr><th>année</th><th>AUM déclaré</th><th>rachats</th><th>cash réel</th></tr>';
+  historique.forEach(function (h) {
+    html += '<tr><td>' + h.annee + '</td><td>' + h.aum.toFixed(1) + '</td><td>' + h.rachats.toFixed(1) + '</td><td' + (h.cash < 0 ? ' style="color:var(--danger,#b00020)"' : '') + '>' + h.cash.toFixed(1) + '</td></tr>';
+  });
+  html += '</table>';
+
+  if (anneeEffondrement !== null) {
+    html += '<div class="valeur ko">effondrement (cash réel négatif) dès l\'année ' + anneeEffondrement + '</div>';
+  } else {
+    html += '<div class="valeur ok">le système reste solvable sur l\'horizon simulé (mais reste structurellement non viable à très long terme)</div>';
+  }
+
+  html += dessinerPonzi(aum0, cash0, historique);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerPonzi(aum0, cash0, historique) {
+  var largeur = 460, hauteur = 240, margeG = 50, margeB = 30, margeH = 15, margeD = 15;
+  var aumSerie = [aum0].concat(historique.map(function (h) { return h.aum; }));
+  var cashSerie = [cash0].concat(historique.map(function (h) { return h.cash; }));
+  var nMax = historique.length;
+  var maxY = Math.max.apply(null, aumSerie) * 1.1;
+  var minY = Math.min(0, Math.min.apply(null, cashSerie)) * 1.15;
+  function xDe(t) { return margeG + (t / nMax) * (largeur - margeG - margeD); }
+  function yDe(v) { return (hauteur - margeB) - ((v - minY) / (maxY - minY)) * (hauteur - margeB - margeH); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="260">';
+  svg += '<line x1="' + margeG + '" y1="' + yDe(0).toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yDe(0).toFixed(1) + '" stroke="#aaa" stroke-dasharray="3,3"/>';
+  svg += '<line x1="' + margeG + '" y1="' + margeH + '" x2="' + margeG + '" y2="' + (hauteur - margeB) + '" stroke="#888" stroke-width="1"/>';
+
+  var ptsAum = '', ptsCash = '';
+  for (var i = 0; i <= nMax; i++) {
+    ptsAum += xDe(i).toFixed(1) + ',' + yDe(aumSerie[i]).toFixed(1) + ' ';
+    ptsCash += xDe(i).toFixed(1) + ',' + yDe(cashSerie[i]).toFixed(1) + ' ';
+  }
+  svg += '<polyline points="' + ptsAum + '" fill="none" stroke="var(--ceco, #1F6FB2)" stroke-width="2"/>';
+  svg += '<polyline points="' + ptsCash + '" fill="none" stroke="var(--cintu, #E08000)" stroke-width="2"/>';
+  svg += '<text x="' + (largeur - margeD) + '" y="' + (margeH + 8) + '" font-size="9" text-anchor="end" fill="var(--ceco, #1F6FB2)">AUM déclaré</text>';
+  svg += '<text x="' + (largeur - margeD) + '" y="' + (margeH + 20) + '" font-size="9" text-anchor="end" fill="var(--cintu, #E08000)">cash réel</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerMarkopolos(); calculerPonzi(); };
+</script>
+</body>
+</html>
