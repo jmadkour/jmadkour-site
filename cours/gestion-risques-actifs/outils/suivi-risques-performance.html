@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Le suivi des risques et la mesure de la performance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Application : le suivi des risques</h1>
+<p class="sous-titre">Calculatrice interactive — fréquence de suivi et retard de détection (exercice 5), dépassement agrégé invisible au niveau individuel (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Fréquence de suivi et retard de détection d'un dépassement</h2>
+  <div class="ligne">
+    <div><label for="c6_varInit">VaR initiale (M$)</label><input type="number" id="c6_varInit" value="10" step="0.5"></div>
+    <div><label for="c6_croissance">Croissance hebdomadaire (%)</label><input type="number" id="c6_croissance" value="8" step="0.5"></div>
+    <div><label for="c6_budget">Budget de VaR (M$)</label><input type="number" id="c6_budget" value="15" step="0.5"></div>
+    <div><label for="c6_freqMensuelle">Intervalle du suivi peu fréquent (semaines)</label><input type="number" id="c6_freqMensuelle" value="4" step="1"></div>
+  </div>
+  <button onclick="calculerDetection()">Calculer</button>
+  <div id="resultatDetection" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Dépassement agrégé invisible au niveau individuel</h2>
+  <div class="ligne">
+    <div><label for="c6b_varA">VaR gérant A (M$)</label><input type="number" id="c6b_varA" value="6" step="0.5"></div>
+    <div><label for="c6b_varB">VaR gérant B (M$)</label><input type="number" id="c6b_varB" value="6" step="0.5"></div>
+    <div><label for="c6b_rhoSuppose">Corrélation supposée (budgétisation)</label><input type="number" id="c6b_rhoSuppose" value="0" step="0.1" min="-1" max="1"></div>
+    <div><label for="c6b_rhoReel">Corrélation réelle observée</label><input type="number" id="c6b_rhoReel" value="0.6" step="0.1" min="-1" max="1"></div>
+  </div>
+  <button onclick="calculerBudgetAgrege()">Calculer</button>
+  <div id="resultatBudgetAgrege" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerDetection() {
+  var resDiv = document.getElementById('resultatDetection');
+  var varInit = parseFloat(document.getElementById('c6_varInit').value);
+  var croissance = parseFloat(document.getElementById('c6_croissance').value) / 100;
+  var budget = parseFloat(document.getElementById('c6_budget').value);
+  var freqPeuFrequente = parseFloat(document.getElementById('c6_freqMensuelle').value);
+
+  if ([varInit, croissance, budget, freqPeuFrequente].some(isNaN) || varInit < 0 || budget < 0 || freqPeuFrequente <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  function varSemaine(t) { return varInit * Math.pow(1 + croissance, t); }
+
+  var tHebdo = null;
+  for (var t = 1; t <= 520; t++) {
+    if (varSemaine(t) > budget) { tHebdo = t; break; }
+  }
+  var tPeuFrequent = null;
+  for (var t2 = freqPeuFrequente; t2 <= 520; t2 += freqPeuFrequente) {
+    if (varSemaine(t2) > budget) { tPeuFrequent = t2; break; }
+  }
+  var tSeuil = (croissance > 0 && budget > varInit) ? Math.log(budget / varInit) / Math.log(1 + croissance) : null;
+
+  var html = '';
+  html += '<table class="tabres"><tr><th>semaine</th>';
+  var nMax = Math.max(tHebdo || 8, 8);
+  for (var s = 0; s <= Math.min(nMax, 12); s++) { html += '<th>' + s + '</th>'; }
+  html += '</tr><tr><th>VaR (M$)</th>';
+  for (var s2 = 0; s2 <= Math.min(nMax, 12); s2++) { html += '<td>' + varSemaine(s2).toFixed(2) + '</td>'; }
+  html += '</tr></table>';
+
+  html += '<div class="valeur ' + (tHebdo ? 'mid' : 'ok') + '">suivi hebdomadaire : dépassement détecté à la semaine ' + (tHebdo !== null ? tHebdo : 'jamais (sur l\'horizon simulé)') + '</div>';
+  html += '<div class="valeur ' + (tPeuFrequent ? 'ko' : 'ok') + '">suivi tous les ' + freqPeuFrequente + ' semaines : détecté à la semaine ' + (tPeuFrequent !== null ? tPeuFrequent : 'jamais (sur l\'horizon simulé)') + '</div>';
+  if (tHebdo !== null && tPeuFrequent !== null) {
+    html += '<div class="valeur mid">retard de détection = ' + (tPeuFrequent - tHebdo) + ' semaine(s)</div>';
+  }
+  if (tSeuil !== null) {
+    html += '<div class="valeur">seuil théorique (continu) = semaine ' + tSeuil.toFixed(2) + '</div>';
+  }
+
+  html += dessinerCourbe(varSemaine, Math.min(nMax + 2, 20), budget, tHebdo, tPeuFrequent);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCourbe(varSemaine, nMax, budget, tHebdo, tPeuFrequent) {
+  var largeur = 460, hauteur = 240, margeG = 45, margeB = 30, margeH = 15, margeD = 15;
+  var maxY = Math.max(budget, varSemaine(nMax)) * 1.15;
+  function xDe(t) { return margeG + (t / nMax) * (largeur - margeG - margeD); }
+  function yDe(v) { return (hauteur - margeB) - (v / maxY) * (hauteur - margeB - margeH); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="260">';
+  svg += '<line x1="' + margeG + '" y1="' + (hauteur - margeB) + '" x2="' + (largeur - margeD) + '" y2="' + (hauteur - margeB) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + margeH + '" x2="' + margeG + '" y2="' + (hauteur - margeB) + '" stroke="#888" stroke-width="1"/>';
+
+  var yB = yDe(budget);
+  svg += '<line x1="' + margeG + '" y1="' + yB.toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yB.toFixed(1) + '" stroke="var(--cintu, #E08000)" stroke-dasharray="4,3" stroke-width="1.5"/>';
+  svg += '<text x="' + (largeur - margeD) + '" y="' + (yB - 4).toFixed(1) + '" font-size="10" text-anchor="end" fill="var(--cintu, #E08000)">budget</text>';
+
+  var pts = '';
+  for (var t = 0; t <= nMax; t += 0.25) {
+    pts += xDe(t).toFixed(1) + ',' + yDe(varSemaine(t)).toFixed(1) + ' ';
+  }
+  svg += '<polyline points="' + pts + '" fill="none" stroke="var(--ceco, #1F6FB2)" stroke-width="2"/>';
+
+  if (tHebdo !== null) {
+    svg += '<circle cx="' + xDe(tHebdo).toFixed(1) + '" cy="' + yDe(varSemaine(tHebdo)).toFixed(1) + '" r="3.5" fill="var(--cex, #2E8B57)"/>';
+    svg += '<text x="' + xDe(tHebdo).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">S' + tHebdo + '</text>';
+  }
+  if (tPeuFrequent !== null && tPeuFrequent !== tHebdo) {
+    svg += '<circle cx="' + xDe(tPeuFrequent).toFixed(1) + '" cy="' + yDe(varSemaine(tPeuFrequent)).toFixed(1) + '" r="3.5" fill="var(--danger, #b00020)"/>';
+    svg += '<text x="' + xDe(tPeuFrequent).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">S' + tPeuFrequent + '</text>';
+  }
+
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerBudgetAgrege() {
+  var resDiv = document.getElementById('resultatBudgetAgrege');
+  var varA = parseFloat(document.getElementById('c6b_varA').value);
+  var varB = parseFloat(document.getElementById('c6b_varB').value);
+  var rhoSuppose = parseFloat(document.getElementById('c6b_rhoSuppose').value);
+  var rhoReel = parseFloat(document.getElementById('c6b_rhoReel').value);
+
+  if ([varA, varB, rhoSuppose, rhoReel].some(isNaN) || varA < 0 || varB < 0 || rhoSuppose < -1 || rhoSuppose > 1 || rhoReel < -1 || rhoReel > 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (les corrélations doivent être comprises entre -1 et 1).</p>';
+    return;
+  }
+
+  function varAgregee(rho) { return Math.sqrt(varA * varA + varB * varB + 2 * rho * varA * varB); }
+  var budgetAgrege = varAgregee(rhoSuppose);
+  var varReelle = varAgregee(rhoReel);
+  var depassement = varReelle - budgetAgrege;
+  var depassementPct = budgetAgrege > 0 ? depassement / budgetAgrege : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>budget agrégé (corr. supposée = ' + rhoSuppose.toFixed(2) + ')</th><td>' + budgetAgrege.toFixed(2) + ' M$</td></tr>';
+  html += '<tr><th>VaR agrégée réelle (corr. = ' + rhoReel.toFixed(2) + ')</th><td>' + varReelle.toFixed(2) + ' M$</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (depassement > 0 ? 'ko' : 'ok') + '">écart = ' + (depassement >= 0 ? '+' : '') + depassement.toFixed(2) + ' M$ (' + (depassementPct * 100).toFixed(1) + '% du budget)</div>';
+  html += '<div class="valeur mid">chacun des deux gérants reste, individuellement, dans sa limite de ' + Math.max(varA, varB).toFixed(1) + ' M$</div>';
+
+  html += dessinerBarresAgregation(budgetAgrege, varReelle);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresAgregation(budget, reel) {
+  var largeur = 320, hauteur = 220, marge = 40;
+  var maxVal = Math.max(budget, reel) * 1.15 || 1;
+  var libelles = ['budget', 'réel'];
+  var valeurs = [budget, reel];
+  var couleurs = ['var(--cex, #2E8B57)', 'var(--cintu, #E08000)'];
+  var largeurBarre = 70;
+  var espace = (largeur - 2 * marge) / libelles.length;
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var h = (valeurs[i] / maxVal) * (hauteur - 2 * marge);
+    var y = yAxe - h;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="11" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(2) + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 15) + '" font-size="10" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerDetection(); calculerBudgetAgrege(); };
+</script>
+</body>
+</html>
