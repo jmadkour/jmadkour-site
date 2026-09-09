@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — Les blocs de construction de la gestion des risques — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Application : les blocs de construction de la gestion des risques</h1>
+<p class="sous-titre">Calculatrice interactive — perte attendue d'un portefeuille de crédit (exercice 5), perte attendue, inattendue et extrême (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Perte attendue d'un portefeuille de crédit</h2>
+  <div class="ligne">
+    <div><label for="d0_EAD1">Exposition 1 : EAD</label><input type="number" id="d0_EAD1" value="10000000" step="100000"></div>
+    <div><label for="d0_PD1">Exposition 1 : PD (%)</label><input type="number" id="d0_PD1" value="1.5" step="0.1"></div>
+    <div><label for="d0_LGD1">Exposition 1 : LGD (%)</label><input type="number" id="d0_LGD1" value="45" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="d0_EAD2">Exposition 2 : EAD</label><input type="number" id="d0_EAD2" value="5000000" step="100000"></div>
+    <div><label for="d0_PD2">Exposition 2 : PD (%)</label><input type="number" id="d0_PD2" value="3.0" step="0.1"></div>
+    <div><label for="d0_LGD2">Exposition 2 : LGD (%)</label><input type="number" id="d0_LGD2" value="60" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="d0_EAD3">Exposition 3 : EAD</label><input type="number" id="d0_EAD3" value="20000000" step="100000"></div>
+    <div><label for="d0_PD3">Exposition 3 : PD (%)</label><input type="number" id="d0_PD3" value="0.5" step="0.1"></div>
+    <div><label for="d0_LGD3">Exposition 3 : LGD (%)</label><input type="number" id="d0_LGD3" value="40" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="d0_PD3choc">Exposition 3 : PD après choc (%)</label><input type="number" id="d0_PD3choc" value="1.0" step="0.1"></div>
+  </div>
+  <button onclick="calculerEL()">Calculer</button>
+  <div id="resultatEL" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Perte attendue, inattendue et extrême</h2>
+  <div class="ligne">
+    <div><label for="d0b_perteAttendue">Perte attendue</label><input type="number" id="d0b_perteAttendue" value="2000000" step="100000"></div>
+    <div><label for="d0b_ecartType">Écart-type des pertes</label><input type="number" id="d0b_ecartType" value="3000000" step="100000"></div>
+    <div><label for="d0b_z">Quantile (écarts-types, ex. 2,33 pour 99%)</label><input type="number" id="d0b_z" value="2.33" step="0.01"></div>
+    <div><label for="d0b_perteExtreme">Perte extrême (scénario de stress)</label><input type="number" id="d0b_perteExtreme" value="30000000" step="1000000"></div>
+  </div>
+  <button onclick="calculerPertes()">Calculer</button>
+  <div id="resultatPertes" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerEL() {
+  var resDiv = document.getElementById('resultatEL');
+  var EAD1 = parseFloat(document.getElementById('d0_EAD1').value);
+  var PD1 = parseFloat(document.getElementById('d0_PD1').value) / 100;
+  var LGD1 = parseFloat(document.getElementById('d0_LGD1').value) / 100;
+  var EAD2 = parseFloat(document.getElementById('d0_EAD2').value);
+  var PD2 = parseFloat(document.getElementById('d0_PD2').value) / 100;
+  var LGD2 = parseFloat(document.getElementById('d0_LGD2').value) / 100;
+  var EAD3 = parseFloat(document.getElementById('d0_EAD3').value);
+  var PD3 = parseFloat(document.getElementById('d0_PD3').value) / 100;
+  var LGD3 = parseFloat(document.getElementById('d0_LGD3').value) / 100;
+  var PD3choc = parseFloat(document.getElementById('d0_PD3choc').value) / 100;
+
+  if ([EAD1, PD1, LGD1, EAD2, PD2, LGD2, EAD3, PD3, LGD3, PD3choc].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var EL1 = EAD1 * PD1 * LGD1;
+  var EL2 = EAD2 * PD2 * LGD2;
+  var EL3 = EAD3 * PD3 * LGD3;
+  var totalEAD = EAD1 + EAD2 + EAD3;
+  var totalEL = EL1 + EL2 + EL3;
+  var tauxPerte = totalEL / totalEAD;
+
+  var EL3choc = EAD3 * PD3choc * LGD3;
+  var totalELchoc = EL1 + EL2 + EL3choc;
+  var augmentation = totalELchoc - totalEL;
+  var augmentationRelative = totalEL !== 0 ? augmentation / totalEL : NaN;
+
+  var html = '';
+  html += '<table class="tabres"><tr><th>exposition</th><th>EL</th></tr>';
+  html += '<tr><td>1</td><td>' + EL1.toFixed(2) + '</td></tr>';
+  html += '<tr><td>2</td><td>' + EL2.toFixed(2) + '</td></tr>';
+  html += '<tr><td>3</td><td>' + EL3.toFixed(2) + '</td></tr></table>';
+  html += '<div class="valeur mid">perte attendue totale = ' + totalEL.toFixed(2) + '</div>';
+  html += '<div class="valeur">taux de perte global = ' + (tauxPerte * 100).toFixed(4) + '%</div>';
+  html += '<table class="tabres">';
+  html += '<tr><th>EL exposition 3 après choc</th><td>' + EL3choc.toFixed(2) + '</td></tr>';
+  html += '<tr><th>perte attendue totale après choc</th><td>' + totalELchoc.toFixed(2) + '</td></tr>';
+  html += '<tr><th>augmentation</th><td>' + augmentation.toFixed(2) + ' (' + (augmentationRelative * 100).toFixed(2) + '%)</td></tr>';
+  html += '</table>';
+  resDiv.innerHTML = html;
+}
+
+function calculerPertes() {
+  var resDiv = document.getElementById('resultatPertes');
+  var perteAttendue = parseFloat(document.getElementById('d0b_perteAttendue').value);
+  var ecartType = parseFloat(document.getElementById('d0b_ecartType').value);
+  var z = parseFloat(document.getElementById('d0b_z').value);
+  var perteExtreme = parseFloat(document.getElementById('d0b_perteExtreme').value);
+
+  if ([perteAttendue, ecartType, z, perteExtreme].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var VaR = perteAttendue + z * ecartType;
+  var capitalEconomique = VaR - perteAttendue;
+  var ecartNonCouvert = perteExtreme - VaR;
+  var ratio = VaR !== 0 ? perteExtreme / VaR : NaN;
+
+  var html = '';
+  html += '<div class="valeur">VaR = ' + VaR.toFixed(2) + '</div>';
+  html += '<div class="valeur mid">capital économique (perte inattendue) = ' + capitalEconomique.toFixed(2) + '</div>';
+  html += '<table class="tabres">';
+  html += '<tr><th>perte extrême (scénario de stress)</th><td>' + perteExtreme.toFixed(2) + '</td></tr>';
+  html += '<tr><th>écart non couvert par le capital</th><td>' + ecartNonCouvert.toFixed(2) + '</td></tr>';
+  html += '<tr><th>ratio perte extrême / VaR</th><td>' + ratio.toFixed(2) + '</td></tr>';
+  html += '</table>';
+  html += (ecartNonCouvert > 0
+    ? '<div class="valeur ko">le scénario de stress dépasse le capital fondé sur la VaR : la perte extrême exige des instruments distincts (scénarios, tests de résistance)</div>'
+    : '<div class="valeur ok">le capital fondé sur la VaR couvre ce scénario</div>');
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerEL(); calculerPertes(); };
+</script>
+</body>
+</html>
