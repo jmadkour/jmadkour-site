@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Le calcul de la VaR — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Application : le calcul de la VaR</h1>
+<p class="sous-titre">Calculatrice interactive — VaR delta-normale d'un portefeuille à deux facteurs (exercice 5), backtesting et puissance du test (exercice 6)</p>
+
+<div class="panneau">
+  <h2>VaR delta-normale d'un portefeuille à deux facteurs</h2>
+  <p class="aide">$\sigma_P^2=\Delta_A^2\sigma_A^2+\Delta_B^2\sigma_B^2+2\Delta_A\Delta_B\rho\,\sigma_A\sigma_B$, puis $\mathrm{VaR}_\alpha=z_\alpha\sigma_P$.</p>
+  <div class="ligne">
+    <div><label for="c1_da">Exposition au facteur A (M$)</label><input type="number" id="c1_da" value="5" step="0.5"></div>
+    <div><label for="c1_sa">Volatilité du facteur A (%)</label><input type="number" id="c1_sa" value="1.5" step="0.1"></div>
+    <div><label for="c1_db">Exposition au facteur B (M$)</label><input type="number" id="c1_db" value="3" step="0.5"></div>
+    <div><label for="c1_sb">Volatilité du facteur B (%)</label><input type="number" id="c1_sb" value="2" step="0.1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c1_rho">Corrélation entre A et B</label><input type="number" id="c1_rho" value="0.4" step="0.05" min="-1" max="1"></div>
+    <div><label for="c1_conf">Seuil de confiance de la VaR (%)</label><input type="number" id="c1_conf" value="99" step="0.5"></div>
+  </div>
+  <button onclick="calculerVarDeltaNormale()">Calculer</button>
+  <div id="resultatVarDN" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Backtesting et puissance du test</h2>
+  <p class="aide">Nombre de dépassements observé sur $n$ jours, comparé au nombre attendu sous un modèle de VaR exact au seuil choisi.</p>
+  <div class="ligne">
+    <div><label for="c1b_n">Nombre de jours ouvrés</label><input type="number" id="c1b_n" value="250" step="10" min="1"></div>
+    <div><label for="c1b_conf">Seuil de confiance de la VaR (%)</label><input type="number" id="c1b_conf" value="99" step="0.5"></div>
+    <div><label for="c1b_obs">Dépassements observés</label><input type="number" id="c1b_obs" value="6" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerBacktesting()">Calculer</button>
+  <div id="resultatBacktest" class="resultat-zone"></div>
+</div>
+
+<script>
+function inverseNormale(p) {
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var plow = 0.02425, phigh = 1 - plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+           ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+           (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+}
+
+function calculerVarDeltaNormale() {
+  var resDiv = document.getElementById('resultatVarDN');
+  var dA = parseFloat(document.getElementById('c1_da').value);
+  var sA = parseFloat(document.getElementById('c1_sa').value) / 100;
+  var dB = parseFloat(document.getElementById('c1_db').value);
+  var sB = parseFloat(document.getElementById('c1_sb').value) / 100;
+  var rho = parseFloat(document.getElementById('c1_rho').value);
+  var conf = parseFloat(document.getElementById('c1_conf').value) / 100;
+
+  if ([dA, sA, dB, sB, rho, conf].some(isNaN) || sA < 0 || sB < 0 || rho < -1 || rho > 1 || conf <= 0 || conf >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var varP2 = dA * dA * sA * sA + dB * dB * sB * sB + 2 * dA * dB * rho * sA * sB;
+  if (varP2 < 0) {
+    resDiv.innerHTML = '<p class="erreur">Variance du portefeuille négative : paramètres incohérents.</p>';
+    return;
+  }
+  var sigmaP = Math.sqrt(varP2);
+  var z = inverseNormale(conf);
+  var varPortefeuille = z * sigmaP;
+  var varA = z * Math.abs(dA) * sA;
+  var varB = z * Math.abs(dB) * sB;
+  var sommeNonDiv = varA + varB;
+  var benefice = sommeNonDiv - varPortefeuille;
+  var beneficePct = sommeNonDiv > 0 ? (benefice / sommeNonDiv * 100) : 0;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>quantile $z_\\alpha$</th><td>' + z.toFixed(4) + '</td></tr>';
+  html += '<tr><th>$\\sigma_P$ (écart-type du portefeuille)</th><td>' + sigmaP.toFixed(4) + ' M$</td></tr>';
+  html += '<tr><th>VaR du portefeuille</th><td>' + varPortefeuille.toFixed(4) + ' M$</td></tr>';
+  html += '<tr><th>VaR position A isolée</th><td>' + varA.toFixed(4) + ' M$</td></tr>';
+  html += '<tr><th>VaR position B isolée</th><td>' + varB.toFixed(4) + ' M$</td></tr>';
+  html += '<tr><th>somme non diversifiée</th><td>' + sommeNonDiv.toFixed(4) + ' M$</td></tr>';
+  html += '</table>';
+
+  var couleur = benefice >= 0 ? 'ok' : 'ko';
+  html += '<div class="valeur ' + couleur + '">bénéfice de diversification : ' + benefice.toFixed(4) + ' M$ (' + beneficePct.toFixed(1) + '% de la somme non diversifiée)</div>';
+
+  html += dessinerBarresVarDN(varA, varB, sommeNonDiv, varPortefeuille);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresVarDN(varA, varB, somme, varP) {
+  var largeur = 380, hauteur = 220, marge = 45;
+  var valeurs = [varA, varB, somme, varP];
+  var libelles = ['VaR(A)', 'VaR(B)', 'somme', 'VaR(portef.)'];
+  var maxVal = Math.max.apply(null, valeurs.concat([0.0001])) * 1.25;
+  var largeurBarre = 55;
+  var espace = (largeur - 2 * marge) / libelles.length;
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--ceco, #1F6FB2)', 'var(--cintu, #E08000)', 'var(--cdef, #4A3B8C)'];
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var hBrute = (valeurs[i] / maxVal) * (hauteur - 2 * marge);
+    var h = Math.max(hBrute, valeurs[i] > 0 ? 1 : 0.5);
+    var y = yAxe - h;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="9.5" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(3) + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+function coefBinomial(n, k) {
+  var r = 1;
+  for (var i = 0; i < k; i++) { r = r * (n - i) / (i + 1); }
+  return r;
+}
+
+function probaBinomiale(n, p, k) {
+  return coefBinomial(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+}
+
+function binomTailAtLeast(n, p, kmin) {
+  var s = 0;
+  for (var k = kmin; k <= n; k++) { s += probaBinomiale(n, p, k); }
+  return s;
+}
+
+function calculerBacktesting() {
+  var resDiv = document.getElementById('resultatBacktest');
+  var n = parseInt(document.getElementById('c1b_n').value, 10);
+  var conf = parseFloat(document.getElementById('c1b_conf').value) / 100;
+  var obs = parseInt(document.getElementById('c1b_obs').value, 10);
+
+  if ([n, conf, obs].some(isNaN) || n < 1 || conf <= 0 || conf >= 1 || obs < 0 || obs > n) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var p = 1 - conf;
+  var attendu = n * p;
+  var probaAuMoins = binomTailAtLeast(n, p, obs);
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>probabilité de dépassement (1 - seuil)</th><td>' + (p * 100).toFixed(3) + '%</td></tr>';
+  html += '<tr><th>dépassements attendus</th><td>' + attendu.toFixed(2) + '</td></tr>';
+  html += '<tr><th>dépassements observés</th><td>' + obs + '</td></tr>';
+  html += '<tr><th>ratio observé / attendu</th><td>' + (attendu > 0 ? (obs / attendu).toFixed(2) : 'n/a') + '</td></tr>';
+  html += '</table>';
+
+  var couleur = probaAuMoins < 0.05 ? 'ko' : (probaAuMoins < 0.15 ? 'mid' : 'ok');
+  html += '<div class="valeur ' + couleur + '">P(dépassements &ge; ' + obs + ') = ' + (probaAuMoins * 100).toFixed(4) + '%</div>';
+  if (probaAuMoins < 0.05) {
+    html += '<p class="aide">Sous le seuil conventionnel de 5% : le modèle est formellement rejeté à ce niveau de confiance — mais rappelez-vous que la puissance du test reste limitée sur un échantillon d\'une seule période.</p>';
+  } else {
+    html += '<p class="aide">Au-dessus du seuil conventionnel de 5% : le nombre de dépassements observé n\'est pas, à lui seul, statistiquement incompatible avec un modèle correct sur cet échantillon.</p>';
+  }
+
+  html += dessinerBarresBacktest(attendu, obs);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresBacktest(attendu, obs) {
+  var largeur = 300, hauteur = 220, marge = 45;
+  var valeurs = [attendu, obs];
+  var libelles = ['attendu', 'observé'];
+  var maxVal = Math.max.apply(null, valeurs.concat([1])) * 1.3;
+  var largeurBarre = 65;
+  var espace = (largeur - 2 * marge) / libelles.length;
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--cintu, #E08000)'];
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var hBrute = (valeurs[i] / maxVal) * (hauteur - 2 * marge);
+    var h = Math.max(hBrute, valeurs[i] > 0 ? 1 : 0.5);
+    var y = yAxe - h;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="10" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(2) + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerVarDeltaNormale(); calculerBacktesting(); };
+</script>
+</body>
+</html>
