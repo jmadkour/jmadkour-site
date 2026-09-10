@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Couverture par régression et ACP — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Application : couverture par régression et ACP</h1>
+<p class="sous-titre">Calculatrice interactive — couverture par régression (exercice 5), décomposition de la variance d'un portefeuille par ACP (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Couverture par régression, chiffrée</h2>
+  <p class="aide">Notional DV01-neutre $=N_A\times(\mathrm{DV01}_A/\mathrm{DV01}_B)$, ajusté par régression $\times\hat\beta$. Intervalle de confiance à 95~\% : $\hat\beta\pm1{,}96\times\text{erreur type}$.</p>
+  <div class="ligne">
+    <div><label for="c9_na">Notional $N_A$ (millions)</label><input type="number" id="c9_na" value="150" step="1"></div>
+    <div><label for="c9_dv01a">$\mathrm{DV01}_A$</label><input type="number" id="c9_dv01a" value="0.58" step="0.01"></div>
+    <div><label for="c9_dv01b">$\mathrm{DV01}_B$</label><input type="number" id="c9_dv01b" value="0.71" step="0.01"></div>
+    <div><label for="c9_beta">$\hat\beta$</label><input type="number" id="c9_beta" value="0.92" step="0.01"></div>
+    <div><label for="c9_se">Erreur type de $\hat\beta$</label><input type="number" id="c9_se" value="0.04" step="0.001" min="0"></div>
+    <div><label for="c9_r2">$R^2$</label><input type="number" id="c9_r2" value="0.68" step="0.01" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerRegression()">Calculer</button>
+  <div id="resultatRegression" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Décomposition de la variance d'un portefeuille par ACP</h2>
+  <p class="aide">À partir des volatilités et corrélations de trois taux, la matrice de covariance est diagonalisée exactement en trois composantes principales orthogonales ; $\sigma_P^2$ se décompose sans reste en contributions $c_i^2\times\text{var}_i$.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Volatilités quotidiennes (points de base)</h3>
+      <label for="c9_v1">$\sigma_1$ (10 ans)</label><input type="number" id="c9_v1" value="4.25" step="0.01">
+      <label for="c9_v2">$\sigma_2$ (20 ans)</label><input type="number" id="c9_v2" value="4.20" step="0.01">
+      <label for="c9_v3">$\sigma_3$ (30 ans)</label><input type="number" id="c9_v3" value="4.15" step="0.01">
+    </div>
+    <div class="bloc">
+      <h3>Corrélations par paires</h3>
+      <label for="c9_r12">$\rho_{12}$</label><input type="number" id="c9_r12" value="0.95" step="0.01" min="-1" max="1">
+      <label for="c9_r13">$\rho_{13}$</label><input type="number" id="c9_r13" value="0.90" step="0.01" min="-1" max="1">
+      <label for="c9_r23">$\rho_{23}$</label><input type="number" id="c9_r23" value="0.99" step="0.01" min="-1" max="1">
+    </div>
+    <div class="bloc">
+      <h3>DV01 du portefeuille $w$</h3>
+      <label for="c9_w1">$w_1$ (10 ans)</label><input type="number" id="c9_w1" value="0.8" step="0.01">
+      <label for="c9_w2">$w_2$ (20 ans)</label><input type="number" id="c9_w2" value="-0.3" step="0.01">
+      <label for="c9_w3">$w_3$ (30 ans)</label><input type="number" id="c9_w3" value="-0.5" step="0.01">
+    </div>
+  </div>
+  <button onclick="calculerACP()">Calculer</button>
+  <div id="resultatACP" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerRegression() {
+  var resDiv = document.getElementById('resultatRegression');
+  var NA = parseFloat(document.getElementById('c9_na').value);
+  var DV01A = parseFloat(document.getElementById('c9_dv01a').value);
+  var DV01B = parseFloat(document.getElementById('c9_dv01b').value);
+  var beta = parseFloat(document.getElementById('c9_beta').value);
+  var se = parseFloat(document.getElementById('c9_se').value);
+  var R2 = parseFloat(document.getElementById('c9_r2').value);
+
+  if ([NA,DV01A,DV01B,beta,se,R2].some(isNaN) || NA<=0 || DV01A<=0 || DV01B<=0 || se<0 || R2<0 || R2>1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : notional et DV01 strictement positifs, erreur type non négative, $0\\leq R^2\\leq1$.</p>';
+    return;
+  }
+
+  var dv01Neutre = NA * (DV01A/DV01B);
+  var regAjuste = dv01Neutre * beta;
+  var nonExplique = (1-R2)*100;
+  var ciLow = beta - 1.96*se, ciHigh = beta + 1.96*se;
+  var contientUn = ciLow <= 1 && 1 <= ciHigh;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Notional DV01-neutre</th><td>' + dv01Neutre.toFixed(2) + ' millions</td></tr>';
+  html += '<tr><th>Notional ajusté par régression</th><td>' + regAjuste.toFixed(2) + ' millions</td></tr>';
+  html += '<tr><th>Variance non expliquée ($1-R^2$)</th><td>' + nonExplique.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Intervalle de confiance à 95 % de $\\hat\\beta$</th><td>[' + ciLow.toFixed(4) + ' ; ' + ciHigh.toFixed(4) + ']</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (contientUn ? 'ko' : 'ok') + '">La valeur 1 est ' + (contientUn ? '' : 'NON ') + 'contenue dans l\'intervalle : on ' + (contientUn ? 'ne peut pas rejeter' : 'peut rejeter') + ', au seuil de 95 %, l\'hypothèse d\'un mouvement strictement un-pour-un</div>';
+
+  html += dessinerRegression(dv01Neutre, regAjuste);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerRegression(vNeutre, vAjuste) {
+  var largeur = 300, hauteur = 210, margeG = 50, margeD = 15, margeH = 20, margeB = 40;
+  var vals = [vNeutre, vAjuste];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 46;
+  var labels = ['DV01-neutre', 'Ajustée'];
+  var couleurs = ['var(--cgris, #5A5A5A)','var(--ceco, #1F6FB2)'];
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 2; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Notional (millions)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function dot(a,b){ var s=0; for(var i=0;i<a.length;i++) s+=a[i]*b[i]; return s; }
+function matvec(A,x){ return A.map(function(row){ return dot(row,x); }); }
+
+function jacobiEigen(Ain, n) {
+  var a = Ain.map(function(row){ return row.slice(); });
+  var v = [];
+  for (var i=0;i<n;i++){ v.push([]); for (var j=0;j<n;j++){ v[i].push(i===j?1:0); } }
+  for (var sweep=0; sweep<100; sweep++){
+    var off = 0;
+    for (var i=0;i<n;i++) for (var j=0;j<n;j++) if (i!==j) off += a[i][j]*a[i][j];
+    if (off < 1e-24) break;
+    for (var p=0;p<n;p++){
+      for (var q=p+1;q<n;q++){
+        if (Math.abs(a[p][q]) < 1e-20) continue;
+        var theta = (a[q][q]-a[p][p])/(2*a[p][q]);
+        var t = (theta>=0?1:-1)/(Math.abs(theta)+Math.sqrt(theta*theta+1));
+        var c = 1/Math.sqrt(t*t+1);
+        var s = t*c;
+        var app = a[p][p], aqq = a[q][q], apq = a[p][q];
+        a[p][p] = c*c*app - 2*s*c*apq + s*s*aqq;
+        a[q][q] = s*s*app + 2*s*c*apq + c*c*aqq;
+        a[p][q] = 0; a[q][p] = 0;
+        for (var k=0;k<n;k++){
+          if (k!==p && k!==q){
+            var akp = a[k][p], akq = a[k][q];
+            a[k][p] = c*akp - s*akq; a[p][k] = a[k][p];
+            a[k][q] = s*akp + c*akq; a[q][k] = a[k][q];
+          }
+        }
+        for (var k=0;k<n;k++){
+          var vkp = v[k][p], vkq = v[k][q];
+          v[k][p] = c*vkp - s*vkq;
+          v[k][q] = s*vkp + c*vkq;
+        }
+      }
+    }
+  }
+  var eigenvalues = [];
+  for (var i=0;i<n;i++) eigenvalues.push(a[i][i]);
+  var idx = eigenvalues.map(function(val,i){return i;});
+  idx.sort(function(i1,i2){ return eigenvalues[i2]-eigenvalues[i1]; });
+  var sortedVals = idx.map(function(i){return eigenvalues[i];});
+  var sortedVecs = idx.map(function(i){ return v.map(function(row){return row[i];}); });
+  return {values: sortedVals, vectors: sortedVecs};
+}
+
+function calculerACP() {
+  var resDiv = document.getElementById('resultatACP');
+  var vol1 = parseFloat(document.getElementById('c9_v1').value);
+  var vol2 = parseFloat(document.getElementById('c9_v2').value);
+  var vol3 = parseFloat(document.getElementById('c9_v3').value);
+  var r12 = parseFloat(document.getElementById('c9_r12').value);
+  var r13 = parseFloat(document.getElementById('c9_r13').value);
+  var r23 = parseFloat(document.getElementById('c9_r23').value);
+  var w1 = parseFloat(document.getElementById('c9_w1').value);
+  var w2 = parseFloat(document.getElementById('c9_w2').value);
+  var w3 = parseFloat(document.getElementById('c9_w3').value);
+
+  if ([vol1,vol2,vol3,r12,r13,r23,w1,w2,w3].some(isNaN) || vol1<=0 || vol2<=0 || vol3<=0 || r12<-1 || r12>1 || r13<-1 || r13>1 || r23<-1 || r23>1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : volatilités strictement positives, corrélations entre $-1$ et $1$.</p>';
+    return;
+  }
+
+  var vols = [vol1,vol2,vol3];
+  var corr = [[1,r12,r13],[r12,1,r23],[r13,r23,1]];
+  var cov = [];
+  for (var i=0;i<3;i++){ cov.push([]); for (var j=0;j<3;j++){ cov[i].push(vols[i]*vols[j]*corr[i][j]); } }
+
+  var w = [w1,w2,w3];
+  var varDirect = dot(w, matvec(cov,w));
+  if (varDirect < 0) {
+    resDiv.innerHTML = '<p class="erreur">Matrice de covariance non valide (variance négative) : vérifier les corrélations saisies.</p>';
+    return;
+  }
+
+  var res = jacobiEigen(cov, 3);
+  var contribs = [];
+  var total = 0;
+  for (var i=0;i<3;i++){
+    var c = dot(w, res.vectors[i]);
+    var contrib = c*c*res.values[i];
+    contribs.push(contrib);
+    total += contrib;
+  }
+  var traceVar = cov[0][0]+cov[1][1]+cov[2][2];
+
+  var html = '<table class="tabres"><tr><th>Composante</th><th>Variance</th><th>% variance totale</th><th>Contribution à $\\sigma_P^2$</th></tr>';
+  var noms = ['Niveau (PC1)', 'Pente (PC2)', 'Résiduel (PC3)'];
+  for (var i=0;i<3;i++){
+    html += '<tr><td>' + noms[i] + '</td><td>' + res.values[i].toFixed(4) + '</td><td>' + (res.values[i]/traceVar*100).toFixed(2) + ' %</td><td>' + contribs[i].toFixed(4) + '</td></tr>';
+  }
+  html += '</table>';
+  html += '<div class="valeur ok">Variance exacte du portefeuille (matrice de covariance) : $\\sigma_P^2=' + varDirect.toFixed(4) + '$, soit $\\sigma_P=' + Math.sqrt(varDirect).toFixed(4) + '$</div>';
+  html += '<div class="valeur ok">Somme des trois contributions par ACP : ' + total.toFixed(4) + ' (reconstruction exacte, à l\'arrondi près)</div>';
+  html += '<div class="valeur mid">Approximation à 2 composantes seulement : ' + (contribs[0]+contribs[1]).toFixed(4) + ' (écart de ' + (varDirect-(contribs[0]+contribs[1])).toFixed(4) + ' avec la valeur exacte, soit la contribution de PC3)</div>';
+
+  html += dessinerACP(contribs);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerACP(contribs) {
+  var largeur = 320, hauteur = 210, margeG = 50, margeD = 15, margeH = 20, margeB = 40;
+  var vMaxAbs = Math.max.apply(null, contribs.map(Math.abs)) * 1.3 || 1;
+  var vMin = Math.min(0, Math.min.apply(null, contribs)) * 1.2;
+  var vMax = Math.max(vMaxAbs, Math.max.apply(null, contribs)*1.2);
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 42;
+  var labels = ['Niveau (PC1)', 'Pente (PC2)', 'Résiduel (PC3)'];
+  var couleurs = ['var(--ceco, #1F6FB2)','var(--cintu, #E08000)','var(--cex, #2E8B57)'];
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = contribs[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    var h = Math.abs(yBot-yTop);
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (v>=0 ? (yTop-5).toFixed(1) : (yBot+12).toFixed(1)) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + v.toFixed(4) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Contribution à σ_P²</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerRegression(); calculerACP(); };
+</script>
+</body>
+</html>

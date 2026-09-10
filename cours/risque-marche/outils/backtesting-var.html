@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Contrôle a posteriori de la VaR — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Application : le contrôle a posteriori de la VaR</h1>
+<p class="sous-titre">Calculatrice interactive — test binomial de défaillance (exercice 5), zones de Bâle et erreurs de type 1/2 (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le test binomial de défaillance</h2>
+  <p class="aide">$z=(N-pT)/\sqrt{p(1-p)T}$. Le modèle est rejeté au niveau de test de 95~\% si $|z|>1{,}96$.</p>
+  <div class="ligne">
+    <div><label for="c3_T">Nombre de jours $T$</label><input type="number" id="c3_T" value="252" step="1"></div>
+    <div><label for="c3_p">Niveau de la VaR testée : probabilité $p$ (ex. 0,05 pour VaR 95\%)</label><input type="number" id="c3_p" value="0.05" step="0.001" min="0.0001" max="0.5"></div>
+    <div><label for="c3_N">Nombre d'exceptions observées $N$</label><input type="number" id="c3_N" value="20" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerZTest()">Calculer</button>
+  <div id="resultatZTest" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Les zones de Bâle : erreurs de type 1 et de type 2</h2>
+  <p class="aide">Erreur de type 1 : $P(N\geq\text{seuil}\mid T,p)$, modèle correct rejeté à tort. Erreur de type 2 : $P(N<\text{seuil}\mid T,p_{\text{vrai}})$, modèle incorrect non rejeté.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Cadre du test</h3>
+      <label for="c3b_T">Nombre de jours $T$</label><input type="number" id="c3b_T" value="250" step="1">
+      <label for="c3b_p">Probabilité nominale $p$ (VaR testée)</label><input type="number" id="c3b_p" value="0.01" step="0.001" min="0.0001" max="0.5">
+      <label for="c3b_seuil">Seuil de rejet (exceptions $\geq$)</label><input type="number" id="c3b_seuil" value="5" step="1" min="1">
+    </div>
+    <div class="bloc">
+      <h3>Comparaisons</h3>
+      <label for="c3b_ptrue">Probabilité vraie $p_{\text{vrai}}$ (pour l'erreur de type 2)</label><input type="number" id="c3b_ptrue" value="0.03" step="0.001" min="0.0001" max="0.5">
+      <label for="c3b_seuilalt">Seuil alternatif (comparaison)</label><input type="number" id="c3b_seuilalt" value="4" step="1" min="1">
+    </div>
+  </div>
+  <button onclick="calculerBale()">Calculer</button>
+  <div id="resultatBale" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerZTest() {
+  var resDiv = document.getElementById('resultatZTest');
+  var T = parseInt(document.getElementById('c3_T').value);
+  var p = parseFloat(document.getElementById('c3_p').value);
+  var N = parseInt(document.getElementById('c3_N').value);
+
+  if ([T,p,N].some(isNaN) || T<=0 || p<=0 || p>=1 || N<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $T>0$, $0<p<1$, $N\\geq 0$.</p>';
+    return;
+  }
+
+  var pT = p*T;
+  var sd = Math.sqrt(p*(1-p)*T);
+  var z = (N-pT)/sd;
+  var rejet = Math.abs(z) > 1.96;
+
+  var Nstar = Math.ceil(pT);
+  while ((Nstar-pT)/sd <= 1.96) { Nstar++; }
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Exceptions attendues $pT$</th><td>' + pT.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Écart-type $\\sqrt{p(1-p)T}$</th><td>' + sd.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Statistique $z$</th><td>' + z.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Plus petit $N$ entraînant un rejet</th><td>' + Nstar + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (rejet ? 'ko' : 'ok') + '">' + (rejet ? 'modèle rejeté' : 'modèle non rejeté') + ' au niveau de test de 95 % ($|z|' + (rejet?'>':'\\leq') + '1{,}96$)</div>';
+  html += dessinerZ(z, N);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerZ(z, N) {
+  var largeur = 300, hauteur = 200, margeG = 45, margeD = 20, margeH = 20, margeB = 40;
+  var vMax = Math.max(Math.abs(z)*1.3, 2.4);
+  // linear scale centered on zero: maps [-vMax, vMax] to [hauteur-margeB, margeH]
+  function yScale(v) { return margeH + (vMax - v) / (2*vMax) * (hauteur - margeH - margeB); }
+  var yZero = yScale(0);
+  var yBar = yScale(z);
+  var ySeuilP = yScale(1.96), ySeuilM = yScale(-1.96);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + ySeuilP.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + ySeuilP.toFixed(1) + '" stroke="var(--cintu, #E08000)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<line x1="' + margeG + '" y1="' + ySeuilM.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + ySeuilM.toFixed(1) + '" stroke="var(--cintu, #E08000)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-2) + '" y="' + (ySeuilP-3).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="var(--cintu, #E08000)">+1,96</text>';
+  svg += '<text x="' + (largeur-margeD-2) + '" y="' + (ySeuilM+9).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="var(--cintu, #E08000)">-1,96</text>';
+  var xC = (margeG+largeur-margeD)/2;
+  var yTop = Math.min(yZero, yBar), h = Math.abs(yZero-yBar);
+  svg += '<rect x="' + (xC-30) + '" y="' + yTop.toFixed(1) + '" width="60" height="' + h.toFixed(1) + '" fill="' + (Math.abs(z)>1.96 ? '#b00020' : 'var(--cex, #2E8B57)') + '"/>';
+  svg += '<text x="' + xC + '" y="' + (yBar + (z>=0?-5:14)).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">z=' + z.toFixed(3) + '</text>';
+  svg += '<text x="' + xC + '" y="' + (hauteur-8) + '" font-size="8.5" text-anchor="middle" fill="currentColor">N=' + N + '</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function logFactorial(n) {
+  var s = 0;
+  for (var i = 2; i <= n; i++) { s += Math.log(i); }
+  return s;
+}
+function binomPMF(k, n, p) {
+  if (k<0 || k>n) return 0;
+  if (p<=0) return k===0?1:0;
+  if (p>=1) return k===n?1:0;
+  var logC = logFactorial(n) - logFactorial(k) - logFactorial(n-k);
+  return Math.exp(logC + k*Math.log(p) + (n-k)*Math.log(1-p));
+}
+function binomSF(kmin, n, p) {
+  var s = 0;
+  for (var k = kmin; k <= n; k++) { s += binomPMF(k, n, p); }
+  return s;
+}
+function binomCDFlt(kmax, n, p) {
+  var s = 0;
+  for (var k = 0; k < kmax; k++) { s += binomPMF(k, n, p); }
+  return s;
+}
+
+function calculerBale() {
+  var resDiv = document.getElementById('resultatBale');
+  var T = parseInt(document.getElementById('c3b_T').value);
+  var p = parseFloat(document.getElementById('c3b_p').value);
+  var seuil = parseInt(document.getElementById('c3b_seuil').value);
+  var ptrue = parseFloat(document.getElementById('c3b_ptrue').value);
+  var seuilAlt = parseInt(document.getElementById('c3b_seuilalt').value);
+
+  if ([T,p,seuil,ptrue,seuilAlt].some(isNaN) || T<=0 || p<=0 || p>=1 || ptrue<=0 || ptrue>=1 || seuil<1 || seuil>T || seuilAlt<1 || seuilAlt>T) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $T>0$, $0<p<1$, $0<p_{\\text{vrai}}<1$, et des seuils entiers entre 1 et $T$.</p>';
+    return;
+  }
+
+  var type1 = binomSF(seuil, T, p) * 100;
+  var type2 = binomCDFlt(seuil, T, ptrue) * 100;
+  var type1Alt = binomSF(seuilAlt, T, p) * 100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Erreur de type 1, $N\\geq' + seuil + '$ (p=' + p + ')</th><td>' + type1.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Erreur de type 2, $N<' + seuil + '$ (p=' + ptrue + ')</th><td>' + type2.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Erreur de type 1, $N\\geq' + seuilAlt + '$ (p=' + p + ', comparaison)</th><td>' + type1Alt.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Espérance du nombre d\'exceptions $pT$</th><td>' + (p*T).toFixed(2) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">abaisser le seuil de ' + seuil + ' à ' + seuilAlt + ' multiplie l\'erreur de type 1 par ' + (type1Alt/type1).toFixed(2) + '</div>';
+  html += dessinerBale(type1, type2, type1Alt, seuil, seuilAlt);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBale(type1, type2, type1Alt, seuil, seuilAlt) {
+  var largeur = 320, hauteur = 210, margeG = 45, margeD = 15, margeH = 20, margeB = 44;
+  var vals = [type1, type2, type1Alt];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 44;
+  var xCentres = [margeG + 45, margeG + 130, largeur - margeD - 45];
+  var labels = ['type 1 (N≥'+seuil+')', 'type 2', 'type 1 (N≥'+seuilAlt+')'];
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--cex, #2E8B57)', 'var(--cintu, #E08000)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2) + ')">probabilité (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerZTest(); calculerBale(); };
+</script>
+</body>
+</html>

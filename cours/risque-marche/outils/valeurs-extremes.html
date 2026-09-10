@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Théorie des valeurs extrêmes — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Application : la théorie des valeurs extrêmes</h1>
+<p class="sous-titre">Calculatrice interactive — VaR et ES sous POT (exercice 5), malédiction de la dimension (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La VaR et l'ES sous dépassement de seuil (POT)</h2>
+  <p class="aide">$\mathrm{VaR}_\alpha = u + \dfrac{\beta}{\xi}\left[\left(\dfrac{n}{N_u}(1-\alpha)\right)^{-\xi}-1\right]$, $\mathrm{ES}_\alpha = \dfrac{\mathrm{VaR}_\alpha+\beta-\xi u}{1-\xi}$. Comparez deux niveaux de confiance pour un même ajustement GPD.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Paramètres GPD</h3>
+      <label for="c2_u">Seuil $u$ (%)</label><input type="number" id="c2_u" value="2" step="0.01">
+      <label for="c2_beta">Échelle $\beta$</label><input type="number" id="c2_beta" value="0.8" step="0.001">
+      <label for="c2_xi">Indice de queue $\xi$</label><input type="number" id="c2_xi" value="0.15" step="0.001">
+      <label for="c2_nun">Proportion au-delà du seuil $N_u/n$ (%)</label><input type="number" id="c2_nun" value="4" step="0.01">
+    </div>
+    <div class="bloc">
+      <h3>Niveaux de confiance à comparer</h3>
+      <label for="c2_a1">Niveau $\alpha_1$ (%)</label><input type="number" id="c2_a1" value="99.5" step="0.001" min="50" max="99.999">
+      <label for="c2_a2">Niveau $\alpha_2$ (%)</label><input type="number" id="c2_a2" value="99.9" step="0.001" min="50" max="99.999">
+    </div>
+  </div>
+  <button onclick="calculerPOT()">Calculer</button>
+  <div id="resultatPOT" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>La malédiction de la dimension</h2>
+  <p class="aide">Sous indépendance, la probabilité qu'un événement extrême touche simultanément $d$ variables, chacune extrême avec probabilité $p$, vaut $p^d$.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Scénario de référence</h3>
+      <label for="c2b_p">Probabilité marginale $p$ (ex. 0,01 pour 1/100)</label><input type="number" id="c2b_p" value="0.01" step="0.0001" min="0.0001" max="0.5">
+      <label for="c2b_d">Nombre de variables $d$</label><input type="number" id="c2b_d" value="3" step="1" min="1" max="8">
+      <label for="c2b_obs">Observations par an</label><input type="number" id="c2b_obs" value="250" step="1">
+    </div>
+    <div class="bloc">
+      <h3>Scénario de comparaison</h3>
+      <label for="c2b_p2">Probabilité marginale alternative $p_2$</label><input type="number" id="c2b_p2" value="0.02" step="0.0001" min="0.0001" max="0.5">
+    </div>
+  </div>
+  <button onclick="calculerDimension()">Calculer</button>
+  <div id="resultatDimension" class="resultat-zone"></div>
+</div>
+
+<script>
+function varPOT(u, beta, xi, Nu_n, alpha) {
+  var nOverNu = 1 / Nu_n;
+  return u + (beta/xi) * (Math.pow(nOverNu * (1-alpha), -xi) - 1);
+}
+function esPOT(u, beta, xi, Nu_n, alpha) {
+  var v = varPOT(u, beta, xi, Nu_n, alpha);
+  return (v + beta - xi*u) / (1-xi);
+}
+
+function calculerPOT() {
+  var resDiv = document.getElementById('resultatPOT');
+  var u = parseFloat(document.getElementById('c2_u').value);
+  var beta = parseFloat(document.getElementById('c2_beta').value);
+  var xi = parseFloat(document.getElementById('c2_xi').value);
+  var nun = parseFloat(document.getElementById('c2_nun').value) / 100;
+  var a1 = parseFloat(document.getElementById('c2_a1').value) / 100;
+  var a2 = parseFloat(document.getElementById('c2_a2').value) / 100;
+
+  if ([u,beta,xi,nun,a1,a2].some(isNaN) || beta<=0 || xi<=0 || nun<=0 || nun>=1 || a1<=0 || a1>=1 || a2<=0 || a2>=1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $\\beta>0$, $\\xi>0$, $0<N_u/n<1$, et les deux niveaux de confiance doivent être strictement entre 0 et 100 %.</p>';
+    return;
+  }
+
+  var var1 = varPOT(u, beta, xi, nun, a1), es1 = esPOT(u, beta, xi, nun, a1);
+  var var2 = varPOT(u, beta, xi, nun, a2), es2 = esPOT(u, beta, xi, nun, a2);
+  var haussVaR = (var2-var1)/var1*100;
+  var haussES = (es2-es1)/es1*100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th></th><th>' + (a1*100).toFixed(3).replace(/\.?0+$/,'') + ' %</th><th>' + (a2*100).toFixed(3).replace(/\.?0+$/,'') + ' %</th></tr>';
+  html += '<tr><th>VaR</th><td>' + var1.toFixed(3) + ' %</td><td>' + var2.toFixed(3) + ' %</td></tr>';
+  html += '<tr><th>ES</th><td>' + es1.toFixed(3) + ' %</td><td>' + es2.toFixed(3) + ' %</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">hausse relative en passant de ' + (a1*100).toFixed(3).replace(/\.?0+$/,'') + ' % à ' + (a2*100).toFixed(3).replace(/\.?0+$/,'') + ' % — VaR : ' + haussVaR.toFixed(1) + ' %, ES : ' + haussES.toFixed(1) + ' %</div>';
+  html += dessinerBarresPOT(var1, var2, es1, es2, (a1*100).toFixed(3).replace(/\.?0+$/,''), (a2*100).toFixed(3).replace(/\.?0+$/,''));
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresPOT(var1, var2, es1, es2, lab1, lab2) {
+  var largeur = 340, hauteur = 220, margeG = 45, margeD = 20, margeH = 20, margeB = 46;
+  var vals = [var1, var2, es1, es2];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 42;
+  var xCentres = [margeG + 45, margeG + 100, largeur - margeD - 100, largeur - margeD - 45];
+  var labels = [lab1+'%', lab2+'%', lab1+'%', lab2+'%'];
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--ceco, #1F6FB2)', 'var(--cex, #2E8B57)', 'var(--cex, #2E8B57)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="' + (margeG+72) + '" y="' + (hauteur - margeB + 30) + '" font-size="8.5" text-anchor="middle" fill="currentColor">VaR</text>';
+  svg += '<text x="' + (largeur - margeD - 72) + '" y="' + (hauteur - margeB + 30) + '" font-size="8.5" text-anchor="middle" fill="currentColor">ES</text>';
+  svg += '<text x="10" y="' + (hauteur/2) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2) + ')">niveau (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerDimension() {
+  var resDiv = document.getElementById('resultatDimension');
+  var p = parseFloat(document.getElementById('c2b_p').value);
+  var d = parseInt(document.getElementById('c2b_d').value);
+  var obs = parseFloat(document.getElementById('c2b_obs').value);
+  var p2 = parseFloat(document.getElementById('c2b_p2').value);
+
+  if ([p,d,obs,p2].some(isNaN) || p<=0 || p>=1 || p2<=0 || p2>=1 || d<1 || d>8 || obs<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $0<p<1$, $0<p_2<1$, $1\\leq d\\leq 8$, et un nombre d\'observations par an strictement positif.</p>';
+    return;
+  }
+
+  var pd = Math.pow(p, d);
+  var pd2 = Math.pow(p2, d);
+  var facteur = pd2 / pd;
+  var facteurTheorique = Math.pow(p2/p, d);
+  var joursAttente = 1/pd;
+  var ansAttente = joursAttente/obs;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th></th><th>$p=' + p.toFixed(4) + '$</th><th>$p_2=' + p2.toFixed(4) + '$</th></tr>';
+  html += '<tr><th>probabilité conjointe $p^{' + d + '}$</th><td>' + pd.toExponential(4) + '</td><td>' + pd2.toExponential(4) + '</td></tr>';
+  html += '<tr><th>1 événement toutes les N observations</th><td>' + joursAttente.toExponential(4) + '</td><td>' + (1/pd2).toExponential(4) + '</td></tr>';
+  html += '<tr><th>soit, en années (à ' + obs + '/an)</th><td>' + ansAttente.toExponential(4) + '</td><td>' + ((1/pd2)/obs).toExponential(4) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">facteur multiplicatif $p_2^d/p^d=$ ' + facteur.toFixed(4) + ' — identique à $(p_2/p)^d=$ ' + facteurTheorique.toFixed(4) + '</div>';
+  html += dessinerDimension(p, p2, d);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerDimension(p, p2, dRef) {
+  var dMax = Math.max(dRef, 4);
+  var largeur = 340, hauteur = 220, margeG = 60, margeD = 15, margeH = 15, margeB = 40;
+  var pts = [], pts2 = [];
+  for (var d = 1; d <= dMax; d++) { pts.push([d, Math.pow(p, d)]); }
+  pts2.push([dRef, Math.pow(p2, dRef)]);
+
+  var logMax = Math.log10(Math.pow(p, 1));
+  var logMin = Math.min(Math.log10(Math.pow(p, dMax)), Math.log10(Math.pow(p2, dRef)));
+  logMin = Math.floor(logMin) - 0.5;
+  logMax = Math.ceil(logMax) + 0.3;
+
+  function xPix(d) { return margeG + (d-1)/(dMax-1) * (largeur-margeG-margeD); }
+  function yPix(v) { var lv = Math.log10(v); return margeH + (logMax-lv)/(logMax-logMin) * (hauteur-margeH-margeB); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + margeH + '" x2="' + margeG + '" y2="' + (hauteur-margeB) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + (hauteur-margeB) + '" x2="' + (largeur-margeD) + '" y2="' + (hauteur-margeB) + '" stroke="#888" stroke-width="1"/>';
+  for (var lv = Math.ceil(logMin); lv <= Math.floor(logMax); lv++) {
+    var y = yPix(Math.pow(10, lv));
+    svg += '<line x1="' + margeG + '" y1="' + y.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + y.toFixed(1) + '" stroke="#e8e8e8" stroke-width="1"/>';
+    svg += '<text x="' + (margeG-4) + '" y="' + (y+3).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="currentColor">1e' + lv + '</text>';
+  }
+  pts.forEach(function (pt) {
+    svg += '<circle cx="' + xPix(pt[0]).toFixed(1) + '" cy="' + yPix(pt[1]).toFixed(1) + '" r="3" fill="var(--cdef, #4A3B8C)"/>';
+  });
+  pts2.forEach(function (pt) {
+    var x = xPix(pt[0]), y = yPix(pt[1]);
+    svg += '<rect x="' + (x-3).toFixed(1) + '" y="' + (y-3).toFixed(1) + '" width="6" height="6" fill="var(--cintu, #E08000)"/>';
+  });
+  for (var d = 1; d <= dMax; d++) {
+    svg += '<text x="' + xPix(d).toFixed(1) + '" y="' + (hauteur-margeB+14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + d + '</text>';
+  }
+  svg += '<text x="' + ((margeG+largeur-margeD)/2).toFixed(1) + '" y="' + (hauteur-4) + '" font-size="8.5" text-anchor="middle" fill="currentColor">nombre de variables d</text>';
+  svg += '<circle cx="' + (largeur-100) + '" cy="' + (margeH+6) + '" r="3" fill="var(--cdef, #4A3B8C)"/><text x="' + (largeur-93) + '" y="' + (margeH+9) + '" font-size="7.5" fill="currentColor">p=' + p.toFixed(4) + '</text>';
+  svg += '<rect x="' + (largeur-103) + '" y="' + (margeH+16) + '" width="6" height="6" fill="var(--cintu, #E08000)"/><text x="' + (largeur-93) + '" y="' + (margeH+22) + '" font-size="7.5" fill="currentColor">p2=' + p2.toFixed(4) + ' (d=' + dRef + ')</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerPOT(); calculerDimension(); };
+</script>
+</body>
+</html>

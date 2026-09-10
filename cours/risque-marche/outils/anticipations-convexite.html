@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Anticipations, convexité, prime de risque — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Application : anticipations, convexité, prime de risque</h1>
+<p class="sous-titre">Calculatrice interactive — courbe par pures anticipations (exercice 5), décomposition convexité/prime de risque sur un arbre à deux ans (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Courbe des taux par pures anticipations</h2>
+  <p class="aide">$(1+r(N))^N=\prod_{k=0}^{N-1}(1+r_k^{\text{anticipé}})$. Sous neutralité au risque et anticipations certaines, la courbe s'obtient en enchaînant les taux courts anticipés.</p>
+  <div class="ligne">
+    <div><label for="c11_r0">Taux court aujourd'hui (%)</label><input type="number" id="c11_r0" value="8.00" step="0.01"></div>
+    <div><label for="c11_r1a">Taux anticipé année 2 (%)</label><input type="number" id="c11_r1a" value="9.50" step="0.01"></div>
+    <div><label for="c11_r2a">Taux anticipé année 3 (%)</label><input type="number" id="c11_r2a" value="11.00" step="0.01"></div>
+  </div>
+  <button onclick="calculerAnticipations()">Calculer</button>
+  <div id="resultatAnticipations" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Convexité et prime de risque sur un arbre à deux ans</h2>
+  <p class="aide">Arbre récombinant à deux ans : année 1 (haut/bas, 50/50), année 2 (haut/milieu/bas, 25/50/25, à partir des deux nœuds de l'année 1). La prime de risque ajoute, à chaque taux d'actualisation, un supplément proportionnel au nombre d'années de risque de duration déjà écoulées à ce nœud.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Arbre de taux</h3>
+      <label for="c11_r0b">Taux aujourd'hui (%)</label><input type="number" id="c11_r0b" value="8.00" step="0.01">
+      <label for="c11_ru">Année 1, haut (%)</label><input type="number" id="c11_ru" value="11.00" step="0.01">
+      <label for="c11_rd">Année 1, bas (%)</label><input type="number" id="c11_rd" value="5.00" step="0.01">
+      <label for="c11_ruu">Année 2, haut (%)</label><input type="number" id="c11_ruu" value="14.00" step="0.01">
+      <label for="c11_rmid">Année 2, milieu (%)</label><input type="number" id="c11_rmid" value="8.00" step="0.01">
+      <label for="c11_rdd">Année 2, bas (%)</label><input type="number" id="c11_rdd" value="2.00" step="0.01">
+    </div>
+    <div class="bloc">
+      <h3>Prime de risque</h3>
+      <label for="c11_prime">Prime par année de risque (points de base)</label><input type="number" id="c11_prime" value="25" step="1">
+      <p class="aide" style="margin-top:0.8em;">Année 1 de risque : +1×prime. Année 2 de risque (nœuds de l'année 2) : +2×prime.</p>
+    </div>
+  </div>
+  <button onclick="calculerConvexitePrime()">Calculer</button>
+  <div id="resultatConvexitePrime" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerAnticipations() {
+  var resDiv = document.getElementById('resultatAnticipations');
+  var r0 = parseFloat(document.getElementById('c11_r0').value)/100;
+  var r1a = parseFloat(document.getElementById('c11_r1a').value)/100;
+  var r2a = parseFloat(document.getElementById('c11_r2a').value)/100;
+
+  if ([r0,r1a,r2a].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var r2 = Math.pow((1+r0)*(1+r1a), 1/2) - 1;
+  var r3 = Math.pow((1+r0)*(1+r1a)*(1+r2a), 1/3) - 1;
+
+  var forme;
+  if (r3 > r2 && r2 > r0) forme = 'croissante';
+  else if (r3 < r2 && r2 < r0) forme = 'décroissante';
+  else forme = 'non monotone';
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$r(1)$</th><td>' + (r0*100).toFixed(3) + ' %</td></tr>';
+  html += '<tr><th>$r(2)$</th><td>' + (r2*100).toFixed(3) + ' %</td></tr>';
+  html += '<tr><th>$r(3)$</th><td>' + (r3*100).toFixed(3) + ' %</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ok">Courbe ' + forme + '</div>';
+  html += dessinerCourbe([r0,r2,r3]);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCourbe(taux) {
+  var largeur = 300, hauteur = 210, margeG = 50, margeD = 15, margeH = 20, margeB = 40;
+  var vMin = Math.min.apply(null, taux) * 0.9;
+  var vMax = Math.max.apply(null, taux) * 1.1;
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  function xPix(i) { return margeG + i * ((largeur-margeG-margeD)/2); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  var pts = [];
+  for (var i=0;i<3;i++) { pts.push(xPix(i).toFixed(1)+','+yPix(taux[i]*100).toFixed(1)); }
+  svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--ceco, #1F6FB2)" stroke-width="2"/>';
+  var labels=['1 an','2 ans','3 ans'];
+  for (var i=0;i<3;i++) {
+    var x = xPix(i), y = yPix(taux[i]*100);
+    svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="3.5" fill="var(--cintu, #E08000)"/>';
+    svg += '<text x="' + x.toFixed(1) + '" y="' + (y-8).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + (taux[i]*100).toFixed(3) + '%</text>';
+    svg += '<text x="' + x.toFixed(1) + '" y="' + (hauteur-margeB+16).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerConvexitePrime() {
+  var resDiv = document.getElementById('resultatConvexitePrime');
+  var r0 = parseFloat(document.getElementById('c11_r0b').value)/100;
+  var ru = parseFloat(document.getElementById('c11_ru').value)/100;
+  var rd = parseFloat(document.getElementById('c11_rd').value)/100;
+  var ruu = parseFloat(document.getElementById('c11_ruu').value)/100;
+  var rmid = parseFloat(document.getElementById('c11_rmid').value)/100;
+  var rdd = parseFloat(document.getElementById('c11_rdd').value)/100;
+  var primeBp = parseFloat(document.getElementById('c11_prime').value);
+
+  if ([r0,ru,rd,ruu,rmid,rdd,primeBp].some(isNaN)) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var prime = primeBp/10000;
+
+  // Sans prime (convexite seule)
+  var P2 = (0.5/(1+ru) + 0.5/(1+rd))/(1+r0);
+  var r2c = Math.pow(P2, -0.5) - 1;
+  var P3 = (0.25/(1+ruu) + 0.5/(1+rmid) + 0.25/(1+rdd)) * P2;
+  var r3c = Math.pow(P3, -1/3) - 1;
+
+  // Avec prime
+  var P2p = (0.5/(1+ru+prime) + 0.5/(1+rd+prime))/(1+r0);
+  var r2p = Math.pow(P2p, -0.5) - 1;
+  var P3p = (0.25/(1+ruu+2*prime) + 0.5/(1+rmid+2*prime) + 0.25/(1+rdd+2*prime)) * P2p;
+  var r3p = Math.pow(P3p, -1/3) - 1;
+
+  var convexite2 = (r0-r2c)*10000, convexite3 = (r0-r3c)*10000;
+  var prime2 = (r2p-r2c)*10000, prime3 = (r3p-r3c)*10000;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th></th><th>Sans prime</th><th>Avec prime</th></tr>';
+  html += '<tr><td>$r(2)$</td><td>' + (r2c*100).toFixed(3) + ' %</td><td>' + (r2p*100).toFixed(3) + ' %</td></tr>';
+  html += '<tr><td>$r(3)$</td><td>' + (r3c*100).toFixed(3) + ' %</td><td>' + (r3p*100).toFixed(3) + ' %</td></tr>';
+  html += '<tr><td>Effet de convexité (pb)</td><td colspan="2">' + convexite2.toFixed(2) + ' (2 ans) / ' + convexite3.toFixed(2) + ' (3 ans)</td></tr>';
+  html += '<tr><td>Effet de prime (pb)</td><td colspan="2">' + prime2.toFixed(2) + ' (2 ans) / ' + prime3.toFixed(2) + ' (3 ans)</td></tr>';
+  html += '</table>';
+
+  var domine2 = prime2 > convexite2 ? 'la prime domine' : 'la convexité domine';
+  var domine3 = prime3 > convexite3 ? 'la prime domine' : 'la convexité domine';
+  html += '<div class="valeur ' + (prime2>convexite2?'ok':'ko') + '">À deux ans : ' + domine2 + ' (' + prime2.toFixed(2) + ' contre ' + convexite2.toFixed(2) + ' pb)</div>';
+  html += '<div class="valeur ' + (prime3>convexite3?'ok':'ko') + '">À trois ans : ' + domine3 + ' (' + prime3.toFixed(2) + ' contre ' + convexite3.toFixed(2) + ' pb)</div>';
+
+  html += dessinerDecomposition(convexite2, convexite3, prime2, prime3);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerDecomposition(c2, c3, p2, p3) {
+  var largeur = 320, hauteur = 220, margeG = 50, margeD = 15, margeH = 20, margeB = 45;
+  var vMax = Math.max(c2,c3,p2,p3) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var groupes = [[c2,p2],[c3,p3]];
+  var labelsG = ['2 ans','3 ans'];
+  var couleurs = ['var(--ceco, #1F6FB2)','var(--cintu, #E08000)'];
+  var largeurBarre = 26;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var g=0; g<2; g++) {
+    var xC = margeG + (g+0.5)*((largeur-margeG-margeD)/2);
+    for (var i=0;i<2;i++) {
+      var v = groupes[g][i];
+      var x = xC + (i===0 ? -largeurBarre*0.6 : largeurBarre*0.6) - largeurBarre/2;
+      var yTop = yPix(v);
+      var h = yZero-yTop;
+      svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+      svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    }
+    svg += '<text x="' + xC.toFixed(1) + '" y="' + (yZero+16).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + labelsG[g] + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-14) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-14) + ')">Effet (points de base)</text>';
+  svg += '<rect x="' + (largeur-105) + '" y="8" width="8" height="8" fill="var(--ceco, #1F6FB2)"/><text x="' + (largeur-93) + '" y="15" font-size="7.5" fill="currentColor">Convexité</text>';
+  svg += '<rect x="' + (largeur-105) + '" y="20" width="8" height="8" fill="var(--cintu, #E08000)"/><text x="' + (largeur-93) + '" y="27" font-size="7.5" fill="currentColor">Prime</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerAnticipations(); calculerConvexitePrime(); };
+</script>
+</body>
+</html>

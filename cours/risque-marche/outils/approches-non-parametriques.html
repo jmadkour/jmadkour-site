@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Approches non paramétriques — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Application : les approches non paramétriques</h1>
+<p class="sous-titre">Calculatrice interactive — gain de précision du bootstrap (exercice 5), pondération par l'âge (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le bootstrap : gain de précision</h2>
+  <p class="aide">Comparez, pour la VaR et pour l'ES, l'erreur d'une simulation historique brute à celle d'une version bootstrappée, par rapport à une valeur vraie connue (données simulées).</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Valeurs vraies</h3>
+      <label for="c1_vt">VaR vraie</label><input type="number" id="c1_vt" value="1.645" step="0.001">
+      <label for="c1_et">ES vraie</label><input type="number" id="c1_et" value="2.063" step="0.001">
+    </div>
+    <div class="bloc">
+      <h3>Simulation historique brute</h3>
+      <label for="c1_vb">VaR brute</label><input type="number" id="c1_vb" value="1.704" step="0.001">
+      <label for="c1_eb">ES brute</label><input type="number" id="c1_eb" value="2.196" step="0.001">
+    </div>
+    <div class="bloc">
+      <h3>Version bootstrappée</h3>
+      <label for="c1_vboot">VaR bootstrappée</label><input type="number" id="c1_vboot" value="1.669" step="0.001">
+      <label for="c1_eboot">ES bootstrappée</label><input type="number" id="c1_eboot" value="2.114" step="0.001">
+    </div>
+  </div>
+  <button onclick="calculerBootstrap()">Calculer</button>
+  <div id="resultatBootstrap" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>La pondération par l'âge</h2>
+  <p class="aide">$w_i=\lambda^i(1-\lambda)/(1-\lambda^n)$, poids de l'observation vieille de $i$ périodes ($i=0$ : la plus récente). Le graphique affiche les poids pour un $n$ réduit, lisible ; le tableau donne aussi $w_0$, $w_{n-1}$ et leur rapport pour le $n$ complet saisi.</p>
+  <div class="ligne">
+    <div><label for="c1b_lambda">Paramètre de décroissance $\lambda$</label><input type="number" id="c1b_lambda" value="0.99" step="0.001" min="0.001" max="0.999"></div>
+    <div><label for="c1b_n">Taille de la fenêtre $n$ (observations)</label><input type="number" id="c1b_n" value="250" step="1"></div>
+    <div><label for="c1b_naff">$n$ affiché sur le graphique (petit, pour la lisibilité)</label><input type="number" id="c1b_naff" value="8" step="1"></div>
+  </div>
+  <button onclick="calculerPonderation()">Calculer</button>
+  <div id="resultatPonderation" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerBootstrap() {
+  var resDiv = document.getElementById('resultatBootstrap');
+  var vt = parseFloat(document.getElementById('c1_vt').value);
+  var et = parseFloat(document.getElementById('c1_et').value);
+  var vb = parseFloat(document.getElementById('c1_vb').value);
+  var eb = parseFloat(document.getElementById('c1_eb').value);
+  var vboot = parseFloat(document.getElementById('c1_vboot').value);
+  var eboot = parseFloat(document.getElementById('c1_eboot').value);
+
+  if ([vt,et,vb,eb,vboot,eboot].some(isNaN) || vt<=0 || et<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les valeurs vraies doivent être strictement positives.</p>';
+    return;
+  }
+
+  var errVbrute = vb-vt, errVboot = vboot-vt;
+  var errEbrute = eb-et, errEboot = eboot-et;
+  var redV = errVbrute !== 0 ? (1 - errVboot/errVbrute)*100 : NaN;
+  var redE = errEbrute !== 0 ? (1 - errEboot/errEbrute)*100 : NaN;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th></th><th>VaR</th><th>ES</th></tr>';
+  html += '<tr><th>Erreur brute (niveau)</th><td>' + errVbrute.toFixed(4) + '</td><td>' + errEbrute.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Erreur brute (%)</th><td>' + (errVbrute/vt*100).toFixed(3) + ' %</td><td>' + (errEbrute/et*100).toFixed(3) + ' %</td></tr>';
+  html += '<tr><th>Erreur bootstrappée (niveau)</th><td>' + errVboot.toFixed(4) + '</td><td>' + errEboot.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Erreur bootstrappée (%)</th><td>' + (errVboot/vt*100).toFixed(3) + ' %</td><td>' + (errEboot/et*100).toFixed(3) + ' %</td></tr>';
+  html += '<tr><th>Réduction d\'erreur apportée par le bootstrap</th><td><strong>' + redV.toFixed(2) + ' %</strong></td><td><strong>' + redE.toFixed(2) + ' %</strong></td></tr>';
+  html += '</table>';
+  var esGagnePlus = redE > redV;
+  html += '<div class="valeur mid">' + (esGagnePlus ? 'l\'ES' : 'la VaR') + ' bénéficie le plus du bootstrap en termes relatifs — cohérent avec le fait que ' + (esGagnePlus ? 'l\'ES, moyenne de pertes de queue, part d\'une erreur relative plus grande' : 'la VaR part d\'une erreur relative plus grande') + '</div>';
+  html += dessinerErreurs(Math.abs(errVbrute), Math.abs(errVboot), Math.abs(errEbrute), Math.abs(errEboot));
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerErreurs(vb, vboot, eb, eboot) {
+  var largeur = 340, hauteur = 220, margeG = 55, margeD = 20, margeH = 20, margeB = 46;
+  var vals = [vb, vboot, eb, eboot];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 42;
+  var xCentres = [margeG + 45, margeG + 100, largeur - margeD - 100, largeur - margeD - 45];
+  var labels = ['Brute', 'Bootstrap.', 'Brute', 'Bootstrap.'];
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--cex, #2E8B57)', 'var(--ceco, #1F6FB2)', 'var(--cex, #2E8B57)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(3) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="' + (margeG+72) + '" y="' + (hauteur - margeB + 30) + '" font-size="8.5" text-anchor="middle" fill="currentColor">VaR</text>';
+  svg += '<text x="' + (largeur - margeD - 72) + '" y="' + (hauteur - margeB + 30) + '" font-size="8.5" text-anchor="middle" fill="currentColor">ES</text>';
+  svg += '<text x="12" y="' + (hauteur/2) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2) + ')">erreur absolue</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function poidsAge(lambda, n) {
+  var denom = 1 - Math.pow(lambda, n);
+  var ws = [];
+  for (var i = 0; i < n; i++) { ws.push(Math.pow(lambda, i) * (1-lambda) / denom); }
+  return ws;
+}
+
+function calculerPonderation() {
+  var resDiv = document.getElementById('resultatPonderation');
+  var lambda = parseFloat(document.getElementById('c1b_lambda').value);
+  var n = parseInt(document.getElementById('c1b_n').value);
+  var nAff = parseInt(document.getElementById('c1b_naff').value);
+
+  if ([lambda,n,nAff].some(isNaN) || lambda<=0 || lambda>=1 || n<2 || nAff<2 || nAff>30) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $0<\\lambda<1$, $n\\geq 2$, et $2\\leq n_{\\text{affiché}}\\leq 30$ pour rester lisible.</p>';
+    return;
+  }
+
+  var ws = poidsAge(lambda, n);
+  var w0 = ws[0], wLast = ws[n-1];
+  var somme = ws.reduce(function(a,b){return a+b;}, 0);
+  var equal = 1/n;
+  var surponderation = w0/equal;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$w_0$ (observation la plus récente)</th><td>' + w0.toFixed(6) + '</td></tr>';
+  html += '<tr><th>$w_{' + (n-1) + '}$ (observation la plus ancienne)</th><td>' + wLast.toExponential(4) + '</td></tr>';
+  html += '<tr><th>Rapport $w_0/w_{n-1}$</th><td>' + (w0/wLast).toFixed(2) + '</td></tr>';
+  html += '<tr><th>Poids sous pondération uniforme ($1/n$)</th><td>' + equal.toFixed(6) + '</td></tr>';
+  html += '<tr><th>Facteur de sur-pondération de $w_0$ vs uniforme</th><td>' + surponderation.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Somme des poids (vérification)</th><td>' + somme.toFixed(6) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">avec $\\lambda=' + lambda.toFixed(3) + '$ et $n=' + n + '$, l\'observation la plus ancienne pèse ' + (1/(w0/wLast)*100).toExponential(2) + ' % du poids de la plus récente</div>';
+  html += dessinerPoids(poidsAge(lambda, nAff));
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerPoids(ws) {
+  var n = ws.length;
+  var largeur = Math.max(260, 34*n+70), hauteur = 220, margeG = 55, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max.apply(null, ws) * 1.2;
+  function xCentre(i) { return margeG + (i+0.5) * ((largeur-margeG-margeD)/n); }
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = Math.min(28, (largeur-margeG-margeD)/n - 6);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + margeH + '" x2="' + margeG + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  ws.forEach(function (w, i) {
+    var x = xCentre(i), yTop = yPix(w), h = yZero-yTop;
+    svg += '<rect x="' + (x-largeurBarre/2).toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="var(--cdef, #4A3B8C)" fill-opacity="0.75" stroke="var(--cdef, #4A3B8C)"/>';
+    svg += '<text x="' + x.toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + w.toFixed(3) + '</text>';
+    svg += '<text x="' + x.toFixed(1) + '" y="' + (yZero+13).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">$w_{' + i + '}$</text>';
+  });
+  svg += '<text x="' + ((margeG+largeur-margeD)/2).toFixed(1) + '" y="' + (hauteur-6) + '" font-size="8.5" text-anchor="middle" fill="currentColor">ancienneté croissante de l\'observation →</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerBootstrap(); calculerPonderation(); };
+</script>
+</body>
+</html>

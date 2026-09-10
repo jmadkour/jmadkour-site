@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — Risque de marché — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Application : estimer les mesures de risque de marché</h1>
+<p class="sous-titre">Calculatrice interactive — VaR paramétrique normale et lognormale (exercice 5), précision de la VaR et de l'expected shortfall (exercice 6)</p>
+
+<div class="panneau">
+  <h2>VaR paramétrique — normale et lognormale</h2>
+  <p class="aide">$\mathrm{VaR}_\alpha=-\mu+\sigma z_\alpha$ (P/L normal) ; $\mathrm{VaR}_\alpha=1-\exp(\mu_h-\sigma_h z_\alpha)$ (rendement géométrique normal), avec $\mu_h,\sigma_h$ les paramètres ramenés à l'horizon choisi.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>P/L direct (normale)</h3>
+      <label for="i_mu">Moyenne du P/L $\mu$</label><input type="number" id="i_mu" value="10" step="1">
+      <label for="i_sigma">Écart-type du P/L $\sigma$</label><input type="number" id="i_sigma" value="20" step="1">
+      <label for="i_v">Valeur de la position $V$ (pour le % — optionnel)</label><input type="number" id="i_v" value="500" step="10">
+    </div>
+    <div class="bloc">
+      <h3>Rendement annualisé (normale et lognormale)</h3>
+      <label for="i_muann">Rendement moyen annualisé $\mu_{\text{ann}}$ (%)</label><input type="number" id="i_muann" value="10" step="0.5">
+      <label for="i_sigmaann">Volatilité annualisée $\sigma_{\text{ann}}$ (%)</label><input type="number" id="i_sigmaann" value="40" step="1">
+      <label for="i_joursan">Jours de bourse par an</label><input type="number" id="i_joursan" value="250" step="1">
+      <label for="i_horizon">Horizon (jours)</label><input type="number" id="i_horizon" value="1" step="1">
+    </div>
+  </div>
+  <button onclick="calculerVaR()">Calculer</button>
+  <div id="resultatVaR" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Précision de la VaR et de l'expected shortfall</h2>
+  <p class="aide">VaR et ES exactes pour une perte normale centrée réduite au niveau $\alpha$ choisi. Comparez deux estimations average-tail-VaR (à $n_a$ et $n_b$ tranches) à l'ES exacte, et examinez la symétrie d'un intervalle de confiance donné pour la VaR.</p>
+  <div class="ligne">
+    <div><label for="p_alpha">Niveau de confiance $\alpha$ (%)</label><input type="number" id="p_alpha" value="95" step="0.5"></div>
+    <div><label for="p_na">$n_a$ (tranches, estimation grossière)</label><input type="number" id="p_na" value="10" step="1"></div>
+    <div><label for="p_ea">Estimation average-tail-VaR à $n_a$</label><input type="number" id="p_ea" value="2.025" step="0.001"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="p_nb">$n_b$ (tranches, estimation fine)</label><input type="number" id="p_nb" value="1000" step="1"></div>
+    <div><label for="p_eb">Estimation average-tail-VaR à $n_b$</label><input type="number" id="p_eb" value="2.062" step="0.001"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="p_cilow">Borne basse de l'IC 90&nbsp;% pour la VaR</label><input type="number" id="p_cilow" value="0.61" step="0.01"></div>
+    <div><label for="p_cihigh">Borne haute de l'IC 90&nbsp;% pour la VaR</label><input type="number" id="p_cihigh" value="2.68" step="0.01"></div>
+  </div>
+  <button onclick="calculerPrecision()">Calculer</button>
+  <div id="resultatPrecision" class="resultat-zone"></div>
+</div>
+
+<script>
+function normCDF(x) {
+  var sign = x < 0 ? -1 : 1;
+  x = Math.abs(x) / Math.sqrt(2);
+  var a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  var t = 1 / (1 + p * x);
+  var y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return 0.5 * (1 + sign * y);
+}
+function normPDF(x) { return Math.exp(-x*x/2) / Math.sqrt(2*Math.PI); }
+
+// Approximation d'Acklam pour l'inverse de la loi normale centree reduite.
+function normInv(p) {
+  if (p <= 0 || p >= 1) return NaN;
+  var a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  var b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  var c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  var d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  var plow=0.02425, phigh=1-plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2*Math.log(p));
+    return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q*q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  } else {
+    q = Math.sqrt(-2*Math.log(1-p));
+    return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  }
+}
+
+function calculerVaR() {
+  var resDiv = document.getElementById('resultatVaR');
+  var mu = parseFloat(document.getElementById('i_mu').value);
+  var sigma = parseFloat(document.getElementById('i_sigma').value);
+  var V = parseFloat(document.getElementById('i_v').value);
+  var muAnnPct = parseFloat(document.getElementById('i_muann').value);
+  var sigmaAnnPct = parseFloat(document.getElementById('i_sigmaann').value);
+  var joursAn = parseFloat(document.getElementById('i_joursan').value);
+  var horizon = parseFloat(document.getElementById('i_horizon').value);
+
+  if ([mu,sigma,V,muAnnPct,sigmaAnnPct,joursAn,horizon].some(isNaN) || sigma<=0 || V<=0 || sigmaAnnPct<=0 || joursAn<=0 || horizon<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $\\sigma$, $V$, $\\sigma_{\\text{ann}}$, les jours de bourse et l\'horizon doivent être strictement positifs.</p>';
+    return;
+  }
+
+  var z95 = 1.645, z99 = 2.326;
+  var varPL95 = -mu + sigma*z95, varPL99 = -mu + sigma*z99;
+
+  var muAnn = muAnnPct/100, sigmaAnn = sigmaAnnPct/100;
+  var muH = muAnn*horizon/joursAn, sigmaH = sigmaAnn*Math.sqrt(horizon/joursAn);
+  var varNorm95 = (-muH + sigmaH*z95)*100, varLogn95 = (1-Math.exp(muH - sigmaH*z95))*100;
+  var varNorm99 = (-muH + sigmaH*z99)*100, varLogn99 = (1-Math.exp(muH - sigmaH*z99))*100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th></th><th>95 %</th><th>99 %</th></tr>';
+  html += '<tr><th>VaR P/L direct (normale)</th><td>' + varPL95.toFixed(4) + '</td><td>' + varPL99.toFixed(4) + '</td></tr>';
+  html += '<tr><th>… en % de $V=' + V.toFixed(0) + '$</th><td>' + (varPL95/V*100).toFixed(4) + ' %</td><td>' + (varPL99/V*100).toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>VaR rendement — normale</th><td>' + varNorm95.toFixed(4) + ' %</td><td>' + varNorm99.toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>VaR rendement — lognormale</th><td>' + varLogn95.toFixed(4) + ' %</td><td>' + varLogn99.toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>Écart normale − lognormale (points de %)</th><td>' + (varNorm95-varLogn95).toFixed(4) + '</td><td>' + (varNorm99-varLogn99).toFixed(4) + '</td></tr>';
+  html += '</table>';
+  var elargissement = (varNorm99-varLogn99) > (varNorm95-varLogn95);
+  html += '<div class="valeur mid">l\'écart entre VaR normale et VaR lognormale ' + (elargissement ? 's\'élargit' : 'se réduit') + ' quand le niveau de confiance monte de 95 à 99 % — cohérent avec le fait que les deux hypothèses de rendement divergent surtout loin dans la queue ou sur un horizon long</div>';
+  html += dessinerBarresVaR(varNorm95, varLogn95, varNorm99, varLogn99);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresVaR(n95, l95, n99, l99) {
+  var largeur = 340, hauteur = 230, margeG = 50, margeD = 20, margeH = 20, margeB = 46;
+  var vals = [n95, l95, n99, l99];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 42;
+  var xCentres = [margeG + 45, margeG + 100, largeur - margeD - 100, largeur - margeD - 45];
+  var labels = ['Normale', 'Lognormale', 'Normale', 'Lognormale'];
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--cex, #2E8B57)', 'var(--ceco, #1F6FB2)', 'var(--cex, #2E8B57)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="250">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="' + ((margeG+100)/1) + '" y="' + (hauteur - margeB + 30) + '" font-size="8.5" text-anchor="middle" fill="currentColor">seuil 95 %</text>';
+  svg += '<text x="' + (largeur - margeD - 72) + '" y="' + (hauteur - margeB + 30) + '" font-size="8.5" text-anchor="middle" fill="currentColor">seuil 99 %</text>';
+  svg += '<text x="12" y="' + (hauteur/2) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2) + ')">VaR rendement (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerPrecision() {
+  var resDiv = document.getElementById('resultatPrecision');
+  var alphaPct = parseFloat(document.getElementById('p_alpha').value);
+  var na = parseFloat(document.getElementById('p_na').value);
+  var ea = parseFloat(document.getElementById('p_ea').value);
+  var nb = parseFloat(document.getElementById('p_nb').value);
+  var eb = parseFloat(document.getElementById('p_eb').value);
+  var ciLow = parseFloat(document.getElementById('p_cilow').value);
+  var ciHigh = parseFloat(document.getElementById('p_cihigh').value);
+
+  if ([alphaPct,na,ea,nb,eb,ciLow,ciHigh].some(isNaN) || alphaPct<=0 || alphaPct>=100 || ciHigh<=ciLow) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $\\alpha$ doit être entre 0 et 100, et la borne haute de l\'IC doit dépasser la borne basse.</p>';
+    return;
+  }
+
+  var alpha = alphaPct/100;
+  // Arrondies à 3 decimales, comme le cours cite systematiquement VaR et ES exactes :
+  // cela garde le calculateur cohérent avec les valeurs imprimées dans le corrigé
+  // (comparer des estimations à 3 décimales à une cible non arrondie gonflerait
+  // artificiellement l'erreur au dernier chiffre, en particulier pour n_b).
+  var z = parseFloat(normInv(alpha).toFixed(3));
+  var esExacte = parseFloat((normPDF(normInv(alpha)) / (1-alpha)).toFixed(3));
+
+  var errA = esExacte - ea, errAPct = errA/esExacte*100;
+  var errB = esExacte - eb, errBPct = errB/esExacte*100;
+
+  var milieu = (ciLow+ciHigh)/2;
+  var demiLargeur = (ciHigh-ciLow)/2;
+  var ecartMilieuVaR = milieu - z;
+  var demiLargeurPct = demiLargeur/z*100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>VaR exacte $z_\\alpha$</th><td>' + z.toFixed(4) + '</td></tr>';
+  html += '<tr><th>ES exacte $\\varphi(z_\\alpha)/(1-\\alpha)$</th><td>' + esExacte.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Erreur à $n_a=' + na.toFixed(0) + '$ tranches</th><td>' + errA.toFixed(4) + ' (' + errAPct.toFixed(3) + ' %)</td></tr>';
+  html += '<tr><th>Erreur à $n_b=' + nb.toFixed(0) + '$ tranches</th><td>' + errB.toFixed(4) + ' (' + errBPct.toFixed(3) + ' %)</td></tr>';
+  html += '<tr><th>Facteur de réduction de l\'erreur ($n_a\\to n_b$)</th><td>' + (Math.abs(errA)>1e-12 ? (errA/errB).toFixed(2) : '—') + '</td></tr>';
+  html += '<tr><th>Milieu de l\'IC donné</th><td>' + milieu.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Écart milieu de l\'IC − VaR exacte</th><td>' + ecartMilieuVaR.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Demi-largeur de l\'IC</th><td>' + demiLargeur.toFixed(4) + ' (' + demiLargeurPct.toFixed(2) + ' % de la VaR)</td></tr>';
+  html += '</table>';
+  var symetrique = Math.abs(ecartMilieuVaR) < 0.01*z;
+  html += '<div class="valeur ' + (symetrique?'ok':'mid') + '">l\'intervalle donné est ' + (symetrique ? 'quasi parfaitement symétrique autour de la VaR exacte' : 'décentré par rapport à la VaR exacte') + ' — une demi-largeur de ' + demiLargeurPct.toFixed(1) + ' % de la valeur ponctuelle traduit une incertitude d\'estimation considérable</div>';
+  html += dessinerConvergence(1, z, na, ea, nb, eb, esExacte);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerConvergence(n1, e1, na, ea, nb, eb, esExacte) {
+  var largeur = 340, hauteur = 220, margeG = 55, margeD = 20, margeH = 20, margeB = 40;
+  var pts = [[n1, e1], [na, ea], [nb, eb]].sort(function(a,b){return a[0]-b[0];});
+  var xMinLog = Math.log10(Math.max(0.5, pts[0][0]*0.6));
+  var xMaxLog = Math.log10(pts[pts.length-1][0]*1.8);
+  var yVals = pts.map(function(p){return p[1];}).concat([esExacte]);
+  var yMin = Math.min.apply(null, yVals), yMax = Math.max.apply(null, yVals);
+  var pad = (yMax-yMin)*0.25 || 0.1;
+  yMin -= pad; yMax += pad*1.6;
+
+  function xPix(n) { return margeG + (Math.log10(n) - xMinLog) / (xMaxLog - xMinLog) * (largeur - margeG - margeD); }
+  function yPix(v) { return margeH + (yMax - v) / (yMax - yMin) * (hauteur - margeH - margeB); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + (hauteur-margeB) + '" x2="' + (largeur-margeD) + '" y2="' + (hauteur-margeB) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + margeH + '" x2="' + margeG + '" y2="' + (hauteur-margeB) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yPix(esExacte).toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yPix(esExacte).toFixed(1) + '" stroke="var(--cintu, #E08000)" stroke-width="1.2" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (margeG+5) + '" y="' + (yPix(esExacte)-4).toFixed(1) + '" font-size="8" fill="var(--cintu, #E08000)">ES exacte = ' + esExacte.toFixed(3) + '</text>';
+  pts.forEach(function (p) {
+    var x = xPix(p[0]), y = yPix(p[1]);
+    svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="3" fill="var(--cdef, #4A3B8C)"/>';
+    svg += '<text x="' + x.toFixed(1) + '" y="' + (y-7).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + p[1].toFixed(3) + '</text>';
+    svg += '<text x="' + x.toFixed(1) + '" y="' + (hauteur-margeB+14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">n=' + p[0].toFixed(0) + '</text>';
+  });
+  svg += '<text x="' + ((margeG+largeur-margeD)/2).toFixed(1) + '" y="' + (hauteur-6) + '" font-size="8.5" text-anchor="middle" fill="currentColor">nombre de tranches n (échelle log)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerVaR(); calculerPrecision(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — La cartographie de la VaR — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.saisie { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-top: 0.4em; }
+  table.saisie th { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.8em; color: var(--cgris); text-align: center; padding: 0.2em; }
+  table.saisie td { padding: 0.15em 0.3em; }
+  table.saisie input { width: 100%; padding: 0.35em; text-align: center; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3, table.saisie th { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Application : la cartographie de la VaR</h1>
+<p class="sous-titre">Calculatrice interactive — cartographie obligataire (exercice 5), risque général et spécifique (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La cartographie obligataire</h2>
+  <p class="aide">Comparez les VaR obtenues par mapping en principal, en duration, en flux de trésorerie à corrélation parfaite, et diversifiée.</p>
+  <div class="ligne">
+    <div><label for="c4_principal">VaR, mapping en principal</label><input type="number" id="c4_principal" value="2.97" step="0.001"></div>
+    <div><label for="c4_duration">VaR, mapping en duration</label><input type="number" id="c4_duration" value="2.70" step="0.001"></div>
+    <div><label for="c4_pcorr">VaR, flux de trésorerie (corr.\ 1)</label><input type="number" id="c4_pcorr" value="2.63" step="0.001"></div>
+    <div><label for="c4_div">VaR diversifiée</label><input type="number" id="c4_div" value="2.57" step="0.001"></div>
+  </div>
+  <button onclick="calculerCartographie()">Calculer</button>
+  <div id="resultatCartographie" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Risque général et risque spécifique</h2>
+  <p class="aide">$V(R_p)=\beta_p^2\,V(R_m)+\sum_i w_i^2\,\sigma^2(\varepsilon_i)$, avec $\beta_p=\sum_i w_i\beta_i$.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Portefeuille (jusqu'à 3 titres)</h3>
+      <table class="saisie">
+        <tr><th></th><th>poids $w_i$</th><th>bêta $\beta_i$</th><th>$\sigma(\varepsilon_i)$</th></tr>
+        <tr><td>titre 1</td><td><input type="number" id="c4b_w1" value="0.5" step="0.01"></td><td><input type="number" id="c4b_b1" value="1.2" step="0.01"></td><td><input type="number" id="c4b_s1" value="0.25" step="0.01"></td></tr>
+        <tr><td>titre 2</td><td><input type="number" id="c4b_w2" value="0.3" step="0.01"></td><td><input type="number" id="c4b_b2" value="0.8" step="0.01"></td><td><input type="number" id="c4b_s2" value="0.30" step="0.01"></td></tr>
+        <tr><td>titre 3</td><td><input type="number" id="c4b_w3" value="0.2" step="0.01"></td><td><input type="number" id="c4b_b3" value="1.5" step="0.01"></td><td><input type="number" id="c4b_s3" value="0.40" step="0.01"></td></tr>
+      </table>
+      <label for="c4b_sigm">Volatilité de l'indice $\sigma(R_m)$</label><input type="number" id="c4b_sigm" value="0.15" step="0.01">
+    </div>
+    <div class="bloc">
+      <h3>Diversification en $1/N$</h3>
+      <label for="c4b_sige">$\sigma(\varepsilon)$ commun (poids égaux, titres indépendants)</label><input type="number" id="c4b_sige" value="0.30" step="0.01">
+      <label for="c4b_n1">$N_1$</label><input type="number" id="c4b_n1" value="3" step="1" min="1">
+      <label for="c4b_n2">$N_2$</label><input type="number" id="c4b_n2" value="30" step="1" min="1">
+    </div>
+  </div>
+  <button onclick="calculerRisque()">Calculer</button>
+  <div id="resultatRisque" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerCartographie() {
+  var resDiv = document.getElementById('resultatCartographie');
+  var principal = parseFloat(document.getElementById('c4_principal').value);
+  var duration = parseFloat(document.getElementById('c4_duration').value);
+  var pcorr = parseFloat(document.getElementById('c4_pcorr').value);
+  var div = parseFloat(document.getElementById('c4_div').value);
+
+  if ([principal,duration,pcorr,div].some(isNaN) || principal<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les quatre VaR doivent être des nombres, la VaR en principal strictement positive.</p>';
+    return;
+  }
+
+  var d1 = principal-duration, d1pct = d1/principal*100;
+  var d2 = duration-pcorr;
+  var d3 = pcorr-div;
+  var totalGap = duration-div;
+  var totalReducPct = (principal-div)/principal*100;
+  var partDuration = d1pct/totalReducPct*100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Réduction principal → duration</th><td>' + d1.toFixed(4) + '</td><td>' + d1pct.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Réduction duration → flux (corr.\\ 1) [non-linéarité]</th><td>' + d2.toFixed(4) + '</td><td></td></tr>';
+  html += '<tr><th>Réduction flux (corr.\\ 1) → diversifiée [corrélations]</th><td>' + d3.toFixed(4) + '</td><td></td></tr>';
+  html += '<tr><th>Écart total duration → diversifiée</th><td>' + totalGap.toFixed(4) + '</td><td></td></tr>';
+  html += '<tr><th>Réduction totale principal → diversifiée</th><td></td><td>' + totalReducPct.toFixed(2) + ' %</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">la duration seule explique ' + partDuration.toFixed(1) + ' % de la réduction totale de VaR</div>';
+  html += dessinerCartographie(principal, duration, pcorr, div);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCartographie(v1,v2,v3,v4) {
+  var largeur = 320, hauteur = 210, margeG = 45, margeD = 15, margeH = 20, margeB = 50;
+  var vals = [v1,v2,v3,v4];
+  var vMax = Math.max.apply(null, vals) * 1.15 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 40;
+  var labels = ['Principal','Duration','Flux (corr.1)','Diversifiée'];
+  var couleurs = ['var(--ceco, #1F6FB2)','var(--ceco, #1F6FB2)','var(--cex, #2E8B57)','var(--cex, #2E8B57)'];
+  var xCentres = [];
+  for (var i=0;i<4;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/4)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 12).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor" transform="rotate(20 ' + xCentres[i] + ',' + (yZero+12).toFixed(1) + ')">' + labels[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">VaR (millions)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerRisque() {
+  var resDiv = document.getElementById('resultatRisque');
+  var w = [1,2,3].map(function(i){ return parseFloat(document.getElementById('c4b_w'+i).value); });
+  var b = [1,2,3].map(function(i){ return parseFloat(document.getElementById('c4b_b'+i).value); });
+  var s = [1,2,3].map(function(i){ return parseFloat(document.getElementById('c4b_s'+i).value); });
+  var sigm = parseFloat(document.getElementById('c4b_sigm').value);
+  var sige = parseFloat(document.getElementById('c4b_sige').value);
+  var n1 = parseInt(document.getElementById('c4b_n1').value);
+  var n2 = parseInt(document.getElementById('c4b_n2').value);
+
+  var allVals = w.concat(b).concat(s).concat([sigm, sige, n1, n2]);
+  if (allVals.some(isNaN) || sigm<0 || sige<0 || n1<1 || n2<1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : toutes les entrées doivent être des nombres, les volatilités non négatives, $N_1,N_2\\geq 1$.</p>';
+    return;
+  }
+
+  var betap = 0; for (var i=0;i<3;i++) { betap += w[i]*b[i]; }
+  var genvar = betap*betap*sigm*sigm;
+  var specvar = 0; for (var i=0;i<3;i++) { specvar += w[i]*w[i]*s[i]*s[i]; }
+  var totvar = genvar+specvar;
+  var totvol = Math.sqrt(totvar);
+  var pctSpec = specvar/totvar*100;
+  var pctGen = genvar/totvar*100;
+
+  var specvolN1 = sige/Math.sqrt(n1)*100;
+  var specvolN2 = sige/Math.sqrt(n2)*100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$\\beta_p$ du portefeuille</th><td>' + betap.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Variance de risque général</th><td>' + genvar.toFixed(6) + '</td></tr>';
+  html += '<tr><th>Variance de risque spécifique</th><td>' + specvar.toFixed(6) + '</td></tr>';
+  html += '<tr><th>Volatilité totale</th><td>' + (totvol*100).toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Part du risque spécifique / général</th><td>' + pctSpec.toFixed(1) + ' % / ' + pctGen.toFixed(1) + ' %</td></tr>';
+  html += '<tr><th>Volatilité spécifique à $N_1=' + n1 + '$ (poids égaux)</th><td>' + specvolN1.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Volatilité spécifique à $N_2=' + n2 + '$ (poids égaux)</th><td>' + specvolN2.toFixed(2) + ' %</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">passer de $N_1$ à $N_2$ divise la volatilité spécifique par ' + (specvolN1/specvolN2).toFixed(2) + ' $(=\\sqrt{N_2/N_1})$</div>';
+  html += dessinerRisque(pctGen, pctSpec, sige, n1, n2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerRisque(pctGen, pctSpec, sige, n1, n2) {
+  var largeur = 320, hauteur = 210, margeG = 45, margeD = 15, margeH = 20, margeB = 44;
+  var ns = [n1, n2].sort(function(a,b){return a-b;});
+  if (ns[0]!==1) ns.unshift(1);
+  var vols = ns.map(function(n){ return sige/Math.sqrt(n)*100; });
+  var vMax = Math.max.apply(null, vols) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var nBars = ns.length;
+  var largeurBarre = Math.min(36, (largeur-margeG-margeD)/nBars - 8);
+  var xCentres = [];
+  for (var i=0;i<nBars;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/nBars)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < nBars; i++) {
+    var v = vols[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="var(--cdef, #4A3B8C)"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">N=' + ns[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">vol. spécifique (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCartographie(); calculerRisque(); };
+</script>
+</body>
+</html>

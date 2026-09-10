@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — La modélisation ascendante des corrélations — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Application : la modélisation ascendante des corrélations</h1>
+<p class="sous-titre">Calculatrice interactive — copule gaussienne et défaut conjoint (exercice 5), simulation par décomposition de Choleski (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La copule gaussienne, chiffrée</h2>
+  <p class="aide">$z_i=N^{-1}(Q_i)$, puis $P(\text{défaut conjoint})=M_2(z_1,z_2;\rho)$, la fonction de répartition normale bivariée.</p>
+  <div class="ligne">
+    <div><label for="c8_qd">$Q_D$ (probabilité de défaut à 1 an)</label><input type="number" id="c8_qd" value="0.10" step="0.01" min="0.001" max="0.999"></div>
+    <div><label for="c8_qe">$Q_E$ (probabilité de défaut à 1 an)</label><input type="number" id="c8_qe" value="0.15" step="0.01" min="0.001" max="0.999"></div>
+    <div><label for="c8_rho1">Corrélation basse $\rho_1$</label><input type="number" id="c8_rho1" value="0.3" step="0.01" min="-0.999" max="0.999"></div>
+    <div><label for="c8_rho2">Corrélation haute $\rho_2$</label><input type="number" id="c8_rho2" value="0.5" step="0.01" min="-0.999" max="0.999"></div>
+  </div>
+  <button onclick="calculerCopule()">Calculer</button>
+  <div id="resultatCopule" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Simuler le défaut corrélé par décomposition de Choleski</h2>
+  <p class="aide">Matrice de corrélation $3\times3$ (actifs 1, 2, 3), décomposée en $L$ telle que $LL^\top=\rho$ ; $x=Lz$ pour des tirages indépendants $z$ ; puis lecture de $\tau_2$ sur la courbe de marché de l'actif 2 par interpolation linéaire.</p>
+  <div class="ligne">
+    <div><label for="c8_r12">$\rho_{12}$</label><input type="number" id="c8_r12" value="0.5" step="0.01" min="-0.99" max="0.99"></div>
+    <div><label for="c8_r13">$\rho_{13}$</label><input type="number" id="c8_r13" value="0.3" step="0.01" min="-0.99" max="0.99"></div>
+    <div><label for="c8_r23">$\rho_{23}$</label><input type="number" id="c8_r23" value="0.4" step="0.01" min="-0.99" max="0.99"></div>
+    <div><label for="c8_z1">$z_1$</label><input type="number" id="c8_z1" value="0.50" step="0.01"></div>
+    <div><label for="c8_z2">$z_2$</label><input type="number" id="c8_z2" value="-0.50" step="0.01"></div>
+    <div><label for="c8_z3">$z_3$</label><input type="number" id="c8_z3" value="0.20" step="0.01"></div>
+  </div>
+  <div class="ligne" style="margin-top:0.4em;">
+    <div><label for="c8_anneeBas">Horizon bas (années)</label><input type="number" id="c8_anneeBas" value="5" step="1" min="0"></div>
+    <div><label for="c8_qbas">$Q_2$(horizon bas)</label><input type="number" id="c8_qbas" value="0.38" step="0.01" min="0" max="1"></div>
+    <div><label for="c8_anneeHaut">Horizon haut (années)</label><input type="number" id="c8_anneeHaut" value="6" step="1" min="0"></div>
+    <div><label for="c8_qhaut">$Q_2$(horizon haut)</label><input type="number" id="c8_qhaut" value="0.45" step="0.01" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerCholeski()">Calculer</button>
+  <div id="resultatCholeski" class="resultat-zone"></div>
+</div>
+
+<script>
+function erf(x) {
+  // Abramowitz-Stegun 7.1.26, erreur max 1.5e-7
+  var sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  var a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  var t = 1/(1+p*x);
+  var y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function normCdf(x) { return 0.5*(1+erf(x/Math.SQRT2)); }
+
+function normInv(p) {
+  // Algorithme d'Acklam
+  if (p <= 0) return -Infinity;
+  if (p >= 1) return Infinity;
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var plow = 0.02425, phigh = 1-plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2*Math.log(p));
+    return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q*q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  } else {
+    q = Math.sqrt(-2*Math.log(1-p));
+    return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  }
+}
+
+function bvnCdf(h, k, rho) {
+  var Ph = normCdf(h), Pk = normCdf(k);
+  if (Math.abs(rho) < 1e-12) return Ph*Pk;
+  function integrand(t) {
+    var denom = 1 - t*t;
+    return Math.exp(-(h*h + k*k - 2*h*k*t) / (2*denom)) / Math.sqrt(denom);
+  }
+  var n = 400;
+  var a0 = 0, b0 = rho;
+  var hs = (b0-a0)/n;
+  var sum = integrand(a0) + integrand(b0);
+  for (var i=1;i<n;i++){
+    var t = a0+i*hs;
+    sum += (i%2===0?2:4)*integrand(t);
+  }
+  var integral = sum*hs/3;
+  return Ph*Pk + integral/(2*Math.PI);
+}
+
+function calculerCopule() {
+  var resDiv = document.getElementById('resultatCopule');
+  var QD = parseFloat(document.getElementById('c8_qd').value);
+  var QE = parseFloat(document.getElementById('c8_qe').value);
+  var rho1 = parseFloat(document.getElementById('c8_rho1').value);
+  var rho2 = parseFloat(document.getElementById('c8_rho2').value);
+
+  if ([QD,QE,rho1,rho2].some(isNaN) || QD<=0 || QD>=1 || QE<=0 || QE>=1 || rho1<-1 || rho1>1 || rho2<-1 || rho2>1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $0<Q_D<1$, $0<Q_E<1$, $-1\\leq\\rho\\leq1$.</p>';
+    return;
+  }
+
+  var zD = normInv(QD), zE = normInv(QE);
+  var p0 = bvnCdf(zD, zE, 0);
+  var p1 = bvnCdf(zD, zE, rho1);
+  var p2 = bvnCdf(zD, zE, rho2);
+  var indep = QD*QE;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$z_D=N^{-1}(Q_D)$</th><td>' + zD.toFixed(4) + '</td></tr>';
+  html += '<tr><th>$z_E=N^{-1}(Q_E)$</th><td>' + zE.toFixed(4) + '</td></tr>';
+  html += '<tr><th>$M_2(z_D,z_E;\\rho=0)$</th><td>' + (p0*100).toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>$M_2(z_D,z_E;\\rho=' + rho1.toFixed(2) + ')$</th><td>' + (p1*100).toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>$M_2(z_D,z_E;\\rho=' + rho2.toFixed(2) + ')$</th><td>' + (p2*100).toFixed(4) + ' %</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ok">Vérification : $M_2(\\cdot;0)=' + (p0*100).toFixed(4) + '\\,\\%$ contre $Q_D\\times Q_E=' + (indep*100).toFixed(4) + '\\,\\%$ (indépendance)</div>';
+  html += '<div class="valeur mid">Hausse de la probabilité de défaut conjoint, $\\rho=0\\to\\rho=' + rho2.toFixed(2) + '$ : +' + ((p2-p0)*100).toFixed(4) + ' points (' + ((p2/p0-1)*100).toFixed(1) + ' % en relatif)</div>';
+
+  html += dessinerCopule(p0, p1, p2, rho1, rho2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCopule(p0, p1, p2, rho1, rho2) {
+  var largeur = 320, hauteur = 210, margeG = 50, margeD = 15, margeH = 20, margeB = 40;
+  var vals = [p0*100, p1*100, p2*100];
+  var vMax = Math.max.apply(null, vals) * 1.25 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 40;
+  var labels = ['ρ=0', 'ρ='+rho1.toFixed(2), 'ρ='+rho2.toFixed(2)];
+  var couleurs = ['var(--cgris, #5A5A5A)','var(--ceco, #1F6FB2)','var(--cintu, #E08000)'];
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + v.toFixed(3) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">P(défaut conjoint) (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerCholeski() {
+  var resDiv = document.getElementById('resultatCholeski');
+  var r12 = parseFloat(document.getElementById('c8_r12').value);
+  var r13 = parseFloat(document.getElementById('c8_r13').value);
+  var r23 = parseFloat(document.getElementById('c8_r23').value);
+  var z1 = parseFloat(document.getElementById('c8_z1').value);
+  var z2 = parseFloat(document.getElementById('c8_z2').value);
+  var z3 = parseFloat(document.getElementById('c8_z3').value);
+  var anneeBas = parseFloat(document.getElementById('c8_anneeBas').value);
+  var qBas = parseFloat(document.getElementById('c8_qbas').value);
+  var anneeHaut = parseFloat(document.getElementById('c8_anneeHaut').value);
+  var qHaut = parseFloat(document.getElementById('c8_qhaut').value);
+
+  if ([r12,r13,r23,z1,z2,z3,anneeBas,qBas,anneeHaut,qHaut].some(isNaN) || r12<-1 || r12>1 || r13<-1 || r13>1 || r23<-1 || r23>1 || anneeHaut<=anneeBas) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : corrélations entre $-1$ et $1$, horizon haut strictement supérieur à l\'horizon bas.</p>';
+    return;
+  }
+
+  var L11 = 1;
+  var L21 = r12;
+  var L22sq = 1 - r12*r12;
+  if (L22sq <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Matrice de corrélation non valide (non définie positive) : $|\\rho_{12}|$ trop proche de 1.</p>';
+    return;
+  }
+  var L22 = Math.sqrt(L22sq);
+  var L31 = r13;
+  var L32 = (r23 - L31*L21)/L22;
+  var L33sq = 1 - L31*L31 - L32*L32;
+  if (L33sq <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Matrice de corrélation non valide (non définie positive) : cette combinaison de $\\rho_{12},\\rho_{13},\\rho_{23}$ n\'est pas cohérente.</p>';
+    return;
+  }
+  var L33 = Math.sqrt(L33sq);
+
+  var x1 = L11*z1;
+  var x2 = L21*z1 + L22*z2;
+  var x3 = L31*z1 + L32*z2 + L33*z3;
+
+  var u2 = normCdf(x2);
+  var uPct = u2*100, qBasPct = qBas*100, qHautPct = qHaut*100;
+  var horsPlage = uPct < Math.min(qBasPct,qHautPct) || uPct > Math.max(qBasPct,qHautPct);
+  var tau2 = anneeBas + (uPct-qBasPct)/(qHautPct-qBasPct)*(anneeHaut-anneeBas);
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$L$</th><td colspan="1" style="text-align:left; font-family:\'Courier New\',monospace;">'
+        + 'L11=' + L11.toFixed(4) + ', L21=' + L21.toFixed(4) + ', L22=' + L22.toFixed(4) + '<br>'
+        + 'L31=' + L31.toFixed(4) + ', L32=' + L32.toFixed(4) + ', L33=' + L33.toFixed(4) + '</td></tr>';
+  html += '</table>';
+  html += '<table class="tabres"><tr><th>Composante</th><th>Valeur</th></tr>';
+  html += '<tr><td>$x_1$</td><td>' + x1.toFixed(4) + '</td></tr>';
+  html += '<tr><td>$x_2$</td><td>' + x2.toFixed(4) + '</td></tr>';
+  html += '<tr><td>$x_3$</td><td>' + x3.toFixed(4) + '</td></tr>';
+  html += '<tr><td>$N(x_2)$</td><td>' + uPct.toFixed(2) + ' %</td></tr>';
+  html += '</table>';
+
+  if (horsPlage) {
+    html += '<div class="valeur ko">$N(x_2)=' + uPct.toFixed(2) + '\\,\\%$ est hors de la plage $[' + Math.min(qBasPct,qHautPct).toFixed(2) + '\\,\\%,\\,' + Math.max(qBasPct,qHautPct).toFixed(2) + '\\,\\%]$ : l\'interpolation extrapole en dehors des deux points fournis, résultat à interpréter avec prudence</div>';
+  } else {
+    html += '<div class="valeur ok">$N(x_2)=' + uPct.toFixed(2) + '\\,\\%$ se situe entre $Q_2(' + anneeBas + ')=' + qBasPct.toFixed(2) + '\\,\\%$ et $Q_2(' + anneeHaut + ')=' + qHautPct.toFixed(2) + '\\,\\%$</div>';
+  }
+  html += '<div class="valeur mid">Temps de défaut simulé par interpolation linéaire : $\\tau_2\\approx' + tau2.toFixed(3) + '$ ans</div>';
+
+  html += dessinerInterpolation(anneeBas, qBasPct, anneeHaut, qHautPct, tau2, uPct);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerInterpolation(aBas, qBas, aHaut, qHaut, tau, u) {
+  var largeur = 320, hauteur = 210, margeG = 46, margeD = 15, margeH = 20, margeB = 40;
+  var xMin = aBas - (aHaut-aBas)*0.3, xMax = aHaut + (aHaut-aBas)*0.3;
+  var yValsAll = [qBas, qHaut, u];
+  var yMax = Math.max.apply(null, yValsAll) * 1.15;
+  var yMin = Math.min(0, Math.min.apply(null, yValsAll) * 0.85);
+  function xPix(xv) { return margeG + (xv-xMin)/(xMax-xMin)*(largeur-margeG-margeD); }
+  function yPix(yv) { return margeH + (yMax-yv)/(yMax-yMin)*(hauteur-margeH-margeB); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yPix(yMin<0?0:yMin).toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yPix(yMin<0?0:yMin).toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + margeH + '" x2="' + margeG + '" y2="' + (hauteur-margeB) + '" stroke="#888" stroke-width="1"/>';
+  var x1p = xPix(aBas), y1p = yPix(qBas), x2p = xPix(aHaut), y2p = yPix(qHaut);
+  svg += '<line x1="' + x1p.toFixed(1) + '" y1="' + y1p.toFixed(1) + '" x2="' + x2p.toFixed(1) + '" y2="' + y2p.toFixed(1) + '" stroke="var(--ceco, #1F6FB2)" stroke-width="1.6"/>';
+  svg += '<circle cx="' + x1p.toFixed(1) + '" cy="' + y1p.toFixed(1) + '" r="3" fill="var(--ceco, #1F6FB2)"/>';
+  svg += '<circle cx="' + x2p.toFixed(1) + '" cy="' + y2p.toFixed(1) + '" r="3" fill="var(--ceco, #1F6FB2)"/>';
+  svg += '<text x="' + x1p.toFixed(1) + '" y="' + (y1p+16).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + aBas + ' ans, ' + qBas.toFixed(1) + '%</text>';
+  svg += '<text x="' + x2p.toFixed(1) + '" y="' + (y2p-7).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + aHaut + ' ans, ' + qHaut.toFixed(1) + '%</text>';
+  var xTau = xPix(tau), yTau = yPix(u);
+  svg += '<line x1="' + xTau.toFixed(1) + '" y1="' + yPix(yMin<0?0:yMin).toFixed(1) + '" x2="' + xTau.toFixed(1) + '" y2="' + yTau.toFixed(1) + '" stroke="var(--cintu, #E08000)" stroke-width="1" stroke-dasharray="3,2"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yTau.toFixed(1) + '" x2="' + xTau.toFixed(1) + '" y2="' + yTau.toFixed(1) + '" stroke="var(--cintu, #E08000)" stroke-width="1" stroke-dasharray="3,2"/>';
+  svg += '<circle cx="' + xTau.toFixed(1) + '" cy="' + yTau.toFixed(1) + '" r="3.4" fill="var(--cintu, #E08000)"/>';
+  svg += '<text x="' + xTau.toFixed(1) + '" y="' + (yPix(yMin<0?0:yMin)+13).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="var(--cintu, #E08000)">τ≈' + tau.toFixed(2) + '</text>';
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Q(τ) (%)</text>';
+  svg += '<text x="' + (largeur/2) + '" y="' + (hauteur-6) + '" font-size="8.5" text-anchor="middle" fill="currentColor">Horizon (années)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCopule(); calculerCholeski(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Les bases de la corrélation — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Application : les bases de la corrélation</h1>
+<p class="sous-titre">Calculatrice interactive — VaR d'un portefeuille corrélé (exercice 5), défaut conjoint et corrélation (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La VaR d'un portefeuille corrélé</h2>
+  <p class="aide">$\sigma_P=\sqrt{B_X^2\sigma_X^2+B_Y^2\sigma_Y^2+2B_XB_Y\rho\sigma_X\sigma_Y}$, $\mathrm{VaR}=\sigma_P\,z\,\sqrt{t}$.</p>
+  <div class="ligne">
+    <div><label for="c6_bx">Position $B_X$ (millions)</label><input type="number" id="c6_bx" value="10" step="0.1"></div>
+    <div><label for="c6_by">Position $B_Y$ (millions)</label><input type="number" id="c6_by" value="5" step="0.1"></div>
+    <div><label for="c6_sx">Volatilité $\sigma_X$</label><input type="number" id="c6_sx" value="0.02" step="0.001"></div>
+    <div><label for="c6_sy">Volatilité $\sigma_Y$</label><input type="number" id="c6_sy" value="0.01" step="0.001"></div>
+    <div><label for="c6_rho">Corrélation $\rho$</label><input type="number" id="c6_rho" value="0.7" step="0.01" min="-1" max="1"></div>
+    <div><label for="c6_z">Quantile $z$ (99\% : 2,3264)</label><input type="number" id="c6_z" value="2.3264" step="0.0001"></div>
+    <div><label for="c6_t">Horizon $t$ (jours)</label><input type="number" id="c6_t" value="10" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerVaRCorrelee()">Calculer</button>
+  <div id="resultatVaRCorrelee" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Défaut conjoint et corrélation</h2>
+  <p class="aide">$P(X\cap Y)=\rho\sqrt{P_X(1-P_X)}\sqrt{P_Y(1-P_Y)}+P_XP_Y$. La formule peut donner une probabilité négative (donc impossible) si $\rho$ est trop négatif compte tenu de $P_X,P_Y$.</p>
+  <div class="ligne">
+    <div><label for="c6b_px">$P_X$</label><input type="number" id="c6b_px" value="0.15" step="0.01" min="0.001" max="0.999"></div>
+    <div><label for="c6b_py">$P_Y$</label><input type="number" id="c6b_py" value="0.15" step="0.01" min="0.001" max="0.999"></div>
+    <div><label for="c6b_rho">Corrélation $\rho$</label><input type="number" id="c6b_rho" value="0.4" step="0.01" min="-1" max="1"></div>
+  </div>
+  <button onclick="calculerDefautConjoint()">Calculer</button>
+  <div id="resultatDefautConjoint" class="resultat-zone"></div>
+</div>
+
+<script>
+function sigmaP(Bx,By,sx,sy,rho) {
+  var v = Bx*Bx*sx*sx + By*By*sy*sy + 2*Bx*By*rho*sx*sy;
+  return Math.sqrt(Math.max(v,0));
+}
+
+function calculerVaRCorrelee() {
+  var resDiv = document.getElementById('resultatVaRCorrelee');
+  var Bx = parseFloat(document.getElementById('c6_bx').value);
+  var By = parseFloat(document.getElementById('c6_by').value);
+  var sx = parseFloat(document.getElementById('c6_sx').value);
+  var sy = parseFloat(document.getElementById('c6_sy').value);
+  var rho = parseFloat(document.getElementById('c6_rho').value);
+  var z = parseFloat(document.getElementById('c6_z').value);
+  var t = parseFloat(document.getElementById('c6_t').value);
+
+  if ([Bx,By,sx,sy,rho,z,t].some(isNaN) || Bx<0 || By<0 || sx<0 || sy<0 || rho<-1 || rho>1 || z<=0 || t<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : positions et volatilités non négatives, $-1\\leq\\rho\\leq1$, $z>0$, $t>0$.</p>';
+    return;
+  }
+
+  var sp = sigmaP(Bx,By,sx,sy,rho);
+  var varP = sp*z*Math.sqrt(t);
+  var spM1 = sigmaP(Bx,By,sx,sy,-1), varM1 = spM1*z*Math.sqrt(t);
+  var spP1 = sigmaP(Bx,By,sx,sy,1), varP1 = spP1*z*Math.sqrt(t);
+  var haussePct = (varP1-varM1)/varM1*100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$\\sigma_P$ ($\\rho=' + rho.toFixed(2) + '$)</th><td>' + sp.toFixed(4) + '</td></tr>';
+  html += '<tr><th>VaR à ' + t + ' jours ($\\rho=' + rho.toFixed(2) + '$)</th><td>' + varP.toFixed(4) + ' millions</td></tr>';
+  html += '<tr><th>VaR, $\\rho=-1$ (diversification maximale)</th><td>' + varM1.toFixed(4) + ' millions</td></tr>';
+  html += '<tr><th>VaR, $\\rho=+1$ (aucune diversification)</th><td>' + varP1.toFixed(4) + ' millions</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">écart entre les deux cas extrêmes : +' + haussePct.toFixed(1) + ' % de $\\rho=-1$ à $\\rho=+1$</div>';
+  html += dessinerVaR(varM1, varP, varP1, rho);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerVaR(vM1, vCur, vP1, rho) {
+  var largeur = 300, hauteur = 210, margeG = 50, margeD = 15, margeH = 20, margeB = 44;
+  var vals = [vM1, vCur, vP1];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 40;
+  var labels = ['ρ=-1', 'ρ='+rho.toFixed(2), 'ρ=+1'];
+  var couleurs = ['var(--cex, #2E8B57)','var(--ceco, #1F6FB2)','var(--cintu, #E08000)'];
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(3) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">VaR (millions)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerDefautConjoint() {
+  var resDiv = document.getElementById('resultatDefautConjoint');
+  var Px = parseFloat(document.getElementById('c6b_px').value);
+  var Py = parseFloat(document.getElementById('c6b_py').value);
+  var rho = parseFloat(document.getElementById('c6b_rho').value);
+
+  if ([Px,Py,rho].some(isNaN) || Px<=0 || Px>=1 || Py<=0 || Py>=1 || rho<-1 || rho>1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $0<P_X<1$, $0<P_Y<1$, $-1\\leq\\rho\\leq1$.</p>';
+    return;
+  }
+
+  var sigX = Math.sqrt(Px*(1-Px)), sigY = Math.sqrt(Py*(1-Py));
+  var pJoint = rho*sigX*sigY + Px*Py;
+  var rhoMin = -(Px*Py)/(sigX*sigY);
+  var infaisable = pJoint < 0;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$\\sqrt{P_X(1-P_X)}$</th><td>' + sigX.toFixed(4) + '</td></tr>';
+  html += '<tr><th>$\\sqrt{P_Y(1-P_Y)}$</th><td>' + sigY.toFixed(4) + '</td></tr>';
+  html += '<tr><th>$P(X\\cap Y)$</th><td>' + (pJoint*100).toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>Corrélation minimale faisable, $\\rho_{\\min}$</th><td>' + rhoMin.toFixed(4) + '</td></tr>';
+  html += '</table>';
+  if (infaisable) {
+    html += '<div class="valeur ko">$\\rho=' + rho.toFixed(3) + '$ est en-dessous de $\\rho_{\\min}=' + rhoMin.toFixed(4) + '$ : la probabilité obtenue est négative, donc impossible pour ces valeurs de $P_X,P_Y$</div>';
+  } else {
+    html += '<div class="valeur ok">$\\rho=' + rho.toFixed(3) + '$ est faisable (au-dessus de $\\rho_{\\min}=' + rhoMin.toFixed(4) + '$)</div>';
+  }
+  html += dessinerDefaut(Px, Py, sigX, sigY, rho, rhoMin);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerDefaut(Px, Py, sigX, sigY, rhoCur, rhoMin) {
+  var largeur = 300, hauteur = 210, margeG = 50, margeD = 15, margeH = 20, margeB = 40;
+  var rhos = [1, 0.5, 0, -0.5, rhoMin].filter(function(r){ return r>=-1 && r<=1; });
+  rhos = rhos.concat([rhoCur]);
+  rhos.sort(function(a,b){return a-b;});
+  var ps = rhos.map(function(r){ return (r*sigX*sigY+Px*Py)*100; });
+  var vMax = Math.max.apply(null, ps.concat([0])) * 1.15 || 1;
+  var vMin = Math.min.apply(null, ps.concat([0])) * 1.15;
+  function yPix(v) { return margeH + (vMax - v) / (vMax-vMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var n = rhos.length;
+  var largeurBarre = Math.min(26, (largeur-margeG-margeD)/n - 6);
+  var xCentres = [];
+  for (var i=0;i<n;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/n)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < n; i++) {
+    var v = ps[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    var h = Math.abs(yBot-yTop);
+    var estCourant = Math.abs(rhos[i]-rhoCur) < 1e-9;
+    var couleur = v<0 ? 'var(--danger, #b00020)' : (estCourant ? 'var(--ceco, #1F6FB2)' : 'var(--cex, #2E8B57)');
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleur + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (v>=0 ? (yTop-4).toFixed(1) : (yBot+11).toFixed(1)) + '" font-size="7" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (hauteur-margeB+14).toFixed(1) + '" font-size="6.5" text-anchor="middle" fill="currentColor">ρ=' + rhos[i].toFixed(2) + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">P(X∩Y) (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerVaRCorrelee(); calculerDefautConjoint(); };
+</script>
+</body>
+</html>

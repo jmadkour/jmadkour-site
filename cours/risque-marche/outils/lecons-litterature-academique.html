@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Littérature sur le trading book — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Application : les leçons de la littérature sur le trading book</h1>
+<p class="sous-titre">Calculatrice interactive — mécanisme de la procyclicité (exercice 5), indice de diversification inter-risques (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le mécanisme de la procyclicité</h2>
+  <p class="aide">Un choc $s$ sur la valeur des actifs (dette inchangée) fait dévier le levier de sa cible ; la banque rééquilibre en achetant ($x>0$) ou en vendant ($x>0$) des actifs, financés par une dette égale, pour retrouver le levier cible $L^\ast$.</p>
+  <div class="ligne">
+    <div><label for="c5_A0">Actifs initiaux $A_0$</label><input type="number" id="c5_A0" value="100" step="0.1"></div>
+    <div><label for="c5_E0">Fonds propres initiaux $E_0$</label><input type="number" id="c5_E0" value="10" step="0.1"></div>
+    <div><label for="c5_Lstar">Levier cible $L^\ast$</label><input type="number" id="c5_Lstar" value="10" step="0.1" min="1.01"></div>
+    <div><label for="c5_s">Choc sur les actifs $s$ (+ = hausse, − = baisse)</label><input type="number" id="c5_s" value="-5" step="0.1"></div>
+  </div>
+  <button onclick="calculerProcyclicite()">Calculer</button>
+  <div id="resultatProcyclicite" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>L'indice de diversification inter-risques</h2>
+  <p class="aide">Indice = VaR unifiée / somme des VaR compartimentées. Indice $<1$ : diversification. Indice $>1$ : compounding.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>VaR compartimentées</h3>
+      <label for="c5b_vm">VaR de marché</label><input type="number" id="c5b_vm" value="40" step="0.1">
+      <label for="c5b_vc">VaR de crédit</label><input type="number" id="c5b_vc" value="70" step="0.1">
+      <label for="c5b_vo">VaR opérationnelle</label><input type="number" id="c5b_vo" value="20" step="0.1">
+    </div>
+    <div class="bloc">
+      <h3>Méthodes d'agrégation</h3>
+      <label for="c5b_bu">VaR unifiée, étude bottom-up</label><input type="number" id="c5b_bu" value="145" step="0.1">
+      <label for="c5b_rho">Corrélation moyenne $\rho$ (méthode top-down)</label><input type="number" id="c5b_rho" value="0.3" step="0.01" min="-1" max="1">
+    </div>
+  </div>
+  <button onclick="calculerDiversification()">Calculer</button>
+  <div id="resultatDiversification" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerProcyclicite() {
+  var resDiv = document.getElementById('resultatProcyclicite');
+  var A0 = parseFloat(document.getElementById('c5_A0').value);
+  var E0 = parseFloat(document.getElementById('c5_E0').value);
+  var Lstar = parseFloat(document.getElementById('c5_Lstar').value);
+  var s = parseFloat(document.getElementById('c5_s').value);
+
+  if ([A0,E0,Lstar,s].some(isNaN) || A0<=0 || E0<=0 || E0>=A0 || Lstar<=1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $A_0>0$, $0<E_0<A_0$, et un levier cible $L^\\ast>1$.</p>';
+    return;
+  }
+  var D0 = A0-E0, L0 = A0/E0;
+  var A1 = A0+s, E1 = E0+s, D1 = D0;
+  if (E1<=0) {
+    resDiv.innerHTML = '<p class="erreur">Ce choc rend les fonds propres négatifs ou nuls ($E_0+s\\leq0$) : la banque serait déjà en faillite avant tout rééquilibrage.</p>';
+    return;
+  }
+  var L1 = A1/E1;
+  var x = Lstar*E1 - A1;
+  var A2 = A1+x, D2 = D1+x, E2 = E1, L2 = A2/E2;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th></th><th>actifs</th><th>dette</th><th>fonds propres</th><th>levier</th></tr>';
+  html += '<tr><th>Initial</th><td>' + A0.toFixed(2) + '</td><td>' + D0.toFixed(2) + '</td><td>' + E0.toFixed(2) + '</td><td>' + L0.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Après le choc, avant rééquilibrage</th><td>' + A1.toFixed(2) + '</td><td>' + D1.toFixed(2) + '</td><td>' + E1.toFixed(2) + '</td><td>' + L1.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Après rééquilibrage (cible ' + Lstar.toFixed(2) + ')</th><td>' + A2.toFixed(2) + '</td><td>' + D2.toFixed(2) + '</td><td>' + E2.toFixed(2) + '</td><td>' + L2.toFixed(3) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (x>=0?'ok':'ko') + '">la banque doit ' + (x>=0?'acheter':'vendre') + ' ' + Math.abs(x).toFixed(3) + ' d\'actifs (multiplicateur $x/s=' + (x/s).toFixed(3) + '$, soit $L^\\ast-1=' + (Lstar-1).toFixed(2) + '$ si $L_0=L^\\ast$)</div>';
+  html += dessinerProcyclicite(L1, Lstar, s);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerProcyclicite(L1, Lstar, s) {
+  var largeur = 300, hauteur = 210, margeG = 45, margeD = 20, margeH = 20, margeB = 40;
+  var vMax = Math.max(L1, Lstar) * 1.25 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var xC = (margeG+largeur-margeD)/2;
+  var yTop = yPix(L1), h = yZero-yTop;
+  var couleur = s>=0 ? 'var(--ceco, #1F6FB2)' : 'var(--cintu, #E08000)';
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<rect x="' + (xC-30) + '" y="' + yTop.toFixed(1) + '" width="60" height="' + h.toFixed(1) + '" fill="' + couleur + '"/>';
+  svg += '<text x="' + xC + '" y="' + (yTop-6).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">L=' + L1.toFixed(2) + '</text>';
+  svg += '<text x="' + xC + '" y="' + (hauteur-margeB+16).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">après choc (avant rééquil.)</text>';
+  var yCible = yPix(Lstar);
+  svg += '<line x1="' + margeG + '" y1="' + yCible.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yCible.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-2) + '" y="' + (yCible-4).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="currentColor">cible ' + Lstar.toFixed(1) + '</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerDiversification() {
+  var resDiv = document.getElementById('resultatDiversification');
+  var vm = parseFloat(document.getElementById('c5b_vm').value);
+  var vc = parseFloat(document.getElementById('c5b_vc').value);
+  var vo = parseFloat(document.getElementById('c5b_vo').value);
+  var bu = parseFloat(document.getElementById('c5b_bu').value);
+  var rho = parseFloat(document.getElementById('c5b_rho').value);
+
+  if ([vm,vc,vo,bu,rho].some(isNaN) || vm<0 || vc<0 || vo<0 || bu<0 || rho<-1 || rho>1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : des VaR non négatives, et $-1\\leq\\rho\\leq1$.</p>';
+    return;
+  }
+
+  var sum = vm+vc+vo;
+  var idxBU = bu/sum;
+  var sumsq = vm*vm+vc*vc+vo*vo;
+  var cross = 2*rho*(vm*vc+vm*vo+vc*vo);
+  var varTD = Math.sqrt(Math.max(sumsq+cross, 0));
+  var idxTD = varTD/sum;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Somme compartimentée</th><td>' + sum.toFixed(2) + '</td></tr>';
+  html += '<tr><th>VaR unifiée, bottom-up</th><td>' + bu.toFixed(2) + '</td></tr>';
+  html += '<tr><th>Indice bottom-up</th><td>' + idxBU.toFixed(3) + '</td></tr>';
+  html += '<tr><th>VaR unifiée, top-down ($\\rho=' + rho.toFixed(2) + '$)</th><td>' + varTD.toFixed(2) + '</td></tr>';
+  html += '<tr><th>Indice top-down</th><td>' + idxTD.toFixed(3) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (idxBU>1?'ko':'ok') + '">bottom-up : ' + (idxBU>1?'compounding':'diversification') + '</div>';
+  html += '<div class="valeur ' + (idxTD>1?'ko':'ok') + '">top-down : ' + (idxTD>1?'compounding':'diversification') + '</div>';
+  html += dessinerDiversification(idxBU, idxTD);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerDiversification(idxBU, idxTD) {
+  var largeur = 300, hauteur = 210, margeG = 45, margeD = 20, margeH = 20, margeB = 40;
+  var vMax = Math.max(idxBU, idxTD, 1) * 1.25 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 44;
+  var xCentres = [margeG + (largeur-margeG-margeD)*0.28, margeG + (largeur-margeG-margeD)*0.72];
+  var vals = [idxBU, idxTD];
+  var labels = ['bottom-up','top-down'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  var yUn = yPix(1);
+  svg += '<line x1="' + margeG + '" y1="' + yUn.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yUn.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-2) + '" y="' + (yUn-4).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="currentColor">indice=1</text>';
+  for (var i=0;i<2;i++) {
+    var yTop = yPix(vals[i]), h = yZero-yTop;
+    var couleur = vals[i]>1 ? 'var(--cintu, #E08000)' : 'var(--cex, #2E8B57)';
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleur + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-6).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + vals[i].toFixed(3) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero+14).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerProcyclicite(); calculerDiversification(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Évaluation par arbitrage — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  .arbre { font-family: "Courier New", monospace; font-size: 0.85em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Application : évaluation par arbitrage</h1>
+<p class="sous-titre">Calculatrice interactive — arbre binomial à une période et prix d'une option (exercice 5), valeur d'un swap CMT et son OAS (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Arbre binomial à une période : probabilité risque-neutre et prix d'un dérivé</h2>
+  <p class="aide">$Z_u=1000/(1+r_u/2)$, $Z_d=1000/(1+r_d/2)$. La probabilité risque-neutre $p$ résout $[p\,Z_u+(1-p)\,Z_d]/(1+r_0/2)=\text{prix de marché}$. Le dérivé (call ou put) se prix ensuite par $[p\times\text{payoff}_u+(1-p)\times\text{payoff}_d]/(1+r_0/2)$.</p>
+  <div class="ligne">
+    <div><label for="c10_r0">Taux court $r_0$ (%)</label><input type="number" id="c10_r0" value="4.00" step="0.01"></div>
+    <div><label for="c10_ru">Taux haut $r_u$ (%)</label><input type="number" id="c10_ru" value="4.80" step="0.01"></div>
+    <div><label for="c10_rd">Taux bas $r_d$ (%)</label><input type="number" id="c10_rd" value="3.60" step="0.01"></div>
+    <div><label for="c10_pmkt">Prix de marché du zéro à un an</label><input type="number" id="c10_pmkt" value="958.50" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c10_type">Type d'option</label>
+      <select id="c10_type"><option value="put" selected>Put</option><option value="call">Call</option></select>
+    </div>
+    <div><label for="c10_strike">Strike $K$</label><input type="number" id="c10_strike" value="979" step="0.01"></div>
+  </div>
+  <button onclick="calculerArbre()">Calculer</button>
+  <div id="resultatArbre" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Swap CMT à deux périodes et OAS</h2>
+  <p class="aide">Arbre récombinant : date 1 (états $r_u$, $r_d$, probabilité $p$ depuis la date 0), date 2 (états UU, milieu, DD, probabilité $q$ de « transition vers le haut » depuis chaque nœud de la date 1). Paiement du swap par période $=N\times(y_c-\text{fixe})/2$. L'OAS s'ajoute à chaque taux d'actualisation, sans toucher aux flux ni aux probabilités.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Arbre de taux et probabilités</h3>
+      <label for="c10_s_r0">$r_0$ (%)</label><input type="number" id="c10_s_r0" value="4.00" step="0.01">
+      <label for="c10_s_ru">$r_u$ date 1 (%)</label><input type="number" id="c10_s_ru" value="4.80" step="0.01">
+      <label for="c10_s_rd">$r_d$ date 1 (%)</label><input type="number" id="c10_s_rd" value="3.60" step="0.01">
+      <label for="c10_s_ruu">$r_{UU}$ date 2 (%)</label><input type="number" id="c10_s_ruu" value="5.60" step="0.01">
+      <label for="c10_s_rmid">$r_{\text{mid}}$ date 2 (%)</label><input type="number" id="c10_s_rmid" value="4.00" step="0.01">
+      <label for="c10_s_rdd">$r_{DD}$ date 2 (%)</label><input type="number" id="c10_s_rdd" value="2.40" step="0.01">
+    </div>
+    <div class="bloc">
+      <h3>Swap et probabilités risque-neutre</h3>
+      <label for="c10_s_n">Notionnel $N$</label><input type="number" id="c10_s_n" value="2000000" step="1000">
+      <label for="c10_s_fixe">Taux fixe (%)</label><input type="number" id="c10_s_fixe" value="4.00" step="0.01">
+      <label for="c10_s_p">$p$ (date 0 → date 1)</label><input type="number" id="c10_s_p" value="0.8076" step="0.0001" min="0" max="1">
+      <label for="c10_s_q">$q$ (date 1 → date 2)</label><input type="number" id="c10_s_q" value="0.65" step="0.0001" min="0" max="1">
+    </div>
+    <div class="bloc">
+      <h3>OAS et prix de marché</h3>
+      <label for="c10_s_oas">OAS (points de base)</label><input type="number" id="c10_s_oas" value="20" step="1">
+      <p class="aide" style="margin-top:0.8em;">Saisir l'OAS qui réconcilie le prix du modèle au prix de marché observé, puis comparer au prix du modèle (OAS = 0) affiché ci-dessous.</p>
+    </div>
+  </div>
+  <button onclick="calculerSwap()">Calculer</button>
+  <div id="resultatSwap" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerArbre() {
+  var resDiv = document.getElementById('resultatArbre');
+  var r0 = parseFloat(document.getElementById('c10_r0').value)/100;
+  var ru = parseFloat(document.getElementById('c10_ru').value)/100;
+  var rd = parseFloat(document.getElementById('c10_rd').value)/100;
+  var Pmkt = parseFloat(document.getElementById('c10_pmkt').value);
+  var type = document.getElementById('c10_type').value;
+  var K = parseFloat(document.getElementById('c10_strike').value);
+
+  if ([r0,ru,rd,Pmkt,K].some(isNaN) || Pmkt<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : vérifier les taux et le prix de marché (strictement positif).</p>';
+    return;
+  }
+
+  var Zu = 1000/(1+ru/2);
+  var Zd = 1000/(1+rd/2);
+  var target = Pmkt*(1+r0/2);
+  var p;
+  if (Math.abs(Zu-Zd) < 1e-12) {
+    resDiv.innerHTML = '<p class="erreur">$Z_u$ et $Z_d$ sont égaux : impossible de calibrer une probabilité risque-neutre.</p>';
+    return;
+  }
+  p = (target - Zd)/(Zu - Zd);
+
+  var borneBasse = Math.min(Zu,Zd), borneHaute = Math.max(Zu,Zd);
+  var hors = (p<0 || p>1);
+
+  var payU = type==='call' ? Math.max(Zu-K,0) : Math.max(K-Zu,0);
+  var payD = type==='call' ? Math.max(Zd-K,0) : Math.max(K-Zd,0);
+  var prixRN = (p*payU + (1-p)*payD)/(1+r0/2);
+  var prixReel = (0.5*payU + 0.5*payD)/(1+r0/2);
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$Z_u$ (état haut)</th><td>' + Zu.toFixed(4) + '</td></tr>';
+  html += '<tr><th>$Z_d$ (état bas)</th><td>' + Zd.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Probabilité risque-neutre $p$</th><td>' + p.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Payoff en état haut / bas</th><td>' + payU.toFixed(4) + ' / ' + payD.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Prix par arbitrage (risque-neutre)</th><td>' + prixRN.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Prix sous probabilités réelles (50/50)</th><td>' + prixReel.toFixed(4) + '</td></tr>';
+  html += '</table>';
+
+  if (hors) {
+    html += '<div class="valeur ko">Le prix de marché saisi (' + Pmkt.toFixed(2) + ') est hors de la fourchette sans arbitrage [' + borneBasse.toFixed(2) + ' ; ' + borneHaute.toFixed(2) + '] actualisée à $r_0$ : $p$ sort de $[0,1]$, ce prix permettrait un arbitrage.</div>';
+  } else {
+    html += '<div class="valeur ok">Probabilité risque-neutre valide ($0\\leq p\\leq1$)</div>';
+  }
+  html += '<div class="valeur ' + (prixRN>=prixReel ? 'ok' : 'mid') + '">Écart risque-neutre moins réel : ' + (prixRN-prixReel).toFixed(4) + '</div>';
+
+  resDiv.innerHTML = html;
+}
+
+function calculerSwap() {
+  var resDiv = document.getElementById('resultatSwap');
+  var r0 = parseFloat(document.getElementById('c10_s_r0').value)/100;
+  var ru = parseFloat(document.getElementById('c10_s_ru').value)/100;
+  var rd = parseFloat(document.getElementById('c10_s_rd').value)/100;
+  var ruu = parseFloat(document.getElementById('c10_s_ruu').value)/100;
+  var rmid = parseFloat(document.getElementById('c10_s_rmid').value)/100;
+  var rdd = parseFloat(document.getElementById('c10_s_rdd').value)/100;
+  var N = parseFloat(document.getElementById('c10_s_n').value);
+  var fixe = parseFloat(document.getElementById('c10_s_fixe').value)/100;
+  var p = parseFloat(document.getElementById('c10_s_p').value);
+  var q = parseFloat(document.getElementById('c10_s_q').value);
+  var oasBp = parseFloat(document.getElementById('c10_s_oas').value);
+
+  var vals = [r0,ru,rd,ruu,rmid,rdd,N,fixe,p,q,oasBp];
+  if (vals.some(isNaN) || p<0 || p>1 || q<0 || q>1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $p$ et $q$ doivent être compris entre 0 et 1.</p>';
+    return;
+  }
+
+  var payUU = N*(ruu-fixe)/2, payMid = N*(rmid-fixe)/2, payDD = N*(rdd-fixe)/2;
+  var pay1u = N*(ru-fixe)/2, pay1d = N*(rd-fixe)/2;
+
+  function valeur(oas) {
+    var ru_s = ru+oas, rd_s = rd+oas, r0_s = r0+oas;
+    var valUp = (q*payUU + (1-q)*payMid)/(1+ru_s/2) + pay1u;
+    var valDown = (q*payMid + (1-q)*payDD)/(1+rd_s/2) + pay1d;
+    var val0 = (p*valUp + (1-p)*valDown)/(1+r0_s/2);
+    return {val0: val0, valUp: valUp, valDown: valDown};
+  }
+
+  var modele = valeur(0);
+  var marche = valeur(oasBp/10000);
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Paiements date 2 (UU / milieu / DD)</th><td>' + payUU.toFixed(2) + ' / ' + payMid.toFixed(2) + ' / ' + payDD.toFixed(2) + '</td></tr>';
+  html += '<tr><th>Paiements date 1 (haut / bas)</th><td>' + pay1u.toFixed(2) + ' / ' + pay1d.toFixed(2) + '</td></tr>';
+  html += '<tr><th>Valeur au nœud haut / bas (date 1, modèle)</th><td>' + modele.valUp.toFixed(2) + ' / ' + modele.valDown.toFixed(2) + '</td></tr>';
+  html += '<tr><th>Valeur à la date 0 — prix du modèle (OAS = 0)</th><td>' + modele.val0.toFixed(2) + '</td></tr>';
+  html += '<tr><th>Valeur à la date 0 — avec OAS = ' + oasBp.toFixed(1) + ' pb</th><td>' + marche.val0.toFixed(2) + '</td></tr>';
+  html += '</table>';
+
+  var ecart = modele.val0 - marche.val0;
+  var richeBonMarche = oasBp > 0 ? 'bon marché' : (oasBp < 0 ? 'riche' : 'à sa juste valeur (OAS nul)');
+  html += '<div class="valeur ' + (oasBp>0 ? 'ok' : (oasBp<0 ? 'ko' : 'mid')) + '">OAS = ' + oasBp.toFixed(1) + ' points de base : le swap est ' + richeBonMarche + '</div>';
+  html += '<div class="valeur mid">Écart de prix (modèle − marché à cet OAS) : ' + ecart.toFixed(2) + '</div>';
+
+  html += dessinerSwap(modele.val0, marche.val0, oasBp);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerSwap(vModele, vMarche, oasBp) {
+  var largeur = 300, hauteur = 210, margeG = 55, margeD = 15, margeH = 20, margeB = 40;
+  var vals = [vModele, vMarche];
+  var vMax = Math.max.apply(null, vals.map(Math.abs)) * 1.15 || 1;
+  var vMin = Math.min(0, Math.min.apply(null, vals)) * 1.15;
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 46;
+  var labels = ['Modèle (OAS=0)', 'Marché (OAS=' + oasBp.toFixed(0) + 'pb)'];
+  var couleurs = ['var(--cintu, #E08000)','var(--cex, #2E8B57)'];
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 2; i++) {
+    var v = vals[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    var h = Math.abs(yBot-yTop);
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (v>=0 ? (yTop-5).toFixed(1) : (yBot+14).toFixed(1)) + '" font-size="8" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-10) + ')">Valeur du swap</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerArbre(); calculerSwap(); };
+</script>
+</body>
+</html>
