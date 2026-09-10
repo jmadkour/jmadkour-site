@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Production et croissance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.grapheco rect.barre-a { fill: var(--cdef); }
+  svg.grapheco rect.barre-b { fill: var(--cintu); }
+  svg.grapheco rect.barre-pauvre { fill: var(--cex); }
+  svg.grapheco rect.barre-riche { fill: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco rect.barre-a { fill: var(--cdef) !important; }
+svg.grapheco rect.barre-b { fill: var(--cintu) !important; }
+svg.grapheco rect.barre-pauvre { fill: var(--cex) !important; }
+svg.grapheco rect.barre-riche { fill: var(--cgris) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Application : production et croissance</h1>
+<p class="sous-titre">Calculatrice interactive — règle de 70, deux pays comparés (exercice 5), rendements décroissants et rattrapage (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Règle de 70 : deux pays, deux croissances</h2>
+  <p class="aide">Temps de doublement approché ($70/g$) et exact ($\ln 2/\ln(1+g)$), puis projection sur un nombre d'années donné.</p>
+  <div class="ligne">
+    <div><label for="pibInitial">PIB par habitant initial</label><input type="number" id="pibInitial" value="4000" step="100"></div>
+    <div><label for="gA">croissance pays A (%/an)</label><input type="number" id="gA" value="2" step="0.5"></div>
+    <div><label for="gB">croissance pays B (%/an)</label><input type="number" id="gB" value="8" step="0.5"></div>
+    <div><label for="nAnnees">nombre d'années</label><input type="number" id="nAnnees" value="35" step="1"></div>
+  </div>
+  <button onclick="calculerCroissance()">Calculer</button>
+  <div id="resultatCroissance" class="resultat-zone"></div>
+  <div id="zoneCroissance"></div>
+</div>
+
+<div class="panneau">
+  <h2>Rendements décroissants et effet de rattrapage</h2>
+  <p class="aide">Modèle illustratif $Y=A\times\sqrt{K}$ (les rendements du capital $K$ décroissent mécaniquement). Comparer un pays pauvre et un pays riche en capital recevant le même investissement $\Delta K$.</p>
+  <div class="ligne">
+    <div><label for="paramA">paramètre A (productivité)</label><input type="number" id="paramA" value="15" step="1"></div>
+    <div><label for="kPauvre">capital du pays pauvre</label><input type="number" id="kPauvre" value="5" step="1"></div>
+    <div><label for="kRiche">capital du pays riche</label><input type="number" id="kRiche" value="50" step="1"></div>
+    <div><label for="deltaK">investissement commun ΔK</label><input type="number" id="deltaK" value="1" step="1"></div>
+  </div>
+  <button onclick="calculerRendements()">Calculer</button>
+  <div id="resultatRendements" class="resultat-zone"></div>
+  <div id="zoneRendements"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function dessinerBarres(zoneId, items, W, H) {
+  var margin = 45, barW = Math.min(80, (W - 2 * margin - (items.length - 1) * 18) / items.length);
+  var maxV = Math.max.apply(null, items.map(function (it) { return it.valeur; })) * 1.2;
+  if (maxV <= 0) maxV = 1;
+  function yOf(v) { return H - margin - (v / maxV) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  var axe = svgNS('line');
+  axe.setAttribute('x1', margin); axe.setAttribute('x2', W - margin);
+  axe.setAttribute('y1', H - margin); axe.setAttribute('y2', H - margin);
+  axe.setAttribute('class', 'axe'); axe.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axe);
+  items.forEach(function (it, i) {
+    var x = margin + 12 + i * (barW + 18);
+    var y = yOf(it.valeur);
+    var h = (H - margin) - y;
+    var r = svgNS('rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', barW); r.setAttribute('height', Math.max(h, 1));
+    r.setAttribute('class', it.classe);
+    svg.appendChild(r);
+    var t = svgNS('text');
+    t.setAttribute('x', x + barW / 2); t.setAttribute('y', y - 6);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '11'); t.setAttribute('font-weight', 'bold');
+    t.textContent = it.valeur.toLocaleString('fr-FR', {maximumFractionDigits: 1});
+    svg.appendChild(t);
+    var tl = svgNS('text');
+    tl.setAttribute('x', x + barW / 2); tl.setAttribute('y', H - margin + 16);
+    tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('font-size', '10');
+    tl.textContent = it.label;
+    svg.appendChild(tl);
+  });
+  var zone = document.getElementById(zoneId);
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerCroissance() {
+  var resDiv = document.getElementById('resultatCroissance');
+  var pib0 = parseFloat(document.getElementById('pibInitial').value);
+  var gA = parseFloat(document.getElementById('gA').value);
+  var gB = parseFloat(document.getElementById('gB').value);
+  var n = parseFloat(document.getElementById('nAnnees').value);
+  var vals = [pib0, gA, gB, n];
+  if (vals.some(isNaN) || pib0 <= 0 || gA <= 0 || gB <= 0 || n <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (les taux et le PIB doivent être positifs).</p>';
+    document.getElementById('zoneCroissance').innerHTML = '';
+    return;
+  }
+  var doubleApproxA = 70 / gA, doubleApproxB = 70 / gB;
+  var doubleExactA = Math.log(2) / Math.log(1 + gA / 100);
+  var doubleExactB = Math.log(2) / Math.log(1 + gB / 100);
+  var pibA = pib0 * Math.pow(1 + gA / 100, n);
+  var pibB = pib0 * Math.pow(1 + gB / 100, n);
+  var ratio = pibB / pibA;
+
+  resDiv.innerHTML =
+    '<div class="valeur">pays A (' + gA.toFixed(1) + '%) : doublement ≈ ' + doubleApproxA.toFixed(2) + ' ans (exact ' + doubleExactA.toFixed(2) + ' ans)</div>' +
+    '<div class="valeur mid">pays B (' + gB.toFixed(1) + '%) : doublement ≈ ' + doubleApproxB.toFixed(2) + ' ans (exact ' + doubleExactB.toFixed(2) + ' ans)</div><br>' +
+    '<div class="valeur">après ' + n.toFixed(0) + ' ans : PIB/hab. A = ' + pibA.toFixed(1) + '</div>' +
+    '<div class="valeur mid">après ' + n.toFixed(0) + ' ans : PIB/hab. B = ' + pibB.toFixed(1) + '</div>' +
+    '<div class="valeur ko">rapport B/A = ' + ratio.toFixed(2) + ' — deux mondes séparés par ' + (gB - gA).toFixed(1) + ' points de croissance par an</div>';
+
+  dessinerBarres('zoneCroissance', [
+    { label: 'PIB initial', valeur: pib0, classe: 'barre-a' },
+    { label: 'A, après ' + n.toFixed(0) + ' ans', valeur: pibA, classe: 'barre-a' },
+    { label: 'B, après ' + n.toFixed(0) + ' ans', valeur: pibB, classe: 'barre-b' }
+  ], 480, 300);
+}
+
+function calculerRendements() {
+  var resDiv = document.getElementById('resultatRendements');
+  var A = parseFloat(document.getElementById('paramA').value);
+  var kP = parseFloat(document.getElementById('kPauvre').value);
+  var kR = parseFloat(document.getElementById('kRiche').value);
+  var dK = parseFloat(document.getElementById('deltaK').value);
+  var vals = [A, kP, kR, dK];
+  if (vals.some(isNaN) || A <= 0 || kP <= 0 || kR <= 0 || dK <= 0 || kR <= kP) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (le capital du pays riche doit dépasser celui du pays pauvre).</p>';
+    document.getElementById('zoneRendements').innerHTML = '';
+    return;
+  }
+  function Y(K) { return A * Math.sqrt(K); }
+  var yP0 = Y(kP), yP1 = Y(kP + dK), gainP = yP1 - yP0;
+  var yR0 = Y(kR), yR1 = Y(kR + dK), gainR = yR1 - yR0;
+  var ratioGain = gainP / gainR;
+
+  resDiv.innerHTML =
+    '<div class="valeur ok">pays pauvre : Y(' + kP.toFixed(0) + ')=' + yP0.toFixed(2) + ' → Y(' + (kP + dK).toFixed(0) + ')=' + yP1.toFixed(2) + ', gain=' + gainP.toFixed(2) + '</div><br>' +
+    '<div class="valeur">pays riche : Y(' + kR.toFixed(0) + ')=' + yR0.toFixed(2) + ' → Y(' + (kR + dK).toFixed(0) + ')=' + yR1.toFixed(2) + ', gain=' + gainR.toFixed(2) + '</div><br>' +
+    '<div class="valeur mid">pour le même investissement ΔK=' + dK.toFixed(0) + ', le pays pauvre gagne ' + ratioGain.toFixed(2) + ' fois plus de production que le pays riche</div>';
+
+  dessinerBarres('zoneRendements', [
+    { label: 'gain pays pauvre', valeur: gainP, classe: 'barre-pauvre' },
+    { label: 'gain pays riche', valeur: gainR, classe: 'barre-riche' }
+  ], 420, 280);
+}
+
+window.onload = function () { calculerCroissance(); calculerRendements(); };
+</script>
+</body>
+</html>

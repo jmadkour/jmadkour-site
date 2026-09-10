@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — Mesurer le PIB — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  h3.souspanneau { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cgris); margin: 1em 0 0.3em; border-top: 1px solid #e5e5e5; padding-top: 0.8em; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.grapheco rect.barre-va { fill: var(--cdef); }
+  svg.grapheco rect.barre-brut { fill: #b00020; }
+  svg.grapheco rect.barre-nominal { fill: var(--cintu); }
+  svg.grapheco rect.barre-reel { fill: var(--cex); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+h3.souspanneau { color: var(--cgris) !important; border-color: var(--border) !important; }
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco rect.barre-va { fill: var(--cdef) !important; }
+svg.grapheco rect.barre-brut { fill: var(--danger) !important; }
+svg.grapheco rect.barre-nominal { fill: var(--cintu) !important; }
+svg.grapheco rect.barre-reel { fill: var(--cex) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Application : mesurer le PIB</h1>
+<p class="sous-titre">Calculatrice interactive — chaîne de production et trois approches du PIB (exercice 5), nominal/réel/déflateur (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Chaîne de production, et PIB par la dépense ou par les revenus</h2>
+  <p class="aide">Trois ventes successives d'un même bien, du producteur au vendeur final.</p>
+  <div class="ligne">
+    <div><label for="vaP1">vente 1 (prix)</label><input type="number" id="vaP1" value="40" step="5"></div>
+    <div><label for="vaP2">vente 2 (prix)</label><input type="number" id="vaP2" value="70" step="5"></div>
+    <div><label for="vaP3">vente 3 (prix final)</label><input type="number" id="vaP3" value="120" step="5"></div>
+  </div>
+  <h3 class="souspanneau">Le reste de l'économie, sur la même période</h3>
+  <div class="ligne">
+    <div><label for="dC">C (consommation)</label><input type="number" id="dC" value="850" step="10"></div>
+    <div><label for="dI">I (investissement)</label><input type="number" id="dI" value="300" step="10"></div>
+    <div><label for="dG">G (dépenses publiques)</label><input type="number" id="dG" value="200" step="10"></div>
+    <div><label for="dX">X (exportations)</label><input type="number" id="dX" value="180" step="10"></div>
+    <div><label for="dM">M (importations)</label><input type="number" id="dM" value="130" step="10"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="rSalaires">salaires</label><input type="number" id="rSalaires" value="850" step="10"></div>
+    <div><label for="rProfits">profits</label><input type="number" id="rProfits" value="430" step="10"></div>
+    <div><label for="rImpots">impôts indirects</label><input type="number" id="rImpots" value="120" step="10"></div>
+  </div>
+  <button onclick="calculerPIB()">Calculer</button>
+  <div id="resultatPIB" class="resultat-zone"></div>
+  <div id="zonePIB"></div>
+</div>
+
+<div class="panneau">
+  <h2>PIB nominal, PIB réel, déflateur : deux années comparées</h2>
+  <p class="aide">Année $1$ : année de base (déflateur $100$, donc PIB réel = PIB nominal). Année $2$ : PIB réel et déflateur donnés séparément.</p>
+  <div class="ligne">
+    <div><label for="nrNom1">PIB nominal année 1</label><input type="number" id="nrNom1" value="1000" step="10"></div>
+    <div><label for="nrReel2">PIB réel année 2</label><input type="number" id="nrReel2" value="1060" step="10"></div>
+    <div><label for="nrDefl2">déflateur année 2</label><input type="number" id="nrDefl2" value="110" step="1"></div>
+  </div>
+  <button onclick="calculerNominalReel()">Calculer</button>
+  <div id="resultatNominalReel" class="resultat-zone"></div>
+  <div id="zoneNominalReel"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function dessinerBarres(zoneId, items, W, H) {
+  var margin = 45, barW = Math.min(80, (W - 2 * margin - (items.length - 1) * 18) / items.length);
+  var maxV = Math.max.apply(null, items.map(function (it) { return it.valeur; })) * 1.2;
+  if (maxV <= 0) maxV = 1;
+  function yOf(v) { return H - margin - (v / maxV) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  var axe = svgNS('line');
+  axe.setAttribute('x1', margin); axe.setAttribute('x2', W - margin);
+  axe.setAttribute('y1', H - margin); axe.setAttribute('y2', H - margin);
+  axe.setAttribute('class', 'axe'); axe.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axe);
+  items.forEach(function (it, i) {
+    var x = margin + 12 + i * (barW + 18);
+    var y = yOf(it.valeur);
+    var h = (H - margin) - y;
+    var r = svgNS('rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', barW); r.setAttribute('height', Math.max(h, 1));
+    r.setAttribute('class', it.classe);
+    svg.appendChild(r);
+    var t = svgNS('text');
+    t.setAttribute('x', x + barW / 2); t.setAttribute('y', y - 6);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '11'); t.setAttribute('font-weight', 'bold');
+    t.textContent = it.valeur.toLocaleString('fr-FR', {maximumFractionDigits: 1});
+    svg.appendChild(t);
+    var tl = svgNS('text');
+    tl.setAttribute('x', x + barW / 2); tl.setAttribute('y', H - margin + 16);
+    tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('font-size', '10');
+    tl.textContent = it.label;
+    svg.appendChild(tl);
+  });
+  var zone = document.getElementById(zoneId);
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerPIB() {
+  var resDiv = document.getElementById('resultatPIB');
+  var p1 = parseFloat(document.getElementById('vaP1').value);
+  var p2 = parseFloat(document.getElementById('vaP2').value);
+  var p3 = parseFloat(document.getElementById('vaP3').value);
+  var C = parseFloat(document.getElementById('dC').value);
+  var I = parseFloat(document.getElementById('dI').value);
+  var G = parseFloat(document.getElementById('dG').value);
+  var X = parseFloat(document.getElementById('dX').value);
+  var M = parseFloat(document.getElementById('dM').value);
+  var S = parseFloat(document.getElementById('rSalaires').value);
+  var Pr = parseFloat(document.getElementById('rProfits').value);
+  var Im = parseFloat(document.getElementById('rImpots').value);
+  var vals = [p1, p2, p3, C, I, G, X, M, S, Pr, Im];
+  if (vals.some(isNaN) || p1 < 0 || p2 < p1 || p3 < p2) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (les ventes successives doivent être croissantes).</p>';
+    document.getElementById('zonePIB').innerHTML = '';
+    return;
+  }
+  var va1 = p1, va2 = p2 - p1, va3 = p3 - p2;
+  var sommeVA = va1 + va2 + va3;
+  var sommeBrut = p1 + p2 + p3;
+  var pibDepense = C + I + G + (X - M);
+  var pibRevenus = S + Pr + Im;
+
+  resDiv.innerHTML =
+    '<div class="valeur">VA : ' + va1.toFixed(1) + ' + ' + va2.toFixed(1) + ' + ' + va3.toFixed(1) + ' = ' + sommeVA.toFixed(1) + ' = valeur du bien final (' + p3.toFixed(1) + ')</div><br>' +
+    '<div class="valeur ko">somme des ventes brutes = ' + sommeBrut.toFixed(1) + ' — surestime de ' + (sommeBrut - sommeVA).toFixed(1) + ' (double compte)</div><br>' +
+    '<div class="valeur">PIB par la dépense = ' + C.toFixed(0) + '+' + I.toFixed(0) + '+' + G.toFixed(0) + '+(' + X.toFixed(0) + '−' + M.toFixed(0) + ') = ' + pibDepense.toFixed(1) + '</div>' +
+    '<div class="valeur">PIB par les revenus = ' + S.toFixed(0) + '+' + Pr.toFixed(0) + '+' + Im.toFixed(0) + ' = ' + pibRevenus.toFixed(1) + '</div>' +
+    '<div class="valeur ' + (Math.abs(pibDepense - pibRevenus) < 0.01 ? 'ok' : 'ko') + '">' + (Math.abs(pibDepense - pibRevenus) < 0.01 ? 'les deux approches coïncident' : 'écart de ' + (pibDepense - pibRevenus).toFixed(1) + ' — vérifier les données') + '</div>';
+
+  dessinerBarres('zonePIB', [
+    { label: 'VA 1', valeur: va1, classe: 'barre-va' },
+    { label: 'VA 2', valeur: va2, classe: 'barre-va' },
+    { label: 'VA 3', valeur: va3, classe: 'barre-va' },
+    { label: 'somme VA', valeur: sommeVA, classe: 'barre-va' },
+    { label: 'ventes brutes', valeur: sommeBrut, classe: 'barre-brut' }
+  ], 480, 300);
+}
+
+function calculerNominalReel() {
+  var resDiv = document.getElementById('resultatNominalReel');
+  var nom1 = parseFloat(document.getElementById('nrNom1').value);
+  var reel2 = parseFloat(document.getElementById('nrReel2').value);
+  var defl2 = parseFloat(document.getElementById('nrDefl2').value);
+  var vals = [nom1, reel2, defl2];
+  if (vals.some(isNaN) || nom1 <= 0 || reel2 <= 0 || defl2 <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneNominalReel').innerHTML = '';
+    return;
+  }
+  var defl1 = 100, reel1 = nom1 * 100 / defl1;
+  var nom2 = reel2 * defl2 / 100;
+  var croissanceNom = (nom2 - nom1) / nom1 * 100;
+  var croissanceReel = (reel2 - reel1) / reel1 * 100;
+  var croissancePrix = (defl2 - defl1) / defl1 * 100;
+  var composee = ((1 + croissanceReel / 100) * (1 + croissancePrix / 100) - 1) * 100;
+  var approx = croissanceReel + croissancePrix;
+
+  resDiv.innerHTML =
+    '<div class="valeur">année 1 : nominal=' + nom1.toFixed(1) + ', réel=' + reel1.toFixed(1) + ', déflateur=' + defl1.toFixed(1) + '</div>' +
+    '<div class="valeur mid">année 2 : nominal=' + nom2.toFixed(1) + ', réel=' + reel2.toFixed(1) + ', déflateur=' + defl2.toFixed(1) + '</div><br>' +
+    '<div class="valeur">croissance réelle (volume) = ' + (croissanceReel >= 0 ? '+' : '') + croissanceReel.toFixed(2) + '%</div>' +
+    '<div class="valeur">croissance des prix (déflateur) = ' + (croissancePrix >= 0 ? '+' : '') + croissancePrix.toFixed(2) + '%</div>' +
+    '<div class="valeur ok">croissance nominale exacte = ' + (croissanceNom >= 0 ? '+' : '') + croissanceNom.toFixed(2) + '% (composition : ' + composee.toFixed(2) + '%)</div>' +
+    '<div class="valeur">approximation par simple somme = ' + (approx >= 0 ? '+' : '') + approx.toFixed(2) + '% (écart de ' + Math.abs(croissanceNom - approx).toFixed(2) + ' point)</div>';
+
+  dessinerBarres('zoneNominalReel', [
+    { label: 'nominal an1', valeur: nom1, classe: 'barre-nominal' },
+    { label: 'réel an1', valeur: reel1, classe: 'barre-reel' },
+    { label: 'nominal an2', valeur: nom2, classe: 'barre-nominal' },
+    { label: 'réel an2', valeur: reel2, classe: 'barre-reel' }
+  ], 480, 300);
+}
+
+window.onload = function () { calculerPIB(); calculerNominalReel(); };
+</script>
+</body>
+</html>

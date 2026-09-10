@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — Les externalités — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  .legende { font-size: 0.82em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: 0.4em; }
+  .legende span { display: inline-block; margin-right: 1em; }
+  .legende .puce { display: inline-block; width: 0.9em; height: 0.9em; border-radius: 2px; margin-right: 0.3em; vertical-align: middle; }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.grapheco rect.barre-cout { fill: var(--cgris); }
+  svg.grapheco rect.barre-dommage { fill: var(--cintu); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .legende { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco .courbe-demande { stroke: var(--cdef) !important; fill: none; }
+svg.grapheco .courbe-offre-privee { stroke: var(--cgris) !important; fill: none; }
+svg.grapheco .courbe-offre-sociale { stroke: var(--cintu) !important; fill: none; }
+svg.grapheco .zone-dwl { fill: var(--danger); fill-opacity: 0.18; stroke: none; }
+svg.grapheco .ligne-eq { stroke: var(--cgris) !important; }
+svg.grapheco rect.barre-cout { fill: var(--cgris) !important; }
+svg.grapheco rect.barre-dommage { fill: var(--cintu) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Application : les externalités</h1>
+<p class="sous-titre">Calculatrice interactive — externalité négative et taxe pigouvienne (exercice 5), théorème de Coase (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Une externalité négative : marché, optimum, perte sèche</h2>
+  <p class="aide">Demande : $Q_d=A-BP$. Offre (coût privé) : $Q_o=CP-D$. Dommage externe constant $t$ par unité. La taxe pigouvienne optimale est égale à $t$.</p>
+  <div class="ligne">
+    <div><label for="e0A">A (demande)</label><input type="number" id="e0A" value="200" step="10"></div>
+    <div><label for="e0B">B (demande)</label><input type="number" id="e0B" value="4" step="1"></div>
+    <div><label for="e0C">C (offre)</label><input type="number" id="e0C" value="4" step="1"></div>
+    <div><label for="e0D">D (offre)</label><input type="number" id="e0D" value="40" step="10"></div>
+    <div><label for="e0t">t (dommage externe / unité)</label><input type="number" id="e0t" value="8" step="1"></div>
+  </div>
+  <button onclick="calculerExternalite()">Calculer</button>
+  <div id="resultatExternalite" class="resultat-zone"></div>
+  <div id="zoneExternalite"></div>
+  <div class="legende">
+    <span><span class="puce" style="background:var(--cdef)"></span>demande</span>
+    <span><span class="puce" style="background:var(--cgris)"></span>offre (coût privé)</span>
+    <span><span class="puce" style="background:var(--cintu)"></span>offre (coût social)</span>
+    <span><span class="puce" style="background:var(--danger);opacity:0.5"></span>perte sèche</span>
+  </div>
+</div>
+
+<div class="panneau">
+  <h2>Le théorème de Coase</h2>
+  <p class="aide">Comparer le coût de réduction d'une unité de pollution au dommage qu'elle évite, pour déterminer si la réduction est efficace et, le cas échéant, l'intervalle de négociation.</p>
+  <div class="ligne">
+    <div><label for="c0cout">coût de réduction (une unité)</label><input type="number" id="c0cout" value="12000" step="1000"></div>
+    <div><label for="c0dommage">dommage évité (une unité)</label><input type="number" id="c0dommage" value="15000" step="1000"></div>
+  </div>
+  <button onclick="calculerCoase()">Calculer</button>
+  <div id="resultatCoase" class="resultat-zone"></div>
+  <div id="zoneCoase"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function dessinerAxesQP(svg, margin, W, H) {
+  var axeX = svgNS('line'); axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin); axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line'); axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin); axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+  var lblX = svgNS('text'); lblX.setAttribute('x', W - margin); lblX.setAttribute('y', H - margin + 28);
+  lblX.setAttribute('text-anchor', 'end'); lblX.setAttribute('font-size', '11'); lblX.textContent = 'Q (quantité)';
+  svg.appendChild(lblX);
+  var lblY = svgNS('text'); lblY.setAttribute('x', margin); lblY.setAttribute('y', margin - 10);
+  lblY.setAttribute('text-anchor', 'start'); lblY.setAttribute('font-size', '11'); lblY.textContent = 'P (prix)';
+  svg.appendChild(lblY);
+}
+
+function tracerCourbeQP(svg, px, py, Qmax, fn, classe) {
+  var pathD = '';
+  for (var i = 0; i <= 40; i++) {
+    var Q = (Qmax * i) / 40;
+    var P = fn(Q);
+    if (P < 0 || !isFinite(P)) continue;
+    pathD += (pathD === '' ? 'M' : 'L') + px(Q).toFixed(1) + ',' + py(P).toFixed(1) + ' ';
+  }
+  var path = svgNS('path');
+  path.setAttribute('d', pathD);
+  path.setAttribute('class', classe);
+  path.setAttribute('stroke-width', '2.5');
+  svg.appendChild(path);
+}
+
+function calculerExternalite() {
+  var resDiv = document.getElementById('resultatExternalite');
+  var A = parseFloat(document.getElementById('e0A').value);
+  var B = parseFloat(document.getElementById('e0B').value);
+  var C = parseFloat(document.getElementById('e0C').value);
+  var D = parseFloat(document.getElementById('e0D').value);
+  var t = parseFloat(document.getElementById('e0t').value);
+  var vals = [A, B, C, D, t];
+  if (vals.some(isNaN) || B <= 0 || C <= 0 || t < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneExternalite').innerHTML = '';
+    return;
+  }
+  // demande : Q = A - B P  => P = (A-Q)/B
+  function demande(Q) { return (A - Q) / B; }
+  // offre privee : Q = C P - D => P = (Q+D)/C
+  function offrePrivee(Q) { return (Q + D) / C; }
+  // offre sociale : Q = C(P-t) - D => P = (Q+D)/C + t
+  function offreSociale(Q) { return (Q + D) / C + t; }
+
+  // equilibre marche : demande = offre privee
+  var Pm = (A + D) / (B + C), Qm = A - B * Pm;
+  // optimum social : demande = offre sociale
+  var Po = (A + D + C * t) / (B + C), Qo = A - B * Po;
+  var dwl = 0.5 * t * (Qm - Qo);
+
+  resDiv.innerHTML =
+    '<div class="valeur">équilibre de marché : P=' + Pm.toFixed(2) + ', Q=' + Qm.toFixed(2) + '</div>' +
+    '<div class="valeur ok">optimum social : P=' + Po.toFixed(2) + ', Q=' + Qo.toFixed(2) + '</div><br>' +
+    '<div class="valeur ko">perte sèche = ½×' + t.toFixed(2) + '×' + (Qm - Qo).toFixed(2) + ' = ' + dwl.toFixed(2) + '</div>' +
+    '<div class="valeur mid">taxe pigouvienne optimale = t = ' + t.toFixed(2) + ' (ramène le marché exactement à l\'optimum)</div>';
+
+  var W = 480, H = 340, margin = 55;
+  var Qmax = Math.max(Qm, Qo) * 1.3;
+  var Pmax = Math.max(Pm, Po, offreSociale(Qm)) * 1.3;
+  function px(Q) { return margin + (Q / Qmax) * (W - 2 * margin); }
+  function py(P) { return H - margin - (P / Pmax) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  dessinerAxesQP(svg, margin, W, H);
+
+  // zone de perte seche : triangle (Qo,Po) - (Qm,Pm) - (Qm,Pm+t)
+  var poly = svgNS('polygon');
+  var pts = [[Qo, Po], [Qm, Pm], [Qm, Pm + t]];
+  poly.setAttribute('points', pts.map(function (p) { return px(p[0]).toFixed(1) + ',' + py(p[1]).toFixed(1); }).join(' '));
+  poly.setAttribute('class', 'zone-dwl');
+  svg.appendChild(poly);
+
+  tracerCourbeQP(svg, px, py, Qmax, demande, 'courbe-demande');
+  tracerCourbeQP(svg, px, py, Qmax, offrePrivee, 'courbe-offre-privee');
+  tracerCourbeQP(svg, px, py, Qmax, offreSociale, 'courbe-offre-sociale');
+
+  [[Qm, Pm], [Qo, Po]].forEach(function (pt) {
+    var l1 = svgNS('line');
+    l1.setAttribute('x1', margin); l1.setAttribute('x2', px(pt[0])); l1.setAttribute('y1', py(pt[1])); l1.setAttribute('y2', py(pt[1]));
+    l1.setAttribute('class', 'ligne-eq'); l1.setAttribute('stroke-width', '1'); l1.setAttribute('stroke-dasharray', '4,3');
+    svg.appendChild(l1);
+    var l2 = svgNS('line');
+    l2.setAttribute('x1', px(pt[0])); l2.setAttribute('x2', px(pt[0])); l2.setAttribute('y1', py(pt[1])); l2.setAttribute('y2', H - margin);
+    l2.setAttribute('class', 'ligne-eq'); l2.setAttribute('stroke-width', '1'); l2.setAttribute('stroke-dasharray', '4,3');
+    svg.appendChild(l2);
+  });
+
+  document.getElementById('zoneExternalite').innerHTML = '';
+  document.getElementById('zoneExternalite').appendChild(svg);
+}
+
+function dessinerBarres(zoneId, items, W, H) {
+  var margin = 45, barW = Math.min(90, (W - 2 * margin - (items.length - 1) * 18) / items.length);
+  var maxV = Math.max.apply(null, items.map(function (it) { return it.valeur; })) * 1.2;
+  if (maxV <= 0) maxV = 1;
+  function yOf(v) { return H - margin - (v / maxV) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  var axe = svgNS('line');
+  axe.setAttribute('x1', margin); axe.setAttribute('x2', W - margin);
+  axe.setAttribute('y1', H - margin); axe.setAttribute('y2', H - margin);
+  axe.setAttribute('class', 'axe'); axe.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axe);
+  items.forEach(function (it, i) {
+    var x = margin + 12 + i * (barW + 18);
+    var y = yOf(it.valeur);
+    var h = (H - margin) - y;
+    var r = svgNS('rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', barW); r.setAttribute('height', Math.max(h, 1));
+    r.setAttribute('class', it.classe);
+    svg.appendChild(r);
+    var t = svgNS('text');
+    t.setAttribute('x', x + barW / 2); t.setAttribute('y', y - 6);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '11'); t.setAttribute('font-weight', 'bold');
+    t.textContent = it.valeur.toLocaleString('fr-FR', {maximumFractionDigits: 0});
+    svg.appendChild(t);
+    var tl = svgNS('text');
+    tl.setAttribute('x', x + barW / 2); tl.setAttribute('y', H - margin + 16);
+    tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('font-size', '10');
+    tl.textContent = it.label;
+    svg.appendChild(tl);
+  });
+  var zone = document.getElementById(zoneId);
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerCoase() {
+  var resDiv = document.getElementById('resultatCoase');
+  var cout = parseFloat(document.getElementById('c0cout').value);
+  var dommage = parseFloat(document.getElementById('c0dommage').value);
+  var vals = [cout, dommage];
+  if (vals.some(isNaN) || cout <= 0 || dommage <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (grandeurs strictement positives).</p>';
+    document.getElementById('zoneCoase').innerHTML = '';
+    return;
+  }
+  var efficace = cout < dommage;
+
+  var html =
+    '<div class="valeur">coût de réduction = ' + cout.toLocaleString('fr-FR') + '</div>' +
+    '<div class="valeur">dommage évité = ' + dommage.toLocaleString('fr-FR') + '</div><br>' +
+    '<div class="valeur ' + (efficace ? 'ok' : 'ko') + '">réduction ' + (efficace ? 'efficace' : 'inefficace') + ' (le coût est ' + (efficace ? 'inférieur' : 'supérieur') + ' au dommage évité)</div>';
+
+  if (efficace) {
+    html +=
+      '<div class="valeur ok">si les victimes ont le droit : le pollueur réduit directement (moins cher que payer ≥ ' + dommage.toLocaleString('fr-FR') + ')</div>' +
+      '<div class="valeur ok">si le pollueur a le droit : négociation possible, intervalle de paiement mutuellement avantageux = [' + cout.toLocaleString('fr-FR') + ' ; ' + dommage.toLocaleString('fr-FR') + ']</div>' +
+      '<div class="valeur mid">dans les deux cas, la réduction a lieu — seule la répartition des gains change</div>';
+  } else {
+    html +=
+      '<div class="valeur ko">si les victimes ont le droit : le pollueur préfère payer (≤ ' + dommage.toLocaleString('fr-FR') + ') plutôt que réduire (' + cout.toLocaleString('fr-FR') + ') — pas de réduction</div>' +
+      '<div class="valeur ko">si le pollueur a le droit : aucun prix commun ne satisfait les deux parties — pas de transaction, pas de réduction</div>' +
+      '<div class="valeur mid">dans les deux cas, l\'absence de réduction est l\'issue efficace</div>';
+  }
+  resDiv.innerHTML = html;
+
+  dessinerBarres('zoneCoase', [
+    { label: 'coût de réduction', valeur: cout, classe: 'barre-cout' },
+    { label: 'dommage évité', valeur: dommage, classe: 'barre-dommage' }
+  ], 340, 260);
+}
+
+window.onload = function () { calculerExternalite(); calculerCoase(); };
+</script>
+</body>
+</html>

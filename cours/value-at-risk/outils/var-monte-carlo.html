@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — La VaR Monte Carlo — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Application : la VaR Monte Carlo</h1>
+<p class="sous-titre">Calculatrice interactive — simulation Monte Carlo en direct et convergence vers la formule fermée (exercice 5), VaR à volatilité constante contre GARCH (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Simulation Monte Carlo en direct</h2>
+  <p class="aide">Génère N tirages normaux, calcule N P&amp;L simulés, et lit la VaR empirique — à comparer à la VaR fermée du chapitre 1, &Phi;<sup>-1</sup>(&alpha;)&sigma;-&mu;, vers laquelle elle converge quand N augmente.</p>
+  <div class="ligne">
+    <div><label for="c3_V">Valeur du portefeuille V (€)</label><input type="number" id="c3_V" value="5000000" step="500000"></div>
+    <div><label for="c3_mu">Rendement quotidien espéré &mu; (%)</label><input type="number" id="c3_mu" value="0.05" step="0.01"></div>
+    <div><label for="c3_sigma">Volatilité quotidienne &sigma; (%)</label><input type="number" id="c3_sigma" value="1.5" step="0.1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c3_alpha">Seuil de confiance &alpha; (%)</label><input type="number" id="c3_alpha" value="99" step="0.5" min="50" max="99.99"></div>
+    <div><label for="c3_N">Nombre de tirages N</label><input type="number" id="c3_N" value="1000" step="1000" min="8" max="200000"></div>
+  </div>
+  <button onclick="lancerSimulation()">Lancer la simulation</button>
+  <div id="resultatSimulation" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>VaR Monte Carlo : volatilité constante contre GARCH(1,1)</h2>
+  <p class="aide">&sigma;<sub>t+1</sub>&sup2; = &omega; + &alpha;<sub>1</sub>r<sub>t</sub>&sup2; + &beta;<sub>1</sub>&sigma;<sub>t</sub>&sup2;. La VaR à volatilité constante ignore le choc récent ; la VaR GARCH en tient compte.</p>
+  <div class="ligne">
+    <div><label for="c3b_V">Valeur du portefeuille V (€)</label><input type="number" id="c3b_V" value="5000000" step="500000"></div>
+    <div><label for="c3b_sigmaConst">Volatilité constante &sigma; (%)</label><input type="number" id="c3b_sigmaConst" value="1" step="0.1"></div>
+    <div><label for="c3b_alpha">Seuil de confiance &alpha; (%)</label><input type="number" id="c3b_alpha" value="99" step="0.5" min="50" max="99.99"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c3b_omega">&omega;</label><input type="number" id="c3b_omega" value="0.000002" step="0.000001"></div>
+    <div><label for="c3b_a1">&alpha;<sub>1</sub></label><input type="number" id="c3b_a1" value="0.08" step="0.01"></div>
+    <div><label for="c3b_b1">&beta;<sub>1</sub></label><input type="number" id="c3b_b1" value="0.90" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c3b_sigmat">&sigma;<sub>t</sub> avant le choc (%)</label><input type="number" id="c3b_sigmat" value="1" step="0.1"></div>
+    <div><label for="c3b_rt">Choc récent r<sub>t</sub> (%)</label><input type="number" id="c3b_rt" value="-4" step="0.5"></div>
+  </div>
+  <button onclick="calculerGARCH()">Calculer</button>
+  <div id="resultatGARCH" class="resultat-zone"></div>
+</div>
+
+<script>
+function inverseNormale(p) {
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var plow = 0.02425, phigh = 1 - plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+           ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+           (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+}
+
+function formatEUR(x) { return Math.round(x).toLocaleString('fr-FR') + ' €'; }
+
+// Box-Muller pour générer des tirages normaux standard
+function tirageNormal() {
+  var u1 = Math.random(), u2 = Math.random();
+  if (u1 < 1e-12) u1 = 1e-12;
+  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+function lancerSimulation() {
+  var resDiv = document.getElementById('resultatSimulation');
+  var V = parseFloat(document.getElementById('c3_V').value);
+  var mu = parseFloat(document.getElementById('c3_mu').value) / 100;
+  var sigma = parseFloat(document.getElementById('c3_sigma').value) / 100;
+  var alpha = parseFloat(document.getElementById('c3_alpha').value) / 100;
+  var N = parseInt(document.getElementById('c3_N').value, 10);
+
+  if ([V, mu, sigma, alpha, N].some(isNaN) || V <= 0 || sigma < 0 || alpha <= 0.5 || alpha >= 1 || N < 8 || N > 200000) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (N entre 8 et 200 000).</p>';
+    return;
+  }
+
+  var PLs = new Array(N);
+  for (var i = 0; i < N; i++) {
+    var z = tirageNormal();
+    var r = mu + sigma * z;
+    PLs[i] = V * r;
+  }
+  PLs.sort(function (a, b) { return a - b; });
+
+  var rangFlottant = (1 - alpha) * N;
+  var rang = Math.max(0, Math.min(N - 1, Math.round(rangFlottant) - 1));
+  var varSimulee = -PLs[rang];
+
+  var z_alpha = inverseNormale(alpha);
+  var varFermee = (z_alpha * sigma - mu) * V;
+  var ecartPct = varFermee !== 0 ? (varSimulee - varFermee) / varFermee * 100 : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>observations en queue attendues (N&times;(1-&alpha;))</th><td>' + rangFlottant.toFixed(2) + '</td></tr>';
+  html += '<tr><th>VaR simulée (empirique, N=' + N + ')</th><td>' + formatEUR(varSimulee) + '</td></tr>';
+  html += '<tr><th>VaR fermée (chapitre 1, &Phi;<sup>-1</sup>(&alpha;)&sigma;-&mu;)</th><td>' + formatEUR(varFermee) + '</td></tr>';
+  html += '<tr><th>écart relatif</th><td>' + ecartPct.toFixed(2) + '%</td></tr>';
+  html += '</table>';
+
+  if (Math.abs(ecartPct) < 5) {
+    html += '<div class="valeur ok">VaR simulée proche de la VaR fermée — convergence Monte Carlo cohérente avec le chapitre 1</div>';
+  } else {
+    html += '<div class="valeur mid">écart notable : à ce N, l\'erreur d\'échantillonnage Monte Carlo reste importante — augmentez N pour vous rapprocher de la formule fermée</div>';
+  }
+  if (N < 100) {
+    html += '<div class="valeur ko">N=' + N + ' est très faible pour ce seuil &alpha; : relancez la simulation plusieurs fois pour observer la variabilité du résultat</div>';
+  }
+
+  resDiv.innerHTML = html;
+}
+
+function calculerGARCH() {
+  var resDiv = document.getElementById('resultatGARCH');
+  var V = parseFloat(document.getElementById('c3b_V').value);
+  var sigmaConst = parseFloat(document.getElementById('c3b_sigmaConst').value) / 100;
+  var alpha = parseFloat(document.getElementById('c3b_alpha').value) / 100;
+  var omega = parseFloat(document.getElementById('c3b_omega').value);
+  var a1 = parseFloat(document.getElementById('c3b_a1').value);
+  var b1 = parseFloat(document.getElementById('c3b_b1').value);
+  var sigmat = parseFloat(document.getElementById('c3b_sigmat').value) / 100;
+  var rt = parseFloat(document.getElementById('c3b_rt').value) / 100;
+
+  if ([V, sigmaConst, alpha, omega, a1, b1, sigmat, rt].some(isNaN) || V <= 0 || sigmaConst < 0 || alpha <= 0.5 || alpha >= 1 || omega < 0 || a1 < 0 || b1 < 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var sigmaNext2 = omega + a1 * rt * rt + b1 * sigmat * sigmat;
+  var sigmaNext = Math.sqrt(Math.max(sigmaNext2, 0));
+  var z = inverseNormale(alpha);
+  var varConst = z * sigmaConst * V;
+  var varGarch = z * sigmaNext * V;
+  var ecart = varGarch - varConst;
+  var ecartPct = varConst !== 0 ? ecart / varConst * 100 : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>&sigma;<sub>t+1</sub> (GARCH, après le choc)</th><td>' + (sigmaNext * 100).toFixed(4) + '%</td></tr>';
+  html += '<tr><th>VaR à volatilité constante</th><td>' + formatEUR(varConst) + '</td></tr>';
+  html += '<tr><th>VaR GARCH</th><td>' + formatEUR(varGarch) + '</td></tr>';
+  html += '<tr><th>écart (GARCH - constante)</th><td>' + formatEUR(ecart) + ' (' + ecartPct.toFixed(1) + '%)</td></tr>';
+  html += '</table>';
+
+  if (Math.abs(ecartPct) < 1) {
+    html += '<div class="valeur">choc proche du régime habituel : les deux VaR coïncident presque</div>';
+  } else if (ecart > 0) {
+    html += '<div class="valeur ko">la VaR GARCH dépasse nettement la VaR à volatilité constante — le choc récent a fait bondir la volatilité conditionnelle</div>';
+  } else {
+    html += '<div class="valeur mid">la VaR GARCH est inférieure à la VaR à volatilité constante ici</div>';
+  }
+
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { lancerSimulation(); calculerGARCH(); };
+</script>
+</body>
+</html>

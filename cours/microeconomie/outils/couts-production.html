@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Les coûts de production — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.recap { border-collapse: collapse; margin-top: 0.6em; font-size: 0.88em; }
+  table.recap th, table.recap td { border: 1px solid #ccc; padding: 0.3em 0.55em; text-align: right; }
+  table.recap th:first-child, table.recap td:first-child { text-align: left; }
+  table.recap th { background: rgba(0,0,0,0.04); }
+  table.recap td.marque { font-weight: bold; color: var(--cex); }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.grapheco rect.barre-cm { fill: var(--cgris); }
+  svg.grapheco rect.barre-cmsocial { fill: var(--cintu); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.recap th, table.recap td { border-color: var(--border) !important; }
+table.recap th { background: var(--code-bg) !important; }
+table.recap td.marque { color: var(--cex) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco .courbe-cm { stroke: var(--cgris) !important; fill: none; }
+svg.grapheco .courbe-cmoyen { stroke: var(--cdef) !important; fill: none; }
+svg.grapheco .courbe-cvm { stroke: var(--cex) !important; fill: none; }
+svg.grapheco rect.barre-cm { fill: var(--cgris) !important; }
+svg.grapheco rect.barre-cmsocial { fill: var(--cintu) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Application : les coûts de production</h1>
+<p class="sous-titre">Calculatrice interactive — tableau de coûts, CM/CVM/Cm (exercice 5), coût marginal social et taxe pigouvienne (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le tableau de coûts : CM, CVM, Cm</h2>
+  <p class="aide">Entrer le coût variable $CV$ pour $q=1,2,3,\dots$ séparés par des virgules. La calculatrice construit $CT$, $CM$, $CVM$ et $Cm$, et repère le minimum de $CM$.</p>
+  <div class="ligne">
+    <div><label for="c3CF">coût fixe CF</label><input type="number" id="c3CF" value="80" step="10"></div>
+    <div style="flex:2"><label for="c3CVlist">CV pour q=1,2,3,… (séparés par des virgules)</label><input type="text" id="c3CVlist" value="60,100,130,150,180,240"></div>
+  </div>
+  <button onclick="calculerCouts()">Calculer</button>
+  <div id="resultatCouts" class="resultat-zone"></div>
+  <div id="zoneCouts"></div>
+</div>
+
+<div class="panneau">
+  <h2>Coût marginal social et taxe pigouvienne</h2>
+  <p class="aide">Entrer le coût marginal $Cm$ pour $q=1,2,3,\dots$ L'entreprise produit tant que $Cm$ (ou $Cm_{\text{social}}=Cm+t$, si la taxe s'applique) ne dépasse pas le prix de marché.</p>
+  <div class="ligne">
+    <div style="flex:2"><label for="c3Cmlist">Cm pour q=1,2,3,… (séparés par des virgules)</label><input type="text" id="c3Cmlist" value="50,40,30,40,60,80,100"></div>
+    <div><label for="c3t">dommage externe t (par unité)</label><input type="number" id="c3t" value="10" step="1"></div>
+    <div><label for="c3P">prix de marché P</label><input type="number" id="c3P" value="60" step="5"></div>
+  </div>
+  <button onclick="calculerCmSocial()">Calculer</button>
+  <div id="resultatCmSocial" class="resultat-zone"></div>
+  <div id="zoneCmSocial"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function parseListe(str) {
+  return str.split(',').map(function (s) { return parseFloat(s.trim()); });
+}
+
+function dessinerAxesQC(svg, margin, W, H, labelX, labelY) {
+  var axeX = svgNS('line'); axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin); axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line'); axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin); axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+  var lblX = svgNS('text'); lblX.setAttribute('x', W - margin); lblX.setAttribute('y', H - margin + 28);
+  lblX.setAttribute('text-anchor', 'end'); lblX.setAttribute('font-size', '11'); lblX.textContent = labelX;
+  svg.appendChild(lblX);
+  var lblY = svgNS('text'); lblY.setAttribute('x', margin); lblY.setAttribute('y', margin - 10);
+  lblY.setAttribute('text-anchor', 'start'); lblY.setAttribute('font-size', '11'); lblY.textContent = labelY;
+  svg.appendChild(lblY);
+}
+
+function calculerCouts() {
+  var resDiv = document.getElementById('resultatCouts');
+  var CF = parseFloat(document.getElementById('c3CF').value);
+  var CVlist = parseListe(document.getElementById('c3CVlist').value);
+  if (isNaN(CF) || CF < 0 || CVlist.some(isNaN) || CVlist.length < 2) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (au moins deux quantités, CV séparés par des virgules).</p>';
+    document.getElementById('zoneCouts').innerHTML = '';
+    return;
+  }
+  var lignes = [];
+  var prevCT = CF;
+  var qMinCM = 1, cmMoyenMin = Infinity;
+  for (var i = 0; i < CVlist.length; i++) {
+    var q = i + 1;
+    var CT = CF + CVlist[i];
+    var CM = CT / q;
+    var CVM = CVlist[i] / q;
+    var Cm = CT - prevCT;
+    lignes.push({ q: q, CV: CVlist[i], CT: CT, CM: CM, CVM: CVM, Cm: Cm });
+    if (CM < cmMoyenMin) { cmMoyenMin = CM; qMinCM = q; }
+    prevCT = CT;
+  }
+
+  var tableHtml = '<table class="recap"><tr><th>q</th><th>CV</th><th>CT</th><th>CM</th><th>CVM</th><th>Cm</th></tr>';
+  lignes.forEach(function (l) {
+    var estMin = l.q === qMinCM;
+    tableHtml += '<tr><td>' + l.q + '</td><td>' + l.CV.toFixed(1) + '</td><td>' + l.CT.toFixed(1) + '</td><td' + (estMin ? ' class="marque"' : '') + '>' + l.CM.toFixed(2) + (estMin ? ' ★' : '') + '</td><td>' + l.CVM.toFixed(2) + '</td><td>' + l.Cm.toFixed(1) + '</td></tr>';
+  });
+  tableHtml += '</table>';
+
+  var ligneMin = lignes[qMinCM - 1];
+  var ligneApres = lignes[qMinCM] || null;
+  var croisementOk = ligneMin.Cm <= ligneMin.CM && (!ligneApres || ligneApres.Cm >= ligneApres.CM);
+
+  resDiv.innerHTML =
+    '<div class="valeur ok">minimum du coût moyen : q=' + qMinCM + ', CM=' + cmMoyenMin.toFixed(2) + '</div>' +
+    '<div class="valeur ' + (croisementOk ? 'ok' : 'ko') + '">règle du croisement ' + (croisementOk ? 'vérifiée' : 'non vérifiée sur cette grille discrète') + ' : Cm(' + qMinCM + ')=' + ligneMin.Cm.toFixed(1) + (ligneApres ? ', Cm(' + (qMinCM + 1) + ')=' + ligneApres.Cm.toFixed(1) : '') + '</div>' +
+    tableHtml;
+
+  var W = 480, H = 320, margin = 55;
+  var Qmax = lignes.length + 0.5;
+  var Cmax = Math.max.apply(null, lignes.map(function (l) { return Math.max(l.CM, l.CVM, l.Cm); })) * 1.2;
+  function px(q) { return margin + ((q - 0.5) / Qmax) * (W - 2 * margin); }
+  function py(c) { return H - margin - (c / Cmax) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  dessinerAxesQC(svg, margin, W, H, 'q', 'coût (dh)');
+
+  function tracer(cle, classe) {
+    var d = '';
+    lignes.forEach(function (l, i) {
+      d += (i === 0 ? 'M' : 'L') + px(l.q).toFixed(1) + ',' + py(l[cle]).toFixed(1) + ' ';
+    });
+    var path = svgNS('path');
+    path.setAttribute('d', d); path.setAttribute('class', classe); path.setAttribute('stroke-width', '2.5');
+    svg.appendChild(path);
+  }
+  tracer('Cm', 'courbe-cm');
+  tracer('CM', 'courbe-cmoyen');
+  tracer('CVM', 'courbe-cvm');
+
+  document.getElementById('zoneCouts').innerHTML = '';
+  document.getElementById('zoneCouts').appendChild(svg);
+}
+
+function dessinerBarresCm(zoneId, lignes, qChoisi, qChoisiSocial, W, H) {
+  var margin = 45, n = lignes.length, barW = Math.min(36, (W - 2 * margin - (n - 1) * 10) / (n * 2));
+  var maxV = Math.max.apply(null, lignes.map(function (l) { return Math.max(l.Cm, l.CmSocial); })) * 1.2;
+  if (maxV <= 0) maxV = 1;
+  function yOf(v) { return H - margin - (v / maxV) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  var axe = svgNS('line');
+  axe.setAttribute('x1', margin); axe.setAttribute('x2', W - margin);
+  axe.setAttribute('y1', H - margin); axe.setAttribute('y2', H - margin);
+  axe.setAttribute('class', 'axe'); axe.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axe);
+  lignes.forEach(function (l, i) {
+    var gx = margin + i * (2 * barW + 10) + 6;
+    var y1 = yOf(l.Cm), h1 = (H - margin) - y1;
+    var r1 = svgNS('rect');
+    r1.setAttribute('x', gx); r1.setAttribute('y', y1); r1.setAttribute('width', barW); r1.setAttribute('height', Math.max(h1, 1));
+    r1.setAttribute('class', 'barre-cm');
+    svg.appendChild(r1);
+    var y2 = yOf(l.CmSocial), h2 = (H - margin) - y2;
+    var r2 = svgNS('rect');
+    r2.setAttribute('x', gx + barW); r2.setAttribute('y', y2); r2.setAttribute('width', barW); r2.setAttribute('height', Math.max(h2, 1));
+    r2.setAttribute('class', 'barre-cmsocial');
+    svg.appendChild(r2);
+    var tl = svgNS('text');
+    tl.setAttribute('x', gx + barW); tl.setAttribute('y', H - margin + 16);
+    tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('font-size', '10');
+    tl.textContent = 'q=' + l.q + (l.q === qChoisi ? ' •' : '') + (l.q === qChoisiSocial ? ' ▲' : '');
+    svg.appendChild(tl);
+  });
+  var zone = document.getElementById(zoneId);
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerCmSocial() {
+  var resDiv = document.getElementById('resultatCmSocial');
+  var Cmlist = parseListe(document.getElementById('c3Cmlist').value);
+  var t = parseFloat(document.getElementById('c3t').value);
+  var P = parseFloat(document.getElementById('c3P').value);
+  if (Cmlist.some(isNaN) || Cmlist.length < 1 || isNaN(t) || t < 0 || isNaN(P) || P <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneCmSocial').innerHTML = '';
+    return;
+  }
+  var lignes = Cmlist.map(function (Cm, i) { return { q: i + 1, Cm: Cm, CmSocial: Cm + t }; });
+
+  var qSansTaxe = 0, qAvecTaxe = 0;
+  lignes.forEach(function (l) {
+    if (l.Cm <= P) qSansTaxe = l.q;
+    if (l.CmSocial <= P) qAvecTaxe = l.q;
+  });
+
+  var tableHtml = '<table class="recap"><tr><th>q</th><th>Cm</th><th>Cm social</th></tr>';
+  lignes.forEach(function (l) {
+    tableHtml += '<tr><td>' + l.q + '</td><td' + (l.q === qSansTaxe ? ' class="marque"' : '') + '>' + l.Cm.toFixed(1) + (l.q === qSansTaxe ? ' •' : '') + '</td><td' + (l.q === qAvecTaxe ? ' class="marque"' : '') + '>' + l.CmSocial.toFixed(1) + (l.q === qAvecTaxe ? ' ▲' : '') + '</td></tr>';
+  });
+  tableHtml += '</table>';
+
+  resDiv.innerHTML =
+    '<div class="valeur">prix de marché P = ' + P.toFixed(1) + '</div>' +
+    '<div class="valeur ko">sans la taxe : production q = ' + qSansTaxe + ' (• dans le tableau)</div>' +
+    '<div class="valeur ok">avec la taxe pigouvienne (t=' + t.toFixed(1) + ') : production q = ' + qAvecTaxe + ' (▲ dans le tableau)</div>' +
+    '<div class="valeur ' + (qAvecTaxe < qSansTaxe ? 'ok' : 'mid') + '">' + (qAvecTaxe < qSansTaxe ? 'la taxe réduit bien la production de ' + (qSansTaxe - qAvecTaxe) + ' unité(s)' : 'la taxe ne change pas la décision de production ici') + '</div>' +
+    tableHtml;
+
+  dessinerBarresCm('zoneCmSocial', lignes, qSansTaxe, qAvecTaxe, Math.min(560, 60 * lignes.length + 60), 280);
+}
+
+window.onload = function () { calculerCouts(); calculerCmSocial(); };
+</script>
+</body>
+</html>

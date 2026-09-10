@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Scénarios et tests de résistance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--ceco); margin: 1.2em 0 0.2em; border-top: 1px solid #e2e2e2; padding-top: 0.8em; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2, .panneau h3 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--border) !important;
+}
+.panneau h3 { color: var(--ceco) !important; }
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Application : scénarios et tests de résistance</h1>
+<p class="sous-titre">Calculatrice interactive — VaR de mélange, régime de krach (exercice 5), covariance stressée et ajustement de liquidité (exercice 6)</p>
+
+<div class="panneau">
+  <h2>VaR de mélange (régime calme / régime de crise)</h2>
+  <p class="aide">F(x) = &pi;&Phi;((x+&mu;<sub>c</sub>)/&sigma;<sub>c</sub>) + (1&minus;&pi;)&Phi;((x+&mu;<sub>k</sub>)/&sigma;<sub>k</sub>) ; la VaR de mélange résout F(x) = &alpha; par dichotomie sur le seuil de perte x.</p>
+  <div class="ligne">
+    <div><label for="c6_pi">&pi; — probabilité régime calme (%)</label><input type="number" id="c6_pi" value="98" step="0.5" min="0.01" max="99.99"></div>
+    <div><label for="c6_muC">&mu; calme, annuel (%)</label><input type="number" id="c6_muC" value="6" step="0.5"></div>
+    <div><label for="c6_sigC">&sigma; calme, annuelle (%)</label><input type="number" id="c6_sigC" value="22" step="0.5" min="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c6_muK">&mu; crise, annuel (%)</label><input type="number" id="c6_muK" value="-20" step="0.5"></div>
+    <div><label for="c6_sigK">&sigma; crise, annuelle (%)</label><input type="number" id="c6_sigK" value="95" step="0.5" min="0.01"></div>
+    <div><label for="c6_h">Horizon h (jours)</label><input type="number" id="c6_h" value="10" step="1" min="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c6_jours">Jours de bourse / an</label><input type="number" id="c6_jours" value="252" step="1" min="50"></div>
+    <div><label for="c6_alpha">Seuil de confiance &alpha; (%)</label><input type="number" id="c6_alpha" value="99.9" step="0.1" min="50" max="99.999"></div>
+  </div>
+  <button onclick="calculerMelange()">Calculer</button>
+  <div id="resultatMelange" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Covariance stressée et ajustement de liquidité</h2>
+
+  <h3>a-b) Rapport de volatilité de portefeuille, régime ordinaire vs stressé</h3>
+  <p class="aide">&sigma;<sub>P</sub> = &radic;(w<sub>A</sub>&sup2;&sigma;<sub>A</sub>&sup2; + w<sub>B</sub>&sup2;&sigma;<sub>B</sub>&sup2; + 2w<sub>A</sub>w<sub>B</sub>&rho;&sigma;<sub>A</sub>&sigma;<sub>B</sub>), calculée sous chaque jeu de paramètres. À &alpha; et h fixés et en l'absence de dérive, ce rapport égale exactement le rapport des VaR.</p>
+  <div class="ligne">
+    <div><label for="c6_wA">Poids actif A (%)</label><input type="number" id="c6_wA" value="60" step="5" min="0" max="100"></div>
+    <div><label for="c6_sigA_o">&sigma;<sub>A</sub> ordinaire (%)</label><input type="number" id="c6_sigA_o" value="18" step="0.5" min="0"></div>
+    <div><label for="c6_sigB_o">&sigma;<sub>B</sub> ordinaire (%)</label><input type="number" id="c6_sigB_o" value="25" step="0.5" min="0"></div>
+    <div><label for="c6_rho_o">&rho; ordinaire</label><input type="number" id="c6_rho_o" value="0.20" step="0.01" min="-1" max="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c6_sigA_s">&sigma;<sub>A</sub> stressée (%)</label><input type="number" id="c6_sigA_s" value="68" step="0.5" min="0"></div>
+    <div><label for="c6_sigB_s">&sigma;<sub>B</sub> stressée (%)</label><input type="number" id="c6_sigB_s" value="95" step="0.5" min="0"></div>
+    <div><label for="c6_rho_s">&rho; stressée</label><input type="number" id="c6_rho_s" value="0.47" step="0.01" min="-1" max="1"></div>
+  </div>
+  <button onclick="calculerCovariance()">Calculer</button>
+  <div id="resultatCovariance" class="resultat-zone"></div>
+
+  <h3>c-d) Liquidation immédiate vs progressive</h3>
+  <p class="aide">Immédiate : VaR totale = VaR de base + impact de prix. Progressive sur n jours : VaR totale = &radic;n &times; VaR de base + impact de prix réduit.</p>
+  <div class="ligne">
+    <div><label for="c6_varBase">VaR de base, 1 jour (%)</label><input type="number" id="c6_varBase" value="5.0" step="0.1" min="0"></div>
+    <div><label for="c6_impImm">Impact de prix, immédiate (%)</label><input type="number" id="c6_impImm" value="1.8" step="0.1" min="0"></div>
+    <div><label for="c6_impGrad">Impact de prix, progressive (%)</label><input type="number" id="c6_impGrad" value="0.9" step="0.1" min="0"></div>
+    <div><label for="c6_nJours">Étalement (jours)</label><input type="number" id="c6_nJours" value="4" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerLiquidite()">Calculer</button>
+  <div id="resultatLiquidite" class="resultat-zone"></div>
+</div>
+
+<script>
+function erf(x) {
+  var sign = x >= 0 ? 1 : -1; x = Math.abs(x);
+  var a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+  var t = 1 / (1 + p * x);
+  var y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  return sign * y;
+}
+function Phi(x) { return 0.5 * (1 + erf(x / Math.sqrt(2))); }
+
+function inverseNormale(p) {
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var plow = 0.02425, phigh = 1 - plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+           ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+           (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+}
+
+function formatPct(x) { return x.toFixed(2) + '%'; }
+
+function calculerMelange() {
+  var resDiv = document.getElementById('resultatMelange');
+  var pi = parseFloat(document.getElementById('c6_pi').value) / 100;
+  var muCan = parseFloat(document.getElementById('c6_muC').value) / 100;
+  var sigCan = parseFloat(document.getElementById('c6_sigC').value) / 100;
+  var muKan = parseFloat(document.getElementById('c6_muK').value) / 100;
+  var sigKan = parseFloat(document.getElementById('c6_sigK').value) / 100;
+  var h = parseFloat(document.getElementById('c6_h').value);
+  var jours = parseFloat(document.getElementById('c6_jours').value);
+  var alpha = parseFloat(document.getElementById('c6_alpha').value) / 100;
+
+  if ([pi, muCan, sigCan, muKan, sigKan, h, jours, alpha].some(isNaN) || pi <= 0 || pi >= 1 || sigCan <= 0 || sigKan <= 0 || h <= 0 || jours <= 0 || alpha <= 0 || alpha >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var scaleMu = h / jours, scaleSig = Math.sqrt(h / jours);
+  var muC = muCan * scaleMu, sigC = sigCan * scaleSig;
+  var muK = muKan * scaleMu, sigK = sigKan * scaleSig;
+
+  var z = inverseNormale(alpha);
+  var varCalmeSeule = z * sigC - muC;
+  var varCriseSeule = z * sigK - muK;
+
+  // Dichotomie sur x pour résoudre F(x) = pi*Phi((x+muC)/sigC) + (1-pi)*Phi((x+muK)/sigK) = alpha
+  function F(x) { return pi * Phi((x + muC) / sigC) + (1 - pi) * Phi((x + muK) / sigK); }
+  var lo = -2, hi = 5; // bornes larges en fraction (perte de -200% à +500%)
+  for (var it = 0; it < 100; it++) {
+    var mid = (lo + hi) / 2;
+    if (F(mid) < alpha) { lo = mid; } else { hi = mid; }
+  }
+  var varMelange = (lo + hi) / 2;
+  var Fcheck = F(varMelange);
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>&mu;<sub>c</sub> (h jours)</th><td>' + formatPct(muC * 100) + '</td><th>&sigma;<sub>c</sub> (h jours)</th><td>' + formatPct(sigC * 100) + '</td></tr>';
+  html += '<tr><th>&mu;<sub>k</sub> (h jours)</th><td>' + formatPct(muK * 100) + '</td><th>&sigma;<sub>k</sub> (h jours)</th><td>' + formatPct(sigK * 100) + '</td></tr>';
+  html += '<tr><th>z<sub>&alpha;</sub></th><td colspan="3">' + z.toFixed(4) + '</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>VaR &laquo; calme seule &raquo;</th><td>' + formatPct(varCalmeSeule * 100) + '</td></tr>';
+  html += '<tr><th>VaR &laquo; crise seule &raquo;</th><td>' + formatPct(varCriseSeule * 100) + '</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ko">VaR de mélange (résolution numérique) : ' + formatPct(varMelange * 100) + '</div>';
+  html += '<p class="aide">Vérification : F(VaR de mélange) = ' + (Fcheck * 100).toFixed(3) + '% (doit valoir &alpha; = ' + (alpha * 100).toFixed(3) + '%).</p>';
+
+  var ratio = varMelange / varCalmeSeule;
+  html += '<div class="valeur mid">rapport VaR de mélange / VaR calme seule : &times;' + ratio.toFixed(2) + ' (poids de crise : ' + ((1 - pi) * 100).toFixed(2) + '%)</div>';
+
+  resDiv.innerHTML = html;
+}
+
+function calculerCovariance() {
+  var resDiv = document.getElementById('resultatCovariance');
+  var wA = parseFloat(document.getElementById('c6_wA').value) / 100;
+  var sigA_o = parseFloat(document.getElementById('c6_sigA_o').value) / 100;
+  var sigB_o = parseFloat(document.getElementById('c6_sigB_o').value) / 100;
+  var rho_o = parseFloat(document.getElementById('c6_rho_o').value);
+  var sigA_s = parseFloat(document.getElementById('c6_sigA_s').value) / 100;
+  var sigB_s = parseFloat(document.getElementById('c6_sigB_s').value) / 100;
+  var rho_s = parseFloat(document.getElementById('c6_rho_s').value);
+
+  if ([wA, sigA_o, sigB_o, rho_o, sigA_s, sigB_s, rho_s].some(isNaN) || wA < 0 || wA > 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+  var wB = 1 - wA;
+
+  function sigmaP(sA, sB, rho) {
+    var v = wA * wA * sA * sA + wB * wB * sB * sB + 2 * wA * wB * rho * sA * sB;
+    return Math.sqrt(Math.max(v, 0));
+  }
+
+  var sigP_o = sigmaP(sigA_o, sigB_o, rho_o);
+  var sigP_s = sigmaP(sigA_s, sigB_s, rho_s);
+  var ratio = sigP_o > 0 ? sigP_s / sigP_o : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>poids (A ; B)</th><td>' + (wA * 100).toFixed(0) + '% ; ' + (wB * 100).toFixed(0) + '%</td></tr>';
+  html += '<tr><th>&sigma;<sub>P</sub> régime ordinaire</th><td>' + formatPct(sigP_o * 100) + '</td></tr>';
+  html += '<tr><th>&sigma;<sub>P</sub> régime stressé</th><td>' + formatPct(sigP_s * 100) + '</td></tr>';
+  html += '</table>';
+
+  var coul = ratio >= 4 ? 'ko' : (ratio >= 2 ? 'mid' : 'ok');
+  html += '<div class="valeur ' + coul + '">rapport &sigma;<sub>P</sub><sup>stressé</sup> / &sigma;<sub>P</sub><sup>ordinaire</sup> = &times;' + ratio.toFixed(2) + '</div>';
+  html += '<p class="aide">Repère du chapitre : le couple FTSE 100 / S&amp;P 500 en crash de 1987 donne un facteur supérieur à 4.</p>';
+
+  resDiv.innerHTML = html;
+}
+
+function calculerLiquidite() {
+  var resDiv = document.getElementById('resultatLiquidite');
+  var varBase = parseFloat(document.getElementById('c6_varBase').value);
+  var impImm = parseFloat(document.getElementById('c6_impImm').value);
+  var impGrad = parseFloat(document.getElementById('c6_impGrad').value);
+  var nJours = parseFloat(document.getElementById('c6_nJours').value);
+
+  if ([varBase, impImm, impGrad, nJours].some(isNaN) || varBase < 0 || impImm < 0 || impGrad < 0 || nJours < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var varImmediate = varBase + impImm;
+  var varBaseEtiree = Math.sqrt(nJours) * varBase;
+  var varProgressive = varBaseEtiree + impGrad;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>liquidation immédiate : VaR base + impact</th><td>' + formatPct(varBase) + ' + ' + formatPct(impImm) + ' = ' + formatPct(varImmediate) + '</td></tr>';
+  html += '<tr><th>liquidation sur ' + nJours.toFixed(0) + ' jours : &radic;' + nJours.toFixed(0) + ' &times; VaR base + impact</th><td>' + formatPct(varBaseEtiree) + ' + ' + formatPct(impGrad) + ' = ' + formatPct(varProgressive) + '</td></tr>';
+  html += '</table>';
+
+  if (varImmediate < varProgressive) {
+    html += '<div class="valeur ok">la liquidation immédiate est préférable (VaR totale plus faible de ' + formatPct(varProgressive - varImmediate) + ')</div>';
+  } else if (varProgressive < varImmediate) {
+    html += '<div class="valeur ok">la liquidation progressive est préférable (VaR totale plus faible de ' + formatPct(varImmediate - varProgressive) + ')</div>';
+  } else {
+    html += '<div class="valeur mid">les deux stratégies donnent une VaR totale identique</div>';
+  }
+  html += '<p class="aide">L\'arbitrage dépend de la réduction d\'impact de prix obtenue (' + formatPct(impImm - impGrad) + ') face au coût de l\'extension de l\'horizon (facteur &radic;' + nJours.toFixed(0) + ' &asymp; ' + Math.sqrt(nJours).toFixed(2) + ' appliqué à la VaR de base) : aucune des deux stratégies n\'est préférable par principe.</p>';
+
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerMelange(); calculerCovariance(); calculerLiquidite(); };
+</script>
+</body>
+</html>

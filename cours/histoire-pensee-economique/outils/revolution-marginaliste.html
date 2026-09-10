@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — La révolution marginaliste — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  table.res { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  table.res th, table.res td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .valeur { font-size: 1.02em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  svg.utilite, svg.allocation { width: 100%; height: auto; margin-top: 0.8em; }
+  .utilite text, .allocation text { font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.utilite text, .allocation text { fill: var(--fg) !important; }
+.utilite .axe, .allocation .axe { stroke: var(--cgris) !important; }
+.utilite .barre { fill: var(--cdef) !important; }
+.utilite .barre-perdue { fill: var(--danger) !important; }
+.allocation .barre-a { fill: var(--cdef) !important; }
+.allocation .barre-b { fill: var(--cintu) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — La révolution marginaliste</h1>
+<p class="sous-titre">Calculatrice interactive — l'utilité marginale décroissante (exercice 5) et l'allocation d'un budget selon Um/p (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Utilité totale et utilité marginale décroissante</h2>
+  <p class="aide">Entrer les utilités des usages successifs d'un bien divisible, par ordre décroissant de priorité.</p>
+  <div class="ligne">
+    <div><label for="utilites">utilités successives (séparées par des virgules)</label><input type="text" id="utilites" value="12,10,8,6,4,2"></div>
+  </div>
+  <button onclick="calculerUtilite()">Calculer</button>
+  <div id="resultatUtilite" class="resultat-zone"></div>
+  <div id="zoneUtilite"></div>
+</div>
+
+<div class="panneau">
+  <h2>Allouer un budget selon Um/p</h2>
+  <p class="aide">Deux biens, chacun avec un prix et une liste d'utilités marginales des unités successives. Le budget est réparti en achetant, dans l'ordre, l'unité offrant le meilleur Um/p.</p>
+  <div class="ligne">
+    <div><label for="prixA">prix de A</label><input type="number" id="prixA" value="10" step="1"></div>
+    <div><label for="umA">utilités marginales de A</label><input type="text" id="umA" value="60,50,40,30,20"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="prixB">prix de B</label><input type="number" id="prixB" value="5" step="1"></div>
+    <div><label for="umB">utilités marginales de B</label><input type="text" id="umB" value="35,30,25,20,15,10"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="budget">budget disponible</label><input type="number" id="budget" value="60" step="5"></div>
+  </div>
+  <button onclick="calculerAllocation()">Allouer le budget</button>
+  <div id="resultatAllocation" class="resultat-zone"></div>
+  <div id="zoneAllocation"></div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function parseListe(str) {
+  return str.split(',').map(function (s) { return parseFloat(s.trim()); }).filter(function (v) { return !isNaN(v); });
+}
+
+function calculerUtilite() {
+  var resDiv = document.getElementById('resultatUtilite');
+  var zone = document.getElementById('zoneUtilite');
+  var utilites = parseListe(document.getElementById('utilites').value);
+  if (utilites.length < 2) {
+    resDiv.innerHTML = '<p class="erreur">Entrer au moins deux valeurs.</p>';
+    zone.innerHTML = '';
+    return;
+  }
+  var total = utilites.reduce(function (a, b) { return a + b; }, 0);
+  var derniere = utilites[utilites.length - 1];
+  var premiere = utilites[0];
+  var decroissant = utilites.every(function (v, i) { return i === 0 || v <= utilites[i - 1]; });
+  resDiv.innerHTML = '<div class="valeur">utilité totale = ' + total.toFixed(0) + '</div>' +
+    '<div class="valeur ko">perte si on renonce à une unité = ' + derniere.toFixed(0) + ' (dernier usage)</div>' +
+    '<div class="valeur">Um 1ᵉᵗ usage = ' + premiere.toFixed(0) + ', Um dernier usage = ' + derniere.toFixed(0) + '</div>' +
+    '<div class="valeur ' + (decroissant ? 'ok' : 'ko') + '">' + (decroissant ? 'loi de l\'utilité marginale décroissante vérifiée' : 'attention : la suite n\'est pas décroissante') + '</div>';
+
+  var W = 460, H = 240, margin = 45, barW = Math.min(60, (W - 2 * margin) / utilites.length - 10);
+  var maxV = Math.max.apply(null, utilites) * 1.15;
+  function yOf(v) { return H - margin - (v / maxV) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'utilite');
+  var axe = svgNS('line');
+  axe.setAttribute('x1', margin); axe.setAttribute('x2', W - margin);
+  axe.setAttribute('y1', H - margin); axe.setAttribute('y2', H - margin);
+  axe.setAttribute('class', 'axe'); axe.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axe);
+  var gap = (W - 2 * margin - utilites.length * barW) / (utilites.length + 1);
+  utilites.forEach(function (v, i) {
+    var x = margin + gap + i * (barW + gap);
+    var y = yOf(v);
+    var h = (H - margin) - y;
+    var r = svgNS('rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', barW); r.setAttribute('height', Math.max(h, 1));
+    r.setAttribute('class', i === utilites.length - 1 ? 'barre-perdue' : 'barre');
+    svg.appendChild(r);
+    var t = svgNS('text');
+    t.setAttribute('x', x + barW / 2); t.setAttribute('y', y - 6);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '11'); t.setAttribute('font-weight', 'bold');
+    t.textContent = v.toFixed(0);
+    svg.appendChild(t);
+    var tl = svgNS('text');
+    tl.setAttribute('x', x + barW / 2); tl.setAttribute('y', H - margin + 16);
+    tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('font-size', '10');
+    tl.textContent = 'unité ' + (i + 1);
+    svg.appendChild(tl);
+  });
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+function calculerAllocation() {
+  var resDiv = document.getElementById('resultatAllocation');
+  var zone = document.getElementById('zoneAllocation');
+  var pA = parseFloat(document.getElementById('prixA').value);
+  var pB = parseFloat(document.getElementById('prixB').value);
+  var umA = parseListe(document.getElementById('umA').value);
+  var umB = parseListe(document.getElementById('umB').value);
+  var budget = parseFloat(document.getElementById('budget').value);
+  if (isNaN(pA) || isNaN(pB) || isNaN(budget) || pA <= 0 || pB <= 0 || budget <= 0 || umA.length === 0 || umB.length === 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    zone.innerHTML = '';
+    return;
+  }
+  var items = [];
+  umA.forEach(function (u, i) { items.push({ bien: 'A', unite: i + 1, um: u, cout: pA, ratio: u / pA }); });
+  umB.forEach(function (u, i) { items.push({ bien: 'B', unite: i + 1, um: u, cout: pB, ratio: u / pB }); });
+  items.sort(function (a, b) { return b.ratio - a.ratio; });
+  var spent = 0, totalUtil = 0, countA = 0, countB = 0, achats = [];
+  items.forEach(function (it) {
+    if (spent + it.cout > budget) return;
+    spent += it.cout;
+    totalUtil += it.um;
+    if (it.bien === 'A') countA++; else countB++;
+    achats.push(it);
+  });
+  resDiv.innerHTML = '<div class="valeur">unités de A achetées = ' + countA + '</div>' +
+    '<div class="valeur">unités de B achetées = ' + countB + '</div>' +
+    '<div class="valeur">dépense totale = ' + spent.toFixed(0) + ' / ' + budget.toFixed(0) + '</div>' +
+    '<div class="valeur ok">utilité totale obtenue = ' + totalUtil.toFixed(0) + '</div>';
+
+  var W = 460, H = 240, margin = 45, barW = Math.min(40, (W - 2 * margin) / Math.max(achats.length, 1) - 6);
+  var maxV = Math.max.apply(null, achats.map(function (it) { return it.ratio; }).concat([1])) * 1.15;
+  function yOf(v) { return H - margin - (v / maxV) * (H - 2 * margin); }
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'allocation');
+  var axe = svgNS('line');
+  axe.setAttribute('x1', margin); axe.setAttribute('x2', W - margin);
+  axe.setAttribute('y1', H - margin); axe.setAttribute('y2', H - margin);
+  axe.setAttribute('class', 'axe'); axe.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axe);
+  var gap = achats.length > 0 ? (W - 2 * margin - achats.length * barW) / (achats.length + 1) : 0;
+  achats.forEach(function (it, i) {
+    var x = margin + gap + i * (barW + gap);
+    var y = yOf(it.ratio);
+    var h = (H - margin) - y;
+    var r = svgNS('rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', barW); r.setAttribute('height', Math.max(h, 1));
+    r.setAttribute('class', it.bien === 'A' ? 'barre-a' : 'barre-b');
+    svg.appendChild(r);
+    var t = svgNS('text');
+    t.setAttribute('x', x + barW / 2); t.setAttribute('y', y - 4);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '9'); t.setAttribute('font-weight', 'bold');
+    t.textContent = it.ratio.toFixed(1);
+    svg.appendChild(t);
+    var tl = svgNS('text');
+    tl.setAttribute('x', x + barW / 2); tl.setAttribute('y', H - margin + 14);
+    tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('font-size', '9');
+    tl.textContent = it.bien + it.unite;
+    svg.appendChild(tl);
+  });
+  zone.innerHTML = '';
+  zone.appendChild(svg);
+}
+
+window.onload = function () { calculerUtilite(); calculerAllocation(); };
+</script>
+</body>
+</html>

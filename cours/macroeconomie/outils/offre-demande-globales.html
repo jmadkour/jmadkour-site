@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Offre globale et demande globale — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  .legende { font-size: 0.82em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: 0.4em; }
+  .legende span { display: inline-block; margin-right: 1em; }
+  .legende .puce { display: inline-block; width: 0.9em; height: 0.9em; border-radius: 2px; margin-right: 0.3em; vertical-align: middle; }
+  svg.grapheco { width: 100%; height: auto; margin-top: 0.8em; }
+  svg.grapheco text { font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .legende { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+svg.grapheco text { fill: var(--fg) !important; }
+svg.grapheco .axe { stroke: var(--cgris) !important; }
+svg.grapheco .courbe-dg-avant { stroke: var(--cgris) !important; fill: none; }
+svg.grapheco .courbe-dg-apres { stroke: var(--cdef) !important; fill: none; }
+svg.grapheco .courbe-ogct-avant { stroke: var(--cgris) !important; fill: none; }
+svg.grapheco .courbe-ogct-apres { stroke: var(--cintu) !important; fill: none; }
+svg.grapheco .courbe-oglt { stroke: var(--cex) !important; fill: none; }
+svg.grapheco .ligne-eq { stroke: var(--cgris) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Application : offre globale et demande globale</h1>
+<p class="sous-titre">Calculatrice interactive — choc de demande (exercice 5) et choc d'offre (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Choc de demande (chute de confiance)</h2>
+  <p class="aide">$DG:\ Y=a_{DG}-b_{DG}P$. $OGCT:\ Y=Y^{*}+c\,(P-P^{e})$, ancrée sur le potentiel $Y^{*}$ (droite $OGLT$) quand $P=P^{e}$. $\Delta DG$ déplace la demande globale (négatif = chute de confiance) ; à court terme $P^{e}$ reste au niveau d'équilibre initial, puis s'ajuste à long terme.</p>
+  <div class="ligne">
+    <div><label for="d9aDG">a (DG)</label><input type="number" id="d9aDG" value="500" step="10"></div>
+    <div><label for="d9bDG">b (DG)</label><input type="number" id="d9bDG" value="2" step="0.5"></div>
+    <div><label for="d9Ystar">Y* (potentiel, OGLT)</label><input type="number" id="d9Ystar" value="400" step="10"></div>
+    <div><label for="d9c">c (pente OGCT)</label><input type="number" id="d9c" value="3" step="0.5"></div>
+    <div><label for="d9delta">ΔDG (choc, ex. −60)</label><input type="number" id="d9delta" value="-60" step="10"></div>
+  </div>
+  <button onclick="calculerDemande()">Calculer</button>
+  <div id="resultatDemande" class="resultat-zone"></div>
+  <div id="zoneDemande"></div>
+  <div class="legende">
+    <span><span class="puce" style="background:var(--cgris)"></span>DG initiale</span>
+    <span><span class="puce" style="background:var(--cdef)"></span>DG après choc</span>
+    <span><span class="puce" style="background:var(--cintu)"></span>OGCT (P&#7497; initial)</span>
+    <span><span class="puce" style="background:var(--cex)"></span>OGLT (verticale à Y*)</span>
+  </div>
+</div>
+
+<div class="panneau">
+  <h2>Choc d'offre (flambée du prix de l'énergie)</h2>
+  <p class="aide">Même $DG$ et même $OGLT$. Le choc déplace l'$OGCT$ à $Y=Y^{*}+\Delta OG+c\,(P-P^{e})$ (négatif = coût plus élevé à tout niveau de prix), avec $P^{e}$ inchangé à court terme. Si le choc se dissipe, l'$OGCT$ revient à sa position initiale et l'économie retrouve l'équilibre de long terme initial.</p>
+  <div class="ligne">
+    <div><label for="o9aDG">a (DG)</label><input type="number" id="o9aDG" value="500" step="10"></div>
+    <div><label for="o9bDG">b (DG)</label><input type="number" id="o9bDG" value="2" step="0.5"></div>
+    <div><label for="o9Ystar">Y* (potentiel, OGLT)</label><input type="number" id="o9Ystar" value="400" step="10"></div>
+    <div><label for="o9c">c (pente OGCT)</label><input type="number" id="o9c" value="3" step="0.5"></div>
+    <div><label for="o9delta">ΔOG (choc, ex. −80)</label><input type="number" id="o9delta" value="-80" step="10"></div>
+  </div>
+  <button onclick="calculerOffre()">Calculer</button>
+  <div id="resultatOffre" class="resultat-zone"></div>
+  <div id="zoneOffre"></div>
+  <div class="legende">
+    <span><span class="puce" style="background:var(--cgris)"></span>OGCT initiale</span>
+    <span><span class="puce" style="background:var(--cintu)"></span>OGCT après choc</span>
+    <span><span class="puce" style="background:var(--cdef)"></span>DG (fixe)</span>
+    <span><span class="puce" style="background:var(--cex)"></span>OGLT (verticale à Y*)</span>
+  </div>
+</div>
+
+<script>
+function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+// Toutes les courbes sont paramétrées par P (niveau des prix, axe vertical) et
+// retournent Y (production, axe horizontal), comme dans le graphique DG-OG usuel.
+function dg(P, a, b) { return a - b * P; }
+function ogct(P, Ystar, c, Pe, deltaOG) { return Ystar + (deltaOG || 0) + c * (P - Pe); }
+
+function dessinerAxesADAS(svg, margin, W, H) {
+  var axeX = svgNS('line'); axeX.setAttribute('x1', margin); axeX.setAttribute('x2', W - margin);
+  axeX.setAttribute('y1', H - margin); axeX.setAttribute('y2', H - margin); axeX.setAttribute('class', 'axe'); axeX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeX);
+  var axeY = svgNS('line'); axeY.setAttribute('x1', margin); axeY.setAttribute('x2', margin);
+  axeY.setAttribute('y1', margin); axeY.setAttribute('y2', H - margin); axeY.setAttribute('class', 'axe'); axeY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axeY);
+  var lblX = svgNS('text'); lblX.setAttribute('x', W - margin); lblX.setAttribute('y', H - margin + 28);
+  lblX.setAttribute('text-anchor', 'end'); lblX.setAttribute('font-size', '11'); lblX.textContent = 'Y (production)';
+  svg.appendChild(lblX);
+  var lblY = svgNS('text'); lblY.setAttribute('x', margin); lblY.setAttribute('y', margin - 10);
+  lblY.setAttribute('text-anchor', 'start'); lblY.setAttribute('font-size', '11'); lblY.textContent = 'P (niveau des prix)';
+  svg.appendChild(lblY);
+}
+
+// Trace une courbe Y=fn(P) pour P allant de Pmin a Pmax.
+function tracerCourbeYP(svg, px, py, Pmin, Pmax, fn, classe) {
+  var pathD = '';
+  for (var i = 0; i <= 40; i++) {
+    var P = Pmin + ((Pmax - Pmin) * i) / 40;
+    var Y = fn(P);
+    if (!isFinite(Y)) continue;
+    pathD += (pathD === '' ? 'M' : 'L') + px(Y).toFixed(1) + ',' + py(P).toFixed(1) + ' ';
+  }
+  var path = svgNS('path');
+  path.setAttribute('d', pathD);
+  path.setAttribute('class', classe);
+  path.setAttribute('stroke-width', '2.5');
+  svg.appendChild(path);
+}
+
+function marquerPoint(svg, px, py, margin, Y, P) {
+  var l1 = svgNS('line');
+  l1.setAttribute('x1', margin); l1.setAttribute('x2', px(Y)); l1.setAttribute('y1', py(P)); l1.setAttribute('y2', py(P));
+  l1.setAttribute('class', 'ligne-eq'); l1.setAttribute('stroke-width', '1'); l1.setAttribute('stroke-dasharray', '4,3');
+  svg.appendChild(l1);
+  var l2 = svgNS('line');
+  var H = parseFloat(svg.getAttribute('viewBox').split(' ')[3]);
+  l2.setAttribute('x1', px(Y)); l2.setAttribute('x2', px(Y)); l2.setAttribute('y1', py(P)); l2.setAttribute('y2', H - margin);
+  l2.setAttribute('class', 'ligne-eq'); l2.setAttribute('stroke-width', '1'); l2.setAttribute('stroke-dasharray', '4,3');
+  svg.appendChild(l2);
+}
+
+function calculerDemande() {
+  var resDiv = document.getElementById('resultatDemande');
+  var a = parseFloat(document.getElementById('d9aDG').value);
+  var b = parseFloat(document.getElementById('d9bDG').value);
+  var Ystar = parseFloat(document.getElementById('d9Ystar').value);
+  var c = parseFloat(document.getElementById('d9c').value);
+  var delta = parseFloat(document.getElementById('d9delta').value);
+  var vals = [a, b, Ystar, c, delta];
+  if (vals.some(isNaN) || b <= 0 || c <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneDemande').innerHTML = '';
+    return;
+  }
+  var P0 = (a - Ystar) / b, Y0 = Ystar, Pe = P0;
+  var PCT = ((a + delta) - Ystar + c * Pe) / (b + c);
+  var YCT = (a + delta) - b * PCT;
+  var PLT = (a + delta - Ystar) / b, YLT = Ystar;
+
+  resDiv.innerHTML =
+    '<div class="valeur">initial : P=' + P0.toFixed(2) + ', Y=' + Y0.toFixed(1) + '</div>' +
+    '<div class="valeur mid">court terme : P=' + PCT.toFixed(2) + ', Y=' + YCT.toFixed(1) + '</div>' +
+    '<div class="valeur ok">long terme : P=' + PLT.toFixed(2) + ', Y=' + YLT.toFixed(1) + '</div><br>' +
+    '<div class="valeur ' + (YCT < Y0 ? 'ko' : 'ok') + '">production (CT) : ' + (YCT < Y0 ? 'baisse' : 'monte') + ' de ' + Math.abs(YCT - Y0).toFixed(1) + ', puis revient au potentiel à long terme</div>' +
+    '<div class="valeur ' + (PCT < P0 ? 'ko' : 'ok') + '">prix (CT) : ' + (PCT < P0 ? 'baissent' : 'montent') + ' de ' + Math.abs(PCT - P0).toFixed(2) + ', puis ' + (PLT < PCT ? 'baissent encore' : 'remontent') + ' à long terme (P=' + PLT.toFixed(2) + ')</div>';
+
+  var W = 480, H = 340, margin = 55;
+  var Ymax = Math.max(Y0, YCT, YLT) * 1.3;
+  var Pmax = Math.max(P0, PCT) * 1.6;
+  var Pmin = Math.max(0, Math.min(PLT, PCT) * 0.5);
+  function px(Y) { return margin + (Y / Ymax) * (W - 2 * margin); }
+  function py(P) { return H - margin - ((P - Pmin) / (Pmax - Pmin)) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  dessinerAxesADAS(svg, margin, W, H);
+
+  var oglt = svgNS('line');
+  oglt.setAttribute('x1', px(Ystar)); oglt.setAttribute('x2', px(Ystar));
+  oglt.setAttribute('y1', margin); oglt.setAttribute('y2', H - margin);
+  oglt.setAttribute('class', 'courbe-oglt'); oglt.setAttribute('stroke-width', '2.5'); oglt.setAttribute('stroke-dasharray', '6,3');
+  svg.appendChild(oglt);
+
+  tracerCourbeYP(svg, px, py, Pmin, Pmax, function (P) { return dg(P, a, b); }, 'courbe-dg-avant');
+  tracerCourbeYP(svg, px, py, Pmin, Pmax, function (P) { return dg(P, a + delta, b); }, 'courbe-dg-apres');
+  tracerCourbeYP(svg, px, py, Pmin, Pmax, function (P) { return ogct(P, Ystar, c, Pe, 0); }, 'courbe-ogct-avant');
+
+  marquerPoint(svg, px, py, margin, Y0, P0);
+  marquerPoint(svg, px, py, margin, YCT, PCT);
+  marquerPoint(svg, px, py, margin, YLT, PLT);
+
+  document.getElementById('zoneDemande').innerHTML = '';
+  document.getElementById('zoneDemande').appendChild(svg);
+}
+
+function calculerOffre() {
+  var resDiv = document.getElementById('resultatOffre');
+  var a = parseFloat(document.getElementById('o9aDG').value);
+  var b = parseFloat(document.getElementById('o9bDG').value);
+  var Ystar = parseFloat(document.getElementById('o9Ystar').value);
+  var c = parseFloat(document.getElementById('o9c').value);
+  var delta = parseFloat(document.getElementById('o9delta').value);
+  var vals = [a, b, Ystar, c, delta];
+  if (vals.some(isNaN) || b <= 0 || c <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    document.getElementById('zoneOffre').innerHTML = '';
+    return;
+  }
+  var P0 = (a - Ystar) / b, Y0 = Ystar, Pe = P0;
+  var PCT = (a - Ystar - delta + c * Pe) / (b + c);
+  var YCT = a - b * PCT;
+  var PLT = P0, YLT = Ystar;
+
+  var memeSens = (YCT - Y0) * (PCT - P0) > 0;
+
+  resDiv.innerHTML =
+    '<div class="valeur">initial : P=' + P0.toFixed(2) + ', Y=' + Y0.toFixed(1) + '</div>' +
+    '<div class="valeur mid">court terme : P=' + PCT.toFixed(2) + ', Y=' + YCT.toFixed(1) + '</div>' +
+    '<div class="valeur ok">long terme (choc dissipé) : P=' + PLT.toFixed(2) + ', Y=' + YLT.toFixed(1) + '</div><br>' +
+    '<div class="valeur ' + (YCT < Y0 ? 'ko' : 'ok') + '">production : ' + (YCT < Y0 ? 'baisse' : 'monte') + ' de ' + Math.abs(YCT - Y0).toFixed(1) + '</div>' +
+    '<div class="valeur ' + (PCT > P0 ? 'ko' : 'ok') + '">prix : ' + (PCT > P0 ? 'montent' : 'baissent') + ' de ' + Math.abs(PCT - P0).toFixed(2) + '</div>' +
+    '<div class="valeur ' + (memeSens ? 'ok' : 'ko') + '">' + (memeSens ? 'même sens (comme un choc de demande)' : 'sens opposés : stagflation') + '</div>';
+
+  var W = 480, H = 340, margin = 55;
+  var Ymax = Math.max(Y0, YCT) * 1.3;
+  var Pmax = Math.max(P0, PCT) * 1.6;
+  var Pmin = Math.max(0, Math.min(P0, PCT) * 0.5);
+  function px(Y) { return margin + (Y / Ymax) * (W - 2 * margin); }
+  function py(P) { return H - margin - ((P - Pmin) / (Pmax - Pmin)) * (H - 2 * margin); }
+
+  var svg = svgNS('svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('class', 'grapheco');
+  dessinerAxesADAS(svg, margin, W, H);
+
+  var oglt = svgNS('line');
+  oglt.setAttribute('x1', px(Ystar)); oglt.setAttribute('x2', px(Ystar));
+  oglt.setAttribute('y1', margin); oglt.setAttribute('y2', H - margin);
+  oglt.setAttribute('class', 'courbe-oglt'); oglt.setAttribute('stroke-width', '2.5'); oglt.setAttribute('stroke-dasharray', '6,3');
+  svg.appendChild(oglt);
+
+  tracerCourbeYP(svg, px, py, Pmin, Pmax, function (P) { return dg(P, a, b); }, 'courbe-dg-avant');
+  tracerCourbeYP(svg, px, py, Pmin, Pmax, function (P) { return ogct(P, Ystar, c, Pe, 0); }, 'courbe-ogct-avant');
+  tracerCourbeYP(svg, px, py, Pmin, Pmax, function (P) { return ogct(P, Ystar, c, Pe, delta); }, 'courbe-ogct-apres');
+
+  marquerPoint(svg, px, py, margin, Y0, P0);
+  marquerPoint(svg, px, py, margin, YCT, PCT);
+
+  document.getElementById('zoneOffre').innerHTML = '';
+  document.getElementById('zoneOffre').appendChild(svg);
+}
+
+window.onload = function () { calculerDemande(); calculerOffre(); };
+</script>
+</body>
+</html>
