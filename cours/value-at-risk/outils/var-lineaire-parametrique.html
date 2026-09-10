@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — VaR linéaire paramétrique — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Application : VaR linéaire paramétrique</h1>
+<p class="sous-titre">Calculatrice interactive — VaR normale linéaire, dérive et autocorrélation (exercice 5), décomposition et sous-additivité à deux facteurs (exercice 6)</p>
+
+<div class="panneau">
+  <h2>VaR normale linéaire : dérive, racine du temps, autocorrélation</h2>
+  <p class="aide">VaR<sub>1,&alpha;</sub> = &Phi;<sup>-1</sup>(&alpha;)&sigma; - &mu;. Mise à l'échelle sur h jours : &sigma;<sub>h</sub>&sup2; = h&sigma;&sup2;(1+(h-1)&rho;), qui se réduit à la racine du temps pure quand &rho;=0.</p>
+  <div class="ligne">
+    <div><label for="c1_V">Valeur du portefeuille V (€)</label><input type="number" id="c1_V" value="10000000" step="100000"></div>
+    <div><label for="c1_sigma">Volatilité quotidienne &sigma; (%)</label><input type="number" id="c1_sigma" value="1.2" step="0.1"></div>
+    <div><label for="c1_mu">Rendement quotidien espéré &mu; (%)</label><input type="number" id="c1_mu" value="0.02" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c1_alpha">Seuil de confiance &alpha; (%)</label><input type="number" id="c1_alpha" value="99" step="0.1" min="50" max="99.99"></div>
+    <div><label for="c1_h">Horizon h (jours)</label><input type="number" id="c1_h" value="10" step="1" min="1"></div>
+    <div><label for="c1_rho">Autocorrélation &rho;</label><input type="number" id="c1_rho" value="0.1" step="0.05" min="-0.99" max="0.99"></div>
+  </div>
+  <button onclick="calculerVaRLineaire()">Calculer</button>
+  <div id="resultatVaRLineaire" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Décomposition et sous-additivité d'un portefeuille à deux facteurs</h2>
+  <p class="aide">VaR<sub>P</sub> = &radic;(VaR<sub>A</sub>&sup2; + VaR<sub>B</sub>&sup2; + 2&rho;<sub>AB</sub>VaR<sub>A</sub>VaR<sub>B</sub>). Bénéfice de diversification = somme des VaR stand-alone − VaR<sub>P</sub>.</p>
+  <div class="ligne">
+    <div><label for="c1b_VA">VaR stand-alone A (€)</label><input type="number" id="c1b_VA" value="2000000" step="100000"></div>
+    <div><label for="c1b_VB">VaR stand-alone B (€)</label><input type="number" id="c1b_VB" value="1500000" step="100000"></div>
+    <div><label for="c1b_rho">Corrélation &rho;<sub>AB</sub></label><input type="number" id="c1b_rho" value="0.3" step="0.1" min="-1" max="1"></div>
+  </div>
+  <button onclick="calculerDecomposition()">Calculer</button>
+  <div id="resultatDecomposition" class="resultat-zone"></div>
+</div>
+
+<script>
+function inverseNormale(p) {
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var plow = 0.02425, phigh = 1 - plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+           ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+           (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+}
+
+function formatEUR(x) {
+  return Math.round(x).toLocaleString('fr-FR') + ' €';
+}
+
+function calculerVaRLineaire() {
+  var resDiv = document.getElementById('resultatVaRLineaire');
+  var V = parseFloat(document.getElementById('c1_V').value);
+  var sigma = parseFloat(document.getElementById('c1_sigma').value) / 100;
+  var mu = parseFloat(document.getElementById('c1_mu').value) / 100;
+  var alpha = parseFloat(document.getElementById('c1_alpha').value) / 100;
+  var h = parseFloat(document.getElementById('c1_h').value);
+  var rho = parseFloat(document.getElementById('c1_rho').value);
+
+  if ([V, sigma, mu, alpha, h, rho].some(isNaN) || V <= 0 || sigma < 0 || alpha <= 0.5 || alpha >= 1 || h < 1 || rho <= -1 || rho >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var z = inverseNormale(alpha);
+  var var1_avecDerive = z * sigma - mu;
+  var var1_sansDerive = z * sigma;
+  var varH_racine = Math.sqrt(h) * var1_sansDerive;
+  var sigmaH2 = h * sigma * sigma * (1 + (h - 1) * rho);
+  var sigmaH = Math.sqrt(Math.max(sigmaH2, 0));
+  var varH_rho = z * sigmaH;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>z<sub>&alpha;</sub></th><td>' + z.toFixed(4) + '</td></tr>';
+  html += '<tr><th>VaR à 1 jour, avec dérive</th><td>' + (var1_avecDerive * 100).toFixed(4) + '% = ' + formatEUR(var1_avecDerive * V) + '</td></tr>';
+  html += '<tr><th>VaR à 1 jour, sans dérive</th><td>' + (var1_sansDerive * 100).toFixed(4) + '% = ' + formatEUR(var1_sansDerive * V) + '</td></tr>';
+  html += '<tr><th>écart dû à la dérive</th><td>' + formatEUR((var1_sansDerive - var1_avecDerive) * V) + '</td></tr>';
+  html += '<tr><th>VaR à ' + h.toFixed(0) + ' jours, racine du temps pure (&rho;=0)</th><td>' + (varH_racine * 100).toFixed(4) + '% = ' + formatEUR(varH_racine * V) + '</td></tr>';
+  html += '<tr><th>&sigma;<sub>h</sub> avec autocorrélation &rho;=' + rho.toFixed(2) + '</th><td>' + (sigmaH * 100).toFixed(4) + '%</td></tr>';
+  html += '<tr><th>VaR à ' + h.toFixed(0) + ' jours, avec autocorrélation</th><td>' + (varH_rho * 100).toFixed(4) + '% = ' + formatEUR(varH_rho * V) + '</td></tr>';
+  html += '</table>';
+
+  if (rho > 0) {
+    html += '<div class="valeur ko">autocorrélation positive : la VaR corrigée dépasse la règle &radic;h pure (facteur &times;' + (varH_rho / varH_racine).toFixed(3) + ')</div>';
+  } else if (rho < 0) {
+    html += '<div class="valeur ok">autocorrélation négative : la VaR corrigée est inférieure à la règle &radic;h pure (facteur &times;' + (varH_rho / varH_racine).toFixed(3) + ')</div>';
+  } else {
+    html += '<div class="valeur">&rho;=0 : la VaR corrigée coïncide exactement avec la règle &radic;h pure</div>';
+  }
+
+  resDiv.innerHTML = html;
+}
+
+function calculerDecomposition() {
+  var resDiv = document.getElementById('resultatDecomposition');
+  var VA = parseFloat(document.getElementById('c1b_VA').value);
+  var VB = parseFloat(document.getElementById('c1b_VB').value);
+  var rho = parseFloat(document.getElementById('c1b_rho').value);
+
+  if ([VA, VB, rho].some(isNaN) || VA < 0 || VB < 0 || rho < -1 || rho > 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (&rho; entre -1 et 1).</p>';
+    return;
+  }
+
+  var VP2 = VA * VA + VB * VB + 2 * rho * VA * VB;
+  var VP = Math.sqrt(Math.max(VP2, 0));
+  var somme = VA + VB;
+  var benefice = somme - VP;
+  var pctBenefice = somme > 0 ? (benefice / somme * 100) : 0;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>VaR du portefeuille VaR<sub>P</sub></th><td>' + formatEUR(VP) + '</td></tr>';
+  html += '<tr><th>somme des VaR stand-alone</th><td>' + formatEUR(somme) + '</td></tr>';
+  html += '<tr><th>bénéfice de diversification</th><td>' + formatEUR(benefice) + ' (' + pctBenefice.toFixed(2) + '% de la somme)</td></tr>';
+  html += '</table>';
+
+  if (Math.abs(rho - 1) < 1e-9) {
+    html += '<div class="valeur mid">&rho;=1 : VaR<sub>P</sub> égale exactement la somme des VaR stand-alone — la sous-additivité devient une égalité, cas limite sans aucune diversification</div>';
+  } else if (benefice > 1e-6) {
+    html += '<div class="valeur ok">VaR<sub>P</sub> &lt; somme des VaR stand-alone — sous-additivité vérifiée, diversification effective</div>';
+  } else {
+    html += '<div class="valeur">aucun bénéfice de diversification mesurable avec ces paramètres</div>';
+  }
+
+  html += dessinerBarresDecomposition(VA, VB, somme, VP);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresDecomposition(VA, VB, somme, VP) {
+  var largeur = 280, hauteur = 200, marge = 40;
+  var valeurs = [VA, VB, somme, VP];
+  var libelles = ['A', 'B', 'A+B', 'VaR_P'];
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--ceco, #1F6FB2)', 'var(--cgris, #5A5A5A)', 'var(--cdef, #4A3B8C)'];
+  var maxVal = Math.max.apply(null, valeurs.concat([0.0001])) * 1.2;
+  var largeurBarre = 40;
+  var espace = (largeur - 2 * marge) / libelles.length;
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < libelles.length; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var hBrute = (valeurs[i] / maxVal) * (hauteur - 2 * marge);
+    var hBar = Math.max(hBrute, 1);
+    var y = yAxe - hBar;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + hBar.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + (valeurs[i] / 1e6).toFixed(2) + 'M</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">' + libelles[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerVaRLineaire(); calculerDecomposition(); };
+</script>
+</body>
+</html>

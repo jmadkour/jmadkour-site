@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Risque de modèle — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Application : risque de modèle</h1>
+<p class="sous-titre">Calculatrice interactive — intervalles de confiance de la VaR (exercice 5), backtesting et test de Kupiec (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Intervalle de confiance de la VaR selon l'estimateur</h2>
+  <p class="aide">s.e.(VaR) = VaR/&radic;(2T) pour un estimateur égalitaire ; l'estimateur historique a une erreur type environ deux fois plus grande, à &alpha; et T égaux.</p>
+  <div class="ligne">
+    <div><label for="c5_VaR">VaR (%)</label><input type="number" id="c5_VaR" value="9.31" step="0.1"></div>
+    <div><label for="c5_T">Taille d'échantillon T</label><input type="number" id="c5_T" value="100" step="10" min="2"></div>
+    <div><label for="c5_seEWMA">Erreur type EWMA (%)</label><input type="number" id="c5_seEWMA" value="1.16" step="0.01"></div>
+    <div><label for="c5_zIC">Multiplicateur (95% : 1,96)</label><input type="number" id="c5_zIC" value="1.96" step="0.01"></div>
+  </div>
+  <button onclick="calculerIC()">Calculer</button>
+  <div id="resultatIC" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Backtesting : zones de Bâle et test de Kupiec</h2>
+  <p class="aide">Zones de Bâle sur 250 jours (attendu n&times;&alpha;). Statistique de Kupiec : -2ln LR<sub>uc</sub> ~ &chi;&sup2;<sub>1</sub> (seuils : 3,84 à 5%, 6,63 à 1%).</p>
+  <div class="ligne">
+    <div><label for="c5b_n">Nombre de jours n</label><input type="number" id="c5b_n" value="250" step="10" min="10"></div>
+    <div><label for="c5b_n1">Dépassements observés n<sub>1</sub></label><input type="number" id="c5b_n1" value="8" step="1" min="0"></div>
+    <div><label for="c5b_alpha">Seuil de la VaR &alpha; (%, ex. VaR à 1%)</label><input type="number" id="c5b_alpha" value="1" step="0.5" min="0.01" max="20"></div>
+  </div>
+  <button onclick="calculerBacktest()">Calculer</button>
+  <div id="resultatBacktest" class="resultat-zone"></div>
+</div>
+
+<script>
+function formatPct(x) { return x.toFixed(2) + '%'; }
+
+function calculerIC() {
+  var resDiv = document.getElementById('resultatIC');
+  var VaR = parseFloat(document.getElementById('c5_VaR').value);
+  var T = parseFloat(document.getElementById('c5_T').value);
+  var seEWMA = parseFloat(document.getElementById('c5_seEWMA').value);
+  var zIC = parseFloat(document.getElementById('c5_zIC').value);
+
+  if ([VaR, T, seEWMA, zIC].some(isNaN) || T <= 0 || zIC <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var seEq = VaR / Math.sqrt(2 * T);
+  var seHist = 2 * seEq;
+
+  var estimateurs = [
+    { nom: 'égalitaire', se: seEq },
+    { nom: 'EWMA', se: seEWMA },
+    { nom: 'historique (quantile empirique, &asymp;2&times; égalitaire)', se: seHist }
+  ];
+
+  var html = '<table class="tabres"><tr><th>estimateur</th><th>erreur type</th><th>intervalle de confiance</th><th>largeur</th></tr>';
+  for (var i = 0; i < estimateurs.length; i++) {
+    var e = estimateurs[i];
+    var demi = zIC * e.se;
+    var borneBasse = VaR - demi;
+    var borneHaute = VaR + demi;
+    var largeur = 2 * demi;
+    html += '<tr><td style="text-align:left">' + e.nom + '</td><td>' + formatPct(e.se) + '</td><td>[' + formatPct(borneBasse) + ' ; ' + formatPct(borneHaute) + ']</td><td>' + formatPct(largeur) + '</td></tr>';
+  }
+  html += '</table>';
+
+  var ratioHistEq = seHist / seEq;
+  html += '<div class="valeur mid">l\'intervalle historique est environ &times;' + ratioHistEq.toFixed(2) + ' plus large que l\'intervalle égalitaire</div>';
+
+  resDiv.innerHTML = html;
+}
+
+function logGamma(x) {
+  var g = 7, p = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - logGamma(1 - x);
+  x -= 1;
+  var a = p[0];
+  var t = x + g + 0.5;
+  for (var i = 1; i < g + 2; i++) a += p[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+// Régularisation de la fonction gamma incomplète (pour la CDF du chi2), via série/fraction continue
+function gammaincLower(s, x) {
+  if (x < 0) return 0;
+  if (x < s + 1) {
+    var sum = 1 / s, term = sum, n = s;
+    for (var i = 0; i < 200; i++) {
+      n += 1; term *= x / n; sum += term;
+      if (Math.abs(term) < Math.abs(sum) * 1e-14) break;
+    }
+    return sum * Math.exp(-x + s * Math.log(x) - logGamma(s));
+  } else {
+    var b = x + 1 - s, c = 1e308, d = 1 / b, h = d;
+    for (var i = 1; i < 200; i++) {
+      var an = -i * (i - s);
+      b += 2;
+      d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300;
+      c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300;
+      d = 1 / d;
+      var del = d * c;
+      h *= del;
+      if (Math.abs(del - 1) < 1e-14) break;
+    }
+    var q = Math.exp(-x + s * Math.log(x) - logGamma(s)) * h;
+    return 1 - q;
+  }
+}
+function chi2CDF(x, k) { return gammaincLower(k / 2, x / 2); }
+
+function calculerBacktest() {
+  var resDiv = document.getElementById('resultatBacktest');
+  var n = parseInt(document.getElementById('c5b_n').value, 10);
+  var n1 = parseInt(document.getElementById('c5b_n1').value, 10);
+  var alpha = parseFloat(document.getElementById('c5b_alpha').value) / 100;
+
+  if ([n, n1, alpha].some(isNaN) || n <= 0 || n1 < 0 || n1 > n || alpha <= 0 || alpha >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var n0 = n - n1;
+  var pi1 = n1 / n;
+  var attendu = n * alpha;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>dépassements attendus (n&times;&alpha;)</th><td>' + attendu.toFixed(2) + '</td></tr>';
+  html += '<tr><th>dépassements observés n<sub>1</sub></th><td>' + n1 + '</td></tr>';
+  html += '<tr><th>proportion observée &pi;&#770;<sub>1</sub></th><td>' + (pi1 * 100).toFixed(3) + '%</td></tr>';
+  html += '</table>';
+
+  // Zones de Bâle, calibrées sur 250 jours ; on rapporte le nombre à une base 250 si n différent
+  var n1_250 = n1 * (250 / n);
+  var zone, coul;
+  if (n1_250 <= 4) { zone = 'verte (multiplicateur 3)'; coul = 'ok'; }
+  else if (n1_250 <= 9) { zone = 'jaune (multiplicateur croissant 3,4 à 3,85)'; coul = 'mid'; }
+  else { zone = 'rouge (multiplicateur 4, ou modèle interdit)'; coul = 'ko'; }
+  html += '<div class="valeur ' + coul + '">zone de Bâle (équivalent sur 250 jours : ' + n1_250.toFixed(1) + ' dépassements) : ' + zone + '</div>';
+
+  var n1c = Math.max(n1, 1e-10), n0c = Math.max(n0, 1e-10), pi1c = Math.min(Math.max(pi1, 1e-10), 1 - 1e-10);
+  var LR = -2 * (n1 * Math.log(alpha) + n0 * Math.log(1 - alpha) - n1c * Math.log(pi1c) - n0c * Math.log(1 - pi1c));
+
+  var p5 = 3.841, p1 = 6.635;
+  var pValue = 1 - chi2CDF(LR, 1);
+
+  html += '<table class="tabres">';
+  html += '<tr><th>statistique de Kupiec -2ln LR<sub>uc</sub></th><td>' + LR.toFixed(3) + '</td></tr>';
+  html += '<tr><th>p-value (&chi;&sup2;<sub>1</sub>)</th><td>' + (pValue * 100).toFixed(2) + '%</td></tr>';
+  html += '</table>';
+
+  if (LR > p1) {
+    html += '<div class="valeur ko">rejet du modèle aux seuils 5% ET 1% (statistique &gt; 6,63)</div>';
+  } else if (LR > p5) {
+    html += '<div class="valeur mid">rejet du modèle au seuil 5% seulement (statistique entre 3,84 et 6,63)</div>';
+  } else {
+    html += '<div class="valeur ok">le test de couverture inconditionnelle ne rejette pas le modèle</div>';
+  }
+  html += '<p class="aide">Rappel : ce test ne dit rien sur le regroupement temporel des dépassements — un test d\'indépendance (Christoffersen) reste nécessaire en complément.</p>';
+
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerIC(); calculerBacktest(); };
+</script>
+</body>
+</html>

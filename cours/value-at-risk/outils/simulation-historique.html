@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — La simulation historique — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres tr.ligne-max td, table.tabres tr.ligne-max th { background: #fff3d6; font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabres tr.ligne-max td, table.tabres tr.ligne-max th { background: var(--code-bg) !important; color: var(--cintu) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Application : la simulation historique</h1>
+<p class="sous-titre">Calculatrice interactive — taille d'échantillon et chevauchement (exercice 5), ajustement de volatilité des chocs historiques (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Taille d'échantillon, quantile visé et chevauchement</h2>
+  <p class="aide">Observations en queue attendues &asymp; n&times;(1-&alpha;). Fenêtres chevauchantes sur h jours = n-h+1. Rendements indépendants = &lfloor;n/h&rfloor;.</p>
+  <div class="ligne">
+    <div><label for="c2_n">Taille de l'échantillon n (jours)</label><input type="number" id="c2_n" value="1250" step="50" min="1"></div>
+    <div><label for="c2_alpha">Seuil de confiance &alpha; (%)</label><input type="number" id="c2_alpha" value="99" step="0.1" min="50" max="99.999"></div>
+    <div><label for="c2_h">Horizon h (jours)</label><input type="number" id="c2_h" value="10" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerEchantillon()">Calculer</button>
+  <div id="resultatEchantillon" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Ajustement de volatilité d'un choc historique</h2>
+  <p class="aide">Choc standardisé z<sub>t</sub> = r<sub>t</sub>/&sigma;<sub>t</sub>. Scénario ajusté à la volatilité actuelle : r&#771;<sub>t</sub> = z<sub>t</sub>&times;&sigma;<sub>T</sub>.</p>
+  <div class="ligne">
+    <div><label for="c2b_sigmaT">Volatilité actuelle &sigma;<sub>T</sub> (%)</label><input type="number" id="c2b_sigmaT" value="20" step="1" min="0.01"></div>
+  </div>
+  <table class="tabres" id="tableChocs" style="width:100%; text-align:center;">
+    <tr><th>choc</th><th>r<sub>t</sub> (%)</th><th>&sigma;<sub>t</sub> (%)</th></tr>
+    <tr><td>1</td><td><input type="number" id="c2b_r1" value="-2" step="0.5"></td><td><input type="number" id="c2b_s1" value="10" step="0.5"></td></tr>
+    <tr><td>2</td><td><input type="number" id="c2b_r2" value="-5" step="0.5"></td><td><input type="number" id="c2b_s2" value="15" step="0.5"></td></tr>
+    <tr><td>3</td><td><input type="number" id="c2b_r3" value="3" step="0.5"></td><td><input type="number" id="c2b_s3" value="8" step="0.5"></td></tr>
+    <tr><td>4</td><td><input type="number" id="c2b_r4" value="-8" step="0.5"></td><td><input type="number" id="c2b_s4" value="25" step="0.5"></td></tr>
+  </table>
+  <button onclick="calculerAjustement()">Calculer</button>
+  <div id="resultatAjustement" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerEchantillon() {
+  var resDiv = document.getElementById('resultatEchantillon');
+  var n = parseInt(document.getElementById('c2_n').value, 10);
+  var alpha = parseFloat(document.getElementById('c2_alpha').value) / 100;
+  var h = parseInt(document.getElementById('c2_h').value, 10);
+
+  if ([n, alpha, h].some(isNaN) || n < 1 || alpha <= 0.5 || alpha >= 1 || h < 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var queueAttendue = n * (1 - alpha);
+  var fenetresChevauchantes = n - h + 1;
+  var rendementsIndependants = Math.floor(n / h);
+  var facteur = rendementsIndependants > 0 ? fenetresChevauchantes / rendementsIndependants : NaN;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>observations en queue attendues (n&times;(1-&alpha;))</th><td>' + queueAttendue.toFixed(2) + '</td></tr>';
+  html += '<tr><th>fenêtres chevauchantes sur ' + h + ' jours (n-h+1)</th><td>' + fenetresChevauchantes + '</td></tr>';
+  html += '<tr><th>rendements indépendants sur ' + h + ' jours (&lfloor;n/h&rfloor;)</th><td>' + rendementsIndependants + '</td></tr>';
+  html += '<tr><th>facteur chevauchant / indépendant</th><td>&times;' + facteur.toFixed(2) + '</td></tr>';
+  html += '</table>';
+
+  if (queueAttendue >= 20) {
+    html += '<div class="valeur ok">échantillon confortable pour ce quantile (&ge; 20 observations en queue attendues)</div>';
+  } else if (queueAttendue >= 5) {
+    html += '<div class="valeur mid">échantillon tout juste suffisant (' + queueAttendue.toFixed(1) + ' observations en queue attendues)</div>';
+  } else {
+    html += '<div class="valeur ko">échantillon insuffisant pour ce quantile (' + queueAttendue.toFixed(2) + ' observation(s) en queue attendue(s) seulement)</div>';
+  }
+  html += '<p class="aide">Rappel : les fenêtres chevauchantes ne sont pas indépendantes — la queue extrême reste plafonnée par les pertes des ' + n + ' observations quotidiennes sous-jacentes, pas par les ' + fenetresChevauchantes + ' fenêtres.</p>';
+
+  resDiv.innerHTML = html;
+}
+
+function calculerAjustement() {
+  var resDiv = document.getElementById('resultatAjustement');
+  var sigmaT = parseFloat(document.getElementById('c2b_sigmaT').value);
+  var chocs = [];
+  for (var i = 1; i <= 4; i++) {
+    var r = parseFloat(document.getElementById('c2b_r' + i).value);
+    var s = parseFloat(document.getElementById('c2b_s' + i).value);
+    chocs.push({ r: r, s: s });
+  }
+
+  if (isNaN(sigmaT) || sigmaT <= 0 || chocs.some(function (c) { return isNaN(c.r) || isNaN(c.s) || c.s <= 0; })) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (les volatilités doivent être strictement positives).</p>';
+    return;
+  }
+
+  var zs = chocs.map(function (c) { return c.r / c.s; });
+  var rTildes = zs.map(function (z) { return z * sigmaT; });
+
+  var iPireBrut = 0, iPireAjuste = 0;
+  for (var i = 1; i < 4; i++) {
+    if (chocs[i].r < chocs[iPireBrut].r) iPireBrut = i;
+    if (rTildes[i] < rTildes[iPireAjuste]) iPireAjuste = i;
+  }
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>choc</th><th>r<sub>t</sub></th><th>&sigma;<sub>t</sub></th><th>z<sub>t</sub>=r<sub>t</sub>/&sigma;<sub>t</sub></th><th>r&#771;<sub>t</sub>=z<sub>t</sub>&times;&sigma;<sub>T</sub></th></tr>';
+  for (var i = 0; i < 4; i++) {
+    var cls = (i === iPireBrut || i === iPireAjuste) ? ' class="ligne-max"' : '';
+    html += '<tr' + cls + '><td>' + (i + 1) + '</td><td>' + chocs[i].r.toFixed(2) + '%</td><td>' + chocs[i].s.toFixed(2) + '%</td><td>' + zs[i].toFixed(4) + '</td><td>' + rTildes[i].toFixed(3) + '%</td></tr>';
+  }
+  html += '</table>';
+
+  html += '<div class="valeur">choc le plus sévère en brut : choc ' + (iPireBrut + 1) + ' (' + chocs[iPireBrut].r.toFixed(2) + '%)</div>';
+  html += '<div class="valeur mid">choc le plus sévère ajusté (&sigma;<sub>T</sub>=' + sigmaT.toFixed(1) + '%) : choc ' + (iPireAjuste + 1) + ' (' + rTildes[iPireAjuste].toFixed(3) + '%)</div>';
+  if (iPireBrut !== iPireAjuste) {
+    html += '<div class="valeur ko">le classement change après ajustement — la magnitude brute d\'un choc historique est trompeuse hors de son régime de volatilité d\'origine</div>';
+  } else {
+    html += '<div class="valeur ok">le classement ne change pas ici</div>';
+  }
+
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerEchantillon(); calculerAjustement(); };
+</script>
+</body>
+</html>

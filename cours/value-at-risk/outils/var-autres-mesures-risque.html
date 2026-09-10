@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — La Value at Risk et les autres mesures de risque — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres tr.ligne-var td, table.tabres tr.ligne-var th { background: #fff3d6; font-weight: bold; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabres tr.ligne-var td, table.tabres tr.ligne-var th { background: var(--code-bg) !important; color: var(--cintu) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Application : la Value at Risk et les autres mesures de risque</h1>
+<p class="sous-titre">Calculatrice interactive — VaR de taux d'un desk de trésorerie (exercice 5), options binaires et violation de la sous-additivité (exercice 6)</p>
+
+<div class="panneau">
+  <h2>VaR de taux d'un desk de trésorerie</h2>
+  <p class="aide">VaR = PV01 &times; &sigma;<sub>&Delta;y</sub> &times; z<sub>&alpha;</sub> (PV01 en €/point de base, &sigma; en points de base). Mise à l'échelle sur h jours par la règle de la racine du temps.</p>
+  <div class="ligne">
+    <div><label for="vr_pv01">PV01 du portefeuille (€ par point de base)</label><input type="number" id="vr_pv01" value="50000" step="1000"></div>
+    <div><label for="vr_sigma">Volatilité quotidienne des taux &sigma;<sub>&Delta;y</sub> (points de base)</label><input type="number" id="vr_sigma" value="6" step="0.5"></div>
+    <div><label for="vr_horizon">Horizon de mise à l'échelle h (jours)</label><input type="number" id="vr_horizon" value="10" step="1" min="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="vr_alpha1">Seuil de confiance principal &alpha;<sub>1</sub> (%)</label><input type="number" id="vr_alpha1" value="99" step="0.1" min="50" max="99.99"></div>
+    <div><label for="vr_alpha2">Seuil de confiance de comparaison &alpha;<sub>2</sub> (%)</label><input type="number" id="vr_alpha2" value="95" step="0.1" min="50" max="99.99"></div>
+  </div>
+  <button onclick="calculerTresorerie()">Calculer</button>
+  <div id="resultatTresorerie" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Options binaires : violation de la sous-additivité</h2>
+  <p class="aide">n positions indépendantes, chacune perdant L avec probabilité p (et 0 sinon). La perte du portefeuille suit une loi binomiale : P(perte = k&times;L) = C(n,k)&nbsp;p<sup>k</sup>(1-p)<sup>n-k</sup>. La VaR&nbsp;<sub>&alpha;</sub> est le plus petit seuil k&times;L tel que la probabilité cumulée atteigne &alpha;.</p>
+  <div class="ligne">
+    <div><label for="vr_p">Probabilité de perte p (%)</label><input type="number" id="vr_p" value="4" step="0.5" min="0.01" max="99"></div>
+    <div><label for="vr_L">Perte L en cas de défaut</label><input type="number" id="vr_L" value="100" step="10"></div>
+    <div><label for="vr_alphaB">Seuil de confiance &alpha; (%)</label><input type="number" id="vr_alphaB" value="95" step="0.5" min="50" max="99.99"></div>
+    <div><label for="vr_n">Nombre de positions indépendantes n</label><input type="number" id="vr_n" value="2" step="1" min="1" max="10"></div>
+  </div>
+  <button onclick="calculerBinaire()">Calculer</button>
+  <div id="resultatBinaire" class="resultat-zone"></div>
+</div>
+
+<script>
+function erf(x) {
+  var sign = x >= 0 ? 1 : -1; x = Math.abs(x);
+  var a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+  var t = 1 / (1 + p * x);
+  var y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  return sign * y;
+}
+function Phi(x) { return 0.5 * (1 + erf(x / Math.sqrt(2))); }
+
+function inverseNormale(p) {
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var plow = 0.02425, phigh = 1 - plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+           ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+           (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+}
+
+function formatEUR(x) {
+  return Math.round(x).toLocaleString('fr-FR').replace(/ /g, ' ') + ' €';
+}
+
+function calculerTresorerie() {
+  var resDiv = document.getElementById('resultatTresorerie');
+  var pv01 = parseFloat(document.getElementById('vr_pv01').value);
+  var sigma = parseFloat(document.getElementById('vr_sigma').value);
+  var h = parseFloat(document.getElementById('vr_horizon').value);
+  var alpha1 = parseFloat(document.getElementById('vr_alpha1').value) / 100;
+  var alpha2 = parseFloat(document.getElementById('vr_alpha2').value) / 100;
+
+  if ([pv01, sigma, h, alpha1, alpha2].some(isNaN) || pv01 <= 0 || sigma < 0 || h < 1 || alpha1 <= 0.5 || alpha1 >= 1 || alpha2 <= 0.5 || alpha2 >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var z1 = inverseNormale(alpha1);
+  var z2 = inverseNormale(alpha2);
+
+  var var1_a1 = pv01 * sigma * z1;
+  var varH_a1 = var1_a1 * Math.sqrt(h);
+  var var1_a1_double = (2 * pv01) * sigma * z1;
+  var ratioDouble = var1_a1_double / var1_a1;
+  var var1_a2 = pv01 * sigma * z2;
+  var baisse = (var1_a1 - var1_a2) / var1_a1 * 100;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>z<sub>&alpha;1</sub> (&alpha;1=' + (alpha1 * 100).toFixed(1) + '%)</th><td>' + z1.toFixed(4) + '</td></tr>';
+  html += '<tr><th>VaR à 1 jour, &alpha;1</th><td>' + formatEUR(var1_a1) + '</td></tr>';
+  html += '<tr><th>VaR à ' + h.toFixed(0) + ' jours, &alpha;1 (racine du temps)</th><td>' + formatEUR(varH_a1) + '</td></tr>';
+  html += '<tr><th>VaR à 1 jour, PV01 doublé</th><td>' + formatEUR(var1_a1_double) + '</td></tr>';
+  html += '<tr><th>z<sub>&alpha;2</sub> (&alpha;2=' + (alpha2 * 100).toFixed(1) + '%)</th><td>' + z2.toFixed(4) + '</td></tr>';
+  html += '<tr><th>VaR à 1 jour, &alpha;2</th><td>' + formatEUR(var1_a2) + '</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">mise à l\'échelle &times;' + Math.sqrt(h).toFixed(3) + ' (racine de ' + h.toFixed(0) + ')</div>';
+  if (Math.abs(ratioDouble - 2) < 1e-9) {
+    html += '<div class="valeur ok">doubler le PV01 double exactement la VaR (&times;' + ratioDouble.toFixed(4) + ') — homogénéité positive confirmée</div>';
+  } else {
+    html += '<div class="valeur ko">le facteur observé (&times;' + ratioDouble.toFixed(4) + ') s\'écarte de 2</div>';
+  }
+  html += '<div class="valeur">passer de &alpha;1 à &alpha;2 réduit la VaR de ' + baisse.toFixed(2) + '%</div>';
+
+  resDiv.innerHTML = html;
+}
+
+function nCr(n, k) {
+  if (k < 0 || k > n) return 0;
+  k = Math.min(k, n - k);
+  var res = 1;
+  for (var i = 0; i < k; i++) { res = res * (n - i) / (i + 1); }
+  return res;
+}
+function binomProb(n, k, p) { return nCr(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k); }
+
+function formatPct(x) {
+  var pct = x * 100;
+  return (pct < 0.01 && pct > 0 ? pct.toFixed(4) : pct.toFixed(2)) + '%';
+}
+
+function calculerBinaire() {
+  var resDiv = document.getElementById('resultatBinaire');
+  var p = parseFloat(document.getElementById('vr_p').value) / 100;
+  var L = parseFloat(document.getElementById('vr_L').value);
+  var alpha = parseFloat(document.getElementById('vr_alphaB').value) / 100;
+  var n = parseInt(document.getElementById('vr_n').value, 10);
+
+  if ([p, L, alpha, n].some(isNaN) || p <= 0 || p >= 1 || L <= 0 || alpha <= 0.5 || alpha >= 1 || n < 1 || n > 10) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides (n entre 1 et 10).</p>';
+    return;
+  }
+
+  var probs = [], cdf = [], cum = 0;
+  for (var k = 0; k <= n; k++) {
+    var pk = binomProb(n, k, p);
+    probs.push(pk);
+    cum += pk;
+    cdf.push(cum);
+  }
+  var kVar = n;
+  for (var k2 = 0; k2 <= n; k2++) { if (cdf[k2] >= alpha - 1e-12) { kVar = k2; break; } }
+  var portfolioVaR = kVar * L;
+
+  var cdf0isole = 1 - p;
+  var isolatedVaR = (cdf0isole >= alpha - 1e-12) ? 0 : L;
+  var sumIndividual = n * isolatedVaR;
+  var auMoinsUnePerte = 1 - Math.pow(1 - p, n);
+  var violation = portfolioVaR > sumIndividual + 1e-9;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>k (nb. de positions en défaut)</th><th>perte = k&times;L</th><th>P(perte = k&times;L)</th><th>P(perte &le; k&times;L)</th></tr>';
+  for (var k3 = 0; k3 <= n; k3++) {
+    var cls = (k3 === kVar) ? ' class="ligne-var"' : '';
+    html += '<tr' + cls + '><td>' + k3 + '</td><td>' + formatEUR(k3 * L).replace(' €', '') + '</td><td>' + formatPct(probs[k3]) + '</td><td>' + formatPct(cdf[k3]) + '</td></tr>';
+  }
+  html += '</table>';
+  html += '<p class="aide">Ligne surlignée : plus petit k tel que P(perte &le; k&times;L) &ge; &alpha; — c\'est la VaR du portefeuille.</p>';
+
+  html += '<div class="valeur">VaR d\'une position isolée = ' + isolatedVaR.toFixed(0) + '</div>';
+  html += '<div class="valeur mid">VaR du portefeuille (n=' + n + ') = ' + portfolioVaR.toFixed(0) + '</div>';
+  html += '<div class="valeur">somme des VaR individuelles = ' + sumIndividual.toFixed(0) + '</div>';
+  html += '<div class="valeur">P(au moins une perte) = ' + formatPct(auMoinsUnePerte) + '</div>';
+  if (violation) {
+    html += '<div class="valeur ko">VaR(portefeuille) &gt; somme des VaR individuelles : la sous-additivité est violée</div>';
+  } else {
+    html += '<div class="valeur ok">VaR(portefeuille) &le; somme des VaR individuelles : pas de violation observée ici</div>';
+  }
+
+  html += dessinerBarresDistribution(n, probs, kVar);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresDistribution(n, probs, kVar) {
+  var largeur = 340, hauteur = 200, marge = 34;
+  var nb = probs.length;
+  var maxVal = Math.max.apply(null, probs.concat([0.0001])) * 1.2;
+  var espace = (largeur - 2 * marge) / nb;
+  var largeurBarre = Math.min(46, espace * 0.6);
+  var yAxe = hauteur - marge;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + marge + '" y1="' + yAxe + '" x2="' + (largeur - 10) + '" y2="' + yAxe + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < nb; i++) {
+    var x = marge + i * espace + (espace - largeurBarre) / 2;
+    var hBrute = (probs[i] / maxVal) * (hauteur - 2 * marge);
+    var hBar = Math.max(hBrute, 1);
+    var y = yAxe - hBar;
+    var couleur = (i === kVar) ? 'var(--cintu, #E08000)' : 'var(--cdef, #4A3B8C)';
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hBar.toFixed(1) + '" fill="' + couleur + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (y - 5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + (probs[i] * 100).toFixed(1) + '%</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yAxe + 14) + '" font-size="9" text-anchor="middle" fill="currentColor">k=' + i + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerTresorerie(); calculerBinaire(); };
+</script>
+</body>
+</html>
