@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — La tarification interne de la liquidité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  table.tabres tr.marque td { font-weight: bold; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — Application : la tarification interne de la liquidité</h1>
+<p class="sous-titre">Calculatrice interactive — coût moyen mutualisé contre coût marginal à maturité appariée (exercice 5), crédit interne sur une base de dépôts à vue (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Coût moyen mutualisé contre coût marginal à maturité appariée</h2>
+  <p class="aide">Coût moyen mutualisé : $N\times i_{\text{mut}}$, identique quelle que soit la maturité. Coût marginal à maturité appariée : $N\times(i_{\text{swap}}+\pi)$, où $\pi$ est la prime de liquidité à terme. Marge = taux client $-$ coût interne. Coût total de liquidité sur la durée de vie $=\pi\times N\times\text{maturité}$.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Prêt Court</h3>
+      <label for="c14_n1">Notional $N_1$ (millions $)</label><input type="number" id="c14_n1" value="25" step="1" min="0">
+      <label for="c14_mat1">Maturité (années)</label><input type="number" id="c14_mat1" value="1" step="1" min="0.01">
+      <label for="c14_swap1">Taux swap de référence (%/an)</label><input type="number" id="c14_swap1" value="2.80" step="0.01">
+      <label for="c14_prime1">Prime de liquidité à terme (pb)</label><input type="number" id="c14_prime1" value="15" step="1" min="0">
+      <label for="c14_client1">Taux client (%/an)</label><input type="number" id="c14_client1" value="3.30" step="0.01">
+    </div>
+    <div class="bloc">
+      <h3>Prêt Long</h3>
+      <label for="c14_n2">Notional $N_2$ (millions $)</label><input type="number" id="c14_n2" value="25" step="1" min="0">
+      <label for="c14_mat2">Maturité (années)</label><input type="number" id="c14_mat2" value="5" step="1" min="0.01">
+      <label for="c14_swap2">Taux swap de référence (%/an)</label><input type="number" id="c14_swap2" value="3.05" step="0.01">
+      <label for="c14_prime2">Prime de liquidité à terme (pb)</label><input type="number" id="c14_prime2" value="70" step="1" min="0">
+      <label for="c14_client2">Taux client (%/an)</label><input type="number" id="c14_client2" value="4.00" step="0.01">
+    </div>
+    <div class="bloc">
+      <h3>Coût moyen mutualisé</h3>
+      <label for="c14_mut">Taux mutualisé $i_{\text{mut}}$ (%/an)</label><input type="number" id="c14_mut" value="3.10" step="0.01">
+      <p class="aide" style="margin-top:0.8em;">Ce taux unique est appliqué aux deux prêts, quelle que soit leur maturité — c'est précisément ce que le chapitre reproche à cette approche.</p>
+    </div>
+  </div>
+  <button onclick="calculerLTP()">Calculer</button>
+  <div id="resultatLTP" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Crédit interne sur une base de dépôts à vue (cœur / volatil)</h2>
+  <p class="aide">Une approche à maturité appariée strictement appliquée créditerait l'intégralité des dépôts au taux au jour le jour. La meilleure pratique distingue une part stable (le « cœur de dépôts », créditée à la maturité comportementale longue) d'une part volatile (créditée au taux court).</p>
+  <div class="ligne">
+    <div><label for="c14_nd">Total des dépôts à vue $N$ (millions $)</label><input type="number" id="c14_nd" value="200" step="1" min="0"></div>
+    <div><label for="c14_fstable">Part stable (cœur de dépôts, %)</label><input type="number" id="c14_fstable" value="65" step="1" min="0" max="100"></div>
+    <div><label for="c14_istable">Taux crédité à la part stable (%/an)</label><input type="number" id="c14_istable" value="2.85" step="0.01" min="0"></div>
+    <div><label for="c14_ivolatil">Taux crédité à la part volatile / au jour le jour (%/an)</label><input type="number" id="c14_ivolatil" value="0.20" step="0.01" min="0"></div>
+  </div>
+  <button onclick="calculerDepots()">Calculer</button>
+  <div id="resultatDepots" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmtMilliers(x, n) {
+  n = (n===undefined) ? 0 : n;
+  var neg = x < 0;
+  x = Math.abs(x);
+  var s = x.toFixed(n);
+  var parts = s.split('.');
+  var ip = parts[0];
+  var out = '';
+  for (var i = 0; i < ip.length; i++) {
+    if (i > 0 && (ip.length - i) % 3 === 0) out += ' ';
+    out += ip[i];
+  }
+  if (parts.length > 1) out += ',' + parts[1];
+  return (neg ? '-' : '') + out;
+}
+
+function calculerLTP() {
+  var resDiv = document.getElementById('resultatLTP');
+  var N1 = parseFloat(document.getElementById('c14_n1').value);
+  var mat1 = parseFloat(document.getElementById('c14_mat1').value);
+  var swap1 = parseFloat(document.getElementById('c14_swap1').value) / 100;
+  var prime1 = parseFloat(document.getElementById('c14_prime1').value) / 10000;
+  var client1 = parseFloat(document.getElementById('c14_client1').value) / 100;
+  var N2 = parseFloat(document.getElementById('c14_n2').value);
+  var mat2 = parseFloat(document.getElementById('c14_mat2').value);
+  var swap2 = parseFloat(document.getElementById('c14_swap2').value) / 100;
+  var prime2 = parseFloat(document.getElementById('c14_prime2').value) / 10000;
+  var client2 = parseFloat(document.getElementById('c14_client2').value) / 100;
+  var mut = parseFloat(document.getElementById('c14_mut').value) / 100;
+
+  var champs = [N1,mat1,swap1,prime1,client1,N2,mat2,swap2,prime2,client2,mut];
+  if (champs.some(isNaN) || N1<0 || N2<0 || mat1<=0 || mat2<=0 || swap1<0 || swap2<0 || prime1<0 || prime2<0 || mut<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : notionnels non négatifs, maturités strictement positives, taux et primes non négatifs.</p>';
+    return;
+  }
+
+  var N1d = N1*1e6, N2d = N2*1e6;
+
+  // (a) cout moyen mutualise -- identique quelle que soit la maturite
+  var chargeMut1 = N1d * mut;
+  var chargeMut2 = N2d * mut;
+
+  // (b) cout marginal a maturite appariee
+  var ftp1 = swap1 + prime1;
+  var ftp2 = swap2 + prime2;
+  var chargeApp1 = N1d * ftp1;
+  var chargeApp2 = N2d * ftp2;
+
+  // (c) marges apparentes (mutualise) et reelles (apparie)
+  var margeAppMut1 = client1 - mut, margeAppMut2 = client2 - mut;
+  var margeReelle1 = client1 - ftp1, margeReelle2 = client2 - ftp2;
+  var margeMutDol1 = N1d*margeAppMut1, margeMutDol2 = N2d*margeAppMut2;
+  var margeReelleDol1 = N1d*margeReelle1, margeReelleDol2 = N2d*margeReelle2;
+  var classementMutFavoriseLong = margeAppMut2 > margeAppMut1;
+  var classementReelFavoriseLong = margeReelle2 > margeReelle1;
+  var inversion = classementMutFavoriseLong !== classementReelFavoriseLong;
+
+  // (d) cout total de liquidite sur la duree de vie
+  var coutTotal1 = prime1 * N1d * mat1;
+  var coutTotal2 = prime2 * N2d * mat2;
+
+  var html = '<table class="tabres"><tr><th>Prêt</th><th>Charge mutualisée</th><th>FTP apparié (%/an)</th><th>Charge appariée</th><th>Marge mutualisée</th><th>Marge réelle</th><th>Coût liquidité total (durée de vie)</th></tr>';
+  html += '<tr><td>Court (' + mat1 + ' an(s))</td><td>' + fmtMilliers(chargeMut1,2) + ' $</td><td>' + (ftp1*100).toFixed(4) + ' %</td><td>' + fmtMilliers(chargeApp1,2) + ' $</td><td>' + (margeAppMut1*10000).toFixed(1) + ' pb (' + fmtMilliers(margeMutDol1,2) + ' $)</td><td>' + (margeReelle1*10000).toFixed(1) + ' pb (' + fmtMilliers(margeReelleDol1,2) + ' $)</td><td>' + fmtMilliers(coutTotal1,2) + ' $</td></tr>';
+  html += '<tr><td>Long (' + mat2 + ' an(s))</td><td>' + fmtMilliers(chargeMut2,2) + ' $</td><td>' + (ftp2*100).toFixed(4) + ' %</td><td>' + fmtMilliers(chargeApp2,2) + ' $</td><td>' + (margeAppMut2*10000).toFixed(1) + ' pb (' + fmtMilliers(margeMutDol2,2) + ' $)</td><td>' + (margeReelle2*10000).toFixed(1) + ' pb (' + fmtMilliers(margeReelleDol2,2) + ' $)</td><td>' + fmtMilliers(coutTotal2,2) + ' $</td></tr>';
+  html += '</table>';
+
+  if (Math.abs(chargeMut1 - chargeMut2) < 1e-6) {
+    html += '<div class="valeur mid">Sous le coût mutualisé, la charge est identique pour les deux prêts (' + fmtMilliers(chargeMut1,2) + ' $) malgré leurs maturités différentes.</div>';
+  } else {
+    html += '<div class="valeur mid">Sous le coût mutualisé, l\'écart de charge entre les deux prêts (' + fmtMilliers(Math.abs(chargeMut1-chargeMut2),2) + ' $) ne reflète pas leur écart réel de maturité.</div>';
+  }
+  html += '<div class="valeur">Écart de charge sous coût marginal apparié : ' + fmtMilliers(Math.abs(chargeApp2-chargeApp1),2) + ' $/an</div>';
+  html += '<div class="valeur ' + (inversion ? 'ko' : 'ok') + '">Classement par profitabilité apparente (mutualisé) : ' + (classementMutFavoriseLong ? 'Long > Court' : 'Court > Long') + '. Classement par profitabilité réelle (apparié) : ' + (classementReelFavoriseLong ? 'Long > Court' : 'Court > Long') + (inversion ? ' — LE CLASSEMENT S\'INVERSE' : ' — même classement') + '</div>';
+  html += '<div class="valeur">Coût total de liquidité sur la durée de vie : Long / Court = ' + (coutTotal1>0 ? (coutTotal2/coutTotal1).toFixed(2) : '—') + '×</div>';
+
+  html += dessinerLTP(margeMutDol1, margeReelleDol1, margeMutDol2, margeReelleDol2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerLTP(mMut1, mApp1, mMut2, mApp2) {
+  var largeur = 340, hauteur = 230, margeG = 55, margeD = 15, margeH = 20, margeB = 46;
+  var vals = [mMut1, mApp1, mMut2, mApp2];
+  var vMaxAbs = Math.max.apply(null, vals.map(Math.abs)) * 1.25 || 1;
+  var vMin = Math.min(0, Math.min.apply(null, vals)) * 1.2;
+  var vMax = Math.max(vMaxAbs, Math.max.apply(null, vals)*1.2);
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 40;
+  var labels = ['Court, mut.', 'Court, app.', 'Long, mut.', 'Long, app.'];
+  var couleurs = ['var(--cgris, #5A5A5A)','var(--ceco, #1F6FB2)','var(--cintu, #E08000)','var(--cex, #2E8B57)'];
+  var xCentres = [];
+  for (var i=0;i<4;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/4)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var v = vals[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    var h = Math.abs(yBot-yTop);
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (v>=0 ? (yTop-5).toFixed(1) : (yBot+12).toFixed(1)) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + fmtMilliers(v,0) + ' $</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-8) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-8) + ')">Marge annuelle ($)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerDepots() {
+  var resDiv = document.getElementById('resultatDepots');
+  var N = parseFloat(document.getElementById('c14_nd').value);
+  var fstable = parseFloat(document.getElementById('c14_fstable').value) / 100;
+  var istable = parseFloat(document.getElementById('c14_istable').value) / 100;
+  var ivolatil = parseFloat(document.getElementById('c14_ivolatil').value) / 100;
+
+  if ([N,fstable,istable,ivolatil].some(isNaN) || N<0 || fstable<0 || fstable>1 || istable<0 || ivolatil<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : dépôts non négatifs, part stable entre 0 et 100 %, taux non négatifs.</p>';
+    return;
+  }
+
+  var Nd = N*1e6;
+  var fvolatil = 1 - fstable;
+  var montantStable = Nd*fstable;
+  var montantVolatil = Nd*fvolatil;
+  var creditStable = montantStable*istable;
+  var creditVolatil = montantVolatil*ivolatil;
+  var creditTotal = creditStable + creditVolatil;
+  var tauxMoyen = Nd>0 ? creditTotal/Nd : 0;
+  var creditNaif = Nd*ivolatil;
+  var ecart = creditTotal - creditNaif;
+
+  var html = '<table class="tabres"><tr><th>Composante</th><th>Montant</th><th>Taux crédité</th><th>Crédit annuel</th></tr>';
+  html += '<tr><td>Part stable (cœur)</td><td>' + fmtMilliers(montantStable/1e6,2) + ' M$</td><td>' + (istable*100).toFixed(2) + ' %</td><td>' + fmtMilliers(creditStable,2) + ' $</td></tr>';
+  html += '<tr><td>Part volatile</td><td>' + fmtMilliers(montantVolatil/1e6,2) + ' M$</td><td>' + (ivolatil*100).toFixed(2) + ' %</td><td>' + fmtMilliers(creditVolatil,2) + ' $</td></tr>';
+  html += '<tr class="marque"><td>Total (modélisé)</td><td>' + fmtMilliers(N,2) + ' M$</td><td>' + (tauxMoyen*100).toFixed(4) + ' %</td><td>' + fmtMilliers(creditTotal,2) + ' $</td></tr>';
+  html += '<tr><td>Total (maturité appariée stricte, sans distinction)</td><td>' + fmtMilliers(N,2) + ' M$</td><td>' + (ivolatil*100).toFixed(2) + ' %</td><td>' + fmtMilliers(creditNaif,2) + ' $</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ok">Taux de crédit moyen pondéré effectivement perçu : ' + (tauxMoyen*100).toFixed(4) + ' %</div>';
+  html += '<div class="valeur ' + (ecart>0 ? 'ko' : 'ok') + '">Manque à gagner d\'une maturité appariée stricte par rapport au modèle cœur/volatil : ' + fmtMilliers(ecart,2) + ' $ par an</div>';
+  if (ecart > 0) {
+    html += '<div class="valeur mid">Ce manque à gagner illustre le risque décrit par le chapitre : décourager la collecte de dépôts à vue pourtant en grande partie stables, si le cœur de dépôts n\'est pas reconnu.</div>';
+  }
+
+  html += dessinerDepots(creditTotal, creditNaif);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerDepots(creditTotal, creditNaif) {
+  var largeur = 300, hauteur = 210, margeG = 62, margeD = 15, margeH = 20, margeB = 46;
+  var vals = [creditTotal, creditNaif];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 50;
+  var labels = ['Modélisé (cœur/volatil)', 'Maturité appariée stricte'];
+  var couleurs = ['var(--cex, #2E8B57)','var(--cgris, #5A5A5A)'];
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 2; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + fmtMilliers(v,0) + ' $</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="16" y="' + (hauteur/2-8) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 16,' + (hauteur/2-8) + ')">Crédit annuel ($)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerLTP(); calculerDepots(); };
+</script>
+</body>
+</html>

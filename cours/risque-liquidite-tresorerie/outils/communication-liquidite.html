@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — La communication du risque de liquidité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Application : la communication du risque de liquidité</h1>
+<p class="sous-titre">Calculatrice interactive — le rapport de suivi des dépôts et le ratio prêts sur dépôts (exercice 5), le rapport de test de résistance : OBF et décote réglementaire (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le rapport de suivi des dépôts (deposit tracker) et le ratio LTD</h2>
+  <p class="aide">Ratio prêts sur dépôts $\mathrm{LTD}=L/D$, comparé à une limite fixée par le conseil. Une action commerciale déplace des dépôts courants vers des dépôts à terme sans changer le total ; une croissance des prêts, à dépôts inchangés, fait varier le LTD proportionnellement.</p>
+  <div class="ligne">
+    <div><label for="c9_d">Dépôts totaux $D$ (M€)</label><input type="number" id="c9_d" value="4200" step="10" min="0.01"></div>
+    <div><label for="c9_terme">Dont dépôts à terme (M€)</label><input type="number" id="c9_terme" value="1260" step="10" min="0"></div>
+    <div><label for="c9_l">Prêts $L$ (M€)</label><input type="number" id="c9_l" value="3400" step="10" min="0"></div>
+    <div><label for="c9_limite">Limite LTD du conseil (%)</label><input type="number" id="c9_limite" value="85" step="0.5" min="0"></div>
+    <div><label for="c9_haussterme">Hausse des dépôts à terme (%)</label><input type="number" id="c9_haussterme" value="8" step="0.5"></div>
+    <div><label for="c9_haussprets">Hausse des prêts (%)</label><input type="number" id="c9_haussprets" value="5" step="0.5"></div>
+  </div>
+  <button onclick="calculerLTD()">Calculer</button>
+  <div id="resultatLTD" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Le rapport de test de résistance : décroissance comportementale (OBF) et décote réglementaire</h2>
+  <p class="aide">Encours restant $B(t)=B_0\times(1-r)^{t/T}$ pour un poste à taux de retrait comportemental $r$ sur une période $T$ ; le poste « passifs sans intérêt » (100~% de retrait) est intégralement épuisé dès le premier cycle et reste nul ensuite. Valeur mobilisable du coussin $=$ coussin $\times(1-\text{décote})$.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Passifs sans intérêt</h3>
+      <label for="c9_b1">Encours initial (M€)</label><input type="number" id="c9_b1" value="500" step="10" min="0">
+      <label for="c9_r1">Taux de retrait (%)</label><input type="number" id="c9_r1" value="100" step="1" min="0" max="100">
+      <label for="c9_t1">Période $T$ (jours)</label><input type="number" id="c9_t1" value="3" step="1" min="1">
+    </div>
+    <div class="bloc">
+      <h3>Comptes courants</h3>
+      <label for="c9_b2">Encours initial (M€)</label><input type="number" id="c9_b2" value="1400" step="10" min="0">
+      <label for="c9_r2">Taux de retrait (%)</label><input type="number" id="c9_r2" value="5.66" step="0.01" min="0" max="100">
+      <label for="c9_t2">Période $T$ (jours)</label><input type="number" id="c9_t2" value="36" step="1" min="1">
+    </div>
+    <div class="bloc">
+      <h3>Dépôts d'épargne</h3>
+      <label for="c9_b3">Encours initial (M€)</label><input type="number" id="c9_b3" value="1800" step="10" min="0">
+      <label for="c9_r3">Taux de retrait (%)</label><input type="number" id="c9_r3" value="0.41" step="0.01" min="0" max="100">
+      <label for="c9_t3">Période $T$ (jours)</label><input type="number" id="c9_t3" value="344" step="1" min="1">
+    </div>
+  </div>
+  <div class="ligne" style="margin-top:0.6em;">
+    <div><label for="c9_horizon">Horizon $t$ (jours)</label><input type="number" id="c9_horizon" value="180" step="1" min="1"></div>
+    <div><label for="c9_coussin">Coussin d'actifs liquides (M€)</label><input type="number" id="c9_coussin" value="900" step="10" min="0"></div>
+    <div><label for="c9_decote">Décote réglementaire (%)</label><input type="number" id="c9_decote" value="20" step="1" min="0" max="99"></div>
+  </div>
+  <button onclick="calculerOBF()">Calculer</button>
+  <div id="resultatOBF" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function calculerLTD() {
+  var resDiv = document.getElementById('resultatLTD');
+  var D = parseFloat(document.getElementById('c9_d').value);
+  var terme0 = parseFloat(document.getElementById('c9_terme').value);
+  var L = parseFloat(document.getElementById('c9_l').value);
+  var limite = parseFloat(document.getElementById('c9_limite').value)/100;
+  var haussTerme = parseFloat(document.getElementById('c9_haussterme').value)/100;
+  var haussPrets = parseFloat(document.getElementById('c9_haussprets').value)/100;
+
+  if ([D,terme0,L,limite,haussTerme,haussPrets].some(isNaN) || D<=0 || terme0<0 || terme0>D || L<0 || limite<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : dépôts totaux strictement positifs, dépôts à terme entre 0 et le total, prêts et limite non négatifs.</p>';
+    return;
+  }
+
+  var courant0 = D - terme0;
+  var ltd0 = L/D;
+  var margeInit = limite - ltd0; // en fraction
+
+  var terme1 = terme0*(1+haussTerme);
+  var deltaTerme = terme1 - terme0;
+  var courant1 = courant0 - deltaTerme;
+  var pctTerme1 = terme1/D;
+  var pctCourant1 = courant1/D;
+
+  var L1 = L*(1+haussPrets);
+  var ltd1 = L1/D;
+  var franchit = ltd1 > limite + 1e-9;
+  var atteintExact = Math.abs(ltd1-limite) < 1e-6;
+
+  var Ltarget = limite*D;
+  var croissanceCible = L>0 ? (Ltarget-L)/L : NaN;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Ratio LTD initial</th><td>' + fmt(ltd0*100,2) + ' %</td></tr>';
+  html += '<tr><th>Marge par rapport à la limite (' + fmt(limite*100,2) + ' %)</th><td>' + fmt(margeInit*100,2) + ' points</td></tr>';
+  html += '<tr><th>Part des dépôts à terme (initiale)</th><td>' + fmt(terme0/D*100,2) + ' %</td></tr>';
+  html += '<tr><th>Part des comptes courants/renouvelables (initiale)</th><td>' + fmt(courant0/D*100,2) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>Après action commerciale (+' + fmt(haussTerme*100,1) + ' % dépôts à terme, total inchangé)</th><th>M€</th><th>% du total</th></tr>';
+  html += '<tr><td>Dépôts à terme</td><td>' + fmt(terme1,2) + '</td><td>' + fmt(pctTerme1*100,2) + ' %</td></tr>';
+  html += '<tr><td>Comptes courants/renouvelables</td><td>' + fmt(courant1,2) + '</td><td>' + fmt(pctCourant1*100,2) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (franchit?'ko':'ok') + '">LTD après +' + fmt(haussPrets*100,1) + ' % de prêts (dépôts inchangés) : ' + fmt(ltd1*100,2) + ' % — ' + (franchit ? 'FRANCHIT la limite' : (atteintExact ? 'atteint exactement la limite, sans la franchir' : 'reste sous la limite')) + '</div>';
+  html += '<div class="valeur mid">Taux de croissance des prêts amenant le LTD exactement à ' + fmt(limite*100,2) + ' % : ' + (croissanceCible>=0?'+':'') + fmt(croissanceCible*100,2) + ' % (dépôts inchangés)</div>';
+
+  html += dessinerLTD(ltd0*100, ltd1*100, limite*100);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerLTD(ltd0, ltd1, limite) {
+  var largeur = 300, hauteur = 220, margeG = 40, margeD = 15, margeH = 26, margeB = 40;
+  var vMax = Math.max(ltd0, ltd1, limite) * 1.18 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 46;
+  var labels = ['LTD initial', 'LTD après hausse'];
+  var vals = [ltd0, ltd1];
+  var couleurs = ['var(--cgris, #5A5A5A)','var(--ceco, #1F6FB2)'];
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var yLim = yPix(limite);
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yLim.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yLim.toFixed(1) + '" stroke="var(--cintu, #E08000)" stroke-width="1.2" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD) + '" y="' + (yLim-4).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="var(--cintu, #E08000)">Limite (' + limite.toFixed(2) + ' %)</text>';
+  for (var i = 0; i < 2; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">Ratio LTD (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function encoursRestant(B0, rPct, T, t) {
+  var r = rPct/100;
+  if (r >= 1) { return t >= T ? 0 : B0; }
+  return B0 * Math.pow(1-r, t/T);
+}
+
+function calculerOBF() {
+  var resDiv = document.getElementById('resultatOBF');
+  var B1 = parseFloat(document.getElementById('c9_b1').value);
+  var r1 = parseFloat(document.getElementById('c9_r1').value);
+  var T1 = parseFloat(document.getElementById('c9_t1').value);
+  var B2 = parseFloat(document.getElementById('c9_b2').value);
+  var r2 = parseFloat(document.getElementById('c9_r2').value);
+  var T2 = parseFloat(document.getElementById('c9_t2').value);
+  var B3 = parseFloat(document.getElementById('c9_b3').value);
+  var r3 = parseFloat(document.getElementById('c9_r3').value);
+  var T3 = parseFloat(document.getElementById('c9_t3').value);
+  var horizon = parseFloat(document.getElementById('c9_horizon').value);
+  var coussin = parseFloat(document.getElementById('c9_coussin').value);
+  var decote = parseFloat(document.getElementById('c9_decote').value)/100;
+
+  var champs = [B1,r1,T1,B2,r2,T2,B3,r3,T3,horizon,coussin,decote];
+  if (champs.some(isNaN) || B1<0 || B2<0 || B3<0 || T1<=0 || T2<=0 || T3<=0 || horizon<=0 || coussin<0 || decote<0 || decote>=1 || r1<0 || r1>100 || r2<0 || r2>100 || r3<0 || r3>100) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : encours et coussin non négatifs, périodes et horizon strictement positifs, taux entre 0 et 100 %, décote entre 0 et 100 % (exclu).</p>';
+    return;
+  }
+
+  var rest1 = encoursRestant(B1, r1, T1, horizon);
+  var rest2 = encoursRestant(B2, r2, T2, horizon);
+  var rest3 = encoursRestant(B3, r3, T3, horizon);
+
+  var totalInitial = B1+B2+B3;
+  var totalRestant = rest1+rest2+rest3;
+  var sortieCumulee = totalInitial - totalRestant;
+  var pctSortie = totalInitial>0 ? sortieCumulee/totalInitial : 0;
+
+  var coussinMobilisable = coussin*(1-decote);
+  var couvreAvecDecote = coussinMobilisable >= sortieCumulee;
+  var couvreSansDecote = coussin >= sortieCumulee;
+  var ecartAvecDecote = coussinMobilisable - sortieCumulee;
+  var ecartSansDecote = coussin - sortieCumulee;
+
+  var html = '<table class="tabres"><tr><th>Poste</th><th>Encours initial (M€)</th><th>Encours restant à ' + fmt(horizon,0) + ' j (M€)</th><th>% restant</th></tr>';
+  html += '<tr><td>Passifs sans intérêt</td><td>' + fmt(B1,2) + '</td><td>' + fmt(rest1,2) + '</td><td>' + (B1>0?fmt(rest1/B1*100,2):'—') + ' %</td></tr>';
+  html += '<tr><td>Comptes courants</td><td>' + fmt(B2,2) + '</td><td>' + fmt(rest2,2) + '</td><td>' + (B2>0?fmt(rest2/B2*100,2):'—') + ' %</td></tr>';
+  html += '<tr><td>Dépôts d\'épargne</td><td>' + fmt(B3,2) + '</td><td>' + fmt(rest3,2) + '</td><td>' + (B3>0?fmt(rest3/B3*100,2):'—') + ' %</td></tr>';
+  html += '<tr><td><strong>Total</strong></td><td><strong>' + fmt(totalInitial,2) + '</strong></td><td><strong>' + fmt(totalRestant,2) + '</strong></td><td><strong>' + (totalInitial>0?fmt(totalRestant/totalInitial*100,2):'—') + ' %</strong></td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">Sortie de trésorerie cumulée sur ' + fmt(horizon,0) + ' jours (OBF) : ' + fmt(sortieCumulee,2) + ' M€, soit ' + fmt(pctSortie*100,2) + ' % du passif initial total</div>';
+  html += '<div class="valeur">Coussin mobilisable après décote de ' + fmt(decote*100,1) + ' % : ' + fmt(coussinMobilisable,2) + ' M€ (coussin brut ' + fmt(coussin,2) + ' M€)</div>';
+  html += '<div class="valeur ' + (couvreAvecDecote?'ok':'ko') + '">Avec décote : le coussin mobilisable ' + (couvreAvecDecote?'COUVRE':'NE COUVRE PAS') + ' la sortie cumulée (écart ' + (ecartAvecDecote>=0?'+':'') + fmt(ecartAvecDecote,2) + ' M€)</div>';
+  html += '<div class="valeur ' + (couvreSansDecote?'ok':'ko') + '">Sans aucune décote : le coussin ' + (couvreSansDecote?'aurait couvert':'n\'aurait pas couvert') + ' la sortie cumulée (écart ' + (ecartSansDecote>=0?'+':'') + fmt(ecartSansDecote,2) + ' M€)</div>';
+  if (couvreSansDecote && !couvreAvecDecote) {
+    html += '<p class="aide">Dans cette configuration, la décote réglementaire l\'emporte sur le bénéfice du réalisme comportemental (OBF) : un coussin suffisant en l\'absence de décote devient insuffisant une fois celle-ci appliquée — illustration du compromis entre stabilité comportementale supposée et prudence réglementaire, dont le sens dépend des paramètres retenus et ne se présume pas à l\'avance.</p>';
+  } else if (couvreAvecDecote) {
+    html += '<p class="aide">Ici, même après application de la décote réglementaire, le réalisme comportemental de l\'OBF suffit à maintenir un coussin excédentaire sur l\'horizon considéré.</p>';
+  }
+
+  html += dessinerOBF(coussin, coussinMobilisable, sortieCumulee);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerOBF(coussinBrut, coussinMob, sortie) {
+  var largeur = 340, hauteur = 230, margeG = 50, margeD = 15, margeH = 20, margeB = 56;
+  var vals = [coussinBrut, coussinMob, sortie];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 40;
+  var labels = ['Coussin sans décote', 'Coussin avec décote', 'Sortie cumulée OBF'];
+  var couleurs = ['var(--cgris, #5A5A5A)','var(--cintu, #E08000)','var(--cex, #2E8B57)'];
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = Math.max(vals[i],0);
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 12).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor" transform="rotate(18 ' + xCentres[i] + ',' + (yZero+12) + ')">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Millions d\'euros</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerLTD(); calculerOBF(); };
+</script>
+</body>
+</html>

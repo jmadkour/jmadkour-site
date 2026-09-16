@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Les tests de résistance de liquidité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Application : les tests de résistance de liquidité</h1>
+<p class="sous-titre">Calculatrice interactive — Banque Delta : test de résistance à 30 jours (exercice 5), l'élargissement des décotes du portefeuille de placement (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Banque Delta : un test de résistance de liquidité à 30 jours</h2>
+  <p class="aide">Flux sortants nets stressés = flux sortants − flux entrants. Coussin stressé = LAB₀ − flux nets. Ratio tactique (30 j) = LAB₀ / flux nets (30 j), analogue au LCR de Bâle III. Ratio structurel (12 mois) = LAB₀ / flux nets cumulés (12 mois).</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Coussin initial</h3>
+      <label for="c8_lab0">LAB₀ (M€)</label><input type="number" id="c8_lab0" value="12000" step="100" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Flux sortants stressés à 30 j (M€)</h3>
+      <label for="c8_retraits">Retraits de dépôts</label><input type="number" id="c8_retraits" value="3500" step="50">
+      <label for="c8_gros">Financement de gros non garanti</label><input type="number" id="c8_gros" value="2200" step="50">
+      <label for="c8_tirages">Tirages de lignes de crédit/liquidité</label><input type="number" id="c8_tirages" value="900" step="50">
+    </div>
+    <div class="bloc">
+      <h3>Flux entrants stressés à 30 j (M€)</h3>
+      <label for="c8_remb">Remboursements de prêts</label><input type="number" id="c8_remb" value="1100" step="50">
+      <label for="c8_maturites">Maturités de financement garanti</label><input type="number" id="c8_maturites" value="400" step="50">
+    </div>
+    <div class="bloc">
+      <h3>Horizon structurel</h3>
+      <label for="c8_cumul12">Flux sortants nets cumulés à 12 mois (M€)</label><input type="number" id="c8_cumul12" value="15000" step="100" min="0">
+    </div>
+  </div>
+  <button onclick="calculerDelta()">Calculer</button>
+  <div id="resultatDelta" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>L'élargissement des décotes du portefeuille de placement (Banque Zêta)</h2>
+  <p class="aide">Liquidité mobilisable par pension, nette de décote = valeur de marché × (1 − décote). Manque à gagner = total de base − total en stress. La marge (ou le déficit) compare la liquidité mobilisable en stress au besoin de financement garanti.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Obligations d'État</h3>
+      <label for="c8_mv_e">Valeur de marché (M€)</label><input type="number" id="c8_mv_e" value="4000" step="100" min="0">
+      <label for="c8_hb_e">Décote de base (%)</label><input type="number" id="c8_hb_e" value="2" step="0.5" min="0" max="99">
+      <label for="c8_hs_e">Décote de stress (%)</label><input type="number" id="c8_hs_e" value="5" step="0.5" min="0" max="99">
+    </div>
+    <div class="bloc">
+      <h3>Obligations corporate</h3>
+      <label for="c8_mv_c">Valeur de marché (M€)</label><input type="number" id="c8_mv_c" value="3000" step="100" min="0">
+      <label for="c8_hb_c">Décote de base (%)</label><input type="number" id="c8_hb_c" value="8" step="0.5" min="0" max="99">
+      <label for="c8_hs_c">Décote de stress (%)</label><input type="number" id="c8_hs_c" value="20" step="0.5" min="0" max="99">
+    </div>
+    <div class="bloc">
+      <h3>Actions</h3>
+      <label for="c8_mv_a">Valeur de marché (M€)</label><input type="number" id="c8_mv_a" value="1000" step="100" min="0">
+      <label for="c8_hb_a">Décote de base (%)</label><input type="number" id="c8_hb_a" value="15" step="0.5" min="0" max="99">
+      <label for="c8_hs_a">Décote de stress (%)</label><input type="number" id="c8_hs_a" value="35" step="0.5" min="0" max="99">
+    </div>
+    <div class="bloc">
+      <h3>Besoin de liquidité</h3>
+      <label for="c8_besoin">Besoin par financement garanti (M€)</label><input type="number" id="c8_besoin" value="6000" step="100" min="0">
+    </div>
+  </div>
+  <button onclick="calculerZeta()">Calculer</button>
+  <div id="resultatZeta" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toLocaleString('fr-FR', {minimumFractionDigits:(n===undefined?2:n), maximumFractionDigits:(n===undefined?2:n)}); }
+
+function calculerDelta() {
+  var resDiv = document.getElementById('resultatDelta');
+  var LAB0 = parseFloat(document.getElementById('c8_lab0').value);
+  var retraits = parseFloat(document.getElementById('c8_retraits').value);
+  var gros = parseFloat(document.getElementById('c8_gros').value);
+  var tirages = parseFloat(document.getElementById('c8_tirages').value);
+  var remb = parseFloat(document.getElementById('c8_remb').value);
+  var maturites = parseFloat(document.getElementById('c8_maturites').value);
+  var cumul12 = parseFloat(document.getElementById('c8_cumul12').value);
+
+  if ([LAB0,retraits,gros,tirages,remb,maturites,cumul12].some(isNaN) || LAB0<0 || retraits<0 || gros<0 || tirages<0 || remb<0 || maturites<0 || cumul12<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les montants doivent être non négatifs.</p>';
+    return;
+  }
+
+  var totalSortants = retraits + gros + tirages;
+  var totalEntrants = remb + maturites;
+  var fluxNets = totalSortants - totalEntrants;
+  var labStresse = LAB0 - fluxNets;
+  var ratioTactique = fluxNets !== 0 ? LAB0/fluxNets : NaN;
+  var ratioStructurel = cumul12 !== 0 ? LAB0/cumul12 : NaN;
+  var deficitStructurel = cumul12 - LAB0;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Total des flux sortants stressés (30 j)</th><td>' + fmt(totalSortants,0) + ' M€</td></tr>';
+  html += '<tr><th>Total des flux entrants stressés (30 j)</th><td>' + fmt(totalEntrants,0) + ' M€</td></tr>';
+  html += '<tr><th>Flux sortants nets stressés (30 j)</th><td>' + fmt(fluxNets,0) + ' M€</td></tr>';
+  html += '<tr><th>Coussin d\'actifs liquides stressé (30 j)</th><td>' + fmt(labStresse,0) + ' M€</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (ratioTactique>=1 ? 'ok' : 'ko') + '">Ratio de liquidité tactique (30 j) : ' + (isNaN(ratioTactique)?'indéfini (flux nets nuls)':fmt(ratioTactique*100,2) + ' %') + '</div>';
+  html += '<div class="valeur ' + (deficitStructurel<=0 ? 'ok' : 'ko') + '">Ratio structurel (12 mois) : ' + (isNaN(ratioStructurel)?'indéfini':fmt(ratioStructurel*100,2) + ' %') + ' — ' + (deficitStructurel<=0 ? 'liquidité contingente suffisante' : 'déficit structurel de ' + fmt(deficitStructurel,0) + ' M€') + '</div>';
+
+  html += dessinerDelta(LAB0, fluxNets, cumul12);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerDelta(lab0, fluxNets30, cumul12) {
+  var largeur = 340, hauteur = 230, margeG = 55, margeD = 15, margeH = 25, margeB = 40;
+  var groupes = [['Tactique (30 j)', lab0, Math.max(fluxNets30,0)], ['Structurel (12 mois)', lab0, Math.max(cumul12,0)]];
+  var vMax = Math.max(lab0, fluxNets30, cumul12) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 30, gapBarre = 4;
+  var xCentresGroupes = [];
+  var nG = groupes.length;
+  for (var i=0;i<nG;i++) { xCentresGroupes.push(margeG + (i+0.5)*((largeur-margeG-margeD)/nG)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--cintu, #E08000)'];
+  for (var g=0; g<nG; g++) {
+    var xc = xCentresGroupes[g];
+    var vals = [groupes[g][1], groupes[g][2]];
+    for (var s=0; s<2; s++) {
+      var v = vals[s];
+      var xBar = xc + (s===0 ? -(largeurBarre+gapBarre/2) : gapBarre/2);
+      var yTop = yPix(v);
+      var h = yZero - yTop;
+      svg += '<rect x="' + xBar.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[s] + '"/>';
+      svg += '<text x="' + (xBar+largeurBarre/2).toFixed(1) + '" y="' + (yTop-5).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + v.toFixed(0) + '</text>';
+    }
+    svg += '<text x="' + xc + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + groupes[g][0] + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-10) + ')">Millions d\'euros</text>';
+  svg += '<rect x="' + margeG + '" y="' + (hauteur-14) + '" width="9" height="9" fill="' + couleurs[0] + '"/><text x="' + (margeG+12) + '" y="' + (hauteur-6) + '" font-size="7.5" fill="currentColor">LAB₀ disponible</text>';
+  svg += '<rect x="' + (margeG+95) + '" y="' + (hauteur-14) + '" width="9" height="9" fill="' + couleurs[1] + '"/><text x="' + (margeG+107) + '" y="' + (hauteur-6) + '" font-size="7.5" fill="currentColor">Flux nets requis</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerZeta() {
+  var resDiv = document.getElementById('resultatZeta');
+  var ids = ['c8_mv_e','c8_hb_e','c8_hs_e','c8_mv_c','c8_hb_c','c8_hs_c','c8_mv_a','c8_hb_a','c8_hs_a','c8_besoin'];
+  var v = {};
+  ids.forEach(function(id){ v[id] = parseFloat(document.getElementById(id).value); });
+
+  var vals = ids.map(function(id){return v[id];});
+  if (vals.some(isNaN) || v.c8_mv_e<0 || v.c8_mv_c<0 || v.c8_mv_a<0 || v.c8_besoin<0 ||
+      [v.c8_hb_e,v.c8_hs_e,v.c8_hb_c,v.c8_hs_c,v.c8_hb_a,v.c8_hs_a].some(function(h){return h<0 || h>=100;})) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : valeurs de marché et besoin non négatifs, décotes entre 0 et 100 % (exclus).</p>';
+    return;
+  }
+
+  var classes = [
+    {nom:'État', mv:v.c8_mv_e, hb:v.c8_hb_e/100, hs:v.c8_hs_e/100},
+    {nom:'Corporate', mv:v.c8_mv_c, hb:v.c8_hb_c/100, hs:v.c8_hs_c/100},
+    {nom:'Actions', mv:v.c8_mv_a, hb:v.c8_hb_a/100, hs:v.c8_hs_a/100}
+  ];
+  classes.forEach(function(c){ c.base = c.mv*(1-c.hb); c.stress = c.mv*(1-c.hs); });
+
+  var totalBase = classes.reduce(function(s,c){return s+c.base;},0);
+  var totalStress = classes.reduce(function(s,c){return s+c.stress;},0);
+  var manque = totalBase - totalStress;
+  var manquePct = totalBase>0 ? manque/totalBase : 0;
+  var besoin = v.c8_besoin;
+  var marge = totalStress - besoin;
+  var margeApparenteErreur = totalBase - besoin;
+
+  var html = '<table class="tabres"><tr><th>Classe d\'actif</th><th>Liquidité de base</th><th>Liquidité en stress</th></tr>';
+  classes.forEach(function(c){
+    html += '<tr><td>' + c.nom + '</td><td>' + fmt(c.base,0) + ' M€</td><td>' + fmt(c.stress,0) + ' M€</td></tr>';
+  });
+  html += '<tr><td><strong>Total</strong></td><td><strong>' + fmt(totalBase,0) + ' M€</strong></td><td><strong>' + fmt(totalStress,0) + ' M€</strong></td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">Manque à gagner imputable à l\'élargissement des décotes : ' + fmt(manque,0) + ' M€, soit ' + fmt(manquePct*100,2) + ' % de la liquidité de base</div>';
+  html += '<div class="valeur ' + (marge>=0 ? 'ok' : 'ko') + '">Liquidité en stress (' + fmt(totalStress,0) + ' M€) contre besoin (' + fmt(besoin,0) + ' M€) : ' + (marge>=0 ? 'marge de ' + fmt(marge,0) : 'déficit de ' + fmt(-marge,0)) + ' M€</div>';
+  html += '<div class="valeur">Marge apparente si l\'on avait, par erreur, utilisé les décotes de base : ' + fmt(margeApparenteErreur,0) + ' M€ (contre ' + fmt(marge,0) + ' M€ réellement, sous les décotes de stress)</div>';
+
+  html += dessinerZeta(classes);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerZeta(classes) {
+  var largeur = 340, hauteur = 230, margeG = 55, margeD = 15, margeH = 25, margeB = 40;
+  var vMax = Math.max.apply(null, classes.map(function(c){return Math.max(c.base,c.stress);})) * 1.25 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 26, gapBarre = 3;
+  var nG = classes.length;
+  var xCentresGroupes = [];
+  for (var i=0;i<nG;i++) { xCentresGroupes.push(margeG + (i+0.5)*((largeur-margeG-margeD)/nG)); }
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--cintu, #E08000)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var g=0; g<nG; g++) {
+    var xc = xCentresGroupes[g];
+    var vals = [classes[g].base, classes[g].stress];
+    for (var s=0; s<2; s++) {
+      var v = vals[s];
+      var xBar = xc + (s===0 ? -(largeurBarre+gapBarre/2) : gapBarre/2);
+      var yTop = yPix(v);
+      var h = yZero - yTop;
+      svg += '<rect x="' + xBar.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[s] + '"/>';
+      svg += '<text x="' + (xBar+largeurBarre/2).toFixed(1) + '" y="' + (yTop-5).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + v.toFixed(0) + '</text>';
+    }
+    svg += '<text x="' + xc + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + classes[g].nom + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-10) + ')">Liquidité mobilisable (M€)</text>';
+  svg += '<rect x="' + margeG + '" y="' + (hauteur-14) + '" width="9" height="9" fill="' + couleurs[0] + '"/><text x="' + (margeG+12) + '" y="' + (hauteur-6) + '" font-size="7.5" fill="currentColor">Décote de base</text>';
+  svg += '<rect x="' + (margeG+90) + '" y="' + (hauteur-14) + '" width="9" height="9" fill="' + couleurs[1] + '"/><text x="' + (margeG+102) + '" y="' + (hauteur-6) + '" font-size="7.5" fill="currentColor">Décote de stress</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerDelta(); calculerZeta(); };
+</script>
+</body>
+</html>

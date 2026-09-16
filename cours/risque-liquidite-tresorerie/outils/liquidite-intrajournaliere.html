@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — La liquidité intrajournalière — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.2em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Application : la liquidité intrajournalière</h1>
+<p class="sous-titre">Calculatrice interactive — profil intrajournalier d'une banque et net debit cap (exercice 5), compensation multilatérale dans un système de paiement (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le profil intrajournalier d'une banque et le net debit cap</h2>
+  <p class="aide">Position nette à l'heure $t$ = cumul des règlements entrants reçus moins cumul des paiements sortants envoyés. Usage maximal quotidien = valeur absolue du plus grand découvert / ligne de crédit engagée. Un scénario de stress de contrepartie retarde un montant d'entrées prévu sur une fenêtre horaire donnée jusqu'à une heure de réception ultérieure.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Cumuls horaires (millions $)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c5_tableFlux">
+        <tr><th>Heure</th><td>8h</td><td>9h</td><td>10h</td><td>11h</td><td>12h</td><td>13h</td><td>14h</td><td>15h</td><td>16h</td><td>17h</td></tr>
+        <tr><th>Sortants (cumul)</th>
+          <td><input type="number" class="c5-out" value="50"></td>
+          <td><input type="number" class="c5-out" value="180"></td>
+          <td><input type="number" class="c5-out" value="310"></td>
+          <td><input type="number" class="c5-out" value="390"></td>
+          <td><input type="number" class="c5-out" value="450"></td>
+          <td><input type="number" class="c5-out" value="460"></td>
+          <td><input type="number" class="c5-out" value="480"></td>
+          <td><input type="number" class="c5-out" value="500"></td>
+          <td><input type="number" class="c5-out" value="520"></td>
+          <td><input type="number" class="c5-out" value="530"></td>
+        </tr>
+        <tr><th>Entrants (cumul)</th>
+          <td><input type="number" class="c5-in" value="0"></td>
+          <td><input type="number" class="c5-in" value="60"></td>
+          <td><input type="number" class="c5-in" value="130"></td>
+          <td><input type="number" class="c5-in" value="295"></td>
+          <td><input type="number" class="c5-in" value="410"></td>
+          <td><input type="number" class="c5-in" value="470"></td>
+          <td><input type="number" class="c5-in" value="540"></td>
+          <td><input type="number" class="c5-in" value="580"></td>
+          <td><input type="number" class="c5-in" value="600"></td>
+          <td><input type="number" class="c5-in" value="615"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Plafonds et exigences</h3>
+      <label for="c5_cap">Net debit cap (millions $)</label><input type="number" id="c5_cap" value="220" step="5" min="0">
+      <label for="c5_tier1">Fonds propres Tier 1 (millions $)</label><input type="number" id="c5_tier1" value="3000" step="50" min="0">
+      <label for="c5_seuilH">Heure limite de l'exigence FMU</label>
+      <select id="c5_seuilH"><option value="0">8h</option><option value="1">9h</option><option value="2">10h</option><option value="3" selected>11h</option><option value="4">12h</option><option value="5">13h</option></select>
+      <label for="c5_seuilPct">Seuil de throughput exigé (%)</label><input type="number" id="c5_seuilPct" value="60" step="1" min="0" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Stress de contrepartie</h3>
+      <label for="c5_stressMontant">Montant retardé (millions $)</label><input type="number" id="c5_stressMontant" value="100" step="5" min="0">
+      <label for="c5_stressDebut">Retardé à partir de</label>
+      <select id="c5_stressDebut"><option value="0">8h</option><option value="1">9h</option><option value="2" selected>10h</option><option value="3">11h</option></select>
+      <label for="c5_stressFin">Reçu au plus tard à</label>
+      <select id="c5_stressFin"><option value="4">12h</option><option value="5">13h</option><option value="6" selected>14h</option><option value="7">15h</option></select>
+      <p class="aide" style="margin-top:0.4em;">Le montant retardé est retiré des cumuls entrants sur toutes les heures comprises entre le début (inclus) et la fin (exclue), puis intégralement rendu à partir de l'heure de fin.</p>
+    </div>
+  </div>
+  <button onclick="calculerIntraday()">Calculer</button>
+  <div id="resultatIntraday" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>La compensation multilatérale dans un système de paiement</h2>
+  <p class="aide">Position nette d'un participant = total qu'il doit recevoir moins total qu'il doit payer. Sous compensation multilatérale (netting), seuls les montants nets circulent. Le fonds de garantie « Cover 1 » doit être calibré sur le plus grand débiteur net possible, pas sur le débiteur qui fait effectivement défaut.</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c5_matriceObl">
+    <tr><th>Doit à →</th><th>A</th><th>B</th><th>C</th><th>D</th></tr>
+    <tr><th>A doit</th><td>—</td><td><input type="number" class="c5-m" data-i="0" data-j="1" value="50"></td><td><input type="number" class="c5-m" data-i="0" data-j="2" value="10"></td><td><input type="number" class="c5-m" data-i="0" data-j="3" value="15"></td></tr>
+    <tr><th>B doit</th><td><input type="number" class="c5-m" data-i="1" data-j="0" value="20"></td><td>—</td><td><input type="number" class="c5-m" data-i="1" data-j="2" value="40"></td><td><input type="number" class="c5-m" data-i="1" data-j="3" value="5"></td></tr>
+    <tr><th>C doit</th><td><input type="number" class="c5-m" data-i="2" data-j="0" value="5"></td><td><input type="number" class="c5-m" data-i="2" data-j="1" value="15"></td><td>—</td><td><input type="number" class="c5-m" data-i="2" data-j="3" value="30"></td></tr>
+    <tr><th>D doit</th><td><input type="number" class="c5-m" data-i="3" data-j="0" value="25"></td><td><input type="number" class="c5-m" data-i="3" data-j="1" value="10"></td><td><input type="number" class="c5-m" data-i="3" data-j="2" value="20"></td><td>—</td></tr>
+  </table>
+  </div>
+  <div class="ligne" style="margin-top:0.6em;">
+    <div><label for="c5_defaillant">Participant qui fait effectivement défaut</label>
+      <select id="c5_defaillant"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3" selected>D</option></select>
+    </div>
+  </div>
+  <button onclick="calculerNetting()">Calculer</button>
+  <div id="resultatNetting" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+var HEURES = ["8h","9h","10h","11h","12h","13h","14h","15h","16h","17h"];
+
+function calculerIntraday() {
+  var resDiv = document.getElementById('resultatIntraday');
+  var outs = Array.prototype.map.call(document.querySelectorAll('.c5-out'), function(el){ return parseFloat(el.value); });
+  var ins  = Array.prototype.map.call(document.querySelectorAll('.c5-in'),  function(el){ return parseFloat(el.value); });
+  var cap = parseFloat(document.getElementById('c5_cap').value);
+  var tier1 = parseFloat(document.getElementById('c5_tier1').value);
+  var seuilH = parseInt(document.getElementById('c5_seuilH').value, 10);
+  var seuilPct = parseFloat(document.getElementById('c5_seuilPct').value);
+  var stressMontant = parseFloat(document.getElementById('c5_stressMontant').value);
+  var stressDebut = parseInt(document.getElementById('c5_stressDebut').value, 10);
+  var stressFin = parseInt(document.getElementById('c5_stressFin').value, 10);
+
+  var tousValides = outs.concat(ins).every(function(v){ return !isNaN(v); }) && !isNaN(cap) && !isNaN(tier1) && !isNaN(seuilPct) && !isNaN(stressMontant);
+  if (!tousValides || cap<=0 || tier1<=0 || stressFin<=stressDebut) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les cumuls doivent être renseignés, le net debit cap et les fonds propres doivent être strictement positifs, et l\'heure de fin du retard doit être postérieure à son heure de début.</p>';
+    return;
+  }
+  for (var k=1;k<outs.length;k++) {
+    if (outs[k] < outs[k-1] || ins[k] < ins[k-1]) {
+      resDiv.innerHTML = '<p class="erreur">Les cumuls doivent être croissants (ou constants) heure après heure : un cumul ne peut pas diminuer.</p>';
+      return;
+    }
+  }
+
+  var net = ins.map(function(v,i){ return v - outs[i]; });
+  var maxOverdraft = Math.min.apply(null, net.concat([0]));
+  var tMax = HEURES[net.indexOf(maxOverdraft)];
+  var usageRatio = Math.abs(maxOverdraft)/cap*100;
+  var netEOD = net[net.length-1];
+  var totalOutEOD = outs[outs.length-1];
+  var totalInEOD = ins[ins.length-1];
+  var throughputSeuil = outs[seuilH]/totalOutEOD*100;
+  var conforme = throughputSeuil >= seuilPct;
+  var ratioTier1 = Math.abs(maxOverdraft)/tier1*100;
+
+  // stress scenario
+  var insStress = ins.slice();
+  for (var i=0;i<insStress.length;i++) {
+    if (i>=stressDebut && i<stressFin) { insStress[i] -= stressMontant; }
+  }
+  var netStress = insStress.map(function(v,i){ return v - outs[i]; });
+  var maxOverdraftStress = Math.min.apply(null, netStress.concat([0]));
+  var tMaxStress = HEURES[netStress.indexOf(maxOverdraftStress)];
+  var usageRatioStress = Math.abs(maxOverdraftStress)/cap*100;
+  var depassement = Math.abs(maxOverdraftStress) > cap;
+  var exces = Math.abs(maxOverdraftStress) - cap;
+
+  var html = '<table class="tabres"><tr><th>Heure</th>';
+  HEURES.forEach(function(h){ html += '<th>'+h+'</th>'; });
+  html += '</tr><tr><td>Position nette (base)</td>';
+  net.forEach(function(v){ html += '<td>'+fmt(v,0)+'</td>'; });
+  html += '</tr><tr><td>Position nette (stress)</td>';
+  netStress.forEach(function(v){ html += '<td>'+fmt(v,0)+'</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Usage maximal quotidien (base)</th><td>' + fmt(Math.abs(maxOverdraft),1) + ' M$ à ' + tMax + ' (' + fmt(usageRatio,2) + ' % de la ligne engagée)</td></tr>';
+  html += '<tr><th>Solde en fin de journée</th><td>' + fmt(netEOD,1) + ' M$</td></tr>';
+  html += '<tr><th>Payment throughput à ' + HEURES[seuilH] + '</th><td>' + fmt(throughputSeuil,2) + ' % (' + fmt(outs[seuilH],1) + ' / ' + fmt(totalOutEOD,1) + ' M$)</td></tr>';
+  html += '<tr><th>Crédit intrajournalier max / Tier 1</th><td>' + fmt(ratioTier1,2) + ' %</td></tr>';
+  html += '<tr><th>Usage maximal quotidien (stress)</th><td>' + fmt(Math.abs(maxOverdraftStress),1) + ' M$ à ' + tMaxStress + ' (' + fmt(usageRatioStress,2) + ' % de la ligne engagée)</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (conforme?'ok':'ko') + '">Débit de traitement à ' + HEURES[seuilH] + ' (' + fmt(throughputSeuil,1) + ' %) ' + (conforme?'RESPECTE':'NE RESPECTE PAS') + ' l\'exigence de la FMU (' + fmt(seuilPct,0) + ' %)</div>';
+  html += '<div class="valeur ' + (depassement?'ko':'ok') + '">' + (depassement ? 'Le scénario de stress FAIT DÉPASSER le net debit cap de ' + fmt(exces,1) + ' M$ : un throttling des paiements sortants est nécessaire autour de ' + tMaxStress : 'Même sous stress, le net debit cap n\'est pas dépassé : aucun throttling n\'est requis') + '</div>';
+
+  html += dessinerIntraday(net, netStress, cap);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerIntraday(net, netStress, cap) {
+  var n = net.length;
+  var largeur = 460, hauteur = 250, margeG = 55, margeD = 15, margeH = 20, margeB = 40;
+  var toutesVals = net.concat(netStress).concat([-cap]);
+  var vMax = Math.max(50, Math.max.apply(null, toutesVals)) * 1.15;
+  var vMin = Math.min.apply(null, toutesVals) * 1.12;
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  function xPix(i, sub) { var slot = (largeur-margeG-margeD)/n; return margeG + i*slot + (sub===0? slot*0.28 : slot*0.62); }
+  var yZero = yPix(0);
+  var yCap = yPix(-cap);
+  var largeurBarre = Math.max(4, (largeur-margeG-margeD)/n*0.30);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yCap.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yCap.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-4) + '" y="' + (yCap-4).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="currentColor">cap -' + cap.toFixed(0) + '</text>';
+  for (var i = 0; i < n; i++) {
+    var v1 = net[i], v2 = netStress[i];
+    var y1t = yPix(Math.max(v1,0)), y1b = yPix(Math.min(v1,0));
+    var y2t = yPix(Math.max(v2,0)), y2b = yPix(Math.min(v2,0));
+    svg += '<rect x="' + (xPix(i,0)-largeurBarre/2).toFixed(1) + '" y="' + y1t.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + Math.abs(y1b-y1t).toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<rect x="' + (xPix(i,1)-largeurBarre/2).toFixed(1) + '" y="' + y2t.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + Math.abs(y2b-y2t).toFixed(1) + '" fill="var(--cintu,#E08000)"/>';
+    svg += '<text x="' + ((xPix(i,0)+xPix(i,1))/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + HEURES[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Position nette (M$)</text>';
+  svg += '<rect x="' + margeG + '" y="4" width="9" height="9" fill="var(--ceco,#1F6FB2)"/><text x="' + (margeG+13) + '" y="12" font-size="7.5" fill="currentColor">Base</text>';
+  svg += '<rect x="' + (margeG+55) + '" y="4" width="9" height="9" fill="var(--cintu,#E08000)"/><text x="' + (margeG+68) + '" y="12" font-size="7.5" fill="currentColor">Stress contrepartie</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerNetting() {
+  var resDiv = document.getElementById('resultatNetting');
+  var noms = ['A','B','C','D'];
+  var M = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+  var inputs = document.querySelectorAll('.c5-m');
+  var valide = true;
+  inputs.forEach(function(el){
+    var i = parseInt(el.getAttribute('data-i'),10), j = parseInt(el.getAttribute('data-j'),10);
+    var v = parseFloat(el.value);
+    if (isNaN(v) || v<0) { valide = false; }
+    M[i][j] = v;
+  });
+  var defaillantIdx = parseInt(document.getElementById('c5_defaillant').value, 10);
+
+  if (!valide) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : toutes les obligations bilatérales doivent être des nombres non négatifs.</p>';
+    return;
+  }
+
+  var doit = [0,0,0,0], recoit = [0,0,0,0];
+  for (var i=0;i<4;i++) {
+    for (var j=0;j<4;j++) {
+      if (i!==j) { doit[i] += M[i][j]; recoit[j] += M[i][j]; }
+    }
+  }
+  var net = doit.map(function(d,i){ return recoit[i]-d; });
+  var grossTotal = doit.reduce(function(a,b){return a+b;},0);
+
+  var debiteurs = [], crediteurs = [];
+  net.forEach(function(v,i){ if (v<0) debiteurs.push({nom:noms[i], v:v}); else if (v>0) crediteurs.push({nom:noms[i], v:v}); });
+  var settleNet = debiteurs.reduce(function(a,d){ return a+Math.abs(d.v); }, 0);
+  var settleCredit = crediteurs.reduce(function(a,c){ return a+c.v; }, 0);
+  var ratioNetGross = grossTotal>0 ? settleNet/grossTotal*100 : 0;
+  var reduction = 100 - ratioNetGross;
+
+  var maxBilateral = 0, maxBilateralPaire = '';
+  for (var i=0;i<4;i++) for (var j=0;j<4;j++) if (i!==j && M[i][j]>maxBilateral) { maxBilateral = M[i][j]; maxBilateralPaire = noms[i]+'→'+noms[j]; }
+  var maxNetDebiteur = debiteurs.length ? Math.max.apply(null, debiteurs.map(function(d){return Math.abs(d.v);})) : 0;
+  var nomMaxDebiteur = debiteurs.length ? debiteurs.reduce(function(a,b){ return Math.abs(b.v)>Math.abs(a.v)?b:a; }).nom : '—';
+
+  var expositionDefaillant = Math.abs(Math.min(0, net[defaillantIdx]));
+
+  var html = '<table class="tabres"><tr><th>Participant</th><th>Total dû</th><th>Total reçu</th><th>Position nette</th></tr>';
+  noms.forEach(function(nom,i){
+    html += '<tr><td>' + nom + '</td><td>' + fmt(doit[i],1) + '</td><td>' + fmt(recoit[i],1) + '</td><td>' + (net[i]>=0?'+':'') + fmt(net[i],1) + '</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Somme des obligations brutes bilatérales</th><td>' + fmt(grossTotal,1) + ' M$</td></tr>';
+  html += '<tr><th>Montant réglé sous compensation multilatérale</th><td>' + fmt(settleNet,1) + ' M$ (= ' + fmt(settleCredit,1) + ' M$ côté créditeurs)</td></tr>';
+  html += '<tr><th>Ratio net / brut</th><td>' + fmt(ratioNetGross,2) + ' %</td></tr>';
+  html += '<tr><th>Réduction de liquidité nécessaire</th><td>' + fmt(reduction,2) + ' %</td></tr>';
+  html += '<tr><th>Plus grande exposition bilatérale brute</th><td>' + fmt(maxBilateral,1) + ' M$ (' + maxBilateralPaire + ')</td></tr>';
+  html += '<tr><th>Plus grande position nette débitrice (Cover 1)</th><td>' + fmt(maxNetDebiteur,1) + ' M$ (' + nomMaxDebiteur + ')</td></tr>';
+  html += '</table>';
+
+  var sumCheck = Math.abs(net.reduce(function(a,b){return a+b;},0)) < 1e-6;
+  html += '<div class="valeur ' + (sumCheck?'ok':'ko') + '">Somme des positions nettes = ' + fmt(net.reduce(function(a,b){return a+b;},0),4) + ' (doit être nulle)</div>';
+  html += '<div class="valeur mid">Participant en défaut effectif : ' + noms[defaillantIdx] + ', exposition = ' + fmt(expositionDefaillant,1) + ' M$' + (net[defaillantIdx]>=0 ? ' (ce participant est net créditeur : son défaut ne crée aucun trou à combler par le fonds de garantie)' : '') + '</div>';
+  if (net[defaillantIdx] < 0) {
+    var cover1EstFonde = Math.abs(maxNetDebiteur - expositionDefaillant) < 1e-9;
+    html += '<div class="valeur ' + (cover1EstFonde?'ok':'ko') + '">Taille minimale requise du fonds « Cover 1 » : ' + fmt(maxNetDebiteur,1) + ' M$ (' + nomMaxDebiteur + ') — ' + (cover1EstFonde ? 'le défaillant effectif EST ici le plus grand débiteur net possible' : 'ce montant NE correspond PAS à l\'exposition du défaillant effectif (' + fmt(expositionDefaillant,1) + ' M$) : le fonds doit être dimensionné sur le pire cas concevable, pas sur l\'incident survenu') + '</div>';
+  }
+
+  html += dessinerNetting(noms, net);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerNetting(noms, net) {
+  var n = net.length;
+  var largeur = 320, hauteur = 220, margeG = 55, margeD = 15, margeH = 20, margeB = 40;
+  var vMaxAbs = Math.max.apply(null, net.map(Math.abs)) * 1.3 || 1;
+  function yPix(v) { return margeH + (vMaxAbs - v) / (2*vMaxAbs) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 42;
+  var xCentres = [];
+  for (var i=0;i<n;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/n)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < n; i++) {
+    var v = net[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    var h = Math.abs(yBot-yTop);
+    var couleur = v<0 ? 'var(--cgris,#5A5A5A)' : 'var(--cex,#2E8B57)';
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleur + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (v>=0 ? (yTop-5).toFixed(1) : (yBot+13).toFixed(1)) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(1) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Position nette (M$)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerIntraday(); calculerNetting(); };
+</script>
+</body>
+</html>

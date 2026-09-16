@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — La gestion et la tarification des dépôts — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Application : la gestion et la tarification des dépôts</h1>
+<p class="sous-titre">Calculatrice interactive — coût effectif et coût plus marge d'un compte de dépôt (exercice 5), tarification au coût marginal face à la concurrence et à l'urgence (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Coût effectif et coût plus marge d'un compte de dépôt</h2>
+  <p class="aide">Coût d'opportunité des réserves $=r\times B\times i_r$. Coût effectif total $=$ intérêts versés $+$ coûts opérationnels $+$ coûts de personnel/infrastructure $+$ coût d'opportunité des réserves. Frais au coût plus marge $=(\text{coûts opérationnels}+\text{personnel})\times(1+\text{marge})$.</p>
+  <div class="ligne">
+    <div><label for="c11_b">Solde moyen $B$ ($)</label><input type="number" id="c11_b" value="25000" step="500" min="0"></div>
+    <div><label for="c11_id">Taux versé $i_D$ (%)</label><input type="number" id="c11_id" value="0.10" step="0.01" min="0"></div>
+    <div><label for="c11_op">Coût opérationnel ($/an)</label><input type="number" id="c11_op" value="220" step="5" min="0"></div>
+    <div><label for="c11_pers">Coût personnel/infra ($/an)</label><input type="number" id="c11_pers" value="95" step="5" min="0"></div>
+    <div><label for="c11_r">Taux de réserves $r$ (%)</label><input type="number" id="c11_r" value="4" step="0.5" min="0" max="100"></div>
+    <div><label for="c11_ir">Rendement alternatif $i_r$ (%)</label><input type="number" id="c11_ir" value="3.20" step="0.05" min="0"></div>
+    <div><label for="c11_marge">Marge cible (%)</label><input type="number" id="c11_marge" value="20" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerCoutDepot()">Calculer</button>
+  <div id="resultatCoutDepot" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Tarification au coût marginal, face à la concurrence et à l'urgence</h2>
+  <p class="aide">Taux d'indifférence au coût marginal : $i_{mc}=i_w\times(1-r)$. Montant brut de dépôts à collecter pour disposer de $U$ dollars utilisables : $G=U/(1-r)$. Le coût d'intérêt au taux $i_{mc}$ sur $G$ coïncide toujours exactement avec le coût d'un emprunt de gros de $U$ au taux $i_w$.</p>
+  <div class="ligne">
+    <div><label for="c11_u">Besoin utilisable $U$ (millions $)</label><input type="number" id="c11_u" value="47.5" step="0.5" min="0"></div>
+    <div><label for="c11_iw">Coût de gros $i_w$ (%)</label><input type="number" id="c11_iw" value="4.30" step="0.01" min="0"></div>
+    <div><label for="c11_rmc">Taux de réserves $r$ (%)</label><input type="number" id="c11_rmc" value="5" step="0.5" min="0" max="100"></div>
+    <div><label for="c11_iconc">Taux concurrent $i_{\text{conc}}$ (%)</label><input type="number" id="c11_iconc" value="4.15" step="0.01" min="0"></div>
+    <div><label for="c11_p">Prime d'urgence $p$ (points)</label><input type="number" id="c11_p" value="0.30" step="0.05" min="0"></div>
+    <div><label for="c11_duree">Durée (mois)</label><input type="number" id="c11_duree" value="6" step="1" min="1" max="60"></div>
+  </div>
+  <button onclick="calculerCoutMarginal()">Calculer</button>
+  <div id="resultatCoutMarginal" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+function fmtMilliers(x) {
+  var neg = x < 0;
+  x = Math.abs(x);
+  var s = x.toFixed(0);
+  var out = '';
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 === 0) out += ' ';
+    out += s[i];
+  }
+  return (neg ? '-' : '') + out;
+}
+
+function calculerCoutDepot() {
+  var resDiv = document.getElementById('resultatCoutDepot');
+  var B = parseFloat(document.getElementById('c11_b').value);
+  var iD = parseFloat(document.getElementById('c11_id').value) / 100;
+  var op = parseFloat(document.getElementById('c11_op').value);
+  var pers = parseFloat(document.getElementById('c11_pers').value);
+  var r = parseFloat(document.getElementById('c11_r').value) / 100;
+  var ir = parseFloat(document.getElementById('c11_ir').value) / 100;
+  var marge = parseFloat(document.getElementById('c11_marge').value) / 100;
+
+  if ([B,iD,op,pers,r,ir,marge].some(isNaN) || B<0 || op<0 || pers<0 || r<0 || r>1 || ir<0 || marge<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : solde, coûts, rendement et marge non négatifs, $0\\leq r\\leq100\\,\\%$.</p>';
+    return;
+  }
+
+  var interet = B * iD;
+  var coutReserve = r * B * ir;
+  var coutTotal = interet + op + pers + coutReserve;
+  var frais = (op + pers) * (1 + marge);
+  var net = frais - coutTotal;
+  var perteLifeline = 0 - coutTotal;
+  var rentable = net >= 0;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Intérêts versés (annuels)</th><td>' + fmt(interet,2) + ' $</td></tr>';
+  html += '<tr><th>Coût d\'opportunité des réserves</th><td>' + fmt(coutReserve,2) + ' $</td></tr>';
+  html += '<tr><th>Coût effectif total du compte</th><td>' + fmt(coutTotal,2) + ' $</td></tr>';
+  html += '<tr><th>Frais au coût plus marge</th><td>' + fmt(frais,2) + ' $</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (rentable ? 'ok' : 'ko') + '">Marge nette (frais − coût effectif) : ' + fmt(net,2) + ' $ par compte et par an — le compte est ' + (rentable ? 'techniquement rentable' : 'déficitaire') + ' au sens de cette comparaison</div>';
+  html += '<div class="valeur ko">En banque de base (frais supprimés) : perte nette de ' + fmt(Math.abs(perteLifeline),2) + ' $ par compte et par an, coût effectif inchangé</div>';
+
+  html += dessinerCoutDepot(coutTotal, frais, net);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCoutDepot(coutTotal, frais, net) {
+  var largeur = 340, hauteur = 230, margeG = 55, margeD = 15, margeH = 20, margeB = 56;
+  var vals = [coutTotal, frais, net];
+  var vMaxAbs = Math.max.apply(null, vals.map(Math.abs)) * 1.25 || 1;
+  var vMin = Math.min(0, Math.min.apply(null, vals)) * 1.2;
+  var vMax = vMaxAbs;
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 46;
+  var labels = ['Coût effectif total', 'Frais coût plus marge', 'Marge nette'];
+  var couleurs = ['var(--cgris, #5A5A5A)','var(--ceco, #1F6FB2)','var(--cex, #2E8B57)'];
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    var h = Math.abs(yBot-yTop);
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (v>=0 ? (yTop-5).toFixed(1) : (yBot+13).toFixed(1)) + '" font-size="8" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + ' $</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-10) + ')">Dollars par compte et par an</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerCoutMarginal() {
+  var resDiv = document.getElementById('resultatCoutMarginal');
+  var U = parseFloat(document.getElementById('c11_u').value);
+  var iw = parseFloat(document.getElementById('c11_iw').value) / 100;
+  var r = parseFloat(document.getElementById('c11_rmc').value) / 100;
+  var iconc = parseFloat(document.getElementById('c11_iconc').value) / 100;
+  var p = parseFloat(document.getElementById('c11_p').value) / 100;
+  var dureeMois = parseFloat(document.getElementById('c11_duree').value);
+
+  if ([U,iw,r,iconc,p,dureeMois].some(isNaN) || U<=0 || iw<0 || r<0 || r>=1 || iconc<0 || p<0 || dureeMois<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : $U$ strictement positif, taux non négatifs, $0\\leq r<100\\,\\%$, durée strictement positive.</p>';
+    return;
+  }
+
+  var fracAnnee = dureeMois / 12;
+  var imc = iw * (1 - r);
+  var iurgent = iconc + p;
+  var G = U / (1 - r);
+  var interetUrgent = G * iurgent * fracAnnee * 1e6;
+  var interetMc = G * imc * fracAnnee * 1e6;
+  var surcout = interetUrgent - interetMc;
+  var interetWholesale = U * iw * fracAnnee * 1e6;
+  var diffFinale = interetUrgent - interetWholesale;
+  var coherent = Math.abs(surcout - diffFinale) < 1e-6 * Math.max(1, Math.abs(surcout));
+  var competitif = imc >= iconc;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Taux d\'indifférence coût marginal $i_{mc}$</th><td>' + fmt(imc*100,3) + ' %</td></tr>';
+  html += '<tr><th>Taux offert en urgence $i_{\\text{urgent}}$</th><td>' + fmt(iurgent*100,3) + ' %</td></tr>';
+  html += '<tr><th>Dépôts bruts à collecter $G$</th><td>' + fmt(G,2) + ' M$</td></tr>';
+  html += '<tr><th>Coût d\'intérêt (durée choisie) au taux urgent</th><td>' + fmtMilliers(interetUrgent) + ' $</td></tr>';
+  html += '<tr><th>Coût d\'intérêt (durée choisie) au taux $i_{mc}$</th><td>' + fmtMilliers(interetMc) + ' $</td></tr>';
+  html += '<tr><th>Coût d\'un emprunt de gros direct de $U$</th><td>' + fmtMilliers(interetWholesale) + ' $</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (competitif ? 'ok' : 'ko') + '">$i_{mc}$ est ' + (competitif ? 'supérieur ou égal' : 'inférieur') + ' à $i_{\\text{conc}}$ : une tarification au strict coût marginal serait ' + (competitif ? '' : 'NON ') + 'compétitive face à la concurrence</div>';
+  html += '<div class="valeur mid">Surcoût de la campagne d\'urgence par rapport au taux de référence $i_{mc}$ : ' + fmtMilliers(surcout) + ' $</div>';
+  html += '<div class="valeur ' + (coherent ? 'ok' : 'ko') + '">Écart entre campagne d\'urgence et emprunt de gros direct : ' + fmtMilliers(diffFinale) + ' $ — ' + (coherent ? 'coïncide exactement' : 'ne coïncide pas') + ' avec le surcoût ci-dessus, comme l\'impose l\'identité $i_{mc}\\times G=i_w\\times U$</div>';
+
+  html += dessinerCoutMarginal(interetMc, interetWholesale, interetUrgent);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCoutMarginal(refMc, wholesale, urgent) {
+  var largeur = 340, hauteur = 230, margeG = 62, margeD = 15, margeH = 20, margeB = 56;
+  var vals = [refMc, wholesale, urgent];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 46;
+  var labels = ['Référence i_{mc}', 'Emprunt de gros', 'Campagne urgente'];
+  var couleurs = ['var(--ceco, #1F6FB2)','var(--cgris, #5A5A5A)','var(--cintu, #E08000)'];
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + fmtMilliers(v) + ' $</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="16" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 16,' + (hauteur/2-10) + ')">Coût d\'intérêt sur la durée ($)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCoutDepot(); calculerCoutMarginal(); };
+</script>
+</body>
+</html>

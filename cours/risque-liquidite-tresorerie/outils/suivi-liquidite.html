@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Le suivi de la liquidité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Application : le suivi de la liquidité</h1>
+<p class="sous-titre">Calculatrice interactive — structure par terme de la liquidité attendue, TSECF/TSECCF/TSL<sub>e</sub> (exercice 5), double effet d'un tirage sur ligne de crédit engagée (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Structure par terme de la liquidité attendue (TSL<sub>e</sub>)</h2>
+  <p class="aide">TSECCF(t<sub>i</sub>) = somme cumulée des flux nets attendus cf(t<sub>0</sub>,t<sub>1</sub>)…cf(t<sub>0</sub>,t<sub>i</sub>). TSL<sub>e</sub>(t<sub>i</sub>) = TSECCF(t<sub>i</sub>) + TSCLGC(t<sub>i</sub>). Une TSL<sub>e</sub> négative à une échéance signale un risque d'insolvabilité à cette date, malgré la pleine mobilisation de la LGC.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Flux nets attendus cf(t₀,t<sub>i</sub>) — millions $</h3>
+      <label for="c6_cf1">t₁</label><input type="number" id="c6_cf1" value="-25" step="1">
+      <label for="c6_cf2">t₂</label><input type="number" id="c6_cf2" value="-10" step="1">
+      <label for="c6_cf3">t₃</label><input type="number" id="c6_cf3" value="15" step="1">
+      <label for="c6_cf4">t₄</label><input type="number" id="c6_cf4" value="-20" step="1">
+      <label for="c6_cf5">t₅</label><input type="number" id="c6_cf5" value="40" step="1">
+    </div>
+    <div class="bloc">
+      <h3>LGC cumulée mobilisable TSCLGC(t<sub>i</sub>) — millions $</h3>
+      <label for="c6_lgc1">t₁</label><input type="number" id="c6_lgc1" value="15" step="1" min="0">
+      <label for="c6_lgc2">t₂</label><input type="number" id="c6_lgc2" value="30" step="1" min="0">
+      <label for="c6_lgc3">t₃</label><input type="number" id="c6_lgc3" value="30" step="1" min="0">
+      <label for="c6_lgc4">t₄</label><input type="number" id="c6_lgc4" value="45" step="1" min="0">
+      <label for="c6_lgc5">t₅</label><input type="number" id="c6_lgc5" value="45" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Stress cash-flow-at-risk (cfaR)</h3>
+      <label for="c6_cfaridx">Échéance stressée</label>
+      <select id="c6_cfaridx">
+        <option value="0">t₁</option>
+        <option value="1">t₂</option>
+        <option value="2" selected>t₃</option>
+        <option value="3">t₄</option>
+        <option value="4">t₅</option>
+      </select>
+      <label for="c6_cfarval">Dégradation du flux cumulé au niveau de confiance retenu (millions $)</label>
+      <input type="number" id="c6_cfarval" value="18" step="1" min="0">
+      <p class="aide" style="margin-top:0.6em;">Le flux cumulé stressé à l'échéance choisie devient TSECCF − cette dégradation ; la TSCLGC de cette échéance est supposée inchangée.</p>
+    </div>
+  </div>
+  <button onclick="calculerTSLe()">Calculer</button>
+  <div id="resultatTSLe" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Le double effet d'un tirage sur ligne de crédit engagée</h2>
+  <p class="aide">Impact de liquidité = montant tiré D. Impact financier annuel = (spread de marché − spread contractuel) × D. Impact total = impact annuel × durée (en années). Part de LGC consommée = D / LGC non mobilisée.</p>
+  <div class="ligne">
+    <div><label for="c6_sc">Spread contractuel $s_c$ (points de base)</label><input type="number" id="c6_sc" value="150" step="1"></div>
+    <div><label for="c6_sm">Spread de marché $s_m$ (points de base)</label><input type="number" id="c6_sm" value="310" step="1"></div>
+    <div><label for="c6_d">Montant tiré $D$ (millions $)</label><input type="number" id="c6_d" value="80" step="1" min="0"></div>
+    <div><label for="c6_duree">Durée du tirage (mois)</label><input type="number" id="c6_duree" value="18" step="1" min="0"></div>
+    <div><label for="c6_lgctot">LGC non mobilisée disponible (millions $)</label><input type="number" id="c6_lgctot" value="500" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerTirage()">Calculer</button>
+  <div id="resultatTirage" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+// ---------------------------------------------------------------------
+// Calculatrice 1 : TSECF / TSECCF / TSLe
+// ---------------------------------------------------------------------
+function calculerTSLe() {
+  var resDiv = document.getElementById('resultatTSLe');
+  var cf = [1,2,3,4,5].map(function(i){ return parseFloat(document.getElementById('c6_cf'+i).value); });
+  var lgc = [1,2,3,4,5].map(function(i){ return parseFloat(document.getElementById('c6_lgc'+i).value); });
+  var cfarIdx = parseInt(document.getElementById('c6_cfaridx').value, 10);
+  var cfarVal = parseFloat(document.getElementById('c6_cfarval').value);
+
+  var champs = cf.concat(lgc).concat([cfarVal]);
+  if (champs.some(isNaN) || lgc.some(function(v){return v<0;}) || cfarVal<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : la LGC cumulée et la dégradation cfaR doivent être non négatives.</p>';
+    return;
+  }
+
+  var tseccf = [];
+  var running = 0;
+  for (var i=0;i<5;i++) { running += cf[i]; tseccf.push(running); }
+  var tsle = tseccf.map(function(v,i){ return v + lgc[i]; });
+
+  var minTsle = Math.min.apply(null, tsle);
+  var Xmin = minTsle < 0 ? -minTsle : 0;
+  var tsleAjuste = tsle.map(function(v){ return v + Xmin; });
+
+  var tseccfStress = tseccf[cfarIdx] - cfarVal;
+  var tsleStress = tseccfStress + lgc[cfarIdx];
+  var tsleAttendueIdx = tsle[cfarIdx];
+
+  var labels = ['t₁','t₂','t₃','t₄','t₅'];
+  var html = '<table class="tabres"><tr><th>Échéance</th><th>cf(t₀,t<sub>i</sub>)</th><th>TSECCF</th><th>TSCLGC</th><th>TSL<sub>e</sub></th></tr>';
+  for (var i=0;i<5;i++) {
+    html += '<tr><td>'+labels[i]+'</td><td>'+fmt(cf[i],1)+'</td><td>'+fmt(tseccf[i],1)+'</td><td>'+fmt(lgc[i],1)+'</td><td>'+fmt(tsle[i],1)+'</td></tr>';
+  }
+  html += '</table>';
+
+  var negDates = labels.filter(function(l,i){ return tsle[i] < 0; });
+  html += '<div class="valeur ' + (negDates.length ? 'ko' : 'ok') + '">TSL<sub>e</sub> négative aux échéances : ' + (negDates.length ? negDates.join(', ') : 'aucune — la liquidité attendue reste positive ou nulle partout') + '</div>';
+  html += '<div class="valeur mid">Capacité supplémentaire minimale, mobilisable dès t₁ à toutes les échéances suivantes, pour ramener TSL<sub>e</sub> ≥ 0 partout : X = ' + fmt(Xmin,1) + ' millions $</div>';
+  var messageStress;
+  if (tsleStress >= 0) {
+    messageStress = 'reste positive ou nulle malgré le stress';
+  } else if (tsleAttendueIdx >= 0) {
+    messageStress = 'devient négative alors que la TSL_e attendue à cette échéance (' + fmt(tsleAttendueIdx,1) + ') était positive : un risque résiduel que la seule espérance ne révélait pas';
+  } else {
+    messageStress = 'reste négative, comme la TSL_e attendue à cette échéance (' + fmt(tsleAttendueIdx,1) + ') l\'était déjà';
+  }
+  html += '<div class="valeur ' + (tsleStress>=0?'ok':'ko') + '">Stress cfaR à ' + labels[cfarIdx] + ' : TSECCF stressée = ' + fmt(tseccfStress,1) + ', TSL<sub>e</sub> stressée = ' + fmt(tsleStress,1) + ' millions $ (' + messageStress + ')</div>';
+
+  html += dessinerTSLe(labels, tseccf, tsle);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerTSLe(labels, tseccf, tsle) {
+  var largeur = 420, hauteur = 240, margeG = 55, margeD = 15, margeH = 20, margeB = 46;
+  var tous = tseccf.concat(tsle);
+  var vMax = Math.max(0, Math.max.apply(null, tous)) * 1.2 || 1;
+  var vMin = Math.min(0, Math.min.apply(null, tous)) * 1.2;
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var n = labels.length;
+  var groupe = (largeur - margeG - margeD) / n;
+  var largeurBarre = groupe * 0.32;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="260">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < n; i++) {
+    var xCentre = margeG + (i+0.5)*groupe;
+    var x1 = xCentre - largeurBarre - 2, x2 = xCentre + 2;
+
+    var v1 = tseccf[i];
+    var yTop1 = yPix(Math.max(v1,0)), yBot1 = yPix(Math.min(v1,0));
+    svg += '<rect x="' + x1.toFixed(1) + '" y="' + yTop1.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + Math.abs(yBot1-yTop1).toFixed(1) + '" fill="var(--cgris, #5A5A5A)"/>';
+    svg += '<text x="' + (x1+largeurBarre/2).toFixed(1) + '" y="' + (v1>=0?(yTop1-4).toFixed(1):(yBot1+11).toFixed(1)) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + v1.toFixed(0) + '</text>';
+
+    var v2 = tsle[i];
+    var yTop2 = yPix(Math.max(v2,0)), yBot2 = yPix(Math.min(v2,0));
+    svg += '<rect x="' + x2.toFixed(1) + '" y="' + yTop2.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + Math.abs(yBot2-yTop2).toFixed(1) + '" fill="var(--ceco, #1F6FB2)"/>';
+    svg += '<text x="' + (x2+largeurBarre/2).toFixed(1) + '" y="' + (v2>=0?(yTop2-4).toFixed(1):(yBot2+11).toFixed(1)) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + v2.toFixed(0) + '</text>';
+
+    svg += '<text x="' + xCentre.toFixed(1) + '" y="' + (yZero + 16).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Millions $</text>';
+  svg += '<rect x="' + margeG + '" y="' + (hauteur-16) + '" width="9" height="9" fill="var(--cgris, #5A5A5A)"/><text x="' + (margeG+13) + '" y="' + (hauteur-8) + '" font-size="7.5" fill="currentColor">TSECCF</text>';
+  svg += '<rect x="' + (margeG+70) + '" y="' + (hauteur-16) + '" width="9" height="9" fill="var(--ceco, #1F6FB2)"/><text x="' + (margeG+83) + '" y="' + (hauteur-8) + '" font-size="7.5" fill="currentColor">TSL_e</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+// ---------------------------------------------------------------------
+// Calculatrice 2 : double effet d'un tirage sur ligne de crédit
+// ---------------------------------------------------------------------
+function calculerTirage() {
+  var resDiv = document.getElementById('resultatTirage');
+  var sc = parseFloat(document.getElementById('c6_sc').value);
+  var sm = parseFloat(document.getElementById('c6_sm').value);
+  var D = parseFloat(document.getElementById('c6_d').value);
+  var dureeMois = parseFloat(document.getElementById('c6_duree').value);
+  var lgcTot = parseFloat(document.getElementById('c6_lgctot').value);
+
+  if ([sc,sm,D,dureeMois,lgcTot].some(isNaN) || D<0 || dureeMois<0 || lgcTot<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : montant tiré et durée non négatifs, LGC disponible strictement positive.</p>';
+    return;
+  }
+
+  var ecartBp = sm - sc;
+  var impactAnnuel = (ecartBp/10000) * D;
+  var dureeAns = dureeMois/12;
+  var impactTotal = impactAnnuel * dureeAns;
+  var fractionLGC = D / lgcTot * 100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Impact de liquidité (montant tiré)</th><td>' + fmt(D,2) + ' millions $</td></tr>';
+  html += '<tr><th>Écart de spread (marché − contractuel)</th><td>' + fmt(ecartBp,1) + ' pb</td></tr>';
+  html += '<tr><th>Impact financier annuel</th><td>' + fmt(impactAnnuel,4) + ' million $ / an</td></tr>';
+  html += '<tr><th>Impact financier total (' + fmt(dureeMois,1) + ' mois)</th><td>' + fmt(impactTotal,4) + ' million $</td></tr>';
+  html += '<tr><th>Part de la LGC non mobilisée consommée</th><td>' + fmt(fractionLGC,2) + ' %</td></tr>';
+  html += '</table>';
+
+  var sensImpact = ecartBp >= 0 ? 'défavorable pour la banque (le marché exige désormais plus que le spread facturé au client)' : 'favorable pour la banque (le marché exige désormais moins que le spread facturé au client)';
+  html += '<div class="valeur ' + (ecartBp>=0?'ko':'ok') + '">Impact financier ' + sensImpact + '</div>';
+  html += '<div class="valeur mid">Ce tirage est classé, selon la taxonomie du chapitre, comme un flux stochastique en temps ET en montant, de la sous-catégorie comportementale (behavioural) — une décision du client, non de la banque</div>';
+  html += '<div class="valeur ' + (fractionLGC<=25?'ok':'ko') + '">Consomme ' + fmt(fractionLGC,1) + ' % de la LGC non mobilisée par expansion du bilan (liquidité non liée aux titres, security-unlinked)</div>';
+
+  html += dessinerTirage(impactAnnuel, impactTotal);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerTirage(vAnnuel, vTotal) {
+  var largeur = 300, hauteur = 210, margeG = 55, margeD = 15, margeH = 20, margeB = 40;
+  var vals = [vAnnuel, vTotal];
+  var vMax = Math.max.apply(null, vals) * 1.25 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 46;
+  var labels = ['Impact annuel', 'Impact total'];
+  var couleurs = ['var(--ceco, #1F6FB2)','var(--cintu, #E08000)'];
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 2; i++) {
+    var v = Math.max(vals[i], 0);
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + vals[i].toFixed(2) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Impact financier (millions $)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerTSLe(); calculerTirage(); };
+</script>
+</body>
+</html>

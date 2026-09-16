@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 16 — La parité des taux d'intérêt couverte rompue — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 16 — Application : la parité des taux d'intérêt couverte rompue</h1>
+<p class="sous-titre">Calculatrice interactive — l'arbitrage de la CIP et son coût en capital réglementaire (exercice 5), la base de swap de change du yen à partir de la parité couverte (exercice 6)</p>
+
+<div class="panneau">
+  <h2>L'arbitrage de la parité rompue et son coût en capital</h2>
+  <p class="aide">Rendement du placement couvert en termes dollar : $i_{\text{USD}}-b$ (marge d'arbitrage apparente $=-b$). Ce type d'opération, sans risque de marché, immobilise néanmoins un capital réglementaire (ratio de levier) $=\ell\times D$, dont le coût annuel est $\ell\times D\times\text{ROE}$. Seuil de rentabilité : $\ell^\star=(-b)/\text{ROE}$.</p>
+  <div class="ligne">
+    <div><label for="c16_d">Notional $D$ (millions $)</label><input type="number" id="c16_d" value="200" step="10" min="0"></div>
+    <div><label for="c16_iusd">Taux USD direct $i_{\text{USD}}$ (%/an)</label><input type="number" id="c16_iusd" value="5.00" step="0.05"></div>
+    <div><label for="c16_b">Base de swap de change $b$ (%, négative si CIP rompue)</label><input type="number" id="c16_b" value="-0.35" step="0.05"></div>
+    <div><label for="c16_lev">Ratio de levier réglementaire $\ell$ (%)</label><input type="number" id="c16_lev" value="4.00" step="0.25" min="0"></div>
+    <div><label for="c16_roe">Rentabilité exigée ROE (%/an)</label><input type="number" id="c16_roe" value="12.00" step="0.5" min="0.0001"></div>
+  </div>
+  <button onclick="calculerArbitrage()">Calculer</button>
+  <div id="resultatArbitrage" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>La base de swap de change du yen à partir de la parité couverte</h2>
+  <p class="aide">Sous la CIP stricte, $F_{\text{CIP}}=S_0\times\dfrac{1+i_{\text{JPY}}}{1+i_{\text{USD}}}$. Pour un taux à terme $F$ quelconque, le coût implicite en dollars d'un emprunt en yens converti par swap est $i_{\text{USD}}^{\text{implicite}}=S_0\times\dfrac{1+i_{\text{JPY}}}{F}-1$. Coût de financement d'un notional $N$ sur un an : $N\times i$.</p>
+  <div class="ligne">
+    <div><label for="c16_s0">Comptant $S_0$ (JPY/USD)</label><input type="number" id="c16_s0" value="110.00" step="0.5" min="0"></div>
+    <div><label for="c16_ijpy">Taux JPY $i_{\text{JPY}}$ (%/an)</label><input type="number" id="c16_ijpy" value="0.10" step="0.05" min="0"></div>
+    <div><label for="c16_iusd2">Taux USD $i_{\text{USD}}$ (%/an)</label><input type="number" id="c16_iusd2" value="5.00" step="0.05" min="0"></div>
+    <div><label for="c16_freel">Terme réel coté $F_{\text{réel}}$ (JPY/USD)</label><input type="number" id="c16_freel" value="103.50" step="0.5" min="0"></div>
+    <div><label for="c16_notional">Besoin de financement $N$ (millions $)</label><input type="number" id="c16_notional" value="300" step="10" min="0"></div>
+    <div><label for="c16_aggrav">Aggravation supplémentaire (points de base)</label><input type="number" id="c16_aggrav" value="50" step="5"></div>
+  </div>
+  <button onclick="calculerYen()">Calculer</button>
+  <div id="resultatYen" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmtMilliers(x, n) {
+  n = (n===undefined) ? 0 : n;
+  var neg = x < 0;
+  x = Math.abs(x);
+  var s = x.toFixed(n);
+  var parts = s.split('.');
+  var ip = parts[0];
+  var out = '';
+  for (var i = 0; i < ip.length; i++) {
+    if (i > 0 && (ip.length - i) % 3 === 0) out += ' ';
+    out += ip[i];
+  }
+  if (parts.length > 1) out += ',' + parts[1];
+  return (neg ? '-' : '') + out;
+}
+
+function calculerArbitrage() {
+  var resDiv = document.getElementById('resultatArbitrage');
+  var D = parseFloat(document.getElementById('c16_d').value);
+  var iUsd = parseFloat(document.getElementById('c16_iusd').value) / 100;
+  var b = parseFloat(document.getElementById('c16_b').value) / 100;
+  var lev = parseFloat(document.getElementById('c16_lev').value) / 100;
+  var roe = parseFloat(document.getElementById('c16_roe').value) / 100;
+
+  if ([D,iUsd,b,lev,roe].some(isNaN) || D<0 || lev<0 || roe<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : notional non négatif, ratio de levier non négatif, ROE strictement positif.</p>';
+    return;
+  }
+
+  var Ddol = D * 1e6;
+  var iCouvert = iUsd - b;
+  var margeBps = (iCouvert - iUsd) * 10000;
+  var profitBrut = Ddol * (iCouvert - iUsd);
+  var capital = Ddol * lev;
+  var coutCapital = capital * roe;
+  var net = profitBrut - coutCapital;
+  var levSeuil = (iCouvert - iUsd) / roe;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Rendement couvert $i_{\\text{USD}}-b$</th><td>' + fmtMilliers(iCouvert*100,2) + ' %</td></tr>';
+  html += '<tr><th>Marge d\'arbitrage apparente</th><td>' + fmtMilliers(margeBps,2) + ' points de base</td></tr>';
+  html += '<tr><th>Profit brut annuel</th><td>' + fmtMilliers(profitBrut,2) + ' $</td></tr>';
+  html += '<tr><th>Capital requis (ratio de levier)</th><td>' + fmtMilliers(capital,2) + ' $</td></tr>';
+  html += '<tr><th>Coût annuel du capital (au ROE)</th><td>' + fmtMilliers(coutCapital,2) + ' $</td></tr>';
+  html += '<tr><th>Économie nette</th><td>' + fmtMilliers(net,2) + ' $</td></tr>';
+  html += '<tr><th>Ratio de levier au seuil de rentabilité $\\ell^\\star$</th><td>' + fmtMilliers(levSeuil*100,4) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (net >= 0 ? 'ok' : 'ko') + '">L\'arbitrage est ' + (net >= 0 ? 'ENCORE attractif' : 'NON attractif') + ' une fois le coût du capital intégré (économie nette ' + fmtMilliers(net,2) + ' $)</div>';
+  html += '<div class="valeur ' + (lev > levSeuil ? 'mid' : 'ok') + '">Ratio de levier effectif (' + fmtMilliers(lev*100,2) + ' %) ' + (lev > levSeuil ? 'supérieur' : 'inférieur ou égal') + ' au seuil de rentabilité (' + fmtMilliers(levSeuil*100,4) + ' %) : ' + (lev > levSeuil ? 'la réglementation de bilan rend cette opération déficitaire pour ce teneur de marché, exactement le mécanisme qui empêche l\'écart de se refermer' : 'l\'opération reste rentable à ce niveau de réglementation') + '</div>';
+
+  html += dessinerArbitrage(profitBrut, coutCapital, net);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerArbitrage(profitBrut, coutCapital, net) {
+  var largeur = 340, hauteur = 230, margeG = 70, margeD = 15, margeH = 20, margeB = 46;
+  var vals = [profitBrut, coutCapital, net];
+  var labels = ['Profit brut', 'Coût du capital', 'Économie nette'];
+  var couleurs = ['var(--cex, #2E8B57)', 'var(--cgris, #5A5A5A)', 'var(--ceco, #1F6FB2)'];
+  var vMaxPos = Math.max(0, Math.max.apply(null, vals)) * 1.2 || 1;
+  var vMaxNeg = Math.min(0, Math.min.apply(null, vals)) * 1.2;
+  function yPix(v) { return margeH + (vMaxPos - v) / (vMaxPos - vMaxNeg) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var n = vals.length;
+  var largeurBarre = 46;
+  var xCentres = [];
+  for (var i=0;i<n;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/n)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < n; i++) {
+    var v = vals[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    var h = Math.abs(yBot-yTop);
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + Math.max(h,0.5).toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (v>=0 ? (yTop-5).toFixed(1) : (yBot+13).toFixed(1)) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + fmtMilliers(v,0) + ' $</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="16" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 16,' + (hauteur/2-10) + ')">Montant annuel ($)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerYen() {
+  var resDiv = document.getElementById('resultatYen');
+  var S0 = parseFloat(document.getElementById('c16_s0').value);
+  var iJpy = parseFloat(document.getElementById('c16_ijpy').value) / 100;
+  var iUsd = parseFloat(document.getElementById('c16_iusd2').value) / 100;
+  var Freel = parseFloat(document.getElementById('c16_freel').value);
+  var N = parseFloat(document.getElementById('c16_notional').value);
+  var aggravBps = parseFloat(document.getElementById('c16_aggrav').value);
+
+  if ([S0,iJpy,iUsd,Freel,N,aggravBps].some(isNaN) || S0<=0 || iJpy<0 || iUsd<0 || Freel<=0 || N<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : comptant et terme strictement positifs, taux non négatifs, notional non négatif.</p>';
+    return;
+  }
+
+  var Ndol = N * 1e6;
+  var Fcip = S0 * (1+iJpy) / (1+iUsd);
+  var iImplicite = S0 * (1+iJpy) / Freel - 1;
+  var baseBps = (iImplicite - iUsd) * 10000;
+
+  var coutCip = Ndol * iUsd;
+  var coutReel = Ndol * iImplicite;
+  var surcout = coutReel - coutCip;
+
+  var iImpliciteAggrav = iImplicite + aggravBps/10000;
+  var coutAggrav = Ndol * iImpliciteAggrav;
+  var surcoutAggrav = coutAggrav - coutCip;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Terme théorique $F_{\\text{CIP}}$</th><td>' + fmtMilliers(Fcip,4) + ' JPY/USD</td></tr>';
+  html += '<tr><th>Coût implicite $i_{\\text{USD}}^{\\text{implicite}}$ (à partir de $F_{\\text{réel}}$)</th><td>' + fmtMilliers(iImplicite*100,4) + ' %</td></tr>';
+  html += '<tr><th>Base de swap de change du yen</th><td>' + fmtMilliers(baseBps,2) + ' points de base</td></tr>';
+  html += '<tr><th>Coût de financement sous CIP stricte</th><td>' + fmtMilliers(coutCip,2) + ' $</td></tr>';
+  html += '<tr><th>Coût de financement réel (base actuelle)</th><td>' + fmtMilliers(coutReel,2) + ' $</td></tr>';
+  html += '<tr><th>Surcoût imputable à la rupture de la CIP</th><td>' + fmtMilliers(surcout,2) + ' $</td></tr>';
+  html += '<tr><th>Coût si aggravation de ' + fmtMilliers(aggravBps,0) + ' points de base</th><td>' + fmtMilliers(coutAggrav,2) + ' $</td></tr>';
+  html += '<tr><th>Surcoût correspondant (aggravation)</th><td>' + fmtMilliers(surcoutAggrav,2) + ' $</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (baseBps > 0 ? 'ko' : 'ok') + '">Emprunter des dollars via swap coûte ' + fmtMilliers(Math.abs(baseBps),2) + ' points de base ' + (baseBps > 0 ? 'de plus' : 'de moins') + ' que l\'emprunt direct en dollars</div>';
+  html += '<div class="valeur mid">Surcoût annuel imputable à la rupture de la CIP : ' + fmtMilliers(surcout,2) + ' $ sur un notional de ' + fmtMilliers(N,0) + ' millions $</div>';
+  html += '<div class="valeur">Avec une aggravation de ' + fmtMilliers(aggravBps,0) + ' points de base, le surcoût passerait à ' + fmtMilliers(surcoutAggrav,2) + ' $</div>';
+
+  html += dessinerYen(coutCip, coutReel, coutAggrav);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerYen(coutCip, coutReel, coutAggrav) {
+  var largeur = 360, hauteur = 240, margeG = 70, margeD = 15, margeH = 20, margeB = 46;
+  var vals = [coutCip, coutReel, coutAggrav];
+  var labels = ['CIP stricte', 'Réel (base actuelle)', 'Aggravation'];
+  var couleurs = ['var(--cex, #2E8B57)', 'var(--cintu, #E08000)', 'var(--cgris, #5A5A5A)'];
+  var vMax = Math.max.apply(null, vals.concat([0])) * 1.15 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var n = vals.length;
+  var largeurBarre = 46;
+  var xCentres = [];
+  for (var i=0;i<n;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/n)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="250">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < n; i++) {
+    var v = Math.max(vals[i],0);
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + Math.max(h,0.5).toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + fmtMilliers(v,0) + ' $</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="16" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 16,' + (hauteur/2-10) + ')">Coût annuel du financement ($)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerArbitrage(); calculerYen(); };
+</script>
+</body>
+</html>

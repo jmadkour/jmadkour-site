@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Indicateurs d'alerte précoce — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Application : les indicateurs d'alerte précoce</h1>
+<p class="sous-titre">Calculatrice interactive — calibrage des seuils d'un EWI par l'historique (exercice 5), sharpness : dépôts agrégés contre dépôts d'un segment volatil (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Calibrage des seuils d'un EWI par l'historique (feux tricolores)</h2>
+  <p class="aide">Seuil vert/orange = mu + sigma. Seuil orange/rouge = mu + 2 x sigma. z = (spread observé − mu) / sigma. Probabilité, sous une loi normale N(mu, sigma²), qu'un jour donné soit déjà orange ou rouge : P(Z&gt;1).</p>
+  <div class="ligne">
+    <div><label for="c2_mu">mu — moyenne, calibration normale (bps)</label><input type="number" id="c2_mu" value="18" step="0.1"></div>
+    <div><label for="c2_sigma">sigma — écart-type, calibration normale (bps)</label><input type="number" id="c2_sigma" value="6" step="0.1" min="0.0001"></div>
+    <div><label for="c2_spread">Spread observé (bps)</label><input type="number" id="c2_spread" value="34" step="0.1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c2_mu2">mu' — moyenne, calibration élargie (bps)</label><input type="number" id="c2_mu2" value="24" step="0.1"></div>
+    <div><label for="c2_sigma2">sigma' — écart-type, calibration élargie (bps)</label><input type="number" id="c2_sigma2" value="11" step="0.1" min="0.0001"></div>
+    <div><label for="c2_jours">Jours ouvrés par mois / par an</label>
+      <div style="display:flex; gap:0.4em;">
+        <input type="number" id="c2_joursmois" value="21" step="1" min="1">
+        <input type="number" id="c2_joursan" value="250" step="1" min="1">
+      </div>
+    </div>
+  </div>
+  <button onclick="calculerSeuils()">Calculer</button>
+  <div id="resultatSeuils" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Sharpness : dépôts agrégés contre dépôts d'un segment volatil</h2>
+  <p class="aide">Variation = (solde final − solde initial) / solde initial. Le solde initial du segment = part du segment x solde total initial. Part de la sortie totale imputable au segment = sortie absolue du segment / sortie absolue totale. Trajectoire mensuelle du segment : solde x (ratio mensuel)^n, avec ratio = solde final / solde initial du segment.</p>
+  <div class="ligne">
+    <div><label for="c2_tot0">Dépôts totaux, début de mois (M$)</label><input type="number" id="c2_tot0" value="850" step="1" min="0.0001"></div>
+    <div><label for="c2_tot1">Dépôts totaux, fin de mois (M$)</label><input type="number" id="c2_tot1" value="830" step="1"></div>
+    <div><label for="c2_part">Part du segment clientèle fortunée (%)</label><input type="number" id="c2_part" value="12" step="0.1" min="0" max="100"></div>
+    <div><label for="c2_hnw1">Solde du segment, fin de mois (M$)</label><input type="number" id="c2_hnw1" value="84" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c2_seuilagg">Seuil d'alerte agrégé (%, valeur absolue)</label><input type="number" id="c2_seuilagg" value="3" step="0.1" min="0"></div>
+    <div><label for="c2_seuilseg">Seuil d'alerte segment (%, valeur absolue)</label><input type="number" id="c2_seuilseg" value="10" step="0.1" min="0"></div>
+    <div><label for="c2_nmois">Nombre de mois projetés (trajectoire)</label><input type="number" id="c2_nmois" value="6" step="1" min="1" max="24"></div>
+  </div>
+  <button onclick="calculerSharpness()">Calculer</button>
+  <div id="resultatSharpness" class="resultat-zone"></div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------
+// Fonction de répartition de la loi normale centrée réduite, via
+// l'approximation d'Abramowitz et Stegun de la fonction erf (7.1.26),
+// erreur maximale < 1.5e-7 — largement suffisante ici.
+// ---------------------------------------------------------------------
+function erf(x) {
+  var sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  var a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  var t = 1/(1+p*x);
+  var y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function normCdf(x) { return 0.5*(1+erf(x/Math.sqrt(2))); }
+
+function calculerSeuils() {
+  var resDiv = document.getElementById('resultatSeuils');
+  var mu = parseFloat(document.getElementById('c2_mu').value);
+  var sigma = parseFloat(document.getElementById('c2_sigma').value);
+  var spread = parseFloat(document.getElementById('c2_spread').value);
+  var mu2 = parseFloat(document.getElementById('c2_mu2').value);
+  var sigma2 = parseFloat(document.getElementById('c2_sigma2').value);
+  var joursMois = parseFloat(document.getElementById('c2_joursmois').value);
+  var joursAn = parseFloat(document.getElementById('c2_joursan').value);
+
+  if ([mu,sigma,spread,mu2,sigma2,joursMois,joursAn].some(isNaN) || sigma<=0 || sigma2<=0 || joursMois<=0 || joursAn<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les écarts-types et les nombres de jours doivent être strictement positifs.</p>';
+    return;
+  }
+
+  var seuilVO = mu + sigma;
+  var seuilOR = mu + 2*sigma;
+  var z = (spread - mu)/sigma;
+  var classe = spread <= seuilVO ? 'vert' : (spread <= seuilOR ? 'orange' : 'rouge');
+  var depBps = spread - seuilOR;
+  var depSigma = depBps/sigma;
+
+  var seuilVO2 = mu2 + sigma2;
+  var seuilOR2 = mu2 + 2*sigma2;
+  var classe2 = spread <= seuilVO2 ? 'vert' : (spread <= seuilOR2 ? 'orange' : 'rouge');
+
+  var pAmberOuRouge = 1 - normCdf(1);
+  var joursParMois = pAmberOuRouge*joursMois;
+  var joursParAn = pAmberOuRouge*joursAn;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Seuil vert/orange (normale)</th><td>' + seuilVO.toFixed(2) + ' bps</td></tr>';
+  html += '<tr><th>Seuil orange/rouge (normale)</th><td>' + seuilOR.toFixed(2) + ' bps</td></tr>';
+  html += '<tr><th>z-score du spread observé</th><td>' + z.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Dépassement au-delà du seuil rouge</th><td>' + depBps.toFixed(2) + ' bps (' + depSigma.toFixed(3) + ' sigma)</td></tr>';
+  html += '<tr><th>Seuil vert/orange (élargie 2007-2008)</th><td>' + seuilVO2.toFixed(2) + ' bps</td></tr>';
+  html += '<tr><th>Seuil orange/rouge (élargie 2007-2008)</th><td>' + seuilOR2.toFixed(2) + ' bps</td></tr>';
+  html += '<tr><th>P(Z&gt;1) — jour orange/rouge en régime normal</th><td>' + (pAmberOuRouge*100).toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Jours orange/rouge attendus par mois / par an</th><td>' + joursParMois.toFixed(2) + ' / ' + joursParAn.toFixed(2) + '</td></tr>';
+  html += '</table>';
+
+  var couleurClasse = { vert: 'ok', orange: 'mid', rouge: 'ko' };
+  html += '<div class="valeur ' + couleurClasse[classe] + '">Calibration normale : le spread de ' + spread.toFixed(2) + ' bps est classé <strong>' + classe.toUpperCase() + '</strong></div>';
+  html += '<div class="valeur ' + couleurClasse[classe2] + '">Calibration élargie : le même spread est classé <strong>' + classe2.toUpperCase() + '</strong></div>';
+  if (classe !== classe2) {
+    html += '<div class="valeur mid">Le reclassement (' + classe + ' &rarr; ' + classe2 + ') illustre le risque de désensibilisation : inclure une crise dans la fenêtre de calibration peut élargir les seuils au point de faire disparaître le signal qu\'elle est censée aider à détecter.</div>';
+  }
+
+  html += dessinerSeuils(seuilVO, seuilOR, seuilVO2, seuilOR2, spread);
+  resDiv.innerHTML = html;
+}
+
+function dessinerSeuils(vo1, or1, vo2, or2, spread) {
+  var largeur = 340, hauteur = 220, margeG = 46, margeD = 15, margeH = 24, margeB = 44;
+  var vals = [vo1, or1, vo2, or2];
+  var vMax = Math.max.apply(null, vals.concat([spread])) * 1.18 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 40;
+  var labels = ['V/O normale', 'O/R normale', 'V/O élargie', 'O/R élargie'];
+  var couleurs = ['var(--cex, #2E8B57)','var(--cintu, #E08000)','var(--cex, #2E8B57)','var(--cintu, #E08000)'];
+  var xCentres = [];
+  for (var i=0;i<4;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/4)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(1) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  var ySpread = yPix(spread);
+  svg += '<line x1="' + margeG + '" y1="' + ySpread.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + ySpread.toFixed(1) + '" stroke="#b00020" stroke-width="1.4" stroke-dasharray="5,3"/>';
+  svg += '<text x="' + (margeG+4) + '" y="' + (ySpread-4).toFixed(1) + '" font-size="8" fill="#b00020">Spread observé : ' + spread.toFixed(1) + ' bps</text>';
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Seuil (bps)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerSharpness() {
+  var resDiv = document.getElementById('resultatSharpness');
+  var tot0 = parseFloat(document.getElementById('c2_tot0').value);
+  var tot1 = parseFloat(document.getElementById('c2_tot1').value);
+  var part = parseFloat(document.getElementById('c2_part').value);
+  var hnw1 = parseFloat(document.getElementById('c2_hnw1').value);
+  var seuilAgg = parseFloat(document.getElementById('c2_seuilagg').value);
+  var seuilSeg = parseFloat(document.getElementById('c2_seuilseg').value);
+  var nMois = parseInt(document.getElementById('c2_nmois').value, 10);
+
+  if ([tot0,tot1,part,hnw1,seuilAgg,seuilSeg,nMois].some(isNaN) || tot0<=0 || part<0 || part>100 || seuilAgg<0 || seuilSeg<0 || nMois<1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : le solde initial doit être strictement positif, la part entre 0 et 100 %, les seuils non négatifs, et le nombre de mois au moins 1.</p>';
+    return;
+  }
+
+  var hnw0 = tot0*(part/100);
+  if (hnw0 <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Le solde initial du segment (part x dépôts totaux) doit être strictement positif.</p>';
+    return;
+  }
+
+  var declinTotal = (tot1-tot0)/tot0*100;
+  var declinHnw = (hnw1-hnw0)/hnw0*100;
+  var sortieTotale = tot1-tot0;
+  var sortieHnw = hnw1-hnw0;
+  var partSortie = sortieTotale !== 0 ? (sortieHnw/sortieTotale)*100 : NaN;
+
+  var alerteAgg = Math.abs(declinTotal) >= seuilAgg && declinTotal < 0;
+  var alerteSeg = Math.abs(declinHnw) >= seuilSeg && declinHnw < 0;
+
+  var ratio = hnw1/hnw0;
+  var trajectoire = [];
+  var val = hnw0;
+  var moisSeuil50 = null;
+  for (var m=1; m<=nMois; m++) {
+    val = val*ratio;
+    trajectoire.push({mois:m, solde:val, pct: val/hnw0*100});
+    if (moisSeuil50===null && val < hnw0*0.5) { moisSeuil50 = m; }
+  }
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Variation dépôts totaux</th><td>' + declinTotal.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Solde initial du segment</th><td>' + hnw0.toFixed(2) + ' M$</td></tr>';
+  html += '<tr><th>Variation du segment</th><td>' + declinHnw.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Sortie absolue totale / segment</th><td>' + sortieTotale.toFixed(2) + ' / ' + sortieHnw.toFixed(2) + ' M$</td></tr>';
+  html += '<tr><th>Part de la sortie totale imputable au segment</th><td>' + (isNaN(partSortie) ? 'n/d' : partSortie.toFixed(1) + ' %') + '</td></tr>';
+  html += '<tr><th>Ratio multiplicatif mensuel du segment</th><td>' + ratio.toFixed(4) + '</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (alerteAgg ? 'ko' : 'ok') + '">EWI agrégé : ' + declinTotal.toFixed(2) + ' % (seuil ' + (-Math.abs(seuilAgg)).toFixed(1) + ' %) — ' + (alerteAgg ? 'ALERTE déclenchée' : 'pas d\'alerte') + '</div>';
+  html += '<div class="valeur ' + (alerteSeg ? 'ko' : 'ok') + '">EWI segmenté : ' + declinHnw.toFixed(2) + ' % (seuil ' + (-Math.abs(seuilSeg)).toFixed(1) + ' %) — ' + (alerteSeg ? 'ALERTE déclenchée' : 'pas d\'alerte') + '</div>';
+
+  if (moisSeuil50 !== null) {
+    html += '<div class="valeur mid">Au rythme observé, le solde du segment tombe sous 50 % de son niveau initial au cours du mois n°' + moisSeuil50 + ' (' + trajectoire[moisSeuil50-1].pct.toFixed(1) + ' % au mois ' + moisSeuil50 + ', contre ' + (moisSeuil50>1 ? trajectoire[moisSeuil50-2].pct.toFixed(1) : '100,0') + ' % au mois ' + (moisSeuil50-1) + ')</div>';
+  } else {
+    html += '<div class="valeur mid">Le solde du segment ne tombe pas sous 50 % de son niveau initial sur l\'horizon projeté (' + nMois + ' mois) à ce rythme.</div>';
+  }
+
+  html += '<table class="tabres"><tr><th>Mois</th><th>Solde du segment (M$)</th><th>% du niveau initial</th></tr>';
+  for (var i=0;i<trajectoire.length;i++) {
+    html += '<tr><td>' + trajectoire[i].mois + '</td><td>' + trajectoire[i].solde.toFixed(2) + '</td><td>' + trajectoire[i].pct.toFixed(1) + ' %</td></tr>';
+  }
+  html += '</table>';
+
+  html += dessinerSharpness(declinTotal, declinHnw, seuilAgg, seuilSeg);
+  html += dessinerTrajectoire(trajectoire, hnw0);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerSharpness(declinTotal, declinHnw, seuilAgg, seuilSeg) {
+  var largeur = 300, hauteur = 210, margeG = 46, margeD = 15, margeH = 20, margeB = 40;
+  var vals = [Math.abs(declinTotal), Math.abs(declinHnw)];
+  var vMax = Math.max.apply(null, vals.concat([seuilAgg, seuilSeg])) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 50;
+  var labels = ['Agrégé', 'Segment'];
+  var couleurs = ['var(--ceco, #1F6FB2)','var(--cintu, #E08000)'];
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 2; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + ' %</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  var yAgg = yPix(seuilAgg);
+  svg += '<line x1="' + margeG + '" y1="' + yAgg.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yAgg.toFixed(1) + '" stroke="#1d9e75" stroke-width="1.2" stroke-dasharray="4,3"/>';
+  var ySeg = yPix(seuilSeg);
+  svg += '<line x1="' + margeG + '" y1="' + ySeg.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + ySeg.toFixed(1) + '" stroke="#888" stroke-width="1.2" stroke-dasharray="4,3"/>';
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Baisse (%, valeur absolue)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function dessinerTrajectoire(trajectoire, hnw0) {
+  var largeur = 340, hauteur = 210, margeG = 46, margeD = 15, margeH = 20, margeB = 40;
+  var n = trajectoire.length;
+  var vMax = hnw0*1.05;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  function xPix(i) { return margeG + (i/(n)) * (largeur-margeG-margeD); }
+  var yZero = yPix(0);
+  var y50 = yPix(hnw0*0.5);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + y50.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + y50.toFixed(1) + '" stroke="#b00020" stroke-width="1.2" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (margeG+4) + '" y="' + (y50-4).toFixed(1) + '" font-size="7.5" fill="#b00020">50 % du niveau initial</text>';
+
+  var pts = [[xPix(0), yPix(hnw0)]];
+  for (var i=0;i<n;i++) { pts.push([xPix(i+1), yPix(trajectoire[i].solde)]); }
+  var path = 'M' + pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' L');
+  svg += '<path d="' + path + '" fill="none" stroke="var(--cintu, #E08000)" stroke-width="2"/>';
+  for (var i=0;i<pts.length;i++) {
+    svg += '<circle cx="' + pts[i][0].toFixed(1) + '" cy="' + pts[i][1].toFixed(1) + '" r="2.6" fill="var(--cintu, #E08000)"/>';
+  }
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<text x="' + xPix(0) + '" y="' + (yZero+14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">0</text>';
+  for (var i=0;i<n;i++) {
+    svg += '<text x="' + xPix(i+1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + (i+1) + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Solde du segment (M$)</text>';
+  svg += '<text x="' + (largeur/2) + '" y="' + (hauteur-4) + '" font-size="8" text-anchor="middle" fill="currentColor">Mois</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerSeuils(); calculerSharpness(); };
+</script>
+</body>
+</html>

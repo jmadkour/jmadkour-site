@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — La gestion des ressources hors dépôts — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  table.tabres tr.gagnant td { font-weight: bold; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — Application : la gestion des ressources hors dépôts</h1>
+<p class="sous-titre">Calculatrice interactive — choisir la source de gestion du passif la moins coûteuse (exercice 5), mécanique d'une pension livrée avec appel de marge (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Choisir la source de financement de gros la moins coûteuse</h2>
+  <p class="aide">Coût sur $j$ jours (base 360) : $N\times i\times j/360$, majoré des frais fixes le cas échéant. Collatéral repo nécessaire : $T=N/(1-h)$. Doctrine de la relation client : le prêt est décidé d'abord, la source la moins coûteuse est recherchée ensuite.</p>
+  <div class="ligne">
+    <div><label for="c12_n">Besoin $N$ (millions $)</label><input type="number" id="c12_n" value="80" step="1" min="0"></div>
+    <div><label for="c12_jours">Durée $j$ (jours)</label><input type="number" id="c12_jours" value="30" step="1" min="1"></div>
+    <div><label for="c12_iff">Fed funds $i_{\text{ff}}$ (%/an)</label><input type="number" id="c12_iff" value="4.35" step="0.01" min="0"></div>
+    <div><label for="c12_irepo">Repo $i_{\text{repo}}$ (%/an)</label><input type="number" id="c12_irepo" value="4.05" step="0.01" min="0"></div>
+    <div><label for="c12_h">Décote repo $h$ (%)</label><input type="number" id="c12_h" value="2" step="0.5" min="0" max="99"></div>
+    <div><label for="c12_ifhlb">FHLB $i_{\text{fhlb}}$ (%/an)</label><input type="number" id="c12_ifhlb" value="3.95" step="0.01" min="0"></div>
+    <div><label for="c12_ffhlb">Frais fixes FHLB ($)</label><input type="number" id="c12_ffhlb" value="34000" step="1000" min="0"></div>
+    <div><label for="c12_icd">CD $i_{\text{cd}}$ (%/an)</label><input type="number" id="c12_icd" value="4.50" step="0.01" min="0"></div>
+    <div><label for="c12_tdispo">Collatéral repo disponible (millions $)</label><input type="number" id="c12_tdispo" value="75" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerSources()">Calculer</button>
+  <div id="resultatSources" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Mécanique d'une pension livrée (repo) et appel de marge</h2>
+  <p class="aide">Collatéral requis : $T=M/(1-h)$. Prix de rachat $=M+M\times i_{\text{repo}}\times j/360$. Ratio de collatéralisation après choc $=T(1-\text{baisse})/M$ ; un appel de marge est déclenché si ce ratio passe sous le seuil minimal.</p>
+  <div class="ligne">
+    <div><label for="c12_m">Montant emprunté $M$ (millions $)</label><input type="number" id="c12_m" value="60" step="1" min="0"></div>
+    <div><label for="c12_jours2">Durée $j$ (jours)</label><input type="number" id="c12_jours2" value="7" step="1" min="1"></div>
+    <div><label for="c12_irepo2">Taux repo $i_{\text{repo}}$ (%/an)</label><input type="number" id="c12_irepo2" value="4.00" step="0.01" min="0"></div>
+    <div><label for="c12_h2">Décote $h$ (%)</label><input type="number" id="c12_h2" value="2" step="0.5" min="0" max="99"></div>
+    <div><label for="c12_baisse">Baisse du collatéral (%)</label><input type="number" id="c12_baisse" value="3" step="0.5" min="0" max="99"></div>
+    <div><label for="c12_seuil">Seuil minimal de collatéralisation (%)</label><input type="number" id="c12_seuil" value="101" step="0.5" min="100"></div>
+    <div><label for="c12_iff2">Fed funds $i_{\text{ff}}$ (%/an)</label><input type="number" id="c12_iff2" value="4.30" step="0.01" min="0"></div>
+  </div>
+  <button onclick="calculerRepo()">Calculer</button>
+  <div id="resultatRepo" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmtMilliers(x, n) {
+  n = (n===undefined) ? 0 : n;
+  var neg = x < 0;
+  x = Math.abs(x);
+  var s = x.toFixed(n);
+  var parts = s.split('.');
+  var ip = parts[0];
+  var out = '';
+  for (var i = 0; i < ip.length; i++) {
+    if (i > 0 && (ip.length - i) % 3 === 0) out += ' ';
+    out += ip[i];
+  }
+  if (parts.length > 1) out += ',' + parts[1];
+  return (neg ? '-' : '') + out;
+}
+
+function calculerSources() {
+  var resDiv = document.getElementById('resultatSources');
+  var N = parseFloat(document.getElementById('c12_n').value);
+  var jours = parseFloat(document.getElementById('c12_jours').value);
+  var iff = parseFloat(document.getElementById('c12_iff').value) / 100;
+  var irepo = parseFloat(document.getElementById('c12_irepo').value) / 100;
+  var h = parseFloat(document.getElementById('c12_h').value) / 100;
+  var ifhlb = parseFloat(document.getElementById('c12_ifhlb').value) / 100;
+  var ffhlb = parseFloat(document.getElementById('c12_ffhlb').value);
+  var icd = parseFloat(document.getElementById('c12_icd').value) / 100;
+  var tdispoM = parseFloat(document.getElementById('c12_tdispo').value);
+
+  if ([N,jours,iff,irepo,h,ifhlb,ffhlb,icd,tdispoM].some(isNaN) || N<=0 || jours<=0 || iff<0 || irepo<0 || h<0 || h>=1 || ifhlb<0 || ffhlb<0 || icd<0 || tdispoM<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : besoin et durée strictement positifs, taux et frais non négatifs, $0\\leq h<100\\,\\%$.</p>';
+    return;
+  }
+
+  var Ndol = N * 1e6;
+  var interet = function(montant, i) { return montant * i * jours / 360; };
+
+  var coutFF   = interet(Ndol, iff);
+  var coutRepo = interet(Ndol, irepo);
+  var coutFHLB = interet(Ndol, ifhlb) + ffhlb;
+  var coutCD   = interet(Ndol, icd);
+
+  var sources = [
+    {nom: 'Repo', cout: coutRepo, coul: 'cex'},
+    {nom: 'Fed funds', cout: coutFF, coul: 'ceco'},
+    {nom: 'FHLB (+ frais)', cout: coutFHLB, coul: 'cintu'},
+    {nom: 'CD', cout: coutCD, coul: 'cgris'}
+  ];
+  var classees = sources.slice().sort(function(a,b){ return a.cout - b.cout; });
+  var meilleure = classees[0];
+
+  // Collateral repo
+  var T = Ndol / (1 - h);
+  var TM = T / 1e6;
+
+  // Alternative la moins couteuse parmi Fed funds / FHLB / CD, pour financer le solde non couvert par le collateral repo
+  var alternatives = sources.filter(function(s){ return s.nom !== 'Repo'; });
+  var meilleureAlt = alternatives.slice().sort(function(a,b){ return a.cout - b.cout; })[0];
+
+  var tdispoDol = tdispoM * 1e6;
+  var financableRepo = Math.min(Ndol, tdispoDol * (1 - h));
+  var solde = Ndol - financableRepo;
+  var tauxAlt = (meilleureAlt.nom === 'Fed funds') ? iff : (meilleureAlt.nom === 'FHLB (+ frais)' ? ifhlb : icd);
+  var coutSolde = interet(solde, tauxAlt) + (meilleureAlt.nom === 'FHLB (+ frais)' && solde > 0 ? ffhlb : 0);
+  var coutSoldeSiRepo = interet(solde, irepo);
+  var surcout = coutSolde - coutSoldeSiRepo;
+  var contraintActive = solde > 1e-6;
+
+  var html = '<table class="tabres"><tr><th>Source</th><th>Taux affiché</th><th>Coût total sur ' + jours + ' jours</th></tr>';
+  var tauxAffiche = {'Repo': irepo, 'Fed funds': iff, 'FHLB (+ frais)': ifhlb, 'CD': icd};
+  sources.forEach(function(s){
+    var estGagnant = (s.nom === meilleure.nom);
+    html += '<tr' + (estGagnant ? ' class="gagnant"' : '') + '><td>' + s.nom + '</td><td>' + fmtMilliers(tauxAffiche[s.nom]*100,2) + ' %</td><td>' + fmtMilliers(s.cout,2) + ' $</td></tr>';
+  });
+  html += '</table>';
+  html += '<div class="valeur ok">Source la moins coûteuse en coût total : ' + meilleure.nom + ' (' + fmtMilliers(meilleure.cout,2) + ' $)</div>';
+  var meilleureParTaux = sources.slice().sort(function(a,b){ return tauxAffiche[a.nom]-tauxAffiche[b.nom]; })[0];
+  if (meilleureParTaux.nom !== meilleure.nom) {
+    html += '<div class="valeur mid">Attention : le taux affiché le plus bas est celui de ' + meilleureParTaux.nom + ', mais son coût total n\'est pas le plus faible — comparer des coûts totaux, pas seulement des taux</div>';
+  }
+  html += '<div class="valeur">Collatéral repo nécessaire $T=N/(1-h)$ : ' + fmtMilliers(TM,2) + ' millions $</div>';
+  if (contraintActive) {
+    html += '<div class="valeur ko">Collatéral disponible (' + fmtMilliers(tdispoM,2) + ' M$) insuffisant : financable par repo ' + fmtMilliers(financableRepo/1e6,2) + ' M$, solde de ' + fmtMilliers(solde/1e6,2) + ' M$ à financer via ' + meilleureAlt.nom + '</div>';
+    html += '<div class="valeur mid">Surcoût du solde par rapport à un financement intégral par repo : ' + fmtMilliers(surcout,2) + ' $ sur ' + jours + ' jours</div>';
+  } else {
+    html += '<div class="valeur ok">Collatéral disponible (' + fmtMilliers(tdispoM,2) + ' M$) suffisant pour financer l\'intégralité de $N$ par repo — aucun recours à une source complémentaire nécessaire</div>';
+  }
+
+  html += dessinerSources(sources, meilleure.nom);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerSources(sources, nomGagnant) {
+  var largeur = 340, hauteur = 230, margeG = 62, margeD = 15, margeH = 20, margeB = 46;
+  var vals = sources.map(function(s){ return s.cout; });
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var n = sources.length;
+  var largeurBarre = 46;
+  var couleurs = { cex: 'var(--cex, #2E8B57)', ceco: 'var(--ceco, #1F6FB2)', cintu: 'var(--cintu, #E08000)', cgris: 'var(--cgris, #5A5A5A)' };
+  var xCentres = [];
+  for (var i=0;i<n;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/n)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < n; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    var estGagnant = (sources[i].nom === nomGagnant);
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[sources[i].coul] + '" ' + (estGagnant ? 'stroke="currentColor" stroke-width="1.5"' : '') + '/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + fmtMilliers(v,0) + ' $</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + sources[i].nom + '</text>';
+  }
+  svg += '<text x="16" y="' + (hauteur/2-8) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 16,' + (hauteur/2-8) + ')">Coût total sur la durée ($)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerRepo() {
+  var resDiv = document.getElementById('resultatRepo');
+  var M = parseFloat(document.getElementById('c12_m').value);
+  var jours = parseFloat(document.getElementById('c12_jours2').value);
+  var irepo = parseFloat(document.getElementById('c12_irepo2').value) / 100;
+  var h = parseFloat(document.getElementById('c12_h2').value) / 100;
+  var baisse = parseFloat(document.getElementById('c12_baisse').value) / 100;
+  var seuil = parseFloat(document.getElementById('c12_seuil').value) / 100;
+  var iff = parseFloat(document.getElementById('c12_iff2').value) / 100;
+
+  if ([M,jours,irepo,h,baisse,seuil,iff].some(isNaN) || M<=0 || jours<=0 || irepo<0 || h<0 || h>=1 || baisse<0 || baisse>=1 || seuil<1 || iff<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : montant et durée strictement positifs, décote et baisse entre 0 et 100 %, seuil minimal $\\geq100\\,\\%$, taux non négatifs.</p>';
+    return;
+  }
+
+  var Mdol = M * 1e6;
+  var T = Mdol / (1 - h);
+  var interetRepo = Mdol * irepo * jours / 360;
+  var prixRachat = Mdol + interetRepo;
+
+  var Tapres = T * (1 - baisse);
+  var ratioCollat = Tapres / Mdol;
+  var appelMargeDeclenche = ratioCollat < seuil;
+  var Trequis = Mdol * seuil;
+  var montantAppelMarge = Math.max(0, Trequis - Tapres);
+
+  var interetFF = Mdol * iff * jours / 360;
+  var ecart = interetFF - interetRepo;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Collatéral requis $T$</th><td>' + fmtMilliers(T/1e6,2) + ' millions $</td></tr>';
+  html += '<tr><th>Intérêt repo sur ' + jours + ' jours</th><td>' + fmtMilliers(interetRepo,2) + ' $</td></tr>';
+  html += '<tr><th>Prix de rachat</th><td>' + fmtMilliers(prixRachat,2) + ' $</td></tr>';
+  html += '<tr><th>Valeur du collatéral après baisse de ' + fmtMilliers(baisse*100,2) + ' %</th><td>' + fmtMilliers(Tapres/1e6,2) + ' millions $</td></tr>';
+  html += '<tr><th>Ratio de collatéralisation résultant</th><td>' + fmtMilliers(ratioCollat*100,4) + ' %</td></tr>';
+  html += '<tr><th>Intérêt Fed funds équivalent (non garanti)</th><td>' + fmtMilliers(interetFF,2) + ' $</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (appelMargeDeclenche ? 'ko' : 'ok') + '">Ratio (' + fmtMilliers(ratioCollat*100,2) + ' %) ' + (appelMargeDeclenche ? 'INFÉRIEUR' : 'supérieur ou égal') + ' au seuil minimal de ' + fmtMilliers(seuil*100,2) + ' % : un appel de marge ' + (appelMargeDeclenche ? 'EST déclenché' : 'n\'est PAS déclenché') + '</div>';
+  if (appelMargeDeclenche) {
+    html += '<div class="valeur mid">Collatéral additionnel requis pour rétablir le seuil : ' + fmtMilliers(montantAppelMarge,2) + ' $</div>';
+  }
+  html += '<div class="valeur">Écart Fed funds − repo (prime de risque de crédit non garanti) : ' + fmtMilliers(ecart,2) + ' $ sur ' + jours + ' jours</div>';
+
+  html += dessinerRepo(interetRepo, interetFF);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerRepo(interetRepo, interetFF) {
+  var largeur = 300, hauteur = 210, margeG = 60, margeD = 15, margeH = 20, margeB = 40;
+  var vals = [interetRepo, interetFF];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 46;
+  var labels = ['Repo (collatéralisé)', 'Fed funds (non garanti)'];
+  var couleurs = ['var(--ceco, #1F6FB2)','var(--cintu, #E08000)'];
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="220">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 2; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + fmtMilliers(v,2) + ' $</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-10) + ')">Intérêt sur la durée ($)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerSources(); calculerRepo(); };
+</script>
+</body>
+</html>

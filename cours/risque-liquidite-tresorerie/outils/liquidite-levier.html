@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Liquidité et effet de levier — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Application : liquidité et effet de levier</h1>
+<p class="sous-titre">Calculatrice interactive — levier implicite d'une tranche CLO empilé sur un financement repo (exercice 5), décalage de maturité et choc de refinancement sur une banque (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Levier implicite d'une tranche CLO, empilé sur un financement repo</h2>
+  <p class="aide">Levier de bilan = portefeuille collatéral / notionnel de la tranche equity. Formule du levier explicite d'un prêt sur marge établie dans ce chapitre : multiplicateur repo = 1/h, où h est la décote (fraction mise en fonds propres par l'emprunteur). Levier total = levier de bilan &times; multiplicateur repo.</p>
+  <div class="ligne">
+    <div><label for="c1_portefeuille">Portefeuille collatéral (millions $)</label><input type="number" id="c1_portefeuille" value="100" step="1" min="0"></div>
+    <div><label for="c1_tranche">Notionnel de la tranche equity (millions $)</label><input type="number" id="c1_tranche" value="5" step="0.1" min="0"></div>
+    <div><label for="c1_haircut">Décote repo h (%, convention fonds propres)</label><input type="number" id="c1_haircut" value="80" step="1" min="1" max="99"></div>
+    <div><label for="c1_cible">Levier total visé (pour la question c)</label><input type="number" id="c1_cible" value="100" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerCLO()">Calculer</button>
+  <div id="resultatCLO" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Décalage de maturité, effet de levier et choc de refinancement sur une banque</h2>
+  <p class="aide">Ratio de levier $L=A/E$. Effet de levier : $r^E=L\,r^A-(L-1)\,r^D$. Marge nette d'intérêt : $\mathrm{NII}=A\,r^A-D\,r^D$, avec $D=A-E$. Taux de refinancement seuil (où $r^E=0$) : $r^{D*}=L\,r^A/(L-1)$.</p>
+  <div class="ligne">
+    <div><label for="c1_actifs">Actifs $A$ (millions $)</label><input type="number" id="c1_actifs" value="1000" step="10" min="0"></div>
+    <div><label for="c1_fp">Fonds propres $E$ (millions $)</label><input type="number" id="c1_fp" value="100" step="1" min="0.01"></div>
+    <div><label for="c1_ra">Rendement des actifs $r^A$ (%)</label><input type="number" id="c1_ra" value="5" step="0.1"></div>
+    <div><label for="c1_rd">Coût initial de la dette $r^D$ (%)</label><input type="number" id="c1_rd" value="2" step="0.1"></div>
+    <div><label for="c1_rdchoc">Coût de la dette après choc $r^{D\prime}$ (%)</label><input type="number" id="c1_rdchoc" value="6" step="0.1"></div>
+  </div>
+  <button onclick="calculerBanque()">Calculer</button>
+  <div id="resultatBanque" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerCLO() {
+  var resDiv = document.getElementById('resultatCLO');
+  var portefeuille = parseFloat(document.getElementById('c1_portefeuille').value);
+  var tranche = parseFloat(document.getElementById('c1_tranche').value);
+  var hPct = parseFloat(document.getElementById('c1_haircut').value);
+  var cible = parseFloat(document.getElementById('c1_cible').value);
+
+  if ([portefeuille,tranche,hPct,cible].some(isNaN) || portefeuille<=0 || tranche<=0 || hPct<=0 || hPct>=100 || cible<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : portefeuille et tranche strictement positifs, décote entre 0 et 100 % (exclus), levier visé strictement positif.</p>';
+    return;
+  }
+
+  var h = hPct/100;
+  var levierBilan = portefeuille/tranche;
+  var multRepo = 1/h;
+  var levierTotal = levierBilan*multRepo;
+  var multRequis = cible/levierBilan;
+  var hRequis = 1/multRequis;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>(a) Levier de bilan (structurel)</th><td>' + levierBilan.toFixed(2) + '</td></tr>';
+  html += '<tr><th>(b) Multiplicateur repo, $1/h$ avec $h=' + hPct.toFixed(0) + '\\,\\%$</th><td>' + multRepo.toFixed(3) + '</td></tr>';
+  html += '<tr><th>(b) Levier total combiné</th><td>' + levierTotal.toFixed(2) + '</td></tr>';
+  html += '<tr><th>(c) Décote $h$ requise pour un levier total $=' + cible.toFixed(0) + '$</th><td>' + (hRequis*100).toFixed(2) + ' %</td></tr>';
+  html += '</table>';
+
+  var ecart = cible - levierTotal;
+  var ecartPct = (ecart/cible*100);
+  if (Math.abs(levierTotal-cible) < 0.5) {
+    html += '<div class="valeur ok">Le levier obtenu par la formule $1/h$ (' + levierTotal.toFixed(2) + ') est essentiellement égal au levier visé (' + cible.toFixed(0) + ').</div>';
+  } else {
+    html += '<div class="valeur ko">Écart avec le levier visé : ' + ecart.toFixed(2) + ' (soit ' + ecartPct.toFixed(1) + ' % du levier visé) — la décote $h=' + hPct.toFixed(0) + '\\,\\%$ appliquée littéralement à la formule $1/h$ du prêt sur marge ne reproduit pas le chiffre visé.</div>';
+    html += '<div class="valeur mid">Pour l\'obtenir, il faudrait lire la décote comme $h_{\\text{requis}}=' + (hRequis*100).toFixed(2) + '\\,\\%$ dans la même formule $1/h$ — c\'est-à-dire une décote bien plus faible, donc une marge propre bien plus faible, que celle affichée (' + hPct.toFixed(0) + '\\,\\%).</div>';
+  }
+
+  html += dessinerCLO(levierBilan, levierTotal, cible);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCLO(bilan, total, cible) {
+  var largeur = 320, hauteur = 220, margeG = 40, margeD = 15, margeH = 20, margeB = 46;
+  var vals = [bilan, total, cible];
+  var vMax = Math.max.apply(null, vals) * 1.15 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 44;
+  var labels = ['Bilan seul', 'Bilan × repo', 'Levier visé'];
+  var couleurs = ['var(--cgris, #5A5A5A)','var(--ceco, #1F6FB2)','var(--cintu, #E08000)'];
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(1) + '</text>';
+    var mots = labels[i].split(' ');
+    for (var l=0; l<mots.length; l++) {
+      svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14 + l*9).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + mots[l] + '</text>';
+    }
+  }
+  svg += '<text x="10" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-15) + ')">Levier total</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerBanque() {
+  var resDiv = document.getElementById('resultatBanque');
+  var A = parseFloat(document.getElementById('c1_actifs').value);
+  var E = parseFloat(document.getElementById('c1_fp').value);
+  var rA = parseFloat(document.getElementById('c1_ra').value)/100;
+  var rD = parseFloat(document.getElementById('c1_rd').value)/100;
+  var rDchoc = parseFloat(document.getElementById('c1_rdchoc').value)/100;
+
+  if ([A,E,rA,rD,rDchoc].some(isNaN) || A<=0 || E<=0 || E>A) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : actifs et fonds propres strictement positifs, avec fonds propres inférieurs ou égaux aux actifs.</p>';
+    return;
+  }
+
+  var D = A - E;
+  var L = A/E;
+  var rE = L*rA - (L-1)*rD;
+  var NII = A*rA - D*rD;
+  var rEchoc = L*rA - (L-1)*rDchoc;
+  var NIIchoc = A*rA - D*rDchoc;
+  var rDseuil = (L>1) ? (L*rA/(L-1)) : NaN;
+  var coussin = rDseuil - rD;
+  var ampleurChoc = rDchoc - rD;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Dette $D=A-E$</th><td>' + D.toFixed(1) + ' millions</td></tr>';
+  html += '<tr><th>(a) Ratio de levier $L=A/E$</th><td>' + L.toFixed(2) + '</td></tr>';
+  html += '<tr><th>(a) Rendement des fonds propres $r^E$</th><td>' + (rE*100).toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>(b) Marge nette d\'intérêt (NII)</th><td>' + NII.toFixed(2) + ' millions</td></tr>';
+  html += '<tr><th>(b) $\\mathrm{NII}/E$</th><td>' + (NII/E*100).toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>(c) $r^E$ après choc ($r^{D\\prime}$)</th><td>' + (rEchoc*100).toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>(c) NII après choc</th><td>' + NIIchoc.toFixed(2) + ' millions</td></tr>';
+  if (!isNaN(rDseuil)) {
+    html += '<tr><th>(d) Taux de refinancement seuil $r^{D*}$</th><td>' + (rDseuil*100).toFixed(2) + ' %</td></tr>';
+    html += '<tr><th>(d) Coussin avant inversion ($r^{D*}-r^D$)</th><td>' + (coussin*100).toFixed(2) + ' points</td></tr>';
+  }
+  html += '<tr><th>(d) Ampleur du choc ($r^{D\\prime}-r^D$)</th><td>' + (ampleurChoc*100).toFixed(2) + ' points</td></tr>';
+  html += '</table>';
+
+  var coherent = Math.abs(NII/E - rE) < 1e-9;
+  html += '<div class="valeur ' + (coherent ? 'ok' : 'ko') + '">$\\mathrm{NII}/E$ et $r^E$ ' + (coherent ? 'coïncident exactement' : 'NE coïncident PAS') + ' : les deux expressions décrivent la même quantité.</div>';
+
+  if (rE >= 0 && rEchoc < 0) {
+    html += '<div class="valeur ko">Le choc de refinancement fait basculer $r^E$ de positif (' + (rE*100).toFixed(2) + ' %) à négatif (' + (rEchoc*100).toFixed(2) + ' %) : le levier amplifie la perte, tout comme il amplifiait le gain avant le choc.</div>';
+  } else if (rEchoc < rE) {
+    html += '<div class="valeur mid">Le choc dégrade $r^E$ de ' + (rE*100).toFixed(2) + ' % à ' + (rEchoc*100).toFixed(2) + ' %, sans nécessairement le rendre négatif selon les valeurs saisies.</div>';
+  }
+  if (!isNaN(rDseuil)) {
+    if (ampleurChoc > coussin) {
+      html += '<div class="valeur ko">Le choc (' + (ampleurChoc*100).toFixed(2) + ' points) dépasse le coussin disponible (' + (coussin*100).toFixed(2) + ' points) : $r^E$ devient négatif.</div>';
+    } else {
+      html += '<div class="valeur ok">Le choc (' + (ampleurChoc*100).toFixed(2) + ' points) reste inférieur au coussin disponible (' + (coussin*100).toFixed(2) + ' points) : $r^E$ reste positif.</div>';
+    }
+  }
+
+  html += dessinerBanque(rE*100, rEchoc*100);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBanque(rEavant, rEapres) {
+  var largeur = 300, hauteur = 220, margeG = 45, margeD = 15, margeH = 20, margeB = 40;
+  var vals = [rEavant, rEapres];
+  var vMaxAbs = Math.max.apply(null, vals.map(Math.abs)) * 1.25 || 1;
+  var vMin = Math.min(0, Math.min.apply(null, vals)) - vMaxAbs*0.1;
+  var vMax = Math.max(vMaxAbs, Math.max.apply(null, vals)*1.15);
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 50;
+  var labels = ['Avant choc', 'Après choc'];
+  var couleurs = [rEavant>=0 ? 'var(--cex, #2E8B57)' : 'var(--danger, #b00020)', rEapres>=0 ? 'var(--cex, #2E8B57)' : 'var(--danger, #b00020)'];
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 2; i++) {
+    var v = vals[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    var h = Math.abs(yBot-yTop);
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (v>=0 ? (yTop-5).toFixed(1) : (yBot+13).toFixed(1)) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + ' %</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + (v>=0 ? 14 : -6)).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">r^E (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCLO(); calculerBanque(); };
+</script>
+</body>
+</html>

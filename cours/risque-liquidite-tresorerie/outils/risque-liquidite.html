@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — Risque de liquidité et de trésorerie — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Application : le risque de liquidité</h1>
+<p class="sous-titre">Calculatrice interactive — coût de liquidation et VaR ajustée de la liquidité (exercice 5), LCR et NSFR d'une banque (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Coût de liquidation et VaR ajustée de la liquidité</h2>
+  <p class="aide">Coût normal = somme de (1/2) × s_i × e_i. Coût de stress = somme de (1/2) × (mu_i + lambda × sigma_i) × e_i, avec spreads de tous les instruments supposés parfaitement corrélés. VaR ajustée = VaR de marché + coût de liquidation.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Position A</h3>
+      <label for="c5_eA">Valeur de marché $e_A$ (millions $)</label><input type="number" id="c5_eA" value="40" step="1" min="0">
+      <label for="c5_sA">Spread normal $s_A=\mu_A$ (%)</label><input type="number" id="c5_sA" value="0.50" step="0.01" min="0">
+      <label for="c5_sigA">Écart-type de stress $\sigma_A$ (%)</label><input type="number" id="c5_sigA" value="0.20" step="0.01" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Position B</h3>
+      <label for="c5_eB">Valeur de marché $e_B$ (millions $)</label><input type="number" id="c5_eB" value="25" step="1" min="0">
+      <label for="c5_sB">Spread normal $s_B=\mu_B$ (%)</label><input type="number" id="c5_sB" value="1.20" step="0.01" min="0">
+      <label for="c5_sigB">Écart-type de stress $\sigma_B$ (%)</label><input type="number" id="c5_sigB" value="0.40" step="0.01" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Position C</h3>
+      <label for="c5_eC">Valeur de marché $e_C$ (millions $)</label><input type="number" id="c5_eC" value="15" step="1" min="0">
+      <label for="c5_sC">Spread normal $s_C=\mu_C$ (%)</label><input type="number" id="c5_sC" value="2.50" step="0.01" min="0">
+      <label for="c5_sigC">Écart-type de stress $\sigma_C$ (%)</label><input type="number" id="c5_sigC" value="1.00" step="0.01" min="0">
+    </div>
+  </div>
+  <div class="ligne">
+    <div><label for="c5_lambda">Niveau de confiance $\lambda$ (stress)</label><input type="number" id="c5_lambda" value="2.326" step="0.001" min="0"></div>
+    <div><label for="c5_var">VaR de marché du portefeuille (millions $)</label><input type="number" id="c5_var" value="5.2" step="0.1" min="0"></div>
+  </div>
+  <button onclick="calculerLiquidite()">Calculer</button>
+  <div id="resultatLiquidite" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>LCR et NSFR d'une banque, et choc de sorties nettes</h2>
+  <p class="aide">LCR = HQLA / sorties nettes de trésorerie sur 30 jours, seuil minimal 100&nbsp;%. NSFR = financement stable disponible (ASF) / financement stable requis (RSF), seuil minimal 100&nbsp;%.</p>
+  <div class="ligne">
+    <div><label for="c6_hqla">HQLA (millions $)</label><input type="number" id="c6_hqla" value="780" step="10" min="0"></div>
+    <div><label for="c6_out">Sorties nettes 30 jours, avant choc (millions $)</label><input type="number" id="c6_out" value="650" step="10" min="0"></div>
+    <div><label for="c6_choc">Choc sur les sorties nettes (%)</label><input type="number" id="c6_choc" value="35" step="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c6_asf">Financement stable disponible ASF (millions $)</label><input type="number" id="c6_asf" value="3200" step="10" min="0"></div>
+    <div><label for="c6_rsf">Financement stable requis RSF (millions $)</label><input type="number" id="c6_rsf" value="2800" step="10" min="0"></div>
+  </div>
+  <button onclick="calculerLCR()">Calculer</button>
+  <div id="resultatLCR" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerLiquidite() {
+  var resDiv = document.getElementById('resultatLiquidite');
+  var e = [
+    parseFloat(document.getElementById('c5_eA').value),
+    parseFloat(document.getElementById('c5_eB').value),
+    parseFloat(document.getElementById('c5_eC').value)
+  ];
+  var sNormal = [
+    parseFloat(document.getElementById('c5_sA').value),
+    parseFloat(document.getElementById('c5_sB').value),
+    parseFloat(document.getElementById('c5_sC').value)
+  ];
+  var sigStress = [
+    parseFloat(document.getElementById('c5_sigA').value),
+    parseFloat(document.getElementById('c5_sigB').value),
+    parseFloat(document.getElementById('c5_sigC').value)
+  ];
+  var lambda = parseFloat(document.getElementById('c5_lambda').value);
+  var varMarche = parseFloat(document.getElementById('c5_var').value);
+
+  var champsInvalides = e.concat(sNormal, sigStress, [lambda, varMarche]).some(isNaN)
+    || e.some(function(v){return v<0;}) || sNormal.some(function(v){return v<0;})
+    || sigStress.some(function(v){return v<0;}) || lambda<0 || varMarche<0;
+  if (champsInvalides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : toutes les valeurs de marché, spreads, écarts-types, $\\lambda$ et la VaR doivent être positifs ou nuls.</p>';
+    return;
+  }
+
+  var noms = ['A','B','C'];
+  var costNormal = [], costStress = [], sStress = [];
+  var costNormalTotal = 0, costStressTotal = 0;
+  for (var i=0;i<3;i++) {
+    var s = sNormal[i]/100;
+    var sigma = sigStress[i]/100;
+    var cn = 0.5*s*e[i];
+    var ss = s + lambda*sigma;
+    var cs = 0.5*ss*e[i];
+    costNormal.push(cn); costStress.push(cs); sStress.push(ss*100);
+    costNormalTotal += cn; costStressTotal += cs;
+  }
+  var varAdjNormal = varMarche + costNormalTotal;
+  var varAdjStress = varMarche + costStressTotal;
+  var partStress = varAdjStress>0 ? costStressTotal/varAdjStress*100 : 0;
+  var partMarche = varMarche>0 ? costStressTotal/varMarche*100 : 0;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Position</th><th>Coût normal</th><th>Spread de stress</th><th>Coût de stress</th></tr>';
+  for (var i=0;i<3;i++) {
+    html += '<tr><td>' + noms[i] + '</td><td>' + costNormal[i].toFixed(4) + '</td><td>' + sStress[i].toFixed(4) + ' %</td><td>' + costStress[i].toFixed(4) + '</td></tr>';
+  }
+  html += '<tr><th>Total (millions $)</th><td><b>' + costNormalTotal.toFixed(4) + '</b></td><td></td><td><b>' + costStressTotal.toFixed(4) + '</b></td></tr>';
+  html += '</table>';
+  html += '<table class="tabres" style="margin-top:0.9em;">';
+  html += '<tr><th>VaR de marché</th><td>' + varMarche.toFixed(4) + '</td></tr>';
+  html += '<tr><th>VaR ajustée — conditions normales</th><td>' + varAdjNormal.toFixed(4) + '</td></tr>';
+  html += '<tr><th>VaR ajustée — conditions de stress</th><td>' + varAdjStress.toFixed(4) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">le coût de liquidation de stress représente ' + partStress.toFixed(2) + ' % de la VaR ajustée totale (stress), soit ' + partMarche.toFixed(2) + ' % de la seule VaR de marché</div>';
+
+  html += dessinerLiquidite(noms, costNormal, costStress);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerLiquidite(noms, costNormal, costStress) {
+  var largeur = 340, hauteur = 230, margeG = 50, margeD = 15, margeH = 20, margeB = 44;
+  var vals = costNormal.concat(costStress);
+  var vMax = Math.max.apply(null, vals) * 1.25 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 20;
+  var groupeLargeur = (largeur - margeG - margeD) / 3;
+  var couleurs = ['var(--ceco, #1F6FB2)', 'var(--cintu, #E08000)'];
+  var labels = ['Normal', 'Stress'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var g = 0; g < 3; g++) {
+    var xCentreGroupe = margeG + (g+0.5)*groupeLargeur;
+    var deux = [costNormal[g], costStress[g]];
+    for (var k = 0; k < 2; k++) {
+      var v = deux[k];
+      var xB = xCentreGroupe + (k===0 ? -largeurBarre-2 : 2);
+      var yTop = yPix(v);
+      var h = yZero - yTop;
+      svg += '<rect x="' + xB.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[k] + '"/>';
+      svg += '<text x="' + (xB+largeurBarre/2).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + v.toFixed(3) + '</text>';
+    }
+    svg += '<text x="' + xCentreGroupe.toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">Position ' + noms[g] + '</text>';
+  }
+  svg += '<rect x="' + (largeur-margeD-96) + '" y="' + (hauteur-16) + '" width="9" height="9" fill="var(--ceco, #1F6FB2)"/>';
+  svg += '<text x="' + (largeur-margeD-84) + '" y="' + (hauteur-8) + '" font-size="7.5" fill="currentColor">Normal</text>';
+  svg += '<rect x="' + (largeur-margeD-40) + '" y="' + (hauteur-16) + '" width="9" height="9" fill="var(--cintu, #E08000)"/>';
+  svg += '<text x="' + (largeur-margeD-28) + '" y="' + (hauteur-8) + '" font-size="7.5" fill="currentColor">Stress</text>';
+  svg += '<text x="12" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-15) + ')">Coût de liquidation (millions $)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerLCR() {
+  var resDiv = document.getElementById('resultatLCR');
+  var HQLA = parseFloat(document.getElementById('c6_hqla').value);
+  var outflowsNet = parseFloat(document.getElementById('c6_out').value);
+  var chocPct = parseFloat(document.getElementById('c6_choc').value);
+  var ASF = parseFloat(document.getElementById('c6_asf').value);
+  var RSF = parseFloat(document.getElementById('c6_rsf').value);
+
+  var outflowsShockPreview = outflowsNet*(1+chocPct/100);
+  if ([HQLA,outflowsNet,chocPct,ASF,RSF].some(isNaN) || HQLA<0 || outflowsNet<=0 || ASF<0 || RSF<=0 || outflowsShockPreview<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : HQLA, ASF non négatifs, sorties nettes et RSF strictement positifs, et le choc ne doit pas ramener les sorties nettes à zéro ou en dessous.</p>';
+    return;
+  }
+
+  var LCR = HQLA/outflowsNet*100;
+  var NSFR = ASF/RSF*100;
+  var outflowsShock = outflowsNet*(1+chocPct/100);
+  var LCRshock = HQLA/outflowsShock*100;
+  var hqlaRequired = outflowsShock*1.0;
+  var increase = hqlaRequired - HQLA;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>LCR (avant choc)</th><td>' + LCR.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>NSFR</th><td>' + NSFR.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>Sorties nettes après choc (' + (chocPct>=0?'+':'') + chocPct.toFixed(1) + ' %)</th><td>' + outflowsShock.toFixed(2) + ' millions $</td></tr>';
+  html += '<tr><th>LCR après choc</th><td>' + LCRshock.toFixed(2) + ' %</td></tr>';
+  html += '<tr><th>HQLA requis pour LCR = 100 % après choc</th><td>' + hqlaRequired.toFixed(2) + ' millions $</td></tr>';
+  html += '<tr><th>Augmentation de HQLA nécessaire</th><td>' + (increase>=0 ? '+' : '') + increase.toFixed(2) + ' millions $</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (LCR>=100?'ok':'ko') + '">LCR avant choc : ' + (LCR>=100 ? 'conforme' : 'NON conforme') + ' (seuil minimal 100 %)</div>';
+  html += '<div class="valeur ' + (NSFR>=100?'ok':'ko') + '">NSFR : ' + (NSFR>=100 ? 'conforme' : 'NON conforme') + ' (seuil minimal 100 %)</div>';
+  html += '<div class="valeur ' + (LCRshock>=100?'ok':'ko') + '">LCR après choc : ' + (LCRshock>=100 ? 'reste conforme' : 'NON conforme') + '</div>';
+
+  html += dessinerLCR(LCR, LCRshock);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerLCR(lcrAvant, lcrApres) {
+  var largeur = 300, hauteur = 220, margeG = 50, margeD = 15, margeH = 20, margeB = 40;
+  var vals = [lcrAvant, lcrApres, 100];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 46;
+  var labels = ['Avant choc', 'Après choc'];
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  var ySeuil = yPix(100);
+  svg += '<line x1="' + margeG + '" y1="' + ySeuil.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + ySeuil.toFixed(1) + '" stroke="var(--cgris, #5A5A5A)" stroke-width="1.2" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (margeG+4) + '" y="' + (ySeuil-4).toFixed(1) + '" font-size="7.5" fill="currentColor">seuil minimal 100 %</text>';
+  var vals2 = [lcrAvant, lcrApres];
+  var couleurs = [ (lcrAvant>=100 ? 'var(--cex, #2E8B57)' : 'var(--danger, #b00020)'), (lcrApres>=100 ? 'var(--cex, #2E8B57)' : 'var(--danger, #b00020)') ];
+  for (var i = 0; i < 2; i++) {
+    var v = vals2[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-6).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + ' %</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">LCR (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerLiquidite(); calculerLCR(); };
+</script>
+</body>
+</html>
