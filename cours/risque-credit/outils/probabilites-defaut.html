@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Estimer les probabilités de défaut — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.2em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Application : estimer les probabilités de défaut</h1>
+<p class="sous-titre">Calculatrice interactive — Z-score d'Altman, zone de risque et perte attendue (exercice 5), du spread de CDS à la distance au défaut de Merton (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le Z-score d'Altman, la zone de risque et la perte attendue</h2>
+  <p class="aide">Z = 1,2 X1 + 1,4 X2 + 3,3 X3 + 0,6 X4 + 0,999 X5, avec X1 = fonds de roulement / actifs, X2 = résultats non distribués / actifs, X3 = EBIT / actifs, X4 = valeur de marché des fonds propres / passif total, X5 = chiffre d'affaires / actifs. Zones du cours : Z &gt; 3,0 (sain) ; 2,7 à 3,0 (vigilance) ; 1,8 à 2,4 (risque significatif) ; Z &lt; 1,8 (risque très élevé). Probabilité de défaut cumulée à l'horizon t, à taux de risque constant : Q(t) = 1 − exp(−λ·t). Perte attendue : EL = PD × EAD × LGD.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Données comptables (M€)</h3>
+      <label for="c8_ta">Total des actifs</label><input type="number" id="c8_ta" value="200" step="1">
+      <label for="c8_wc">Fonds de roulement</label><input type="number" id="c8_wc" value="24" step="1">
+      <label for="c8_re">Résultats non distribués</label><input type="number" id="c8_re" value="70" step="1">
+      <label for="c8_ebit">EBIT</label><input type="number" id="c8_ebit" value="26" step="1">
+      <label for="c8_sales">Chiffre d'affaires</label><input type="number" id="c8_sales" value="210" step="1">
+      <label for="c8_mve">Valeur de marché des fonds propres</label><input type="number" id="c8_mve" value="130" step="1">
+      <label for="c8_tl">Passif total (valeur comptable)</label><input type="number" id="c8_tl" value="110" step="1">
+    </div>
+    <div class="bloc">
+      <h3>Taux de risque annuel par zone (%)</h3>
+      <label for="c8_lamSain">Zone saine (Z &gt; 3,0)</label><input type="number" id="c8_lamSain" value="0.3" step="0.1" min="0">
+      <label for="c8_lamVig">Zone de vigilance (2,7 à 3,0)</label><input type="number" id="c8_lamVig" value="1.2" step="0.1" min="0">
+      <label for="c8_lamSig">Risque significatif (1,8 à 2,4)</label><input type="number" id="c8_lamSig" value="3.5" step="0.1" min="0">
+      <label for="c8_lamHaut">Risque très élevé (Z &lt; 1,8)</label><input type="number" id="c8_lamHaut" value="8.0" step="0.1" min="0">
+      <label for="c8_horizon">Horizon cumulatif (années)</label><input type="number" id="c8_horizon" value="5" step="1" min="1">
+    </div>
+    <div class="bloc">
+      <h3>Choc et exposition bancaire</h3>
+      <label for="c8_choc">Chute de la valeur de marché des fonds propres (%)</label><input type="number" id="c8_choc" value="65" step="1" min="0" max="99.9">
+      <label for="c8_ead">EAD (M€)</label><input type="number" id="c8_ead" value="100" step="1" min="0">
+      <label for="c8_recouv">Taux de recouvrement (%)</label><input type="number" id="c8_recouv" value="42" step="1" min="0" max="99">
+    </div>
+  </div>
+  <button onclick="calculerZscore()">Calculer</button>
+  <div id="resultatZscore" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Du spread de CDS à la distance au défaut de Merton</h2>
+  <p class="aide">Taux de risque moyen neutre au risque implicite dans un spread de crédit : λ̄ = s(T) / (1 − R). Modèle de Merton : les fonds propres E0 sont une option d'achat sur les actifs V0, avec E0 = V0·N(d1) − D·e^(−rT)·N(d2) et σE·E0 = N(d1)·σV·V0, où d1 = [ln(V0/D) + (r + σV²/2)T] / (σV√T) et d2 = d1 − σV√T. La distance au défaut est d2 ; la probabilité de défaut neutre au risque à un an est N(−d2).</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Marché du crédit</h3>
+      <label for="c8_cds">Spread de CDS à 5 ans (points de base)</label><input type="number" id="c8_cds" value="275" step="5" min="0">
+      <label for="c8_R">Taux de recouvrement attendu (%)</label><input type="number" id="c8_R" value="38" step="1" min="0" max="99">
+      <label for="c8_pdReal">PD annuelle réelle (historique, %)</label><input type="number" id="c8_pdReal" value="1.35" step="0.01" min="0">
+      <label for="c8_horizonCds">Horizon cumulatif (années)</label><input type="number" id="c8_horizonCds" value="5" step="1" min="1">
+    </div>
+    <div class="bloc">
+      <h3>Bilan et marché des actions</h3>
+      <label for="c8_E0">Valeur de marché des fonds propres E0 (M$)</label><input type="number" id="c8_E0" value="6" step="0.5" min="0.01">
+      <label for="c8_sigmaE">Volatilité des fonds propres σE (%)</label><input type="number" id="c8_sigmaE" value="55" step="1" min="0.1">
+      <label for="c8_D">Dette D, remboursable in fine (M$)</label><input type="number" id="c8_D" value="15" step="0.5" min="0.01">
+      <label for="c8_r">Taux sans risque r (%)</label><input type="number" id="c8_r" value="3" step="0.1">
+      <label for="c8_T">Maturité de la dette T (années)</label><input type="number" id="c8_T" value="1" step="0.5" min="0.1">
+    </div>
+  </div>
+  <button onclick="calculerMerton()">Calculer</button>
+  <div id="resultatMerton" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function erf(x) {
+  var sign = x >= 0 ? 1 : -1;
+  x = Math.abs(x);
+  var a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  var t = 1/(1+p*x);
+  var y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function normCdf(x) { return 0.5*(1+erf(x/Math.sqrt(2))); }
+
+function zoneDe(Z) {
+  if (Z > 3.0) return { nom: 'zone saine (Z > 3,0)', cle: 'sain' };
+  if (Z >= 2.7) return { nom: 'zone de vigilance (2,7 à 3,0)', cle: 'vig' };
+  if (Z >= 1.8) return { nom: 'zone de risque significatif (1,8 à 2,4) — remarque : entre 2,4 et 2,7 le cours ne classe pas explicitement, cette calculatrice les rattache à la zone de vigilance', cle: 'sig' };
+  return { nom: 'zone de risque très élevé (Z < 1,8)', cle: 'haut' };
+}
+
+function calculerZscore() {
+  var resDiv = document.getElementById('resultatZscore');
+  var ta = parseFloat(document.getElementById('c8_ta').value);
+  var wc = parseFloat(document.getElementById('c8_wc').value);
+  var re = parseFloat(document.getElementById('c8_re').value);
+  var ebit = parseFloat(document.getElementById('c8_ebit').value);
+  var sales = parseFloat(document.getElementById('c8_sales').value);
+  var mve = parseFloat(document.getElementById('c8_mve').value);
+  var tl = parseFloat(document.getElementById('c8_tl').value);
+  var lamSain = parseFloat(document.getElementById('c8_lamSain').value);
+  var lamVig = parseFloat(document.getElementById('c8_lamVig').value);
+  var lamSig = parseFloat(document.getElementById('c8_lamSig').value);
+  var lamHaut = parseFloat(document.getElementById('c8_lamHaut').value);
+  var horizon = parseFloat(document.getElementById('c8_horizon').value);
+  var choc = parseFloat(document.getElementById('c8_choc').value);
+  var ead = parseFloat(document.getElementById('c8_ead').value);
+  var recouv = parseFloat(document.getElementById('c8_recouv').value);
+
+  var champs = [ta, wc, re, ebit, sales, mve, tl, lamSain, lamVig, lamSig, lamHaut, horizon, choc, ead, recouv];
+  var champsValides = champs.every(function(v){ return !isNaN(v); });
+  if (!champsValides || ta <= 0 || tl <= 0 || horizon <= 0 || choc < 0 || choc >= 100 || ead < 0 || recouv < 0 || recouv >= 100) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : le total des actifs et le passif total doivent être strictement positifs, l\'horizon strictement positif, le choc et le taux de recouvrement compris entre 0 % (inclus) et 100 % (exclu).</p>';
+    return;
+  }
+
+  function ratiosEtZ(mveCourant) {
+    var X1 = wc/ta, X2 = re/ta, X3 = ebit/ta, X4 = mveCourant/tl, X5 = sales/ta;
+    var Z = 1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5;
+    return { X1: X1, X2: X2, X3: X3, X4: X4, X5: X5, Z: Z };
+  }
+  function lambdaDeZone(cle) {
+    if (cle === 'sain') return lamSain/100;
+    if (cle === 'vig') return lamVig/100;
+    if (cle === 'sig') return lamSig/100;
+    return lamHaut/100;
+  }
+
+  var avant = ratiosEtZ(mve);
+  var zoneAvant = zoneDe(avant.Z);
+  var lamAvant = lambdaDeZone(zoneAvant.cle);
+  var Qhorizon = 1 - Math.exp(-lamAvant*horizon);
+
+  var mve2 = mve*(1 - choc/100);
+  var apres = ratiosEtZ(mve2);
+  var zoneApres = zoneDe(apres.Z);
+  var lamApres = lambdaDeZone(zoneApres.cle);
+
+  var lgd = 1 - recouv/100;
+  var pd1Avant = 1 - Math.exp(-lamAvant);
+  var pd1Apres = 1 - Math.exp(-lamApres);
+  var elAvant = pd1Avant*ead*lgd;
+  var elApres = pd1Apres*ead*lgd;
+  var ratioEl = elAvant > 0 ? elApres/elAvant : NaN;
+
+  var html = '<table class="tabres"><tr><th>Ratio</th><th>Avant le choc</th><th>Après le choc (' + fmt(choc,0) + ' % sur les fonds propres)</th></tr>';
+  html += '<tr><td>X1 = fonds de roulement / actifs</td><td>' + fmt(avant.X1,4) + '</td><td>' + fmt(apres.X1,4) + '</td></tr>';
+  html += '<tr><td>X2 = résultats non distribués / actifs</td><td>' + fmt(avant.X2,4) + '</td><td>' + fmt(apres.X2,4) + '</td></tr>';
+  html += '<tr><td>X3 = EBIT / actifs</td><td>' + fmt(avant.X3,4) + '</td><td>' + fmt(apres.X3,4) + '</td></tr>';
+  html += '<tr><td>X4 = fonds propres (marché) / passif</td><td>' + fmt(avant.X4,4) + '</td><td>' + fmt(apres.X4,4) + '</td></tr>';
+  html += '<tr><td>X5 = chiffre d\'affaires / actifs</td><td>' + fmt(avant.X5,4) + '</td><td>' + fmt(apres.X5,4) + '</td></tr>';
+  html += '<tr><td><strong>Z-score</strong></td><td><strong>' + fmt(avant.Z,3) + '</strong></td><td><strong>' + fmt(apres.Z,3) + '</strong></td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Zone avant le choc</th><td>' + zoneAvant.nom + ' — λ = ' + fmt(lamAvant*100,2) + ' % par an</td></tr>';
+  html += '<tr><th>Probabilité de défaut cumulée à ' + fmt(horizon,0) + ' ans (avant)</th><td>' + fmt(Qhorizon*100,2) + ' %</td></tr>';
+  html += '<tr><th>Zone après le choc</th><td>' + zoneApres.nom + ' — λ = ' + fmt(lamApres*100,2) + ' % par an</td></tr>';
+  html += '<tr><th>PD à 1 an avant / après</th><td>' + fmt(pd1Avant*100,4) + ' % / ' + fmt(pd1Apres*100,4) + ' %</td></tr>';
+  html += '<tr><th>Perte attendue (EL = PD × EAD × LGD) avant</th><td>' + fmt(elAvant,4) + ' M€ (EAD = ' + fmt(ead,0) + ', LGD = ' + fmt(lgd,2) + ')</td></tr>';
+  html += '<tr><th>Perte attendue après</th><td>' + fmt(elApres,4) + ' M€</td></tr>';
+  html += '</table>';
+
+  var basculeZone = zoneAvant.cle !== zoneApres.cle;
+  html += '<div class="valeur ' + (basculeZone?'ko':'ok') + '">Le choc ' + (basculeZone ? 'FAIT BASCULER' : 'NE FAIT PAS BASCULER') + ' l\'entreprise de zone de risque</div>';
+  html += '<div class="valeur mid">La perte attendue est multipliée par un facteur ' + fmt(ratioEl,2) + ' par le seul effet du choc sur la valeur de marché des fonds propres (EAD et LGD inchangés)</div>';
+
+  html += dessinerZ(avant.Z, apres.Z);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerZ(z1, z2) {
+  var largeur = 380, hauteur = 230, margeG = 45, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max(3.4, z1, z2) * 1.1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var seuils = [3.0, 2.7, 2.4, 1.8];
+  var largeurBarre = 55;
+  var xCentres = [margeG + (largeur-margeG-margeD)*0.28, margeG + (largeur-margeG-margeD)*0.72];
+  var vals = [z1, z2];
+  var etiquettes = ['Avant le choc', 'Après le choc'];
+  var couleurs = [z1>3.0?'var(--cex,#2E8B57)':(z1>=2.7?'var(--cintu,#E08000)':(z1>=1.8?'var(--cdef,#4A3B8C)':'#b00020')),
+                  z2>3.0?'var(--cex,#2E8B57)':(z2>=2.7?'var(--cintu,#E08000)':(z2>=1.8?'var(--cdef,#4A3B8C)':'#b00020'))];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  seuils.forEach(function(s){
+    var ys = yPix(s);
+    svg += '<line x1="' + margeG + '" y1="' + ys.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + ys.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="0.7" stroke-dasharray="3,3"/>';
+    svg += '<text x="' + (largeur-margeD-2) + '" y="' + (ys-3).toFixed(1) + '" font-size="7" text-anchor="end" fill="currentColor">' + fmt(s,1) + '</text>';
+  });
+  for (var i = 0; i < 2; i++) {
+    var y = yPix(vals[i]);
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + (yZero-y).toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i].toFixed(1) + '" y="' + (y-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + fmt(vals[i],3) + '</text>';
+    svg += '<text x="' + xCentres[i].toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + etiquettes[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">Z-score</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function solveMerton(E0, sigmaE, D, r, T) {
+  function d1d2(V0, sigmaV) {
+    var d1 = (Math.log(V0/D) + (r + sigmaV*sigmaV/2)*T) / (sigmaV*Math.sqrt(T));
+    var d2 = d1 - sigmaV*Math.sqrt(T);
+    return [d1, d2];
+  }
+  function F(V0, sigmaV) {
+    var dd = d1d2(V0, sigmaV);
+    var d1 = dd[0], d2 = dd[1];
+    var f1 = V0*normCdf(d1) - D*Math.exp(-r*T)*normCdf(d2) - E0;
+    var f2 = normCdf(d1)*sigmaV*V0 - sigmaE*E0;
+    return [f1, f2];
+  }
+  var V0 = E0 + D*Math.exp(-r*T);
+  var sigmaV = sigmaE*E0/V0;
+  var iter;
+  for (iter = 0; iter < 500; iter++) {
+    var f = F(V0, sigmaV);
+    var h = 1e-6;
+    var fV = F(V0 + h*V0, sigmaV);
+    var fS = F(V0, sigmaV + h);
+    var J11 = (fV[0]-f[0])/(h*V0);
+    var J21 = (fV[1]-f[1])/(h*V0);
+    var J12 = (fS[0]-f[0])/h;
+    var J22 = (fS[1]-f[1])/h;
+    var det = J11*J22 - J12*J21;
+    if (Math.abs(det) < 1e-14) break;
+    var dV0 = (-f[0]*J22 + f[1]*J12)/det;
+    var dSigma = (-J11*f[1] + J21*f[0])/det;
+    V0 += dV0;
+    sigmaV += dSigma;
+    if (V0 <= 0) V0 = 1e-6;
+    if (sigmaV <= 0) sigmaV = 1e-6;
+    if (Math.abs(dV0) < 1e-10*Math.max(1,V0) && Math.abs(dSigma) < 1e-10) break;
+  }
+  var dd = d1d2(V0, sigmaV);
+  return { V0: V0, sigmaV: sigmaV, d1: dd[0], d2: dd[1], iters: iter };
+}
+
+function calculerMerton() {
+  var resDiv = document.getElementById('resultatMerton');
+  var cds = parseFloat(document.getElementById('c8_cds').value);
+  var R = parseFloat(document.getElementById('c8_R').value);
+  var pdReal = parseFloat(document.getElementById('c8_pdReal').value);
+  var horizon = parseFloat(document.getElementById('c8_horizonCds').value);
+  var E0 = parseFloat(document.getElementById('c8_E0').value);
+  var sigmaE = parseFloat(document.getElementById('c8_sigmaE').value);
+  var D = parseFloat(document.getElementById('c8_D').value);
+  var r = parseFloat(document.getElementById('c8_r').value);
+  var T = parseFloat(document.getElementById('c8_T').value);
+
+  var champs = [cds, R, pdReal, horizon, E0, sigmaE, D, r, T];
+  var champsValides = champs.every(function(v){ return !isNaN(v); });
+  if (!champsValides || R < 0 || R >= 100 || horizon <= 0 || E0 <= 0 || sigmaE <= 0 || D <= 0 || T <= 0 || pdReal < 0 || pdReal >= 100) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : le taux de recouvrement doit être compris entre 0 % (inclus) et 100 % (exclu), l\'horizon, les fonds propres, la dette, leur volatilité et la maturité doivent être strictement positifs, et la PD réelle doit être comprise entre 0 % et 100 % (exclu).</p>';
+    return;
+  }
+
+  var lamRN = (cds/10000) / (1 - R/100);
+  var Q_RN_horizon = 1 - Math.exp(-lamRN*horizon);
+  var Q_RN_1 = 1 - Math.exp(-lamRN*1);
+  var Q_real_horizon = 1 - Math.exp(-(pdReal/100)*horizon);
+  var ratioLambda = lamRN/(pdReal/100);
+
+  var sol = solveMerton(E0, sigmaE/100, D, r/100, T);
+  var PDmerton1an = normCdf(-sol.d2);
+
+  var ratioCdsMerton = PDmerton1an > 0 ? Q_RN_1/PDmerton1an : NaN;
+  var diffPoints = (Q_RN_1 - PDmerton1an)*100;
+
+  var html = '<table class="tabres"><tr><th>Grandeur</th><th>Valeur</th></tr>';
+  html += '<tr><td>Taux de risque moyen neutre au risque λ̄ = s(T)/(1−R)</td><td>' + fmt(lamRN*100,4) + ' % par an</td></tr>';
+  html += '<tr><td>PD neutre au risque cumulée à ' + fmt(horizon,0) + ' ans</td><td>' + fmt(Q_RN_horizon*100,2) + ' %</td></tr>';
+  html += '<tr><td>PD neutre au risque à 1 an</td><td>' + fmt(Q_RN_1*100,4) + ' %</td></tr>';
+  html += '<tr><td>PD réelle cumulée à ' + fmt(horizon,0) + ' ans (à partir de la PD annuelle réelle)</td><td>' + fmt(Q_real_horizon*100,2) + ' %</td></tr>';
+  html += '<tr><td>Rapport λ̄ (neutre) / PD annuelle réelle</td><td>' + fmt(ratioLambda,2) + '</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><td>Valeur des actifs V0 (résolution numérique de Merton)</td><td>' + fmt(sol.V0,3) + ' M$</td></tr>';
+  html += '<tr><td>Volatilité des actifs σV</td><td>' + fmt(sol.sigmaV*100,2) + ' %</td></tr>';
+  html += '<tr><td>d1</td><td>' + fmt(sol.d1,3) + '</td></tr>';
+  html += '<tr><td><strong>Distance au défaut d2</strong></td><td><strong>' + fmt(sol.d2,3) + '</strong></td></tr>';
+  html += '<tr><td>Probabilité de défaut neutre au risque à 1 an, N(−d2) (modèle de Merton)</td><td>' + fmt(PDmerton1an*100,4) + ' %</td></tr>';
+  html += '</table>';
+
+  var rapportCoherent = ratioLambda <= 2.2;
+  html += '<div class="valeur ' + (rapportCoherent?'ok':'ko') + '">Le rapport λ̄(neutre)/PD(réelle) = ' + fmt(ratioLambda,2) + ' ' + (rapportCoherent ? 'est cohérent avec l\'ordre de grandeur « près de deux fois » du cours pour les obligations CCC/C' : 'DÉPASSE l\'ordre de grandeur « près de deux fois » associé par le cours aux obligations CCC/C') + '</div>';
+  html += '<div class="valeur mid">Le modèle de Merton (' + fmt(PDmerton1an*100,2) + ' %) et le spread de CDS (' + fmt(Q_RN_1*100,2) + ' %) sont tous deux des probabilités neutres au risque à 1 an mais NE COÏNCIDENT PAS exactement — écart de ' + fmt(Math.abs(diffPoints),2) + ' point(s), soit un facteur ' + fmt(ratioCdsMerton,2) + '</div>';
+
+  html += dessinerPD(Q_RN_1*100, PDmerton1an*100, pdReal);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerPD(pdCds, pdMerton, pdReelle) {
+  var largeur = 380, hauteur = 230, margeG = 45, margeD = 15, margeH = 20, margeB = 40;
+  var vals = [pdCds, pdMerton, pdReelle];
+  var vMax = Math.max.apply(null, vals) * 1.25 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var noms = ['CDS (neutre)', 'Merton (neutre)', 'Réelle'];
+  var couleurs = ['var(--ceco,#1F6FB2)', 'var(--cdef,#4A3B8C)', 'var(--cex,#2E8B57)'];
+  var largeurBarre = 42;
+  var slot = (largeur-margeG-margeD)/3;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var xCentre = margeG + slot*(i+0.5);
+    var y = yPix(vals[i]);
+    svg += '<rect x="' + (xCentre-largeurBarre/2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + largeurBarre + '" height="' + (yZero-y).toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentre.toFixed(1) + '" y="' + (y-5).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + fmt(vals[i],2) + '</text>';
+    svg += '<text x="' + xCentre.toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">PD à 1 an (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerZscore(); calculerMerton(); };
+</script>
+</body>
+</html>

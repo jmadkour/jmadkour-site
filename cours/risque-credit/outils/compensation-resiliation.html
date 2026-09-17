@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — Compensation et résiliation — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — Application : compensation et résiliation</h1>
+<p class="sous-titre">Calculatrice interactive — close-out netting, close-out amount et redistribution des recouvrements (exercice 5), bifurcation entre compensation centrale et compensation bilatérale (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Close-out netting, close-out amount et redistribution des recouvrements</h2>
+  <p class="aide">Exposition sans compensation = somme des seules valeurs de transaction positives. Exposition sous close-out netting = somme algébrique de toutes les valeurs (peut donner une dette nette si elle est négative). Le modèle de recouvrement compare un scénario hypothétique où le collatéral doit être restitué à la masse à un scénario où il est retenu immédiatement par les contreparties de dérivés.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Portefeuille de six transactions avec la contrepartie X (millions $)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c15_tableTx">
+        <tr><th>Transaction</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr>
+        <tr><th>Valeur de marché</th>
+          <td><input type="number" class="c15-v" value="14"></td>
+          <td><input type="number" class="c15-v" value="22"></td>
+          <td><input type="number" class="c15-v" value="-9"></td>
+          <td><input type="number" class="c15-v" value="6"></td>
+          <td><input type="number" class="c15-v" value="-17"></td>
+          <td><input type="number" class="c15-v" value="3"></td>
+        </tr>
+      </table>
+      </div>
+      <label for="c15_adj">Ajustement close-out amount (coût de remplacement, millions $)</label>
+      <input type="number" id="c15_adj" value="0.6" step="0.1">
+    </div>
+    <div class="bloc">
+      <h3>Marché de X : créances et masse (millions $)</h3>
+      <label for="c15_N">Créance nette agrégée des dérivés (N)</label><input type="number" id="c15_N" value="55" step="1" min="0">
+      <label for="c15_C">Collatéral déjà détenu (C)</label><input type="number" id="c15_C" value="35" step="1" min="0">
+      <label for="c15_O">Créances des autres créanciers (O)</label><input type="number" id="c15_O" value="300" step="5" min="0">
+      <label for="c15_A">Actifs distribuables de la masse (A)</label><input type="number" id="c15_A" value="96" step="1" min="0">
+    </div>
+  </div>
+  <button onclick="calculerNettingChap15()">Calculer</button>
+  <div id="resultatNettingChap15" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Bifurcation entre compensation centrale et compensation bilatérale</h2>
+  <p class="aide">La banque B détient deux transactions avec chacune de trois contreparties (X, Y, Z). Choisissez deux des six transactions à noter (nover) auprès d'une CCP : leur position nette forme l'exposition à la CCP, tandis que les transactions restantes demeurent compensées bilatéralement avec leur contrepartie d'origine. Une contrepartie dont toutes les transactions sont novées à la CCP n'a plus d'exposition bilatérale résiduelle.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Valeurs de marché des six transactions (millions $, point de vue de B)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c15_tableBif">
+        <tr><th>Transaction</th><td>X&#8321;</td><td>X&#8322;</td><td>Y&#8321;</td><td>Y&#8322;</td><td>Z&#8321;</td><td>Z&#8322;</td></tr>
+        <tr><th>Valeur</th>
+          <td><input type="number" class="c15-b" value="40"></td>
+          <td><input type="number" class="c15-b" value="-25"></td>
+          <td><input type="number" class="c15-b" value="30"></td>
+          <td><input type="number" class="c15-b" value="10"></td>
+          <td><input type="number" class="c15-b" value="-20"></td>
+          <td><input type="number" class="c15-b" value="5"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Sélection novée à la CCP</h3>
+      <label for="c15_sel1">Première transaction novée</label>
+      <select id="c15_sel1">
+        <option value="0" selected>X&#8321;</option><option value="1">X&#8322;</option>
+        <option value="2">Y&#8321;</option><option value="3">Y&#8322;</option>
+        <option value="4">Z&#8321;</option><option value="5">Z&#8322;</option>
+      </select>
+      <label for="c15_sel2">Seconde transaction novée</label>
+      <select id="c15_sel2">
+        <option value="0">X&#8321;</option><option value="1">X&#8322;</option>
+        <option value="2" selected>Y&#8321;</option><option value="3">Y&#8322;</option>
+        <option value="4">Z&#8321;</option><option value="5">Z&#8322;</option>
+      </select>
+      <p class="aide" style="margin-top:0.4em;">Par défaut : X&#8321; et Y&#8321; (scénario de bifurcation défavorable de l'exercice). Essayez Y&#8321; et Z&#8321; pour la sélection alternative favorable.</p>
+    </div>
+  </div>
+  <button onclick="calculerBifurcationChap15()">Calculer</button>
+  <div id="resultatBifurcationChap15" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function calculerNettingChap15() {
+  var resDiv = document.getElementById('resultatNettingChap15');
+  var vals = Array.prototype.map.call(document.querySelectorAll('.c15-v'), function(el){ return parseFloat(el.value); });
+  var adj = parseFloat(document.getElementById('c15_adj').value);
+  var N = parseFloat(document.getElementById('c15_N').value);
+  var C = parseFloat(document.getElementById('c15_C').value);
+  var O = parseFloat(document.getElementById('c15_O').value);
+  var A = parseFloat(document.getElementById('c15_A').value);
+
+  var tousValides = vals.every(function(v){ return !isNaN(v); }) && !isNaN(adj) && !isNaN(N) && !isNaN(C) && !isNaN(O) && !isNaN(A);
+  if (!tousValides || N<0 || C<0 || O<=0 || A<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : toutes les valeurs de transaction et l\'ajustement doivent être renseignés, et N, O, A doivent être positifs (C peut être nul).</p>';
+    return;
+  }
+  if (C > N) {
+    resDiv.innerHTML = '<p class="erreur">Le collatéral détenu (C) ne peut pas excéder la créance nette agrégée des dérivés (N).</p>';
+    return;
+  }
+
+  var sansNetting = vals.reduce(function(a,v){ return a + Math.max(v,0); }, 0);
+  var avecNetting = vals.reduce(function(a,v){ return a+v; }, 0);
+  var reduction = sansNetting > 0 ? (sansNetting - avecNetting) / sansNetting * 100 : 0;
+  var closeOutAmount = avecNetting + adj;
+
+  var Abar = A + C;
+  var poolBaseline = N + O;
+  var r0 = Abar / poolBaseline * 100;
+  var residu = N - C;
+  var poolActuel = residu + O;
+  var r1 = A / poolActuel * 100;
+  var recu = C + (r1/100) * residu;
+  var rDeriv = N > 0 ? recu / N * 100 : 0;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Exposition sans compensation (somme des positifs)</th><td>' + fmt(sansNetting,1) + ' M$</td></tr>';
+  html += '<tr><th>Exposition (ou dette) sous close-out netting</th><td>' + fmt(avecNetting,1) + ' M$</td></tr>';
+  html += '<tr><th>Réduction obtenue grâce au netting</th><td>' + fmt(reduction,2) + ' %</td></tr>';
+  html += '<tr><th>Close-out amount final (avec ajustement)</th><td>' + fmt(closeOutAmount,2) + ' M$</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>(i) Masse hypothétique sans rétention (A+C) / créances (N+O)</th><td>' + fmt(Abar,1) + ' / ' + fmt(poolBaseline,1) + ' M$ &rarr; r0 = ' + fmt(r0,2) + ' %</td></tr>';
+  html += '<tr><th>(ii) Masse actuelle (A) / créances (N-C+O)</th><td>' + fmt(A,1) + ' / ' + fmt(poolActuel,1) + ' M$ &rarr; r1 (autres créanciers) = ' + fmt(r1,2) + ' %</td></tr>';
+  html += '<tr><th>(iii) Montant reçu par les contreparties de dérivés (C + r1×résidu)</th><td>' + fmt(recu,2) + ' M$ &rarr; recouvrement = ' + fmt(rDeriv,2) + ' %</td></tr>';
+  html += '</table>';
+
+  var gainDeriv = rDeriv - r0;
+  var perteAutres = r0 - r1;
+  html += '<div class="valeur ' + (avecNetting<0?'ko':'ok') + '">' + (avecNetting<0 ? 'Close-out netting : la banque D est en réalité DÉBITRICE de ' + fmt(Math.abs(avecNetting),1) + ' M$ envers la masse de X' : 'Close-out netting : la banque D est CRÉANCIÈRE nette de ' + fmt(avecNetting,1) + ' M$') + '</div>';
+  html += '<div class="valeur ' + (gainDeriv>=0?'ok':'ko') + '">Contreparties de dérivés : recouvrement ' + fmt(rDeriv,2) + ' % contre ' + fmt(r0,2) + ' % de référence (' + (gainDeriv>=0?'+':'') + fmt(gainDeriv,2) + ' points)</div>';
+  html += '<div class="valeur ' + (perteAutres<=0?'ok':'ko') + '">Autres créanciers : recouvrement ' + fmt(r1,2) + ' % contre ' + fmt(r0,2) + ' % de référence (' + (perteAutres<=0?'+':'-') + fmt(Math.abs(perteAutres),2) + ' points)</div>';
+
+  html += dessinerBarresRecouvrement(r0, rDeriv, r1);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresRecouvrement(r0, rDeriv, r1) {
+  var vals = [r0, rDeriv, r1];
+  var noms = ['Référence (r0)', 'Contreparties dérivés', 'Autres créanciers'];
+  var couleurs = ['var(--cgris,#5A5A5A)', 'var(--cex,#2E8B57)', 'var(--cintu,#E08000)'];
+  var largeur = 380, hauteur = 220, margeG = 40, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max(20, Math.max.apply(null, vals)) * 1.2;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 62;
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(v,2) + ' %</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 13).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">Taux de recouvrement (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerBifurcationChap15() {
+  var resDiv = document.getElementById('resultatBifurcationChap15');
+  var vals = Array.prototype.map.call(document.querySelectorAll('.c15-b'), function(el){ return parseFloat(el.value); });
+  var noms = ['X₁','X₂','Y₁','Y₂','Z₁','Z₂'];
+  var contrepartie = [0,0,1,1,2,2];
+  var nomsCp = ['X','Y','Z'];
+  var sel1 = parseInt(document.getElementById('c15_sel1').value, 10);
+  var sel2 = parseInt(document.getElementById('c15_sel2').value, 10);
+
+  if (!vals.every(function(v){ return !isNaN(v); })) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les six valeurs de transaction doivent être renseignées.</p>';
+    return;
+  }
+  if (sel1 === sel2) {
+    resDiv.innerHTML = '<p class="erreur">Les deux transactions novées à la CCP doivent être distinctes.</p>';
+    return;
+  }
+
+  // (a) bilateral integral
+  var netCp = [0,0,0], expCp = [0,0,0];
+  for (var i=0;i<6;i++) { netCp[contrepartie[i]] += vals[i]; }
+  for (var c=0;c<3;c++) { expCp[c] = Math.max(netCp[c],0); }
+  var totalBilateral = expCp[0]+expCp[1]+expCp[2];
+
+  // (b)/(d) partial clearing with chosen selection
+  var estCCP = [false,false,false,false,false,false];
+  estCCP[sel1] = true; estCCP[sel2] = true;
+  var ccpSum = vals[sel1] + vals[sel2];
+  var ccpExposure = Math.max(ccpSum, 0);
+  var netResiduCp = [0,0,0];
+  for (var i=0;i<6;i++) { if (!estCCP[i]) { netResiduCp[contrepartie[i]] += vals[i]; } }
+  var expResiduCp = netResiduCp.map(function(v){ return Math.max(v,0); });
+  var totalPartiel = ccpExposure + expResiduCp[0] + expResiduCp[1] + expResiduCp[2];
+
+  // (c) full clearing
+  var sommeTotale = vals.reduce(function(a,b){return a+b;},0);
+  var expFull = Math.max(sommeTotale, 0);
+
+  var html = '<table class="tabres"><tr><th>Contrepartie</th><th>Position nette bilatérale</th><th>Exposition bilatérale</th></tr>';
+  for (var c=0;c<3;c++) {
+    html += '<tr><td>' + nomsCp[c] + '</td><td>' + (netCp[c]>=0?'+':'') + fmt(netCp[c],1) + '</td><td>' + fmt(expCp[c],1) + '</td></tr>';
+  }
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>(a) Exposition totale — bilatéral intégral</th><td>' + fmt(totalBilateral,1) + ' M$</td></tr>';
+  html += '<tr><th>Exposition à la CCP (' + noms[sel1] + '+' + noms[sel2] + ')</th><td>' + fmt(ccpExposure,1) + ' M$ (position nette ' + fmt(ccpSum,1) + ')</td></tr>';
+  html += '<tr><th>Expositions bilatérales résiduelles (X, Y, Z)</th><td>' + fmt(expResiduCp[0],1) + ' / ' + fmt(expResiduCp[1],1) + ' / ' + fmt(expResiduCp[2],1) + ' M$</td></tr>';
+  html += '<tr><th>(b)/(d) Exposition totale — compensation centrale partielle</th><td>' + fmt(totalPartiel,1) + ' M$</td></tr>';
+  html += '<tr><th>(c) Exposition totale — compensation centrale intégrale</th><td>' + fmt(expFull,1) + ' M$</td></tr>';
+  html += '</table>';
+
+  var delta = totalPartiel - totalBilateral;
+  var bifurcationMaterialise = delta > 1e-9;
+  html += '<div class="valeur ' + (bifurcationMaterialise?'ko':'ok') + '">' + (bifurcationMaterialise ? 'La bifurcation SE MATÉRIALISE : la compensation centrale partielle choisie AGGRAVE l\'exposition de ' + fmt(delta,1) + ' M$ par rapport au bilatéral intégral' : 'Avec cette sélection, la compensation centrale partielle N\'AGGRAVE PAS l\'exposition (delta = ' + fmt(delta,1) + ' M$) par rapport au bilatéral intégral') + '</div>';
+  html += '<div class="valeur mid">Compensation centrale intégrale : ' + fmt(expFull,1) + ' M$, soit ' + (expFull<=totalBilateral?'une amélioration de ':'une dégradation de ') + fmt(Math.abs(totalBilateral-expFull),1) + ' M$ par rapport au bilatéral intégral</div>';
+
+  html += dessinerBarresBifurcation(totalBilateral, totalPartiel, expFull, noms[sel1]+'+'+noms[sel2]);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresBifurcation(bilateral, partiel, full, labelPartiel) {
+  var vals = [bilateral, partiel, full];
+  var noms = ['Bilatéral intégral', 'Central partiel\n('+labelPartiel+')', 'Central intégral'];
+  var couleurs = ['var(--cgris,#5A5A5A)', partiel>bilateral ? 'var(--cintu,#E08000)' : 'var(--cex,#2E8B57)', 'var(--cex,#2E8B57)'];
+  var largeur = 380, hauteur = 230, margeG = 40, margeD = 15, margeH = 20, margeB = 46;
+  var vMax = Math.max(10, Math.max.apply(null, vals)) * 1.2;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var yRef = yPix(bilateral);
+  var largeurBarre = 62;
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yRef.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yRef.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-dasharray="4,3" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(v,1) + '</text>';
+    var lignes = noms[i].split('\n');
+    for (var l=0; l<lignes.length; l++) {
+      svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 13 + l*9).toFixed(1) + '" font-size="7.3" text-anchor="middle" fill="currentColor">' + lignes[l] + '</text>';
+    }
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">Exposition totale (M$)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerNettingChap15(); calculerBifurcationChap15(); };
+</script>
+</body>
+</html>

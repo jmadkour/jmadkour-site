@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 18 — Valeur future et exposition — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  input[type=range] { width: 100%; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 18 — Application : valeur future et exposition</h1>
+<p class="sous-titre">Calculatrice interactive — profil en cloche de l'exposition d'un swap et bénéfice de compensation (exercice 5), granularité, MPoR et haircut du collatéral (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le profil en cloche de l'exposition d'un swap et le bénéfice de compensation</h2>
+  <p class="aide">Écart-type de la valeur future à l'horizon t (swap équilibré, EFV = 0) : sigma(t) = sigma0 × racine(t) × (T − t). PFE 99 % = z × sigma(t). EPE = ENE = sigma(t) / racine(2π) (cas particulier moyenne nulle). Un second swap de même profil, conclu avec la même contrepartie, est agrégé selon sa corrélation avec le premier : variance agrégée = 2×sigma(t)²×(1+corrélation).</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Paramètres du swap</h3>
+      <label for="c18_sigma0">Sigma0 (millions $)</label>
+      <input type="number" id="c18_sigma0" value="2" step="0.1" min="0.01">
+      <label for="c18_T">Maturité totale T (années, entier)</label>
+      <input type="number" id="c18_T" value="5" step="1" min="2" max="15">
+      <p class="aide" style="margin-top:0.4em;">z(99 %) = 2,3263 (fixé, comme dans le corrigé de l'exercice 5).</p>
+    </div>
+    <div class="bloc">
+      <h3>Second swap (compensation)</h3>
+      <label for="c18_rho">Corrélation avec le premier swap</label>
+      <input type="range" id="c18_rho" min="-1" max="1" step="0.05" value="-1" oninput="document.getElementById('c18_rhoVal').textContent=this.value">
+      <p class="aide">Valeur choisie : <span id="c18_rhoVal">-1</span> (−1 = compensation parfaite de l'exercice 5(d)(i) ; +1 = aucune compensation, exercice 5(d)(ii))</p>
+    </div>
+  </div>
+  <button onclick="calculerSwapChap18()">Calculer</button>
+  <div id="resultatSwapChap18" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Granularité, période de risque de marge et haircut du collatéral</h2>
+  <p class="aide">Exposition résiduelle structurelle de granularité = seuil (K) + montant de transfert minimum (MTA), indépendante de la MPoR. Tampon de risque de marché sur la fenêtre de MPoR (jours ouvrés) = z(99 %) × sigma_V × racine(MPoR). Exposition additionnelle de haircut = h × collatéral détenu en titres.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Granularité de la CSA</h3>
+      <label for="c18_K">Seuil K (millions $)</label>
+      <input type="number" id="c18_K" value="10" step="1" min="0">
+      <label for="c18_MTA">Montant de transfert minimum, MTA (millions $)</label>
+      <input type="number" id="c18_MTA" value="2" step="0.5" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Risque de marché sur la MPoR</h3>
+      <label for="c18_sigmaV">Volatilité journalière sigma_V (millions $)</label>
+      <input type="number" id="c18_sigmaV" value="3" step="0.1" min="0.01">
+      <label for="c18_mpor">MPoR (jours ouvrés)</label>
+      <select id="c18_mpor">
+        <option value="5">5 (compensation centrale)</option>
+        <option value="7">7 (collatéral espèces réduit)</option>
+        <option value="10" selected>10 (OTC bilatéral)</option>
+        <option value="20">20 (borne haute, portefeuille complexe)</option>
+      </select>
+    </div>
+    <div class="bloc">
+      <h3>Haircut du collatéral en titres</h3>
+      <label for="c18_Cheld">Collatéral détenu en titres (millions $)</label>
+      <input type="number" id="c18_Cheld" value="33" step="1" min="0">
+      <label for="c18_h">Haircut h (%)</label>
+      <input type="number" id="c18_h" value="4" step="0.5" min="0" max="100">
+    </div>
+  </div>
+  <button onclick="calculerMargeChap18()">Calculer</button>
+  <div id="resultatMargeChap18" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+var Z99 = 2.3263;
+var PHI0 = 1/Math.sqrt(2*Math.PI); // densite normale centree reduite en 0
+
+function sigmaSwap(sigma0, T, t) {
+  return sigma0 * Math.sqrt(t) * (T - t);
+}
+
+function calculerSwapChap18() {
+  var resDiv = document.getElementById('resultatSwapChap18');
+  var sigma0 = parseFloat(document.getElementById('c18_sigma0').value);
+  var T = parseInt(document.getElementById('c18_T').value, 10);
+  var rho = parseFloat(document.getElementById('c18_rho').value);
+
+  if (isNaN(sigma0) || isNaN(T) || isNaN(rho) || sigma0<=0 || T<2 || T>15 || rho<-1 || rho>1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : sigma0 doit être strictement positif, T un entier entre 2 et 15, et la corrélation comprise entre -1 et 1.</p>';
+    return;
+  }
+
+  var ts = [];
+  for (var t=1; t<=T; t++) { ts.push(t); }
+
+  var sigmas = ts.map(function(t){ return sigmaSwap(sigma0, T, t); });
+  var pfes = sigmas.map(function(s){ return Z99*s; });
+  var epes = sigmas.map(function(s){ return s*PHI0; });
+
+  var tStar = T/3;
+  var sigmaStar = sigmaSwap(sigma0, T, tStar);
+  var pfeStar = Z99*sigmaStar;
+
+  var maxPfeIdx = 0;
+  for (var i=1;i<pfes.length;i++) { if (pfes[i]>pfes[maxPfeIdx]) { maxPfeIdx = i; } }
+
+  var epeEffective = epes.reduce(function(a,b){return a+b;},0)/epes.length;
+  var expositionMax = Math.max.apply(null, pfes);
+
+  // agregation avec un second swap de meme profil, correlation rho
+  var sigmaAggs = sigmas.map(function(s){ return Math.sqrt(Math.max(0, 2*s*s*(1+rho))); });
+  var epeAggs = sigmaAggs.map(function(s){ return s*PHI0; });
+  var sommeIndiv = epes.map(function(e){ return 2*e; });
+  var reductions = epeAggs.map(function(agg,i){ return sommeIndiv[i]>0 ? (sommeIndiv[i]-agg)/sommeIndiv[i]*100 : 0; });
+
+  var html = '<table class="tabres"><tr><th>t (années)</th>';
+  ts.forEach(function(t){ html += '<th>'+t+'</th>'; });
+  html += '</tr><tr><td>sigma(t) (M$)</td>';
+  sigmas.forEach(function(s){ html += '<td>'+fmt(s,4)+'</td>'; });
+  html += '</tr><tr><td>PFE 99% (M$)</td>';
+  pfes.forEach(function(p){ html += '<td>'+fmt(p,4)+'</td>'; });
+  html += '</tr><tr><td>EPE = ENE (M$)</td>';
+  epes.forEach(function(e){ html += '<td>'+fmt(e,4)+'</td>'; });
+  html += '</tr><tr><td>EPE agrégée, corr. ' + fmt(rho,2) + ' (M$)</td>';
+  epeAggs.forEach(function(a){ html += '<td>'+fmt(a,4)+'</td>'; });
+  html += '</tr><tr><td>Réduction vs somme individuelle (%)</td>';
+  reductions.forEach(function(r){ html += '<td>'+fmt(r,2)+'</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Date du maximum tabulé (t entier)</th><td>t = ' + ts[maxPfeIdx] + ' (PFE 99% = ' + fmt(pfes[maxPfeIdx],4) + ' M$)</td></tr>';
+  html += '<tr><th>Maximum théorique continu t* = T/3</th><td>t* = ' + fmt(tStar,4) + ' (sigma(t*) = ' + fmt(sigmaStar,4) + ' M$, PFE 99% = ' + fmt(pfeStar,4) + ' M$)</td></tr>';
+  html += '<tr><th>EPE effective (moyenne dans le temps)</th><td>' + fmt(epeEffective,4) + ' M$</td></tr>';
+  html += '<tr><th>Exposition maximale (max PFE 99% tabulée)</th><td>' + fmt(expositionMax,4) + ' M$</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">Le maximum théorique continu (t* = ' + fmt(tStar,2) + ') encadre les deux dates entières les plus proches ; le maximum tabulé est atteint à t = ' + ts[maxPfeIdx] + '.</div>';
+  html += '<div class="valeur ' + (rho<=-0.999 ? 'ok' : (rho>=0.999 ? 'ko' : 'mid')) + '">Corrélation ' + fmt(rho,2) + ' : réduction moyenne d\'agrégation d\'environ ' + fmt(reductions.reduce(function(a,b){return a+b;},0)/reductions.length,1) + ' % sur l\'horizon (100 % à corrélation −1, 0 % à corrélation +1).</div>';
+
+  html += dessinerCloche(ts, sigmas, pfes, epes, T);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCloche(ts, sigmas, pfes, epes, T) {
+  var n = ts.length;
+  var largeur = 460, hauteur = 250, margeG = 50, margeD = 15, margeH = 25, margeB = 35;
+  var vMax = Math.max.apply(null, pfes) * 1.15;
+  function xPix(t) { return margeG + (t/T) * (largeur-margeG-margeD); }
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+
+  var ptsPfe = ts.map(function(t,i){ return xPix(t).toFixed(1)+','+yPix(pfes[i]).toFixed(1); }).join(' ');
+  var ptsEpe = ts.map(function(t,i){ return xPix(t).toFixed(1)+','+yPix(epes[i]).toFixed(1); }).join(' ');
+  svg += '<polyline points="' + ptsPfe + '" fill="none" stroke="var(--ceco,#1F6FB2)" stroke-width="2"/>';
+  svg += '<polyline points="' + ptsEpe + '" fill="none" stroke="var(--cintu,#E08000)" stroke-width="2"/>';
+  ts.forEach(function(t,i){
+    svg += '<circle cx="' + xPix(t).toFixed(1) + '" cy="' + yPix(pfes[i]).toFixed(1) + '" r="2.4" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<circle cx="' + xPix(t).toFixed(1) + '" cy="' + yPix(epes[i]).toFixed(1) + '" r="2.4" fill="var(--cintu,#E08000)"/>';
+    svg += '<text x="' + xPix(t).toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + t + '</text>';
+  });
+  var tStarX = xPix(T/3);
+  svg += '<line x1="' + tStarX.toFixed(1) + '" y1="' + margeH + '" x2="' + tStarX.toFixed(1) + '" y2="' + yZero.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-dasharray="3,2" stroke-width="1"/>';
+  svg += '<text x="' + tStarX.toFixed(1) + '" y="' + (margeH-4) + '" font-size="7" text-anchor="middle" fill="currentColor">t*=T/3</text>';
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">M$</text>';
+  svg += '<rect x="' + margeG + '" y="4" width="9" height="9" fill="var(--ceco,#1F6FB2)"/><text x="' + (margeG+13) + '" y="12" font-size="7.5" fill="currentColor">PFE 99%</text>';
+  svg += '<rect x="' + (margeG+70) + '" y="4" width="9" height="9" fill="var(--cintu,#E08000)"/><text x="' + (margeG+83) + '" y="12" font-size="7.5" fill="currentColor">EPE = ENE</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerMargeChap18() {
+  var resDiv = document.getElementById('resultatMargeChap18');
+  var K = parseFloat(document.getElementById('c18_K').value);
+  var MTA = parseFloat(document.getElementById('c18_MTA').value);
+  var sigmaV = parseFloat(document.getElementById('c18_sigmaV').value);
+  var mpor = parseFloat(document.getElementById('c18_mpor').value);
+  var Cheld = parseFloat(document.getElementById('c18_Cheld').value);
+  var h = parseFloat(document.getElementById('c18_h').value);
+
+  if ([K,MTA,sigmaV,mpor,Cheld,h].some(isNaN) || K<0 || MTA<0 || sigmaV<=0 || mpor<=0 || Cheld<0 || h<0 || h>100) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : K, MTA et le collatéral détenu doivent être positifs ou nuls, sigma_V et la MPoR strictement positives, et le haircut compris entre 0 et 100 %.</p>';
+    return;
+  }
+
+  var granularite = K + MTA;
+  var buffer = Z99 * sigmaV * Math.sqrt(mpor);
+  var totalSansHaircut = granularite + buffer;
+  var expositionHaircut = (h/100) * Cheld;
+  var totalAvecHaircut = totalSansHaircut + expositionHaircut;
+
+  // comparaison avec la convention OTC bilaterale de reference (10 jours)
+  var bufferRef = Z99 * sigmaV * Math.sqrt(10);
+  var totalRef = granularite + bufferRef;
+  var reductionTotal = totalRef>0 ? (totalRef-totalSansHaircut)/totalRef*100 : 0;
+  var reductionBuffer = bufferRef>0 ? (bufferRef-buffer)/bufferRef*100 : 0;
+  var reductionTheorique = (1-Math.sqrt(mpor/10))*100;
+
+  var partGranularite = totalSansHaircut>0 ? granularite/totalSansHaircut*100 : 0;
+  var partBuffer = totalSansHaircut>0 ? buffer/totalSansHaircut*100 : 0;
+  var partHaircutFinal = totalAvecHaircut>0 ? expositionHaircut/totalAvecHaircut*100 : 0;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Exposition structurelle de granularité (K + MTA)</th><td>' + fmt(granularite,4) + ' M$</td></tr>';
+  html += '<tr><th>Tampon de risque de marché sur la MPoR (' + fmt(mpor,0) + ' j)</th><td>' + fmt(buffer,4) + ' M$</td></tr>';
+  html += '<tr><th>Exposition résiduelle totale à 99% (sans haircut)</th><td><strong>' + fmt(totalSansHaircut,4) + ' M$</strong></td></tr>';
+  html += '<tr><th>Exposition additionnelle de haircut (h × collatéral détenu)</th><td>' + fmt(expositionHaircut,4) + ' M$</td></tr>';
+  html += '<tr><th>Exposition résiduelle totale à 99% (avec haircut)</th><td><strong>' + fmt(totalAvecHaircut,4) + ' M$</strong></td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Référence OTC bilatérale (MPoR = 10j), sans haircut</th><td>tampon ' + fmt(bufferRef,4) + ' M$, total ' + fmt(totalRef,4) + ' M$</td></tr>';
+  html += '<tr><th>Réduction du total vs référence 10j</th><td>' + fmt(reductionTotal,2) + ' %</td></tr>';
+  html += '<tr><th>Réduction du seul tampon vs référence 10j</th><td>' + fmt(reductionBuffer,2) + ' % (théorique 1−racine(MPoR/10) = ' + fmt(reductionTheorique,2) + ' %)</td></tr>';
+  html += '<tr><th>Part de la granularité (K+MTA) dans le total (sans haircut)</th><td>' + fmt(partGranularite,2) + ' %</td></tr>';
+  html += '<tr><th>Part du tampon MPoR dans le total (sans haircut)</th><td>' + fmt(partBuffer,2) + ' %</td></tr>';
+  html += '<tr><th>Part du haircut dans le total final (avec haircut)</th><td>' + fmt(partHaircutFinal,2) + ' %</td></tr>';
+  html += '</table>';
+
+  var ecartTheorique = Math.abs(reductionBuffer - reductionTheorique) < 0.05;
+  html += '<div class="valeur ' + (ecartTheorique?'ok':'mid') + '">Vérification : réduction du tampon (' + fmt(reductionBuffer,2) + ' %) ' + (ecartTheorique?'coïncide avec':'diffère de') + ' le facteur théorique 1−racine(MPoR/10) (' + fmt(reductionTheorique,2) + ' %)</div>';
+
+  html += dessinerFacteurs(granularite, buffer, expositionHaircut, mpor);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerFacteurs(granularite, buffer, haircutExp, mpor) {
+  var total = granularite + buffer + haircutExp;
+  var largeur = 260, hauteur = 240, margeG = 40, margeD = 15, margeH = 20, margeB = 50;
+  var vMax = Math.max(1, total) * 1.15;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var xCentre = margeG + (largeur-margeG-margeD)/2;
+  var largeurBarre = 70;
+
+  var y0 = yZero;
+  var y1 = yPix(granularite);
+  var y2 = yPix(granularite+buffer);
+  var y3 = yPix(total);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="250">';
+  svg += '<rect x="' + (xCentre-largeurBarre/2) + '" y="' + y1.toFixed(1) + '" width="' + largeurBarre + '" height="' + (y0-y1).toFixed(1) + '" fill="var(--cgris,#5A5A5A)"/>';
+  svg += '<rect x="' + (xCentre-largeurBarre/2) + '" y="' + y2.toFixed(1) + '" width="' + largeurBarre + '" height="' + (y1-y2).toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+  svg += '<rect x="' + (xCentre-largeurBarre/2) + '" y="' + y3.toFixed(1) + '" width="' + largeurBarre + '" height="' + (y2-y3).toFixed(1) + '" fill="var(--cintu,#E08000)"/>';
+  svg += '<text x="' + xCentre + '" y="' + (y3-6).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(total,2) + ' M$</text>';
+  svg += '<text x="' + xCentre + '" y="' + (yZero+14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">MPoR = ' + fmt(mpor,0) + ' j</text>';
+  svg += '<text x="12" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-15) + ')">Exposition résiduelle (M$)</text>';
+  svg += '<rect x="5" y="' + (hauteur-24) + '" width="9" height="9" fill="var(--cgris,#5A5A5A)"/><text x="16" y="' + (hauteur-16) + '" font-size="7.5" fill="currentColor">Granularité</text>';
+  svg += '<rect x="85" y="' + (hauteur-24) + '" width="9" height="9" fill="var(--ceco,#1F6FB2)"/><text x="96" y="' + (hauteur-16) + '" font-size="7.5" fill="currentColor">Tampon MPoR</text>';
+  svg += '<rect x="175" y="' + (hauteur-24) + '" width="9" height="9" fill="var(--cintu,#E08000)"/><text x="186" y="' + (hauteur-16) + '" font-size="7.5" fill="currentColor">Haircut</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerSwapChap18(); calculerMargeChap18(); };
+</script>
+</body>
+</html>

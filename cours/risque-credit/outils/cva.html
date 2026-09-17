@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 19 — L'ajustement de valeur de crédit — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 19 — Application : l'ajustement de valeur de crédit (CVA)</h1>
+<p class="sous-titre">Calculatrice interactive — UCVA discrétisé, approximation en spread et effet de la collatéralisation (exercice 5), BCVA, DVA et risque directionnel défavorable (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le UCVA discrétisé, l'approximation en spread, et l'effet de la collatéralisation</h2>
+  <p class="aide">Taux de hasard implicite (triangle de crédit) : &lambda; = spread / LGD&#8339;&#8342;&#8339;. Probabilité de survie S(t) = e<sup>-&lambda;t</sup>, probabilité marginale de défaut PD&#7522; = S(t&#7522;&#8323;&#8321;) - S(t&#7522;). UCVA exact = LGD &times; &Sigma; EPE&#7522; &times; PD&#7522;. Approximation en spread couru = EPE moyenne &times; spread &times; horizon T. La collatéralisation divise chaque EPE annuelle par le facteur indiqué.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Profil d'EPE annuel (millions $)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c19_tableEPE">
+        <tr><th>Année</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+        <tr><th>EPE</th>
+          <td><input type="number" class="c19-epe" value="2.0" step="0.1"></td>
+          <td><input type="number" class="c19-epe" value="3.5" step="0.1"></td>
+          <td><input type="number" class="c19-epe" value="4.2" step="0.1"></td>
+          <td><input type="number" class="c19-epe" value="3.0" step="0.1"></td>
+          <td><input type="number" class="c19-epe" value="1.5" step="0.1"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Paramètres de crédit</h3>
+      <label for="c19_spread">Spread de crédit (points de base)</label><input type="number" id="c19_spread" value="150" step="5" min="0">
+      <label for="c19_lgdmkt">LGD de marché (%)</label><input type="number" id="c19_lgdmkt" value="60" step="1" min="1" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Collatéralisation</h3>
+      <label for="c19_factor">Facteur de réduction de l'EPE (8 à 9 selon le cours)</label><input type="number" id="c19_factor" value="8.5" step="0.1" min="1">
+      <p class="aide" style="margin-top:0.4em;">Seuil nul, période de marge en risque de 10 jours : chaque EPE annuelle est divisée par ce facteur.</p>
+    </div>
+  </div>
+  <button onclick="calculerCVA()">Calculer</button>
+  <div id="resultatCVA" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>BCVA, DVA et risque directionnel défavorable (wrong-way risk)</h2>
+  <p class="aide">CVA = -UCVA (coût), DVA = -LGD&#7305; &times; &Sigma; ENE&#7522; &times; PD&#7305;,&#7522; (positif, ENE&#7522; &lt; 0). BCVA = CVA + DVA. Le choc de WWR (ou son symétrique de right-way risk) multiplie l'EPE de la fenêtre choisie par (1 &plusmn; choc), les PD restant inchangées.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Profils d'exposition de D envers C (millions $)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c19_tableExpo">
+        <tr><th>Année</th><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+        <tr><th>EPE&#7305; (exposition à C)</th>
+          <td><input type="number" class="c19-epeD" value="1.0" step="0.1"></td>
+          <td><input type="number" class="c19-epeD" value="1.8" step="0.1"></td>
+          <td><input type="number" class="c19-epeD" value="1.4" step="0.1"></td>
+          <td><input type="number" class="c19-epeD" value="0.6" step="0.1"></td>
+        </tr>
+        <tr><th>ENE&#7305; (exposition de C à D)</th>
+          <td><input type="number" class="c19-eneD" value="-0.5" step="0.1"></td>
+          <td><input type="number" class="c19-eneD" value="-0.9" step="0.1"></td>
+          <td><input type="number" class="c19-eneD" value="-0.7" step="0.1"></td>
+          <td><input type="number" class="c19-eneD" value="-0.3" step="0.1"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Crédit de C (contrepartie) et D (banque)</h3>
+      <label for="c19_spreadC">Spread de C (points de base)</label><input type="number" id="c19_spreadC" value="200" step="5" min="0">
+      <label for="c19_lgdC">LGD de C (%)</label><input type="number" id="c19_lgdC" value="60" step="1" min="1" max="100">
+      <label for="c19_spreadD">Spread propre de D (points de base)</label><input type="number" id="c19_spreadD" value="80" step="5" min="0">
+      <label for="c19_lgdD">LGD propre de D (%)</label><input type="number" id="c19_lgdD" value="40" step="1" min="1" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Choc de WWR / right-way risk</h3>
+      <label for="c19_bucket">Fenêtre choquée</label>
+      <select id="c19_bucket"><option value="0">Année 1</option><option value="1" selected>Année 2</option><option value="2">Année 3</option><option value="3">Année 4</option></select>
+      <label for="c19_choc">Ampleur du choc (%)</label><input type="number" id="c19_choc" value="50" step="5" min="0" max="100">
+      <p class="aide" style="margin-top:0.4em;">WWR : EPE de la fenêtre choquée &times; (1 + choc). Right-way : EPE de la même fenêtre &times; (1 - choc).</p>
+    </div>
+  </div>
+  <button onclick="calculerBCVA()">Calculer</button>
+  <div id="resultatBCVA" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?4:n); }
+
+function survivalPD(lambda, n) {
+  var S = [];
+  for (var t=0;t<=n;t++) { S.push(Math.exp(-lambda*t)); }
+  var PD = [];
+  for (var i=1;i<=n;i++) { PD.push(S[i-1]-S[i]); }
+  return { S: S, PD: PD };
+}
+
+function calculerCVA() {
+  var resDiv = document.getElementById('resultatCVA');
+  var EPE = Array.prototype.map.call(document.querySelectorAll('.c19-epe'), function(el){ return parseFloat(el.value); });
+  var spreadBp = parseFloat(document.getElementById('c19_spread').value);
+  var lgdMktPct = parseFloat(document.getElementById('c19_lgdmkt').value);
+  var factor = parseFloat(document.getElementById('c19_factor').value);
+
+  var tousValides = EPE.every(function(v){ return !isNaN(v) && v>=0; }) && !isNaN(spreadBp) && spreadBp>0 && !isNaN(lgdMktPct) && lgdMktPct>0 && !isNaN(factor) && factor>=1;
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les EPE doivent être des nombres non négatifs, le spread et le LGD de marché doivent être strictement positifs, et le facteur de collatéralisation doit être supérieur ou égal à 1.</p>';
+    return;
+  }
+
+  var n = EPE.length;
+  var s = spreadBp/10000;
+  var LGD = lgdMktPct/100;
+  var lambda = s/LGD;
+  var sp = survivalPD(lambda, n);
+  var S = sp.S, PD = sp.PD;
+
+  var terms = EPE.map(function(e,i){ return e*PD[i]; });
+  var sommeTermes = terms.reduce(function(a,b){return a+b;},0);
+  var UCVA = LGD*sommeTermes;
+
+  var EPEavg = EPE.reduce(function(a,b){return a+b;},0)/n;
+  var T = n;
+  var approx = EPEavg*s*T;
+  var ecartPct = (approx-UCVA)/UCVA*100;
+
+  var EPEcollat = EPE.map(function(e){ return e/factor; });
+  var termsCollat = EPEcollat.map(function(e,i){ return e*PD[i]; });
+  var sommeTermesCollat = termsCollat.reduce(function(a,b){return a+b;},0);
+  var UCVAcollat = LGD*sommeTermesCollat;
+  var reductionPct = (UCVA-UCVAcollat)/UCVA*100;
+  var reductionTheorique = (1-1/factor)*100;
+
+  var html = '<table class="tabres"><tr><th>t</th>';
+  for (var t=0;t<=n;t++) { html += '<th>'+t+'</th>'; }
+  html += '</tr><tr><td>S(t)</td>';
+  S.forEach(function(v){ html += '<td>'+fmt(v,4)+'</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres"><tr><th>Année</th>';
+  for (var i=1;i<=n;i++) { html += '<th>'+i+'</th>'; }
+  html += '</tr><tr><td>PD&#7522; (%)</td>';
+  PD.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr><tr><td>EPE (M$)</td>';
+  EPE.forEach(function(v){ html += '<td>'+fmt(v,2)+'</td>'; });
+  html += '</tr><tr><td>EPE collatéralisée (M$)</td>';
+  EPEcollat.forEach(function(v){ html += '<td>'+fmt(v,4)+'</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>&lambda; (taux de hasard implicite)</th><td>' + fmt(lambda*100,4) + ' % par an</td></tr>';
+  html += '<tr><th>UCVA exact (LGD &times; &Sigma; EPE&#7522; &times; PD&#7522;)</th><td>' + fmt(UCVA,6) + ' M$</td></tr>';
+  html += '<tr><th>EPE moyenne</th><td>' + fmt(EPEavg,4) + ' M$</td></tr>';
+  html += '<tr><th>Approximation en spread couru (&times; T=' + T + ')</th><td>' + fmt(approx,6) + ' M$</td></tr>';
+  html += '<tr><th>Écart relatif approx. vs exact</th><td>' + (ecartPct>=0?'+':'') + fmt(ecartPct,2) + ' %</td></tr>';
+  html += '<tr><th>UCVA collatéralisé</th><td>' + fmt(UCVAcollat,6) + ' M$</td></tr>';
+  html += '<tr><th>Réduction obtenue grâce à la collatéralisation</th><td>' + fmt(reductionPct,2) + ' % (théorique 1-1/facteur = ' + fmt(reductionTheorique,2) + ' %)</td></tr>';
+  html += '</table>';
+
+  var coherent = Math.abs(reductionPct-reductionTheorique) < 0.05;
+  html += '<div class="valeur ' + (coherent?'ok':'ko') + '">' + (coherent ? 'Réduction observée conforme à 1-1/facteur (collatéralisation purement proportionnelle sur l\'EPE)' : 'Écart entre réduction observée et théorique — vérifier les données') + '</div>';
+
+  html += dessinerBarresCVA(UCVA, UCVAcollat, factor);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresCVA(base, collat, factor) {
+  var vals = [base, collat];
+  var noms = ['Non collatéralisé', 'Collatéralisé (facteur ' + factor.toFixed(1) + ')'];
+  var couleurs = ['var(--cdef,#4A3B8C)', 'var(--cex,#2E8B57)'];
+  var largeur = 340, hauteur = 220, margeG = 45, margeD = 15, margeH = 20, margeB = 46;
+  var vMax = Math.max(1e-6, Math.max.apply(null, vals)) * 1.25;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 70;
+  var xCentres = [];
+  for (var i=0;i<2;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/2)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 2; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(v,4) + '</text>';
+    var lignes = noms[i].split(' (');
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 13).toFixed(1) + '" font-size="7.3" text-anchor="middle" fill="currentColor">' + lignes[0] + '</text>';
+    if (lignes[1]) { svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 23).toFixed(1) + '" font-size="7.3" text-anchor="middle" fill="currentColor">(' + lignes[1] + '</text>'; }
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">UCVA (M$)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerBCVA() {
+  var resDiv = document.getElementById('resultatBCVA');
+  var EPED = Array.prototype.map.call(document.querySelectorAll('.c19-epeD'), function(el){ return parseFloat(el.value); });
+  var ENED = Array.prototype.map.call(document.querySelectorAll('.c19-eneD'), function(el){ return parseFloat(el.value); });
+  var spreadC = parseFloat(document.getElementById('c19_spreadC').value);
+  var lgdCpct = parseFloat(document.getElementById('c19_lgdC').value);
+  var spreadD = parseFloat(document.getElementById('c19_spreadD').value);
+  var lgdDpct = parseFloat(document.getElementById('c19_lgdD').value);
+  var bucket = parseInt(document.getElementById('c19_bucket').value, 10);
+  var chocPct = parseFloat(document.getElementById('c19_choc').value);
+
+  var tousValides = EPED.every(function(v){ return !isNaN(v) && v>=0; }) && ENED.every(function(v){ return !isNaN(v) && v<=0; })
+    && !isNaN(spreadC) && spreadC>0 && !isNaN(lgdCpct) && lgdCpct>0 && !isNaN(spreadD) && spreadD>0 && !isNaN(lgdDpct) && lgdDpct>0
+    && !isNaN(chocPct) && chocPct>=0 && chocPct<=100;
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les EPE doivent être positives ou nulles, les ENE négatives ou nulles, les spreads et LGD strictement positifs, et le choc entre 0 et 100 %.</p>';
+    return;
+  }
+
+  var n = EPED.length;
+  var lamC = (spreadC/10000)/(lgdCpct/100);
+  var lamD = (spreadD/10000)/(lgdDpct/100);
+  var spC = survivalPD(lamC, n);
+  var spD = survivalPD(lamD, n);
+  var PDC = spC.PD, PDD = spD.PD;
+  var LGDC = lgdCpct/100, LGDD = lgdDpct/100;
+
+  var termsCVA = EPED.map(function(e,i){ return e*PDC[i]; });
+  var UCVA = LGDC*termsCVA.reduce(function(a,b){return a+b;},0);
+
+  var termsDVA = ENED.map(function(e,i){ return e*PDD[i]; });
+  var DVA = -LGDD*termsDVA.reduce(function(a,b){return a+b;},0);
+
+  var CVA = -UCVA;
+  var BCVA = CVA+DVA;
+  var ratioDVA = DVA/UCVA*100;
+
+  var choc = chocPct/100;
+  var EPEwwr = EPED.slice(); EPEwwr[bucket] = EPED[bucket]*(1+choc);
+  var UCVAwwr = LGDC*EPEwwr.map(function(e,i){ return e*PDC[i]; }).reduce(function(a,b){return a+b;},0);
+  var EPErwr = EPED.slice(); EPErwr[bucket] = EPED[bucket]*(1-choc);
+  var UCVArwr = LGDC*EPErwr.map(function(e,i){ return e*PDC[i]; }).reduce(function(a,b){return a+b;},0);
+
+  var deltaWwrPct = (UCVAwwr-UCVA)/UCVA*100;
+  var deltaRwrPct = (UCVArwr-UCVA)/UCVA*100;
+
+  var html = '<table class="tabres"><tr><th>Année</th>';
+  for (var i=1;i<=n;i++) { html += '<th>'+i+'</th>'; }
+  html += '</tr><tr><td>PD_C (%)</td>';
+  PDC.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr><tr><td>PD_D (%)</td>';
+  PDD.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>&lambda;_C / &lambda;_D</th><td>' + fmt(lamC*100,4) + ' % / ' + fmt(lamD*100,4) + ' %</td></tr>';
+  html += '<tr><th>UCVA (base, indépendance)</th><td>' + fmt(UCVA,6) + ' M$</td></tr>';
+  html += '<tr><th>DVA</th><td>' + fmt(DVA,6) + ' M$</td></tr>';
+  html += '<tr><th>CVA = -UCVA</th><td>' + fmt(CVA,6) + ' M$</td></tr>';
+  html += '<tr><th>BCVA = CVA + DVA</th><td>' + fmt(BCVA,6) + ' M$</td></tr>';
+  html += '<tr><th>DVA / UCVA</th><td>' + fmt(ratioDVA,2) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>UCVA sous WWR (année ' + (bucket+1) + ' &times; (1+' + fmt(chocPct,0) + '%))</th><td>' + fmt(UCVAwwr,6) + ' M$ (' + (deltaWwrPct>=0?'+':'') + fmt(deltaWwrPct,2) + ' %)</td></tr>';
+  html += '<tr><th>UCVA sous right-way (année ' + (bucket+1) + ' &times; (1-' + fmt(chocPct,0) + '%))</th><td>' + fmt(UCVArwr,6) + ' M$ (' + fmt(deltaRwrPct,2) + ' %)</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">DVA compense ' + fmt(ratioDVA,2) + ' % du CVA — ' + (ratioDVA<50 ? 'loin de le compenser substantiellement' : 'une part substantielle du CVA') + '</div>';
+  html += '<div class="valeur ko">WWR : UCVA ' + (deltaWwrPct>=0?'augmente':'diminue') + ' de ' + fmt(Math.abs(deltaWwrPct),2) + ' % par rapport à la base</div>';
+  html += '<div class="valeur ok">Right-way : UCVA ' + (deltaRwrPct<=0?'diminue':'augmente') + ' de ' + fmt(Math.abs(deltaRwrPct),2) + ' % par rapport à la base</div>';
+
+  html += dessinerBarresBCVA(UCVA, UCVAwwr, UCVArwr);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresBCVA(base, wwr, rwr) {
+  var vals = [base, wwr, rwr];
+  var noms = ['Base', 'WWR', 'Right-way'];
+  var couleurs = ['var(--cgris,#5A5A5A)', 'var(--cintu,#E08000)', 'var(--cex,#2E8B57)'];
+  var largeur = 340, hauteur = 220, margeG = 45, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max(1e-6, Math.max.apply(null, vals)) * 1.25;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var yRef = yPix(base);
+  var largeurBarre = 55;
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yRef.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yRef.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-dasharray="4,3" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(v,4) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 13).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">UCVA (M$)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCVA(); calculerBCVA(); };
+</script>
+</body>
+</html>

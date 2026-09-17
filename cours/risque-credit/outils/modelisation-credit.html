@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Modéliser et évaluer le risque de crédit — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 5.2em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Application : modéliser et évaluer le risque de crédit</h1>
+<p class="sous-titre">Calculatrice interactive — le ratio d'adéquation du capital (CAR) et les actifs pondérés du risque (exercice 5), le RAROC d'un prêt bancaire (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Le ratio d'adéquation du capital (CAR) et les actifs pondérés du risque</h2>
+  <p class="aide">RWA = somme, sur chaque catégorie d'exposition, du montant multiplié par sa pondération réglementaire. CAR = Capital / RWA. Le seuil minimal était de 8&nbsp;% sous Bâle&nbsp;II, relevé à 10,5&nbsp;% sous Bâle&nbsp;III. Le scénario d'expansion ajoute une nouvelle catégorie d'exposition (par défaut, un prêt corporate pondéré à 100&nbsp;%), financée par de nouveaux dépôts et, le cas échéant, un supplément de capital.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Expositions et pondérations réglementaires</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c4_tableExpo">
+        <tr><th>Catégorie</th><td>Souverain</td><td>Corporate</td><td>Hypothécaire</td><td>Autre détail</td></tr>
+        <tr><th>Montant (M$)</th>
+          <td><input type="number" class="c4-montant" value="200" step="10" min="0"></td>
+          <td><input type="number" class="c4-montant" value="3000" step="50" min="0"></td>
+          <td><input type="number" class="c4-montant" value="1800" step="50" min="0"></td>
+          <td><input type="number" class="c4-montant" value="600" step="10" min="0"></td>
+        </tr>
+        <tr><th>Pondération (%)</th>
+          <td><input type="number" class="c4-pond" value="0" step="5" min="0" max="1250"></td>
+          <td><input type="number" class="c4-pond" value="100" step="5" min="0" max="1250"></td>
+          <td><input type="number" class="c4-pond" value="35" step="5" min="0" max="1250"></td>
+          <td><input type="number" class="c4-pond" value="75" step="5" min="0" max="1250"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Capital et seuils réglementaires</h3>
+      <label for="c4_capital">Capital réglementaire (M$)</label><input type="number" id="c4_capital" value="380" step="10" min="0">
+      <label for="c4_seuil2">Seuil Bâle II (%)</label><input type="number" id="c4_seuil2" value="8" step="0.5" min="0">
+      <label for="c4_seuil3">Seuil Bâle III (%)</label><input type="number" id="c4_seuil3" value="10.5" step="0.5" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Scénario d'expansion</h3>
+      <label for="c4_nvMontant">Nouvelle exposition (M$)</label><input type="number" id="c4_nvMontant" value="500" step="10" min="0">
+      <label for="c4_nvPond">Pondération de la nouvelle exposition (%)</label><input type="number" id="c4_nvPond" value="100" step="5" min="0" max="1250">
+      <label for="c4_capAdd">Capital additionnel levé (M$)</label><input type="number" id="c4_capAdd" value="0" step="10" min="0">
+      <p class="aide" style="margin-top:0.4em;">L'expansion s'ajoute aux expositions ci-dessus ; le capital additionnel levé s'ajoute au capital réglementaire.</p>
+    </div>
+  </div>
+  <button onclick="calculerCAR()">Calculer</button>
+  <div id="resultatCAR" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Le RAROC d'un prêt bancaire</h2>
+  <p class="aide">EL = PD × EAD × LGD. Revenus ajustés du risque = (taux facturé − coûts opérationnels) × EAD − EL. Capital à risque = ε × LGD × EAD, où ε est le taux de défaut inattendu retenu par la banque. RAROC = Revenus ajustés du risque / Capital à risque ; le prêt est rentable si le RAROC excède le coût du capital. Le scénario de stress dégrade la PD après l'octroi, le taux facturé restant fixé contractuellement.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Caractéristiques du prêt</h3>
+      <label for="c4_ead">Exposition EAD (M$)</label><input type="number" id="c4_ead" value="40" step="1" min="0">
+      <label for="c4_pd">Probabilité de défaut PD (%)</label><input type="number" id="c4_pd" value="1.20" step="0.05" min="0">
+      <label for="c4_lgd">Perte en cas de défaut LGD (%)</label><input type="number" id="c4_lgd" value="55" step="1" min="0" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Tarification et coûts</h3>
+      <label for="c4_taux">Taux facturé net du coût de financement (%)</label><input type="number" id="c4_taux" value="1.80" step="0.05" min="0">
+      <label for="c4_opex">Coûts opérationnels (%)</label><input type="number" id="c4_opex" value="0.25" step="0.05" min="0">
+      <label for="c4_eps">Facteur de risque ε (%)</label><input type="number" id="c4_eps" value="5.5" step="0.1" min="0">
+      <label for="c4_hurdle">Coût du capital de la banque (%)</label><input type="number" id="c4_hurdle" value="15" step="0.5" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Scénario de stress</h3>
+      <label for="c4_pdStress">PD sous stress (%)</label><input type="number" id="c4_pdStress" value="2.40" step="0.05" min="0">
+      <p class="aide" style="margin-top:0.4em;">La PD se dégrade après l'octroi ; EAD, LGD, ε et le taux facturé restent inchangés (celui-ci étant fixé contractuellement à l'origination).</p>
+    </div>
+  </div>
+  <button onclick="calculerRAROC()">Calculer</button>
+  <div id="resultatRAROC" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function calculerCAR() {
+  var resDiv = document.getElementById('resultatCAR');
+  var montants = Array.prototype.map.call(document.querySelectorAll('.c4-montant'), function(el){ return parseFloat(el.value); });
+  var ponds = Array.prototype.map.call(document.querySelectorAll('.c4-pond'), function(el){ return parseFloat(el.value); });
+  var capital = parseFloat(document.getElementById('c4_capital').value);
+  var seuil2 = parseFloat(document.getElementById('c4_seuil2').value);
+  var seuil3 = parseFloat(document.getElementById('c4_seuil3').value);
+  var nvMontant = parseFloat(document.getElementById('c4_nvMontant').value);
+  var nvPond = parseFloat(document.getElementById('c4_nvPond').value);
+  var capAdd = parseFloat(document.getElementById('c4_capAdd').value);
+
+  var tousValides = montants.every(function(v){ return !isNaN(v) && v>=0; }) && ponds.every(function(v){ return !isNaN(v) && v>=0; })
+    && !isNaN(capital) && !isNaN(seuil2) && !isNaN(seuil3) && !isNaN(nvMontant) && !isNaN(nvPond) && !isNaN(capAdd);
+  if (!tousValides || capital<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les montants et pondérations doivent être des nombres non négatifs, et le capital réglementaire doit être strictement positif.</p>';
+    return;
+  }
+
+  var RWA = 0;
+  for (var i=0;i<montants.length;i++) { RWA += montants[i]*ponds[i]/100; }
+  var CAR = capital/RWA*100;
+  var conforme2 = CAR >= seuil2;
+  var conforme3 = CAR >= seuil3;
+
+  var RWA2 = RWA + nvMontant*nvPond/100;
+  var capital2 = capital + capAdd;
+  var CAR2 = capital2/RWA2*100;
+  var conforme2b = CAR2 >= seuil2;
+  var conforme3b = CAR2 >= seuil3;
+
+  var capitalMin3 = seuil3/100*RWA2;
+  var manque = capitalMin3 - capital2;
+  var pctIncrease = capital>0 ? manque/capital*100 : NaN;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>RWA initial</th><td>' + fmt(RWA,1) + ' M$</td></tr>';
+  html += '<tr><th>CAR initial</th><td>' + fmt(CAR,2) + ' %</td></tr>';
+  html += '<tr><th>RWA après expansion</th><td>' + fmt(RWA2,1) + ' M$</td></tr>';
+  html += '<tr><th>Capital après expansion</th><td>' + fmt(capital2,1) + ' M$</td></tr>';
+  html += '<tr><th>CAR après expansion</th><td>' + fmt(CAR2,2) + ' %</td></tr>';
+  html += '<tr><th>Capital minimal requis pour ' + fmt(seuil3,2) + ' % après expansion</th><td>' + fmt(capitalMin3,2) + ' M$</td></tr>';
+  html += '<tr><th>Capital supplémentaire nécessaire</th><td>' + (manque>=0?'+':'') + fmt(manque,2) + ' M$ (' + (manque>=0?'+':'') + fmt(pctIncrease,2) + ' % du capital initial)</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (conforme2?'ok':'ko') + '">CAR initial (' + fmt(CAR,2) + ' %) ' + (conforme2?'RESPECTE':'NE RESPECTE PAS') + ' le seuil Bâle II (' + fmt(seuil2,2) + ' %)</div>';
+  html += '<div class="valeur ' + (conforme3?'ok':'ko') + '">CAR initial (' + fmt(CAR,2) + ' %) ' + (conforme3?'RESPECTE':'NE RESPECTE PAS') + ' le seuil Bâle III (' + fmt(seuil3,2) + ' %)</div>';
+  html += '<div class="valeur ' + (conforme2b?'ok':'ko') + '">CAR après expansion (' + fmt(CAR2,2) + ' %) ' + (conforme2b?'RESPECTE':'NE RESPECTE PAS') + ' le seuil Bâle II</div>';
+  html += '<div class="valeur ' + (conforme3b?'ok':'ko') + '">CAR après expansion (' + fmt(CAR2,2) + ' %) ' + (conforme3b?'RESPECTE':'NE RESPECTE PAS') + ' le seuil Bâle III</div>';
+
+  html += dessinerCAR(CAR, CAR2, seuil2, seuil3);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCAR(car1, car2, seuil2, seuil3) {
+  var largeur = 380, hauteur = 240, margeG = 45, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max(car1, car2, seuil2, seuil3) * 1.2;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var xC1 = margeG + (largeur-margeG-margeD)*0.28;
+  var xC2 = margeG + (largeur-margeG-margeD)*0.72;
+  var largeurBarre = 46;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  var yS2 = yPix(seuil2), yS3 = yPix(seuil3);
+  svg += '<line x1="' + margeG + '" y1="' + yS2.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yS2.toFixed(1) + '" stroke="var(--cintu,#E08000)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-2) + '" y="' + (yS2-3).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="var(--cintu,#E08000)">Bâle II ' + fmt(seuil2,1) + ' %</text>';
+  svg += '<line x1="' + margeG + '" y1="' + yS3.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yS3.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-2) + '" y="' + (yS3-3).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="var(--cgris,#5A5A5A)">Bâle III ' + fmt(seuil3,1) + ' %</text>';
+
+  var yT1 = yPix(car1), yT2 = yPix(car2);
+  svg += '<rect x="' + (xC1-largeurBarre/2).toFixed(1) + '" y="' + yT1.toFixed(1) + '" width="' + largeurBarre + '" height="' + (yZero-yT1).toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+  svg += '<text x="' + xC1.toFixed(1) + '" y="' + (yT1-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(car1,2) + ' %</text>';
+  svg += '<text x="' + xC1.toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">CAR initial</text>';
+  svg += '<rect x="' + (xC2-largeurBarre/2).toFixed(1) + '" y="' + yT2.toFixed(1) + '" width="' + largeurBarre + '" height="' + (yZero-yT2).toFixed(1) + '" fill="var(--cdef,#4A3B8C)"/>';
+  svg += '<text x="' + xC2.toFixed(1) + '" y="' + (yT2-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(car2,2) + ' %</text>';
+  svg += '<text x="' + xC2.toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">CAR après expansion</text>';
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">CAR (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerRAROC() {
+  var resDiv = document.getElementById('resultatRAROC');
+  var EAD = parseFloat(document.getElementById('c4_ead').value);
+  var PD = parseFloat(document.getElementById('c4_pd').value);
+  var LGD = parseFloat(document.getElementById('c4_lgd').value);
+  var taux = parseFloat(document.getElementById('c4_taux').value);
+  var opex = parseFloat(document.getElementById('c4_opex').value);
+  var eps = parseFloat(document.getElementById('c4_eps').value);
+  var hurdle = parseFloat(document.getElementById('c4_hurdle').value);
+  var pdStress = parseFloat(document.getElementById('c4_pdStress').value);
+
+  var vals = [EAD,PD,LGD,taux,opex,eps,hurdle,pdStress];
+  var tousValides = vals.every(function(v){ return !isNaN(v) && v>=0; });
+  if (!tousValides || EAD<=0 || LGD<=0 || eps<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les paramètres doivent être des nombres non négatifs, et EAD, LGD et ε doivent être strictement positifs.</p>';
+    return;
+  }
+
+  var EL = PD/100*EAD*LGD/100;
+  var revenus = (taux/100-opex/100)*EAD - EL;
+  var capRisque = eps/100*LGD/100*EAD;
+  var RAROC = revenus/capRisque*100;
+  var rentable = RAROC >= hurdle;
+
+  var EL2 = pdStress/100*EAD*LGD/100;
+  var revenus2 = (taux/100-opex/100)*EAD - EL2;
+  var RAROC2 = revenus2/capRisque*100;
+  var rentable2 = RAROC2 >= hurdle;
+
+  var revenusMin = hurdle/100*capRisque;
+  var tauxNetMin = (revenusMin+EL2)/EAD;
+  var tauxMin = tauxNetMin*100 + opex;
+  var deltaBps = (tauxMin-taux)*100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Perte attendue EL (base, PD=' + fmt(PD,2) + ' %)</th><td>' + fmt(EL,4) + ' M$</td></tr>';
+  html += '<tr><th>Revenus ajustés du risque (base)</th><td>' + fmt(revenus,4) + ' M$</td></tr>';
+  html += '<tr><th>Capital à risque (ε × LGD × EAD)</th><td>' + fmt(capRisque,4) + ' M$</td></tr>';
+  html += '<tr><th>RAROC (base)</th><td>' + fmt(RAROC,2) + ' %</td></tr>';
+  html += '<tr><th>Perte attendue EL\' (stress, PD\'=' + fmt(pdStress,2) + ' %)</th><td>' + fmt(EL2,4) + ' M$</td></tr>';
+  html += '<tr><th>Revenus ajustés du risque (stress)</th><td>' + fmt(revenus2,4) + ' M$</td></tr>';
+  html += '<tr><th>RAROC\' (stress)</th><td>' + fmt(RAROC2,2) + ' %</td></tr>';
+  html += '<tr><th>Taux facturé minimal pour RAROC\' = coût du capital</th><td>' + fmt(tauxMin,3) + ' % (soit ' + (deltaBps>=0?'+':'') + fmt(deltaBps,1) + ' points de base par rapport au taux retenu)</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (rentable?'ok':'ko') + '">Scénario de base : RAROC (' + fmt(RAROC,2) + ' %) ' + (rentable?'EXCÈDE':'N\'EXCÈDE PAS') + ' le coût du capital (' + fmt(hurdle,2) + ' %) — prêt ' + (rentable?'rentable':'non rentable') + '</div>';
+  html += '<div class="valeur ' + (rentable2?'ok':'ko') + '">Scénario de stress : RAROC\' (' + fmt(RAROC2,2) + ' %) ' + (rentable2?'EXCÈDE':'N\'EXCÈDE PAS') + ' le coût du capital (' + fmt(hurdle,2) + ' %) — prêt ' + (rentable2?'rentable':'non rentable') + '</div>';
+
+  html += dessinerRAROC(RAROC, RAROC2, hurdle);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerRAROC(raroc1, raroc2, hurdle) {
+  var largeur = 380, hauteur = 240, margeG = 45, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max(raroc1, raroc2, hurdle, 1) * 1.2;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var xC1 = margeG + (largeur-margeG-margeD)*0.28;
+  var xC2 = margeG + (largeur-margeG-margeD)*0.72;
+  var largeurBarre = 46;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  var yH = yPix(hurdle);
+  svg += '<line x1="' + margeG + '" y1="' + yH.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yH.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-2) + '" y="' + (yH-3).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="var(--cgris,#5A5A5A)">Coût du capital ' + fmt(hurdle,1) + ' %</text>';
+
+  var yT1 = yPix(Math.max(raroc1,0)), yT2 = yPix(Math.max(raroc2,0));
+  var couleur1 = raroc1>=hurdle ? 'var(--cex,#2E8B57)' : 'var(--danger,#b00020)';
+  var couleur2 = raroc2>=hurdle ? 'var(--cex,#2E8B57)' : 'var(--danger,#b00020)';
+  svg += '<rect x="' + (xC1-largeurBarre/2).toFixed(1) + '" y="' + yT1.toFixed(1) + '" width="' + largeurBarre + '" height="' + Math.max(0,(yZero-yT1)).toFixed(1) + '" fill="' + couleur1 + '"/>';
+  svg += '<text x="' + xC1.toFixed(1) + '" y="' + (yT1-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(raroc1,2) + ' %</text>';
+  svg += '<text x="' + xC1.toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">RAROC base</text>';
+  svg += '<rect x="' + (xC2-largeurBarre/2).toFixed(1) + '" y="' + yT2.toFixed(1) + '" width="' + largeurBarre + '" height="' + Math.max(0,(yZero-yT2)).toFixed(1) + '" fill="' + couleur2 + '"/>';
+  svg += '<text x="' + xC2.toFixed(1) + '" y="' + (yT2-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(raroc2,2) + ' %</text>';
+  svg += '<text x="' + xC2.toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">RAROC\' stress</text>';
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">RAROC (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCAR(); calculerRAROC(); };
+</script>
+</body>
+</html>

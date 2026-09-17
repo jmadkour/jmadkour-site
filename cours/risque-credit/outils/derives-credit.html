@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — Les dérivés de crédit — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.2em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — Application : les dérivés de crédit</h1>
+<p class="sous-titre">Calculatrice interactive — valoriser un CDS et tester l'insensibilité au taux de recouvrement (exercice 5), valoriser deux tranches d'un CDO synthétique par le modèle à un facteur (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Valoriser un CDS et tester l'insensibilité au taux de recouvrement</h2>
+  <p class="aide">Position nette actualisée des deux branches d'un CDS : branche de prime (spread contractuel + paiement d'accumulation) contre branche de protection (paiement en cas de défaut). Convention : défaut au milieu de l'année si default survient. Taux de risque plat lambda, probabilité de survie Q(t) = exp(-lambda t).</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Paramètres du CDS</h3>
+      <label for="c5_notional">Notionnel (millions $)</label><input type="number" id="c5_notional" value="20" step="1" min="0.01">
+      <label for="c5_horizon">Horizon (années, paiements annuels)</label><input type="number" id="c5_horizon" value="5" step="1" min="1" max="15">
+      <label for="c5_lambda">Taux de risque lambda-barre (% par an)</label><input type="number" id="c5_lambda" value="2.5" step="0.1">
+      <label for="c5_r">Taux sans risque r, continu (% par an)</label><input type="number" id="c5_r" value="4.0" step="0.1">
+    </div>
+    <div class="bloc">
+      <h3>Spread et recouvrement</h3>
+      <label for="c5_c">Spread contractuel c (points de base)</label><input type="number" id="c5_c" value="150" step="5">
+      <label for="c5_R">Taux de recouvrement R, cas de base (%)</label><input type="number" id="c5_R" value="30" step="1" min="0" max="99">
+      <label for="c5_R2">Taux de recouvrement R, scénario alternatif (%) — lambda INCHANGÉ</label><input type="number" id="c5_R2" value="50" step="1" min="0" max="99">
+      <p class="aide" style="margin-top:0.4em;">Le scénario alternatif recalcule tout avec le même lambda-barre : il teste si l'insensibilité au recouvrement se vérifie quand lambda n'est PAS re-dérivé d'un spread de marché via lambda = s/(1-R).</p>
+    </div>
+  </div>
+  <button onclick="calculerCDS()">Calculer</button>
+  <div id="resultatCDS" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Valoriser deux tranches d'un CDO synthétique par le modèle à un facteur</h2>
+  <p class="aide">Portefeuille homogène et granulaire. Probabilité de défaut conditionnelle au facteur commun F : p(m) = Phi( (k - racine(rho) x m) / racine(1-rho) ), avec k = Phi^-1(pi). Perte du portefeuille conditionnelle à F=m : ell(m) = (1-R) x p(m). Perte d'une tranche [a,b] (en % du principal de la tranche) : TL(m) = min(max(ell(m)-a,0), b-a) / (b-a). Intégration par quadrature gaussienne à 7 points (nœuds et poids fixes, exacts pour une loi normale centrée réduite).</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Portefeuille</h3>
+      <label for="c6_pi">Probabilité de défaut individuelle pi (%, à l'horizon considéré)</label><input type="number" id="c6_pi" value="5" step="0.5" min="0.01" max="99">
+      <label for="c6_R">Taux de recouvrement R (%)</label><input type="number" id="c6_R" value="40" step="1" min="0" max="99">
+    </div>
+    <div class="bloc">
+      <h3>Tranche equity</h3>
+      <label for="c6_eqA">Point d'attachement a (%)</label><input type="number" id="c6_eqA" value="0" step="1" min="0" max="99">
+      <label for="c6_eqB">Point de détachement b (%)</label><input type="number" id="c6_eqB" value="5" step="1" min="0.01" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Tranche senior</h3>
+      <label for="c6_srA">Point d'attachement a (%)</label><input type="number" id="c6_srA" value="10" step="1" min="0" max="99">
+      <label for="c6_srB">Point de détachement b (%)</label><input type="number" id="c6_srB" value="100" step="1" min="0.01" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Corrélations à comparer</h3>
+      <label for="c6_rho1">Corrélation de copule rho, scénario 1 (%)</label><input type="number" id="c6_rho1" value="10" step="1" min="0" max="99">
+      <label for="c6_rho2">Corrélation de copule rho, scénario 2 (%)</label><input type="number" id="c6_rho2" value="40" step="1" min="0" max="99">
+    </div>
+  </div>
+  <button onclick="calculerCDO()">Calculer</button>
+  <div id="resultatCDO" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+/* ===================== Fonctions normales (Phi, Phi^-1) ===================== */
+function erf(x) {
+  var sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  var a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  var t = 1/(1+p*x);
+  var y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function ncdf(x) { return 0.5*(1+erf(x/Math.sqrt(2))); }
+function ninv(p) {
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var plow = 0.02425, phigh = 1 - plow, q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2*Math.log(p));
+    return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  } else if (p <= phigh) {
+    q = p - 0.5; r = q*q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  } else {
+    q = Math.sqrt(-2*Math.log(1-p));
+    return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  }
+}
+
+/* ===================== Calculatrice 1 : valorisation du CDS ===================== */
+function cdsValuation(notional, lambdaBar, r, c, R, T) {
+  var Q = {0:1.0}, q = {};
+  for (var i=1;i<=T;i++) { Q[i]=Math.exp(-lambdaBar*i); q[i]=Q[i-1]-Q[i]; }
+  function DF(t) { return Math.exp(-r*t); }
+  var regSum=0, accrSum=0, protSum=0, annuity=0;
+  var detail = [];
+  for (var i=1;i<=T;i++) {
+    var regTerm = Q[i]*DF(i);
+    var accrTerm = 0.5*q[i]*DF(i-0.5);
+    var protTerm = q[i]*(1-R)*DF(i-0.5);
+    regSum += regTerm; accrSum += accrTerm; protSum += protTerm;
+    annuity += regTerm + accrTerm;
+    detail.push({i:i, Qi:Q[i], qi:q[i], DFi:DF(i), DFmid:DF(i-0.5), protTerm:protTerm*notional});
+  }
+  var premiumPV = (c*regSum + c*accrSum)*notional;
+  var protectionPV = protSum*notional;
+  var sStar = protSum/annuity;
+  return {detail:detail, premiumPV:premiumPV, protectionPV:protectionPV, valueToBuyer:protectionPV-premiumPV, sStar:sStar, annuity:annuity};
+}
+
+function calculerCDS() {
+  var resDiv = document.getElementById('resultatCDS');
+  var notional = parseFloat(document.getElementById('c5_notional').value);
+  var T = parseInt(document.getElementById('c5_horizon').value, 10);
+  var lambdaBar = parseFloat(document.getElementById('c5_lambda').value)/100;
+  var r = parseFloat(document.getElementById('c5_r').value)/100;
+  var c = parseFloat(document.getElementById('c5_c').value)/10000;
+  var R = parseFloat(document.getElementById('c5_R').value)/100;
+  var R2 = parseFloat(document.getElementById('c5_R2').value)/100;
+
+  var vals = [notional,T,lambdaBar,r,c,R,R2];
+  if (vals.some(function(v){return isNaN(v);}) || notional<=0 || T<1 || R<0 || R>=1 || R2<0 || R2>=1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : le notionnel et l\'horizon doivent être strictement positifs, et les taux de recouvrement doivent être compris entre 0 et 100 % (exclus).</p>';
+    return;
+  }
+
+  var base = cdsValuation(notional, lambdaBar, r, c, R, T);
+  var alt = cdsValuation(notional, lambdaBar, r, c, R2, T);
+
+  var html = '<table class="tabres"><tr><th>Année i</th>';
+  base.detail.forEach(function(d){ html += '<th>'+d.i+'</th>'; });
+  html += '</tr><tr><td>Q(i) survie (%)</td>';
+  base.detail.forEach(function(d){ html += '<td>'+fmt(d.Qi*100,4)+'</td>'; });
+  html += '</tr><tr><td>q_i défaut marginal (%)</td>';
+  base.detail.forEach(function(d){ html += '<td>'+fmt(d.qi*100,4)+'</td>'; });
+  html += '</tr><tr><td>DF(i)</td>';
+  base.detail.forEach(function(d){ html += '<td>'+fmt(d.DFi,4)+'</td>'; });
+  html += '</tr><tr><td>DF(i-0,5)</td>';
+  base.detail.forEach(function(d){ html += '<td>'+fmt(d.DFmid,4)+'</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>PV branche protection, R='+fmt(R*100,0)+'%</th><td>'+fmt(base.protectionPV,4)+' M$</td></tr>';
+  html += '<tr><th>PV branche prime, c='+fmt(c*10000,0)+'pb</th><td>'+fmt(base.premiumPV,4)+' M$</td></tr>';
+  html += '<tr><th>Valeur pour l\'acheteur (protection - prime)</th><td>'+(base.valueToBuyer>=0?'+':'')+fmt(base.valueToBuyer,4)+' M$</td></tr>';
+  html += '<tr><th>Spread de mid-market s*</th><td>'+fmt(base.sStar*10000,2)+' pb</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>PV branche protection, R='+fmt(R2*100,0)+'% (lambda inchangé)</th><td>'+fmt(alt.protectionPV,4)+' M$</td></tr>';
+  html += '<tr><th>PV branche prime, R='+fmt(R2*100,0)+'%</th><td>'+fmt(alt.premiumPV,4)+' M$ (identique, indépendante de R)</td></tr>';
+  html += '<tr><th>Valeur pour l\'acheteur</th><td>'+(alt.valueToBuyer>=0?'+':'')+fmt(alt.valueToBuyer,4)+' M$</td></tr>';
+  html += '<tr><th>Spread de mid-market s* alternatif</th><td>'+fmt(alt.sStar*10000,2)+' pb</td></tr>';
+  html += '</table>';
+
+  var ratioObs = alt.sStar/base.sStar;
+  var ratioTheo = (1-R2)/(1-R);
+  var coherent = Math.abs(ratioObs-ratioTheo) < 1e-6;
+  html += '<div class="valeur mid">Ratio observé s*(R2)/s*(R1) = '+fmt(ratioObs,4)+' — ratio théorique (1-R2)/(1-R1) = '+fmt(ratioTheo,4)+'</div>';
+  html += '<div class="valeur '+(coherent?'ok':'ko')+'">'+(coherent ? 'Les deux ratios COÏNCIDENT exactement : lambda étant resté fixe (non re-dérivé d\'un spread via lambda=s/(1-R)), la valorisation varie proportionnellement à (1-R), CONTREDISANT l\'insensibilité relative au recouvrement — celle-ci suppose que le même R serve à la fois à estimer lambda et à valoriser le paiement.' : 'Écart inattendu entre les deux ratios (vérifier les paramètres).')+'</div>';
+
+  html += dessinerCDS(base.protectionPV, base.premiumPV, alt.protectionPV, alt.premiumPV, R, R2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCDS(prot1, prem1, prot2, prem2, R1, R2) {
+  var largeur = 420, hauteur = 240, margeG = 55, margeD = 15, margeH = 20, margeB = 45;
+  var vMax = Math.max(prot1,prem1,prot2,prem2) * 1.2;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var groupes = [[prot1,prem1],[prot2,prem2]];
+  var labels = ['R='+fmt(R1*100,0)+'%','R='+fmt(R2*100,0)+'%'];
+  var largeurBarre = 34;
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var g=0; g<2; g++) {
+    var xCentre = margeG + (g+0.5)*((largeur-margeG-margeD)/2);
+    var xProt = xCentre - largeurBarre*0.6, xPrem = xCentre + largeurBarre*0.6;
+    var yProtTop = yPix(groupes[g][0]), yPremTop = yPix(groupes[g][1]);
+    svg += '<rect x="'+(xProt-largeurBarre/2).toFixed(1)+'" y="'+yProtTop.toFixed(1)+'" width="'+largeurBarre+'" height="'+(yZero-yProtTop).toFixed(1)+'" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<rect x="'+(xPrem-largeurBarre/2).toFixed(1)+'" y="'+yPremTop.toFixed(1)+'" width="'+largeurBarre+'" height="'+(yZero-yPremTop).toFixed(1)+'" fill="var(--cintu,#E08000)"/>';
+    svg += '<text x="'+xProt.toFixed(1)+'" y="'+(yProtTop-4).toFixed(1)+'" font-size="7.5" text-anchor="middle" fill="currentColor">'+fmt(groupes[g][0],3)+'</text>';
+    svg += '<text x="'+xPrem.toFixed(1)+'" y="'+(yPremTop-4).toFixed(1)+'" font-size="7.5" text-anchor="middle" fill="currentColor">'+fmt(groupes[g][1],3)+'</text>';
+    svg += '<text x="'+xCentre.toFixed(1)+'" y="'+(yZero+16).toFixed(1)+'" font-size="8.5" text-anchor="middle" fill="currentColor">'+labels[g]+'</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Valeur actuelle (M$)</text>';
+  svg += '<rect x="' + margeG + '" y="4" width="9" height="9" fill="var(--ceco,#1F6FB2)"/><text x="' + (margeG+13) + '" y="12" font-size="7.5" fill="currentColor">PV protection</text>';
+  svg += '<rect x="' + (margeG+90) + '" y="4" width="9" height="9" fill="var(--cintu,#E08000)"/><text x="' + (margeG+103) + '" y="12" font-size="7.5" fill="currentColor">PV prime</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+/* ===================== Calculatrice 2 : tranches de CDO ===================== */
+var quadStates = [[-3.7504,0.000548],[-2.3668,0.030757],[-1.1544,0.240123],[0.0,0.457143],[1.1544,0.240123],[2.3668,0.030757],[3.7504,0.000548]];
+
+function tranchePricing(pi, R, rho, a, b) {
+  var k = ninv(pi);
+  var Epd=0, Eloss=0, Etl=0;
+  var rows=[];
+  quadStates.forEach(function(s){
+    var m=s[0], w=s[1];
+    var p = ncdf((k - Math.sqrt(rho)*m)/Math.sqrt(1-rho));
+    var ell = (1-R)*p;
+    var tl = Math.min(Math.max(ell-a,0), b-a)/(b-a);
+    Epd += w*p; Eloss += w*ell; Etl += w*tl;
+    rows.push({m:m,w:w,p:p,ell:ell,tl:tl});
+  });
+  return {k:k, rows:rows, Epd:Epd, Eloss:Eloss, Etl:Etl};
+}
+
+function calculerCDO() {
+  var resDiv = document.getElementById('resultatCDO');
+  var pi = parseFloat(document.getElementById('c6_pi').value)/100;
+  var R = parseFloat(document.getElementById('c6_R').value)/100;
+  var eqA = parseFloat(document.getElementById('c6_eqA').value)/100;
+  var eqB = parseFloat(document.getElementById('c6_eqB').value)/100;
+  var srA = parseFloat(document.getElementById('c6_srA').value)/100;
+  var srB = parseFloat(document.getElementById('c6_srB').value)/100;
+  var rho1 = parseFloat(document.getElementById('c6_rho1').value)/100;
+  var rho2 = parseFloat(document.getElementById('c6_rho2').value)/100;
+
+  var vals = [pi,R,eqA,eqB,srA,srB,rho1,rho2];
+  if (vals.some(function(v){return isNaN(v);}) || pi<=0 || pi>=1 || R<0 || R>=1 || eqB<=eqA || srB<=srA || rho1<0 || rho1>=1 || rho2<0 || rho2>=1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : pi et les corrélations doivent être strictement comprises entre 0 et 100 %, R entre 0 et 100 % (exclus), et chaque tranche doit avoir un point de détachement strictement supérieur à son point d\'attachement.</p>';
+    return;
+  }
+
+  var eq1 = tranchePricing(pi,R,rho1,eqA,eqB), sr1 = tranchePricing(pi,R,rho1,srA,srB);
+  var eq2 = tranchePricing(pi,R,rho2,eqA,eqB), sr2 = tranchePricing(pi,R,rho2,srA,srB);
+
+  var html = '<table class="tabres"><tr><th>F = m_k</th>';
+  quadStates.forEach(function(s){ html += '<th>'+fmt(s[0],4)+'</th>'; });
+  html += '</tr><tr><td>poids w_k</td>';
+  quadStates.forEach(function(s){ html += '<td>'+fmt(s[1],6)+'</td>'; });
+  html += '</tr><tr><td>p(m_k), rho='+fmt(rho1*100,0)+'% (%)</td>';
+  eq1.rows.forEach(function(r){ html += '<td>'+fmt(r.p*100,4)+'</td>'; });
+  html += '</tr><tr><td>perte pool ell(m_k), rho='+fmt(rho1*100,0)+'% (%)</td>';
+  eq1.rows.forEach(function(r){ html += '<td>'+fmt(r.ell*100,4)+'</td>'; });
+  html += '</tr><tr><td>p(m_k), rho='+fmt(rho2*100,0)+'% (%)</td>';
+  eq2.rows.forEach(function(r){ html += '<td>'+fmt(r.p*100,4)+'</td>'; });
+  html += '</tr><tr><td>perte pool ell(m_k), rho='+fmt(rho2*100,0)+'% (%)</td>';
+  eq2.rows.forEach(function(r){ html += '<td>'+fmt(r.ell*100,4)+'</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Seuil de défaut k = Phi^-1(pi)</th><td>'+fmt(eq1.k,4)+'</td></tr>';
+  html += '<tr><th>Vérif. somme w_k p(m_k), rho='+fmt(rho1*100,0)+'%</th><td>'+fmt(eq1.Epd*100,4)+' % (cible '+fmt(pi*100,2)+' %)</td></tr>';
+  html += '<tr><th>Vérif. somme w_k p(m_k), rho='+fmt(rho2*100,0)+'%</th><td>'+fmt(eq2.Epd*100,4)+' % (cible '+fmt(pi*100,2)+' %)</td></tr>';
+  html += '<tr><th>Perte moyenne du portefeuille, rho='+fmt(rho1*100,0)+'%</th><td>'+fmt(eq1.Eloss*100,4)+' %</td></tr>';
+  html += '<tr><th>Perte moyenne du portefeuille, rho='+fmt(rho2*100,0)+'%</th><td>'+fmt(eq2.Eloss*100,4)+' % (attendu (1-R)xpi = '+fmt((1-R)*pi*100,4)+' %)</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Tranche</th><th>E[TL], rho='+fmt(rho1*100,0)+'%</th><th>E[TL], rho='+fmt(rho2*100,0)+'%</th><th>Variation</th></tr>';
+  html += '<tr><td>Equity ['+fmt(eqA*100,0)+'%-'+fmt(eqB*100,0)+'%]</td><td>'+fmt(eq1.Etl*100,4)+' %</td><td>'+fmt(eq2.Etl*100,4)+' %</td><td>'+(eq2.Etl>=eq1.Etl?'+':'')+fmt((eq2.Etl-eq1.Etl)*100,4)+' pts</td></tr>';
+  html += '<tr><td>Senior ['+fmt(srA*100,0)+'%-'+fmt(srB*100,0)+'%]</td><td>'+fmt(sr1.Etl*100,4)+' %</td><td>'+fmt(sr2.Etl*100,4)+' %</td><td>'+(sr2.Etl>=sr1.Etl?'+':'')+fmt((sr2.Etl-sr1.Etl)*100,4)+' pts</td></tr>';
+  html += '</table>';
+
+  var eqBaisse = eq2.Etl < eq1.Etl;
+  var srHausse = sr2.Etl > sr1.Etl;
+  var conforme = eqBaisse && srHausse;
+  html += '<div class="valeur '+(conforme?'ok':'ko')+'">'+(conforme ? 'CONFORME au cours : la tranche equity devient moins risquée ('+fmt(eq1.Etl*100,2)+' % → '+fmt(eq2.Etl*100,2)+' %) et la tranche senior devient plus risquée ('+fmt(sr1.Etl*100,4)+' % → '+fmt(sr2.Etl*100,4)+' %) quand la corrélation augmente.' : 'Résultat NON conforme au sens attendu (vérifier les paramètres, notamment les points d\'attachement).')+'</div>';
+
+  html += dessinerCDO(eq1.Etl*100, eq2.Etl*100, sr1.Etl*100, sr2.Etl*100, rho1, rho2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCDO(eq1, eq2, sr1, sr2, rho1, rho2) {
+  function miniChart(v1, v2, titre, decimales, xOffset) {
+    var largeur = 200, hauteur = 210, margeG = 40, margeD = 10, margeH = 22, margeB = 42;
+    var vMax = Math.max(v1,v2,0.0001) * 1.25;
+    function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+    var yZero = yPix(0);
+    var largeurBarre = 30;
+    var x1 = margeG + (largeur-margeG-margeD)*0.28, x2 = margeG + (largeur-margeG-margeD)*0.72;
+    var y1 = yPix(v1), y2 = yPix(v2);
+    var s = '<g transform="translate('+xOffset+',0)">';
+    s += '<text x="'+((largeur)/2)+'" y="12" font-size="8" text-anchor="middle" fill="currentColor" font-weight="bold">'+titre+'</text>';
+    s += '<line x1="'+margeG+'" y1="'+yZero.toFixed(1)+'" x2="'+(largeur-margeD)+'" y2="'+yZero.toFixed(1)+'" stroke="#888" stroke-width="1"/>';
+    s += '<rect x="'+(x1-largeurBarre/2).toFixed(1)+'" y="'+y1.toFixed(1)+'" width="'+largeurBarre+'" height="'+(yZero-y1).toFixed(1)+'" fill="var(--cdef,#4A3B8C)"/>';
+    s += '<rect x="'+(x2-largeurBarre/2).toFixed(1)+'" y="'+y2.toFixed(1)+'" width="'+largeurBarre+'" height="'+(yZero-y2).toFixed(1)+'" fill="var(--cintu,#E08000)"/>';
+    s += '<text x="'+x1.toFixed(1)+'" y="'+(y1-4).toFixed(1)+'" font-size="7.5" text-anchor="middle" fill="currentColor">'+v1.toFixed(decimales)+'</text>';
+    s += '<text x="'+x2.toFixed(1)+'" y="'+(y2-4).toFixed(1)+'" font-size="7.5" text-anchor="middle" fill="currentColor">'+v2.toFixed(decimales)+'</text>';
+    s += '<text x="'+x1.toFixed(1)+'" y="'+(yZero+13).toFixed(1)+'" font-size="7" text-anchor="middle" fill="currentColor">rho='+fmt(rho1*100,0)+'%</text>';
+    s += '<text x="'+x2.toFixed(1)+'" y="'+(yZero+13).toFixed(1)+'" font-size="7" text-anchor="middle" fill="currentColor">rho='+fmt(rho2*100,0)+'%</text>';
+    s += '</g>';
+    return s;
+  }
+  var svg = '<svg class="graphique" viewBox="0 0 420 210" width="100%" height="220">';
+  svg += miniChart(eq1, eq2, 'Perte attendue — equity (%)', 2, 0);
+  svg += miniChart(sr1, sr2, 'Perte attendue — senior (%)', 4, 210);
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCDS(); calculerCDO(); };
+</script>
+</body>
+</html>

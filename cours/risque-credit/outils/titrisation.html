@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 22 — Introduction à la titrisation — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 22 — Application : introduction à la titrisation</h1>
+<p class="sous-titre">Calculatrice interactive — WAC, WAM et vitesse de remboursement anticipé sous convention PSA (exercice 5), cascade de paiement et test de couverture d'un CLO (exercice 6)</p>
+
+<div class="panneau">
+  <h2>WAC, WAM et vitesse de remboursement anticipé (SMM, CPR, convention PSA)</h2>
+  <p class="aide">WAC et WAM sont pondérés par l'encours de chaque groupe de prêts. CPR = 1 - (1 - SMM)^12 ; réciproquement SMM = 1 - (1 - CPR)^(1/12). Convention PSA à 100 % : CPR(t) = 6 % x min(t,30)/30, un scénario "X % PSA" multipliant ce CPR par X/100.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:360px;">
+      <h3>Pool de prêts hypothécaires (par groupe)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c22_tablePool">
+        <tr><th>Groupe</th><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+        <tr><th>Encours (millions $)</th>
+          <td><input type="number" class="c22-bal" value="40" step="1" min="0"></td>
+          <td><input type="number" class="c22-bal" value="30" step="1" min="0"></td>
+          <td><input type="number" class="c22-bal" value="20" step="1" min="0"></td>
+          <td><input type="number" class="c22-bal" value="10" step="1" min="0"></td>
+        </tr>
+        <tr><th>Taux du prêt (%)</th>
+          <td><input type="number" class="c22-rate" value="5.20" step="0.01"></td>
+          <td><input type="number" class="c22-rate" value="5.60" step="0.01"></td>
+          <td><input type="number" class="c22-rate" value="6.00" step="0.01"></td>
+          <td><input type="number" class="c22-rate" value="6.40" step="0.01"></td>
+        </tr>
+        <tr><th>Maturité résiduelle (mois)</th>
+          <td><input type="number" class="c22-mat" value="280" step="1" min="0"></td>
+          <td><input type="number" class="c22-mat" value="300" step="1" min="0"></td>
+          <td><input type="number" class="c22-mat" value="320" step="1" min="0"></td>
+          <td><input type="number" class="c22-mat" value="260" step="1" min="0"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Conversions SMM / CPR</h3>
+      <label for="c22_smmIn">SMM mensuel (%) -> CPR</label><input type="number" id="c22_smmIn" value="0.5" step="0.01" min="0" max="100">
+      <label for="c22_cprIn">CPR annuel (%) -> SMM</label><input type="number" id="c22_cprIn" value="6" step="0.01" min="0" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Scénario PSA et remboursement anticipé</h3>
+      <label for="c22_psaBase">PSA de référence (%)</label><input type="number" id="c22_psaBase" value="100" step="5" min="0">
+      <label for="c22_psaComp">PSA de comparaison (%)</label><input type="number" id="c22_psaComp" value="150" step="5" min="0">
+      <label for="c22_mois">Mois de séniorité à calculer</label><input type="number" id="c22_mois" value="12" step="1" min="1" max="360">
+      <label for="c22_soldeRestant">Solde restant du pool (millions $)</label><input type="number" id="c22_soldeRestant" value="500" step="10" min="0">
+    </div>
+  </div>
+  <button onclick="calculerTitrisation()">Calculer</button>
+  <div id="resultatTitrisation" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Cascade de paiement, rehaussement de crédit et test de couverture dans un CLO</h2>
+  <p class="aide">Points d'attachement/détachement en % du portefeuille collatéral. Spread excédentaire = revenu du collatéral - frais - coupons senior et mezzanine. Cascade des pertes : spread excédentaire, puis équité, puis mezzanine, puis senior en dernier ressort. Ratio de sur-collatéralisation senior/mezzanine = collatéral restant / (senior + mezzanine restants).</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Portefeuille collatéral</h3>
+      <label for="c22_pool">Valeur nominale du pool (millions $)</label><input type="number" id="c22_pool" value="200" step="5" min="0">
+      <label for="c22_yield">Rendement moyen du pool (%/an)</label><input type="number" id="c22_yield" value="6.5" step="0.1">
+      <label for="c22_fee">Frais de gestion du SPV (%/an)</label><input type="number" id="c22_fee" value="0.5" step="0.1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Tranches du passif</h3>
+      <label for="c22_equity">Tranche équité (millions $)</label><input type="number" id="c22_equity" value="20" step="1" min="0">
+      <label for="c22_mezz">Tranche mezzanine (millions $)</label><input type="number" id="c22_mezz" value="30" step="1" min="0">
+      <label for="c22_mezzCoupon">Coupon mezzanine (%/an)</label><input type="number" id="c22_mezzCoupon" value="7.0" step="0.1">
+      <label for="c22_senior">Tranche senior (millions $)</label><input type="number" id="c22_senior" value="150" step="1" min="0">
+      <label for="c22_seniorCoupon">Coupon senior (%/an)</label><input type="number" id="c22_seniorCoupon" value="4.0" step="0.1">
+    </div>
+    <div class="bloc">
+      <h3>Scénario de pertes et test de couverture</h3>
+      <label for="c22_perte">Pertes du portefeuille sur la période (millions $)</label><input type="number" id="c22_perte" value="35" step="1" min="0">
+      <label for="c22_seuilOC">Seuil du test de couverture senior/mezzanine (%)</label><input type="number" id="c22_seuilOC" value="105" step="1" min="0">
+    </div>
+  </div>
+  <button onclick="calculerCLO()">Calculer</button>
+  <div id="resultatCLO" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function cprPSA(month, psaPct) {
+  var base = Math.min(month, 30) / 30 * 0.06;
+  return base * (psaPct / 100);
+}
+function smmFromCPR(cpr) {
+  return 1 - Math.pow(1 - cpr, 1 / 12);
+}
+function cprFromSMM(smm) {
+  return 1 - Math.pow(1 - smm, 12);
+}
+
+function calculerTitrisation() {
+  var resDiv = document.getElementById('resultatTitrisation');
+  var bals = Array.prototype.map.call(document.querySelectorAll('.c22-bal'), function(el){ return parseFloat(el.value); });
+  var rates = Array.prototype.map.call(document.querySelectorAll('.c22-rate'), function(el){ return parseFloat(el.value); });
+  var mats = Array.prototype.map.call(document.querySelectorAll('.c22-mat'), function(el){ return parseFloat(el.value); });
+  var smmIn = parseFloat(document.getElementById('c22_smmIn').value) / 100;
+  var cprIn = parseFloat(document.getElementById('c22_cprIn').value) / 100;
+  var psaBase = parseFloat(document.getElementById('c22_psaBase').value);
+  var psaComp = parseFloat(document.getElementById('c22_psaComp').value);
+  var mois = parseInt(document.getElementById('c22_mois').value, 10);
+  var solde = parseFloat(document.getElementById('c22_soldeRestant').value);
+
+  var tousValides = bals.concat(rates).concat(mats).every(function(v){ return !isNaN(v) && v>=0; })
+    && !isNaN(smmIn) && !isNaN(cprIn) && !isNaN(psaBase) && !isNaN(psaComp) && !isNaN(mois) && mois>=1 && !isNaN(solde) && solde>=0;
+  var totalBal = bals.reduce(function(a,b){return a+b;}, 0);
+  if (!tousValides || totalBal<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les encours, taux et maturités doivent être des nombres positifs ou nuls, l\'encours total du pool doit être strictement positif, et le mois de séniorité doit être un entier au moins égal à 1.</p>';
+    return;
+  }
+
+  var WAC = bals.reduce(function(s,b,i){ return s + b*rates[i]; }, 0) / totalBal;
+  var WAM = bals.reduce(function(s,b,i){ return s + b*mats[i]; }, 0) / totalBal;
+
+  var cprFromSmmIn = cprFromSMM(smmIn);
+  var smmFromCprIn = smmFromCPR(cprIn);
+
+  var mois12 = 12, mois30 = 30, mois45 = 45;
+  var tableMois = [mois12, mois30, mois45];
+
+  function ligneRes(psaPct) {
+    return tableMois.map(function(m){
+      var cpr = cprPSA(m, psaPct);
+      var smm = smmFromCPR(cpr);
+      return { cpr: cpr, smm: smm };
+    });
+  }
+  var resBase = ligneRes(psaBase);
+  var resComp = ligneRes(psaComp);
+
+  var cprMoisBase = cprPSA(mois, psaBase), smmMoisBase = smmFromCPR(cprMoisBase);
+  var cprMoisComp = cprPSA(mois, psaComp), smmMoisComp = smmFromCPR(cprMoisComp);
+  var prepayBase = solde * smmMoisBase;
+  var prepayComp = solde * smmMoisComp;
+  var ratioPrepay = prepayBase>0 ? prepayComp/prepayBase : NaN;
+
+  var html = '<table class="tabres"><tr><th>WAC (coupon moyen pondéré)</th><td>' + fmt(WAC,2) + ' %</td></tr>';
+  html += '<tr><th>WAM (maturité moyenne pondérée)</th><td>' + fmt(WAM,1) + ' mois</td></tr>';
+  html += '<tr><th>SMM = ' + fmt(smmIn*100,2) + ' % &rarr; CPR</th><td>' + fmt(cprFromSmmIn*100,4) + ' %</td></tr>';
+  html += '<tr><th>CPR = ' + fmt(cprIn*100,2) + ' % &rarr; SMM</th><td>' + fmt(smmFromCprIn*100,4) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>Mois de séniorité</th><th>' + mois12 + '</th><th>' + mois30 + '</th><th>' + mois45 + '</th></tr>';
+  html += '<tr><td>CPR (' + fmt(psaBase,0) + ' % PSA)</td>';
+  resBase.forEach(function(r){ html += '<td>' + fmt(r.cpr*100,4) + ' %</td>'; });
+  html += '</tr><tr><td>SMM (' + fmt(psaBase,0) + ' % PSA)</td>';
+  resBase.forEach(function(r){ html += '<td>' + fmt(r.smm*100,4) + ' %</td>'; });
+  html += '</tr><tr><td>CPR (' + fmt(psaComp,0) + ' % PSA)</td>';
+  resComp.forEach(function(r){ html += '<td>' + fmt(r.cpr*100,4) + ' %</td>'; });
+  html += '</tr><tr><td>SMM (' + fmt(psaComp,0) + ' % PSA)</td>';
+  resComp.forEach(function(r){ html += '<td>' + fmt(r.smm*100,4) + ' %</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>CPR au mois ' + mois + ' (' + fmt(psaBase,0) + ' % PSA)</th><td>' + fmt(cprMoisBase*100,4) + ' % (SMM = ' + fmt(smmMoisBase*100,4) + ' %)</td></tr>';
+  html += '<tr><th>CPR au mois ' + mois + ' (' + fmt(psaComp,0) + ' % PSA)</th><td>' + fmt(cprMoisComp*100,4) + ' % (SMM = ' + fmt(smmMoisComp*100,4) + ' %)</td></tr>';
+  html += '<tr><th>Remboursement anticipé au mois ' + mois + ' sur un solde de ' + fmt(solde,0) + ' M$ (' + fmt(psaBase,0) + ' % PSA)</th><td>' + fmt(prepayBase,4) + ' M$</td></tr>';
+  html += '<tr><th>Remboursement anticipé au mois ' + mois + ' sur un solde de ' + fmt(solde,0) + ' M$ (' + fmt(psaComp,0) + ' % PSA)</th><td>' + fmt(prepayComp,4) + ' M$</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">Rapport prépaiement (' + fmt(psaComp,0) + ' % / ' + fmt(psaBase,0) + ' % PSA) au mois ' + mois + ' = ' + (isNaN(ratioPrepay) ? 'n/d' : fmt(ratioPrepay,4)) + '</div>';
+
+  resDiv.innerHTML = html;
+}
+
+function calculerCLO() {
+  var resDiv = document.getElementById('resultatCLO');
+  var pool = parseFloat(document.getElementById('c22_pool').value);
+  var yieldPct = parseFloat(document.getElementById('c22_yield').value);
+  var fee = parseFloat(document.getElementById('c22_fee').value);
+  var equity = parseFloat(document.getElementById('c22_equity').value);
+  var mezz = parseFloat(document.getElementById('c22_mezz').value);
+  var mezzCoupon = parseFloat(document.getElementById('c22_mezzCoupon').value);
+  var senior = parseFloat(document.getElementById('c22_senior').value);
+  var seniorCoupon = parseFloat(document.getElementById('c22_seniorCoupon').value);
+  var perte = parseFloat(document.getElementById('c22_perte').value);
+  var seuilOC = parseFloat(document.getElementById('c22_seuilOC').value);
+
+  var vals = [pool, yieldPct, fee, equity, mezz, mezzCoupon, senior, seniorCoupon, perte, seuilOC];
+  var tousValides = vals.every(function(v){ return !isNaN(v); }) && pool>0 && equity>=0 && mezz>=0 && senior>=0 && perte>=0 && seuilOC>=0;
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : toutes les valeurs doivent être des nombres, le pool doit être strictement positif, et les tailles de tranches, la perte et le seuil doivent être positifs ou nuls.</p>';
+    return;
+  }
+  var passifTotal = equity + mezz + senior;
+  var ecartPassif = Math.abs(passifTotal - pool);
+
+  var attEquity = 0, detEquity = equity/pool*100;
+  var attMezz = detEquity, detMezz = (equity+mezz)/pool*100;
+  var attSenior = detMezz, detSenior = 100;
+
+  var revenu = pool * yieldPct/100;
+  var frais = pool * fee/100;
+  var interetSenior = senior * seniorCoupon/100;
+  var interetMezz = mezz * mezzCoupon/100;
+  var spreadExc = revenu - frais - interetSenior - interetMezz;
+
+  var resteAAbsorber = perte;
+  var absExcess = Math.min(resteAAbsorber, Math.max(spreadExc,0));
+  resteAAbsorber -= absExcess;
+  var absEquity = Math.min(resteAAbsorber, equity);
+  resteAAbsorber -= absEquity;
+  var absMezz = Math.min(resteAAbsorber, mezz);
+  resteAAbsorber -= absMezz;
+  var absSenior = Math.min(resteAAbsorber, senior);
+  resteAAbsorber -= absSenior;
+
+  var equityApres = equity - absEquity;
+  var mezzApres = mezz - absMezz;
+  var seniorApres = senior - absSenior;
+  var collateralApres = pool - perte;
+
+  var ocAvant = (senior+mezz)>0 ? pool/(senior+mezz)*100 : NaN;
+  var ocApres = (seniorApres+mezzApres)>0 ? collateralApres/(seniorApres+mezzApres)*100 : NaN;
+  var enBreche = !isNaN(ocApres) && ocApres < seuilOC;
+
+  var html = '';
+  if (ecartPassif > 1e-6) {
+    html += '<div class="valeur ko">Attention : la somme des tranches (' + fmt(passifTotal,1) + ' M$) ne correspond pas exactement à la valeur du pool (' + fmt(pool,1) + ' M$) — les points d\'attachement/détachement ci-dessous sont néanmoins calculés en pourcentage du pool.</div>';
+  }
+
+  html += '<table class="tabres"><tr><th>Tranche</th><th>Taille (M$)</th><th>Attachement</th><th>Détachement</th></tr>';
+  html += '<tr><td>Équité</td><td>' + fmt(equity,1) + '</td><td>' + fmt(attEquity,2) + ' %</td><td>' + fmt(detEquity,2) + ' %</td></tr>';
+  html += '<tr><td>Mezzanine</td><td>' + fmt(mezz,1) + '</td><td>' + fmt(attMezz,2) + ' %</td><td>' + fmt(detMezz,2) + ' %</td></tr>';
+  html += '<tr><td>Senior</td><td>' + fmt(senior,1) + '</td><td>' + fmt(attSenior,2) + ' %</td><td>' + fmt(detSenior,2) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Revenu du portefeuille collatéral</th><td>' + fmt(revenu,2) + ' M$</td></tr>';
+  html += '<tr><th>Frais du SPV</th><td>' + fmt(frais,2) + ' M$</td></tr>';
+  html += '<tr><th>Intérêts dus (senior + mezzanine)</th><td>' + fmt(interetSenior,2) + ' + ' + fmt(interetMezz,2) + ' = ' + fmt(interetSenior+interetMezz,2) + ' M$</td></tr>';
+  html += '<tr><th>Spread excédentaire disponible</th><td>' + fmt(spreadExc,2) + ' M$</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>Niveau de la cascade</th><th>Perte absorbée</th><th>Valeur résiduelle</th></tr>';
+  html += '<tr><td>Spread excédentaire</td><td>' + fmt(absExcess,2) + ' M$</td><td>&mdash;</td></tr>';
+  html += '<tr><td>Équité</td><td>' + fmt(absEquity,2) + ' M$</td><td>' + fmt(equityApres,2) + ' M$</td></tr>';
+  html += '<tr><td>Mezzanine</td><td>' + fmt(absMezz,2) + ' M$</td><td>' + fmt(mezzApres,2) + ' M$</td></tr>';
+  html += '<tr><td>Senior</td><td>' + fmt(absSenior,2) + ' M$</td><td>' + fmt(seniorApres,2) + ' M$</td></tr>';
+  html += '</table>';
+
+  if (resteAAbsorber > 1e-9) {
+    html += '<div class="valeur ko">Perte non absorbée au-delà de la valeur totale des trois tranches et du spread excédentaire : ' + fmt(resteAAbsorber,2) + ' M$ (le pool a subi une perte supérieure à l\'ensemble du rehaussement de crédit disponible).</div>';
+  }
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Ratio senior/mezzanine avant pertes</th><td>' + (isNaN(ocAvant)?'n/d':fmt(ocAvant,2)+' %') + '</td></tr>';
+  html += '<tr><th>Ratio senior/mezzanine après pertes</th><td>' + (isNaN(ocApres)?'n/d':fmt(ocApres,2)+' %') + '</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (enBreche?'ko':'ok') + '">Test de couverture (seuil ' + fmt(seuilOC,0) + ' %) : ' + (enBreche ? 'EN BRÈCHE — remboursement accéléré de la tranche senior déclenché' : 'RESPECTÉ — pas de remboursement accéléré déclenché') + '</div>';
+
+  resDiv.innerHTML = html;
+}
+
+window.onload = function () { calculerTitrisation(); calculerCLO(); };
+</script>
+</body>
+</html>

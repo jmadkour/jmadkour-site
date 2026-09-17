@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 17 — La compensation centrale — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 17 — Application : la compensation centrale</h1>
+<p class="sous-titre">Calculatrice interactive — la cascade de pertes (loss waterfall) d'une CCP (exercice 5), la compensation multilatérale à travers une CCP (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La cascade de pertes (loss waterfall) d'une contrepartie centrale</h2>
+  <p class="aide">La perte de clôture d'un membre défaillant est allouée, strictement dans cet ordre, à quatre lignes de défense : sa marge initiale (IM_d), sa contribution au fonds de défaillance (DF_d), le capital propre de la CCP (SITG), puis le fonds de défaillance mutualisé des survivants (DF_s). Tout résiduel non couvert exige des mécanismes exceptionnels (VMGH, tear-up).</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Lignes de défense (millions $)</h3>
+      <label for="c17_imd">Marge initiale du défaillant (IM_d)</label><input type="number" id="c17_imd" value="80" step="5" min="0">
+      <label for="c17_dfd">Contribution du défaillant au fonds de défaillance (DF_d)</label><input type="number" id="c17_dfd" value="20" step="5" min="0">
+      <label for="c17_sitg">Capital propre de la CCP — skin in the game (SITG)</label><input type="number" id="c17_sitg" value="15" step="5" min="0">
+      <label for="c17_dfs">Fonds de défaillance des survivants (DF_s)</label><input type="number" id="c17_dfs" value="180" step="5" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Pertes à allouer (millions $)</h3>
+      <label for="c17_L1">Perte du premier défaut (L1)</label><input type="number" id="c17_L1" value="90" step="5" min="0">
+      <label for="c17_L2">Perte du second défaut (L2)</label><input type="number" id="c17_L2" value="300" step="5" min="0">
+      <label for="c17_G">Gains de marge de variation éligibles au VMGH (G)</label><input type="number" id="c17_G" value="125" step="5" min="0">
+      <label for="c17_dfsAlt">Fonds de défaillance alternatif pour L2 (contrefactuel)</label><input type="number" id="c17_dfsAlt" value="200" step="5" min="0">
+    </div>
+  </div>
+  <button onclick="calculerCascade()">Calculer</button>
+  <div id="resultatCascade" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>La compensation multilatérale à travers une CCP</h2>
+  <p class="aide">Quatre teneurs de marché négocient deux transactions par paire (six paires, douze transactions). Exposition brute = somme des valeurs absolues de toutes les transactions. Exposition bilatérale = somme des valeurs absolues des positions nettes par paire. Exposition centrale (CCP) = somme des seules positions nettes multilatérales positives, une fois toutes les transactions novées à la CCP.</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c17_tableTx">
+    <tr><th>Paire</th><th>Transaction 1</th><th>Transaction 2</th></tr>
+    <tr><th>A&ndash;B</th><td><input type="number" class="c17-t1" data-i="0" data-j="1" value="18"></td><td><input type="number" class="c17-t2" data-i="0" data-j="1" value="-6"></td></tr>
+    <tr><th>A&ndash;C</th><td><input type="number" class="c17-t1" data-i="0" data-j="2" value="9"></td><td><input type="number" class="c17-t2" data-i="0" data-j="2" value="4"></td></tr>
+    <tr><th>A&ndash;D</th><td><input type="number" class="c17-t1" data-i="0" data-j="3" value="-20"></td><td><input type="number" class="c17-t2" data-i="0" data-j="3" value="7"></td></tr>
+    <tr><th>B&ndash;C</th><td><input type="number" class="c17-t1" data-i="1" data-j="2" value="15"></td><td><input type="number" class="c17-t2" data-i="1" data-j="2" value="-25"></td></tr>
+    <tr><th>B&ndash;D</th><td><input type="number" class="c17-t1" data-i="1" data-j="3" value="22"></td><td><input type="number" class="c17-t2" data-i="1" data-j="3" value="3"></td></tr>
+    <tr><th>C&ndash;D</th><td><input type="number" class="c17-t1" data-i="2" data-j="3" value="-8"></td><td><input type="number" class="c17-t2" data-i="2" data-j="3" value="2"></td></tr>
+  </table>
+  </div>
+  <p class="aide" style="margin-top:0.4em;">Les valeurs sont exprimées du point de vue du premier participant nommé dans chaque paire (par exemple, la ligne A&ndash;B est la perspective de A vis-à-vis de B).</p>
+  <button onclick="calculerMultilateral()">Calculer</button>
+  <div id="resultatMultilateral" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function calculerCascade() {
+  var resDiv = document.getElementById('resultatCascade');
+  var IMd = parseFloat(document.getElementById('c17_imd').value);
+  var DFd = parseFloat(document.getElementById('c17_dfd').value);
+  var SITG = parseFloat(document.getElementById('c17_sitg').value);
+  var DFs = parseFloat(document.getElementById('c17_dfs').value);
+  var L1 = parseFloat(document.getElementById('c17_L1').value);
+  var L2 = parseFloat(document.getElementById('c17_L2').value);
+  var G = parseFloat(document.getElementById('c17_G').value);
+  var DFsAlt = parseFloat(document.getElementById('c17_dfsAlt').value);
+
+  var tousValides = [IMd,DFd,SITG,DFs,L1,L2,G,DFsAlt].every(function(v){ return !isNaN(v); });
+  if (!tousValides || IMd<0 || DFd<0 || SITG<0 || DFs<0 || L1<0 || L2<0 || G<=0 || DFsAlt<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : toutes les lignes de défense et les pertes doivent être renseignées et non négatives, et les gains éligibles au VMGH (G) doivent être strictement positifs.</p>';
+    return;
+  }
+
+  function cascade(L, dfsLocal) {
+    var remaining = L;
+    var used = {};
+    var tranches = [["IMd", IMd], ["DFd", DFd], ["SITG", SITG], ["DFs", dfsLocal]];
+    for (var k=0;k<tranches.length;k++) {
+      var u = Math.min(remaining, tranches[k][1]);
+      used[tranches[k][0]] = u;
+      remaining -= u;
+    }
+    used.residuel = remaining;
+    return used;
+  }
+
+  var r1 = cascade(L1, DFs);
+  var r2 = cascade(L2, DFs);
+  var defaillantPaie2 = r2.IMd + r2.DFd;
+  var mutualise2 = r2.SITG + r2.DFs;
+  var pctDefaillant2 = L2>0 ? defaillantPaie2/L2*100 : 0;
+  var pctMutualise2 = L2>0 ? mutualise2/L2*100 : 0;
+  var pctResiduel2 = L2>0 ? r2.residuel/L2*100 : 0;
+  var pctDFsConsomme = DFs>0 ? r2.DFs/DFs*100 : 0;
+  var haircut = r2.residuel>0 ? r2.residuel/G*100 : 0;
+
+  var r2alt = cascade(L2, DFsAlt);
+  var pctDFsAltConsomme = DFsAlt>0 ? r2alt.DFs/DFsAlt*100 : 0;
+
+  var html = '<table class="tabres"><tr><th>Tranche</th><th>Disponible</th><th>Absorbé (L1)</th><th>Absorbé (L2, DF_s actuel)</th><th>Absorbé (L2, DF_s alternatif)</th></tr>';
+  html += '<tr><td>IM du défaillant</td><td>' + fmt(IMd,1) + '</td><td>' + fmt(r1.IMd,1) + '</td><td>' + fmt(r2.IMd,1) + '</td><td>' + fmt(r2alt.IMd,1) + '</td></tr>';
+  html += '<tr><td>DF du défaillant</td><td>' + fmt(DFd,1) + '</td><td>' + fmt(r1.DFd,1) + '</td><td>' + fmt(r2.DFd,1) + '</td><td>' + fmt(r2alt.DFd,1) + '</td></tr>';
+  html += '<tr><td>SITG (CCP)</td><td>' + fmt(SITG,1) + '</td><td>' + fmt(r1.SITG,1) + '</td><td>' + fmt(r2.SITG,1) + '</td><td>' + fmt(r2alt.SITG,1) + '</td></tr>';
+  html += '<tr><td>DF des survivants</td><td>' + fmt(DFs,1) + ' (' + fmt(DFsAlt,1) + ' alt.)</td><td>' + fmt(r1.DFs,1) + '</td><td>' + fmt(r2.DFs,1) + '</td><td>' + fmt(r2alt.DFs,1) + '</td></tr>';
+  html += '<tr><td><strong>Résiduel exceptionnel</strong></td><td>&mdash;</td><td>' + fmt(r1.residuel,1) + '</td><td>' + fmt(r2.residuel,1) + '</td><td>' + fmt(r2alt.residuel,1) + '</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>(a) L1 : la perte est-elle absorbée sans toucher SITG/DF_s ?</th><td>' + (r1.SITG===0 && r1.DFs===0 ? 'Oui — cohérent avec les 7 défauts « sans impact » de LCH' : 'Non — SITG et/ou DF_s sont sollicités') + '</td></tr>';
+  html += '<tr><th>(b) L2 : part « défaillant paie » (IM_d+DF_d)</th><td>' + fmt(defaillantPaie2,1) + ' M$ (' + fmt(pctDefaillant2,2) + ' %)</td></tr>';
+  html += '<tr><th>(b) L2 : part « survivant paie » (SITG+DF_s)</th><td>' + fmt(mutualise2,1) + ' M$ (' + fmt(pctMutualise2,2) + ' %)</td></tr>';
+  html += '<tr><th>(b) L2 : résiduel exceptionnel</th><td>' + fmt(r2.residuel,1) + ' M$ (' + fmt(pctResiduel2,2) + ' %)</td></tr>';
+  html += '<tr><th>(b) % du DF_s actuel consommé</th><td>' + fmt(pctDFsConsomme,2) + ' %</td></tr>';
+  html += '<tr><th>(c) Taux de haircut VMGH (résiduel / G)</th><td>' + fmt(haircut,2) + ' %</td></tr>';
+  html += '<tr><th>(d) % du DF_s alternatif consommé</th><td>' + fmt(pctDFsAltConsomme,2) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (r1.residuel===0?'ok':'ko') + '">Scénario (a), L1=' + fmt(L1,0) + ' : résiduel exceptionnel = ' + fmt(r1.residuel,1) + ' M$' + (r1.residuel===0 ? ' — perte entièrement absorbée' : ' — mécanismes exceptionnels requis') + '</div>';
+  html += '<div class="valeur ' + (r2.residuel>0?'ko':'ok') + '">Scénario (b), L2=' + fmt(L2,0) + ', DF_s=' + fmt(DFs,0) + ' : résiduel = ' + fmt(r2.residuel,1) + ' M$' + (r2.residuel>0 ? ' — VMGH/tear-up nécessaires' : ' — perte entièrement absorbée') + '</div>';
+  html += '<div class="valeur ' + (r2alt.residuel>0?'ko':'ok') + '">Scénario (d), L2=' + fmt(L2,0) + ', DF_s=' + fmt(DFsAlt,0) + ' (alternatif) : résiduel = ' + fmt(r2alt.residuel,1) + ' M$' + (r2alt.residuel>0 ? ' — mécanismes exceptionnels encore requis' : ' — perte entièrement absorbée sans mécanisme exceptionnel') + '</div>';
+
+  html += dessinerCascade(r1, r2, r2alt, L1, L2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCascade(r1, r2, r2alt, L1, L2) {
+  var scenarios = [
+    {label:['Scénario (a)','L1='+L1.toFixed(0)], data:r1},
+    {label:['Scénario (b)','L2='+L2.toFixed(0)+', DF_s actuel'], data:r2},
+    {label:['Scénario (d)','L2='+L2.toFixed(0)+', DF_s alt.'], data:r2alt}
+  ];
+  var couleurs = {IMd:'var(--cdef,#4A3B8C)', DFd:'var(--ceco,#1F6FB2)', SITG:'var(--cex,#2E8B57)', DFs:'var(--cintu,#E08000)', residuel:'#b00020'};
+  var cles = ['IMd','DFd','SITG','DFs','residuel'];
+  var vMax = Math.max(L1, L2) * 1.12;
+  var largeur = 460, hauteur = 260, margeG = 55, margeD = 15, margeH = 20, margeB = 46;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 78;
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+15) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var s=0; s<3; s++) {
+    var cum = 0;
+    var d = scenarios[s].data;
+    for (var k=0;k<cles.length;k++) {
+      var v = d[cles[k]];
+      if (v>0) {
+        var yTop = yPix(cum+v), yBot = yPix(cum);
+        svg += '<rect x="' + (xCentres[s]-largeurBarre/2).toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + (yBot-yTop).toFixed(1) + '" fill="' + couleurs[cles[k]] + '" stroke="white" stroke-width="0.5"/>';
+        cum += v;
+      }
+    }
+    var lignes = scenarios[s].label;
+    for (var l=0; l<lignes.length; l++) {
+      svg += '<text x="' + xCentres[s].toFixed(1) + '" y="' + (yZero + 15 + l*10).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + lignes[l] + '</text>';
+    }
+  }
+  svg += '<text x="12" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-15) + ')">Perte allouée (M$)</text>';
+  var lx = margeG, ly = 6;
+  var legendes = [['IM déf.','IMd'],['DF déf.','DFd'],['SITG','SITG'],['DF surv.','DFs'],['Résiduel','residuel']];
+  for (var g=0; g<legendes.length; g++) {
+    svg += '<rect x="' + lx + '" y="' + ly + '" width="8" height="8" fill="' + couleurs[legendes[g][1]] + '"/>';
+    svg += '<text x="' + (lx+11) + '" y="' + (ly+7) + '" font-size="6.8" fill="currentColor">' + legendes[g][0] + '</text>';
+    lx += 62;
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerMultilateral() {
+  var resDiv = document.getElementById('resultatMultilateral');
+  var noms = ['A','B','C','D'];
+  var v1 = document.querySelectorAll('.c17-t1');
+  var v2 = document.querySelectorAll('.c17-t2');
+  var M = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+  var valide = true;
+  var trades = [];
+  for (var k=0;k<v1.length;k++) {
+    var i = parseInt(v1[k].getAttribute('data-i'),10), j = parseInt(v1[k].getAttribute('data-j'),10);
+    var a = parseFloat(v1[k].value), b = parseFloat(v2[k].value);
+    if (isNaN(a) || isNaN(b)) { valide = false; }
+    trades.push([i,j,a,b]);
+  }
+  if (!valide) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les douze valeurs de transaction doivent être renseignées.</p>';
+    return;
+  }
+
+  var gross = 0;
+  trades.forEach(function(t){ gross += Math.abs(t[2]) + Math.abs(t[3]); });
+
+  var netPaire = {};
+  var pairLabels = [];
+  trades.forEach(function(t){
+    var key = noms[t[0]]+noms[t[1]];
+    netPaire[key] = t[2]+t[3];
+    pairLabels.push(key);
+  });
+  var bilateralExposure = 0;
+  pairLabels.forEach(function(key){ bilateralExposure += Math.abs(netPaire[key]); });
+
+  var N = [0,0,0,0];
+  trades.forEach(function(t){
+    N[t[0]] += (t[2]+t[3]);
+    N[t[1]] -= (t[2]+t[3]);
+  });
+  var sumN = N.reduce(function(a,b){return a+b;},0);
+  var multilateralExposure = N.reduce(function(a,v){ return a + Math.max(v,0); }, 0);
+
+  var reductionBilateral = gross>0 ? (gross-bilateralExposure)/gross*100 : 0;
+  var reductionMultiGross = gross>0 ? (gross-multilateralExposure)/gross*100 : 0;
+  var reductionMultiBilateral = bilateralExposure>0 ? (bilateralExposure-multilateralExposure)/bilateralExposure*100 : 0;
+
+  var debiteurs = [], crediteurs = [];
+  N.forEach(function(v,i){ if (v<0) debiteurs.push(Math.abs(v)); else if (v>0) crediteurs.push(v); });
+  var sommeDebiteurs = debiteurs.reduce(function(a,b){return a+b;},0);
+  var sommeCrediteurs = crediteurs.reduce(function(a,b){return a+b;},0);
+
+  var html = '<table class="tabres"><tr><th>Paire</th><th>Net bilatéral</th><th>Exposition bilatérale</th></tr>';
+  pairLabels.forEach(function(key){
+    html += '<tr><td>' + key.slice(0,1) + '&ndash;' + key.slice(1,2) + '</td><td>' + (netPaire[key]>=0?'+':'') + fmt(netPaire[key],1) + '</td><td>' + fmt(Math.abs(netPaire[key]),1) + '</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>Participant</th><th>Position nette multilatérale</th></tr>';
+  noms.forEach(function(nom,i){
+    html += '<tr><td>' + nom + '</td><td>' + (N[i]>=0?'+':'') + fmt(N[i],1) + '</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>(a) Exposition brute (aucune compensation)</th><td>' + fmt(gross,1) + ' M$</td></tr>';
+  html += '<tr><th>(b) Exposition sous compensation bilatérale (par paire)</th><td>' + fmt(bilateralExposure,1) + ' M$ (&minus;' + fmt(reductionBilateral,2) + ' % vs brut)</td></tr>';
+  html += '<tr><th>(c) Somme des positions nettes multilatérales</th><td>' + fmt(sumN,4) + ' (doit être nulle)</td></tr>';
+  html += '<tr><th>(c) Exposition sous compensation centrale (CCP, intégrale)</th><td>' + fmt(multilateralExposure,1) + ' M$ (&minus;' + fmt(reductionMultiGross,2) + ' % vs brut, &minus;' + fmt(reductionMultiBilateral,2) + ' % vs bilatéral)</td></tr>';
+  html += '<tr><th>(d) Exposition maximale de la CCP en cas de double défaut des nets débiteurs</th><td>' + fmt(sommeDebiteurs,1) + ' M$</td></tr>';
+  html += '</table>';
+
+  var matchedBook = Math.abs(sumN) < 1e-6;
+  var coherent = Math.abs(sommeDebiteurs - multilateralExposure) < 1e-6;
+  html += '<div class="valeur ' + (matchedBook?'ok':'ko') + '">Livre appareillé de la CCP : somme des positions nettes = ' + fmt(sumN,4) + (matchedBook ? ' — CONFIRMÉ (position de marché nette nulle)' : ' — ANOMALIE (devrait être nulle)') + '</div>';
+  html += '<div class="valeur ' + (coherent?'ok':'ko') + '">Exposition maximale de la CCP (' + fmt(sommeDebiteurs,1) + ' M$) ' + (coherent ? 'ÉGALE exactement' : 'NE COÏNCIDE PAS avec') + ' l\'exposition totale du système sous compensation centrale (' + fmt(multilateralExposure,1) + ' M$)</div>';
+  html += '<div class="valeur mid">Facteur de réduction (brut / central) : ' + (multilateralExposure>0 ? fmt(gross/multilateralExposure,2) : 'n/a') + '&times;</div>';
+
+  html += dessinerExpositions(gross, bilateralExposure, multilateralExposure);
+  html += dessinerPositionsNettes(noms, N);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerExpositions(gross, bilateral, multi) {
+  var vals = [gross, bilateral, multi];
+  var noms = ['Brut', 'Bilatéral (par paire)', 'Central (CCP, intégral)'];
+  var couleurs = ['var(--cgris,#5A5A5A)', 'var(--cintu,#E08000)', 'var(--cex,#2E8B57)'];
+  var largeur = 360, hauteur = 220, margeG = 45, margeD = 15, margeH = 20, margeB = 42;
+  var vMax = Math.max(10, Math.max.apply(null, vals)) * 1.18;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 58;
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2).toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i].toFixed(1) + '" y="' + (yTop-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(v,1) + '</text>';
+    svg += '<text x="' + xCentres[i].toFixed(1) + '" y="' + (yZero + 13).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">Exposition totale (M$)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function dessinerPositionsNettes(noms, N) {
+  var largeur = 320, hauteur = 220, margeG = 50, margeD = 15, margeH = 20, margeB = 40;
+  var vMaxAbs = Math.max.apply(null, N.map(Math.abs)) * 1.3 || 1;
+  function yPix(v) { return margeH + (vMaxAbs - v) / (2*vMaxAbs) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 44;
+  var xCentres = [];
+  for (var i=0;i<4;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/4)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var v = N[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    var h = Math.abs(yBot-yTop);
+    var couleur = v<0 ? 'var(--cgris,#5A5A5A)' : 'var(--cex,#2E8B57)';
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2).toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleur + '"/>';
+    svg += '<text x="' + xCentres[i].toFixed(1) + '" y="' + (v>=0 ? (yTop-5).toFixed(1) : (yBot+13).toFixed(1)) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(1) + '</text>';
+    svg += '<text x="' + xCentres[i].toFixed(1) + '" y="' + (yZero + (v<0?-6:14)).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Position nette (M$)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCascade(); calculerMultilateral(); };
+</script>
+</body>
+</html>

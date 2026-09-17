@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 20 — Les tests de résistance des expositions de contrepartie — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 20 — Application : les tests de résistance des expositions de contrepartie</h1>
+<p class="sous-titre">Calculatrice interactive — exposition courante vs EPE et erreur de convexité (exercice 5), stress du CVA/DVA/BCVA et wrong-way risk (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Stresser un swap de contrepartie : exposition courante vs EPE, et erreur de convexité</h2>
+  <p class="aide">Taux de hasard (triangle de crédit) : &lambda; = spread / LGD. Probabilité de survie S(t) = e<sup>-&lambda;t</sup>, PD&#7522; = S(t&#7522;&#8323;&#8321;) - S(t&#7522;). Perte "naïve" = LGD stressé &times; exposition courante stressée (sans pondération par la PD). Perte correcte (équivalent-prêt / EL) = LGD stressé &times; &Sigma; EPE&#7522; stressée &times; PD&#7522; stressée. Convexité (année choisie) : &Delta;EPE = &delta;&times;&Delta;S + &frac12;&gamma;&times;&Delta;S&sup2;.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Profil d'EPE annuel de base (millions $)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c20_tableEPE">
+        <tr><th>Année</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+        <tr><th>EPE</th>
+          <td><input type="number" class="c20-epe" value="1.8" step="0.1"></td>
+          <td><input type="number" class="c20-epe" value="3.6" step="0.1"></td>
+          <td><input type="number" class="c20-epe" value="4.5" step="0.1"></td>
+          <td><input type="number" class="c20-epe" value="3.0" step="0.1"></td>
+          <td><input type="number" class="c20-epe" value="1.2" step="0.1"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Base et scénario de stress</h3>
+      <label for="c20_v0">Exposition courante V&#8320; (millions $)</label><input type="number" id="c20_v0" value="2.0" step="0.1">
+      <label for="c20_spread">Spread de crédit de base (points de base)</label><input type="number" id="c20_spread" value="180" step="5" min="0">
+      <label for="c20_lgd">LGD de base (%)</label><input type="number" id="c20_lgd" value="50" step="1" min="1" max="100">
+      <label for="c20_choc">Choc de marché uniforme (%)</label><input type="number" id="c20_choc" value="45" step="1" min="0">
+      <label for="c20_spreadStress">Spread stressé (points de base)</label><input type="number" id="c20_spreadStress" value="550" step="5" min="0">
+      <label for="c20_lgdStress">LGD stressé (%)</label><input type="number" id="c20_lgdStress" value="60" step="1" min="1" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Convexité (année choisie)</h3>
+      <label for="c20_anneeConv">Année soumise à la revalorisation complète</label>
+      <select id="c20_anneeConv"><option value="0">Année 1</option><option value="1">Année 2</option><option value="2" selected>Année 3</option><option value="3">Année 4</option><option value="4">Année 5</option></select>
+      <label for="c20_delta">Delta (millions $ par unité)</label><input type="number" id="c20_delta" value="0.028" step="0.001">
+      <label for="c20_gamma">Gamma (millions $ par unité²)</label><input type="number" id="c20_gamma" value="0.0016" step="0.0001">
+      <label for="c20_dS">Amplitude du choc &Delta;S (unités)</label><input type="number" id="c20_dS" value="55" step="1">
+    </div>
+  </div>
+  <button onclick="calculerStressCCR()">Calculer</button>
+  <div id="resultatStressCCR" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Stresser le CVA, le DVA et le BCVA : choc mécanique et wrong-way risk explicite</h2>
+  <p class="aide">UCVA = LGD_C &times; &Sigma; EPE&#7305;,&#7522; &times; PD_C,&#7522; ; DVA = -LGD_D &times; &Sigma; ENE&#7305;,&#7522; &times; PD_D,&#7522; (positif, ENE&#7305; &lt; 0). CVA = -UCVA, BCVA = CVA + DVA. Le stress relève EPE&#7305; de l'année choisie d'un facteur multiplicatif, dégrade le spread/LGD de C (et de D), et le multiplicateur WWR &kappa; amplifie la seule PD_C de cette même année.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Profils d'exposition de D envers C (millions $)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c20_tableExpo">
+        <tr><th>Année</th><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+        <tr><th>EPE&#7305; (exposition à C)</th>
+          <td><input type="number" class="c20-epeD" value="1.5" step="0.1"></td>
+          <td><input type="number" class="c20-epeD" value="2.5" step="0.1"></td>
+          <td><input type="number" class="c20-epeD" value="2.0" step="0.1"></td>
+          <td><input type="number" class="c20-epeD" value="1.0" step="0.1"></td>
+        </tr>
+        <tr><th>ENE&#7305; (exposition de C à D)</th>
+          <td><input type="number" class="c20-eneD" value="-0.6" step="0.1"></td>
+          <td><input type="number" class="c20-eneD" value="-1.0" step="0.1"></td>
+          <td><input type="number" class="c20-eneD" value="-0.8" step="0.1"></td>
+          <td><input type="number" class="c20-eneD" value="-0.4" step="0.1"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Crédit de base (C et D)</h3>
+      <label for="c20_spreadC">Spread de C, base (points de base)</label><input type="number" id="c20_spreadC" value="250" step="5" min="0">
+      <label for="c20_lgdC">LGD de C, base (%)</label><input type="number" id="c20_lgdC" value="55" step="1" min="1" max="100">
+      <label for="c20_spreadD">Spread propre de D, base (points de base)</label><input type="number" id="c20_spreadD" value="90" step="5" min="0">
+      <label for="c20_lgdD">LGD propre de D (%)</label><input type="number" id="c20_lgdD" value="45" step="1" min="1" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Crise souveraine (stress)</h3>
+      <label for="c20_bucket">Fenêtre choquée (choc marché + WWR)</label>
+      <select id="c20_bucket"><option value="0">Année 1</option><option value="1" selected>Année 2</option><option value="2">Année 3</option><option value="3">Année 4</option></select>
+      <label for="c20_facteurEPE">Facteur multiplicatif de l'EPE choquée</label><input type="number" id="c20_facteurEPE" value="1.8" step="0.1" min="0">
+      <label for="c20_spreadCstress">Spread stressé de C (points de base)</label><input type="number" id="c20_spreadCstress" value="900" step="10" min="0">
+      <label for="c20_lgdCstress">LGD stressé de C (%)</label><input type="number" id="c20_lgdCstress" value="65" step="1" min="1" max="100">
+      <label for="c20_kappa">Multiplicateur WWR &kappa; (sur PD_C de la fenêtre choquée)</label><input type="number" id="c20_kappa" value="1.35" step="0.05" min="1">
+      <label for="c20_spreadDstress">Spread stressé propre de D (points de base)</label><input type="number" id="c20_spreadDstress" value="150" step="10" min="0">
+    </div>
+  </div>
+  <button onclick="calculerStressCVA()">Calculer</button>
+  <div id="resultatStressCVA" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?4:n); }
+
+function survivalPD(lambda, n) {
+  var S = [];
+  for (var t=0;t<=n;t++) { S.push(Math.exp(-lambda*t)); }
+  var PD = [];
+  for (var i=1;i<=n;i++) { PD.push(S[i-1]-S[i]); }
+  return { S: S, PD: PD };
+}
+
+function elFromProfile(EPE, PD, LGD) {
+  var s = 0;
+  for (var i=0;i<EPE.length;i++) { s += EPE[i]*PD[i]; }
+  return LGD*s;
+}
+
+function calculerStressCCR() {
+  var resDiv = document.getElementById('resultatStressCCR');
+  var EPE = Array.prototype.map.call(document.querySelectorAll('.c20-epe'), function(el){ return parseFloat(el.value); });
+  var V0 = parseFloat(document.getElementById('c20_v0').value);
+  var spreadBp = parseFloat(document.getElementById('c20_spread').value);
+  var lgdPct = parseFloat(document.getElementById('c20_lgd').value);
+  var chocPct = parseFloat(document.getElementById('c20_choc').value);
+  var spreadStressBp = parseFloat(document.getElementById('c20_spreadStress').value);
+  var lgdStressPct = parseFloat(document.getElementById('c20_lgdStress').value);
+  var anneeConv = parseInt(document.getElementById('c20_anneeConv').value, 10);
+  var delta = parseFloat(document.getElementById('c20_delta').value);
+  var gamma = parseFloat(document.getElementById('c20_gamma').value);
+  var dS = parseFloat(document.getElementById('c20_dS').value);
+
+  var tousValides = EPE.every(function(v){ return !isNaN(v) && v>=0; }) && !isNaN(V0) && V0>=0
+    && !isNaN(spreadBp) && spreadBp>0 && !isNaN(lgdPct) && lgdPct>0
+    && !isNaN(chocPct) && chocPct>=0 && !isNaN(spreadStressBp) && spreadStressBp>0
+    && !isNaN(lgdStressPct) && lgdStressPct>0 && !isNaN(delta) && !isNaN(gamma) && !isNaN(dS);
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les EPE et l\'exposition courante doivent être non négatives, les spreads et LGD strictement positifs, et le choc/delta/gamma/&Delta;S doivent être des nombres.</p>';
+    return;
+  }
+
+  var n = EPE.length;
+  var LGD = lgdPct/100;
+  var lambda = (spreadBp/10000)/LGD;
+  var sp = survivalPD(lambda, n);
+  var PD = sp.PD;
+  var UCVAbase = elFromProfile(EPE, PD, LGD);
+
+  var choc = chocPct/100;
+  var V0stress = V0*(1+choc);
+  var LGDstress = lgdStressPct/100;
+  var perteNaive = LGDstress*V0stress;
+
+  var EPEstressUniform = EPE.map(function(e){ return e*(1+choc); });
+  var lambdaStress = (spreadStressBp/10000)/LGDstress;
+  var spStress = survivalPD(lambdaStress, n);
+  var PDstress = spStress.PD;
+  var ELstressUniform = elFromProfile(EPEstressUniform, PDstress, LGDstress);
+
+  var dEPElin = delta*dS;
+  var EPEconvLin = EPE[anneeConv] + dEPElin;
+  var dEPEfull = delta*dS + 0.5*gamma*dS*dS;
+  var EPEconvFull = EPE[anneeConv] + dEPEfull;
+  var EPEconvUniform = EPE[anneeConv]*(1+choc);
+  var partCapturee = dEPEfull !== 0 ? (dEPElin/dEPEfull*100) : NaN;
+
+  var EPEstressCorrige = EPEstressUniform.slice();
+  EPEstressCorrige[anneeConv] = EPEconvFull;
+  var ELstressCorrige = elFromProfile(EPEstressCorrige, PDstress, LGDstress);
+
+  var ecartNaifCorrect = perteNaive - ELstressUniform;
+  var ecartPctNaifCorrect = ELstressUniform !== 0 ? (ecartNaifCorrect/ELstressUniform*100) : NaN;
+  var ecartCorrige = ELstressCorrige - ELstressUniform;
+  var ecartPctCorrige = ELstressUniform !== 0 ? (ecartCorrige/ELstressUniform*100) : NaN;
+  var ecartNaifVsCorrige = perteNaive - ELstressCorrige;
+  var ecartPctNaifVsCorrige = ELstressCorrige !== 0 ? (ecartNaifVsCorrige/ELstressCorrige*100) : NaN;
+
+  var html = '<table class="tabres"><tr><th>Année</th>';
+  for (var i=1;i<=n;i++) { html += '<th>'+i+'</th>'; }
+  html += '</tr><tr><td>PD base (%)</td>';
+  PD.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr><tr><td>PD stressée (%)</td>';
+  PDstress.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr><tr><td>EPE base (M$)</td>';
+  EPE.forEach(function(v){ html += '<td>'+fmt(v,2)+'</td>'; });
+  html += '</tr><tr><td>EPE stressée +choc uniforme (M$)</td>';
+  EPEstressUniform.forEach(function(v){ html += '<td>'+fmt(v,4)+'</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>&lambda; de base / &lambda; stressé</th><td>' + fmt(lambda*100,4) + ' % / ' + fmt(lambdaStress*100,4) + ' %</td></tr>';
+  html += '<tr><th>Perte de base (LGD &times; &Sigma; EPE &times; PD)</th><td>' + fmt(UCVAbase,6) + ' M$</td></tr>';
+  html += '<tr><th>Exposition courante stressée V&#8320;&times;(1+choc)</th><td>' + fmt(V0stress,4) + ' M$</td></tr>';
+  html += '<tr><th>Perte "naïve" (exposition courante &times; LGD stressé, sans PD)</th><td>' + fmt(perteNaive,6) + ' M$</td></tr>';
+  html += '<tr><th>Perte correcte (équivalent-prêt / EL, profil complet, sans convexité)</th><td>' + fmt(ELstressUniform,6) + ' M$</td></tr>';
+  html += '<tr><th>Écart naïve vs correcte (sans convexité)</th><td>' + fmt(ecartNaifCorrect,6) + ' M$ (' + (ecartPctNaifCorrect>=0?'+':'') + fmt(ecartPctNaifCorrect,2) + ' %)</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>&Delta;EPE (delta seul)</th><td>' + fmt(dEPElin,4) + ' M$ &rarr; EPE stressée = ' + fmt(EPEconvLin,4) + ' M$</td></tr>';
+  html += '<tr><th>&Delta;EPE (revalorisation complète, avec gamma)</th><td>' + fmt(dEPEfull,4) + ' M$ &rarr; EPE stressée = ' + fmt(EPEconvFull,4) + ' M$</td></tr>';
+  html += '<tr><th>EPE stressée par choc proportionnel simple</th><td>' + fmt(EPEconvUniform,4) + ' M$</td></tr>';
+  html += '<tr><th>Part de la variation réelle capturée par delta seul</th><td>' + fmt(partCapturee,2) + ' %</td></tr>';
+  html += '<tr><th>Perte stressée corrigée de la convexité</th><td>' + fmt(ELstressCorrige,6) + ' M$</td></tr>';
+  html += '<tr><th>Écart correction convexité vs sans convexité</th><td>' + fmt(ecartCorrige,6) + ' M$ (' + (ecartPctCorrige>=0?'+':'') + fmt(ecartPctCorrige,2) + ' %)</td></tr>';
+  html += '<tr><th>Écart perte naïve vs perte corrigée (convexité incluse)</th><td>' + fmt(ecartNaifVsCorrige,6) + ' M$ (' + (ecartPctNaifVsCorrige>=0?'+':'') + fmt(ecartPctNaifVsCorrige,2) + ' %)</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (ecartNaifCorrect>=0?'ko':'ok') + '">La perte "naïve" par exposition courante ' + (ecartNaifCorrect>=0?'SURESTIME':'SOUS-ESTIME') + ' la perte correctement stressée de ' + fmt(Math.abs(ecartPctNaifCorrect),2) + ' % (omission de la pondération par la PD sur l\'ensemble du profil)</div>';
+  html += '<div class="valeur mid">L\'approximation delta ne capture que ' + fmt(partCapturee,1) + ' % de la variation d\'EPE réellement générée par la convexité sur l\'année choisie</div>';
+
+  html += dessinerBarresCCR(UCVAbase, perteNaive, ELstressUniform, ELstressCorrige);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresCCR(base, naif, corr1, corr2) {
+  var vals = [base, naif, corr1, corr2];
+  var noms = ['UCVA base', 'Perte naïve', 'EL stressé (sans conv.)', 'EL stressé (avec conv.)'];
+  var couleurs = ['var(--cdef,#4A3B8C)', 'var(--cgris,#5A5A5A)', 'var(--cintu,#E08000)', 'var(--cex,#2E8B57)'];
+  var largeur = 420, hauteur = 250, margeG = 45, margeD = 15, margeH = 20, margeB = 50;
+  var vMax = Math.max(1e-6, Math.max.apply(null, vals)) * 1.25;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 55;
+  var xCentres = [];
+  for (var i=0;i<4;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/4)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="260">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(v,4) + '</text>';
+    var mots = noms[i].split(' ');
+    var ligne1 = mots.slice(0, Math.ceil(mots.length/2)).join(' ');
+    var ligne2 = mots.slice(Math.ceil(mots.length/2)).join(' ');
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 13).toFixed(1) + '" font-size="7.3" text-anchor="middle" fill="currentColor">' + ligne1 + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 23).toFixed(1) + '" font-size="7.3" text-anchor="middle" fill="currentColor">' + ligne2 + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">Millions $</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerStressCVA() {
+  var resDiv = document.getElementById('resultatStressCVA');
+  var EPED = Array.prototype.map.call(document.querySelectorAll('.c20-epeD'), function(el){ return parseFloat(el.value); });
+  var ENED = Array.prototype.map.call(document.querySelectorAll('.c20-eneD'), function(el){ return parseFloat(el.value); });
+  var spreadC = parseFloat(document.getElementById('c20_spreadC').value);
+  var lgdCpct = parseFloat(document.getElementById('c20_lgdC').value);
+  var spreadD = parseFloat(document.getElementById('c20_spreadD').value);
+  var lgdDpct = parseFloat(document.getElementById('c20_lgdD').value);
+  var bucket = parseInt(document.getElementById('c20_bucket').value, 10);
+  var facteurEPE = parseFloat(document.getElementById('c20_facteurEPE').value);
+  var spreadCstress = parseFloat(document.getElementById('c20_spreadCstress').value);
+  var lgdCstressPct = parseFloat(document.getElementById('c20_lgdCstress').value);
+  var kappa = parseFloat(document.getElementById('c20_kappa').value);
+  var spreadDstress = parseFloat(document.getElementById('c20_spreadDstress').value);
+
+  var tousValides = EPED.every(function(v){ return !isNaN(v) && v>=0; }) && ENED.every(function(v){ return !isNaN(v) && v<=0; })
+    && !isNaN(spreadC) && spreadC>0 && !isNaN(lgdCpct) && lgdCpct>0 && !isNaN(spreadD) && spreadD>0 && !isNaN(lgdDpct) && lgdDpct>0
+    && !isNaN(facteurEPE) && facteurEPE>=0 && !isNaN(spreadCstress) && spreadCstress>0 && !isNaN(lgdCstressPct) && lgdCstressPct>0
+    && !isNaN(kappa) && kappa>=1 && !isNaN(spreadDstress) && spreadDstress>0;
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les EPE doivent être positives ou nulles, les ENE négatives ou nulles, les spreads et LGD strictement positifs, le facteur EPE non négatif, et &kappa; &ge; 1.</p>';
+    return;
+  }
+
+  var n = EPED.length;
+  var LGDC = lgdCpct/100, LGDD = lgdDpct/100;
+  var lamC = (spreadC/10000)/LGDC;
+  var lamD = (spreadD/10000)/LGDD;
+  var spC = survivalPD(lamC, n);
+  var spD = survivalPD(lamD, n);
+  var PDC = spC.PD, PDD = spD.PD;
+
+  var UCVAbase = elFromProfile(EPED, PDC, LGDC);
+  var DVAbase = -elFromProfile(ENED, PDD, LGDD);
+  var CVAbase = -UCVAbase;
+  var BCVAbase = CVAbase + DVAbase;
+
+  var EPEDstress = EPED.slice();
+  EPEDstress[bucket] = EPED[bucket]*facteurEPE;
+  var LGDCstress = lgdCstressPct/100;
+  var lamCstress = (spreadCstress/10000)/LGDCstress;
+  var spCstress = survivalPD(lamCstress, n);
+  var PDCstress1 = spCstress.PD;
+  var UCVAstress1 = elFromProfile(EPEDstress, PDCstress1, LGDCstress);
+
+  var PDCstress2 = PDCstress1.slice();
+  PDCstress2[bucket] = PDCstress1[bucket]*kappa;
+  var UCVAstress2 = elFromProfile(EPEDstress, PDCstress2, LGDCstress);
+  var incrementWWR = UCVAstress2 - UCVAstress1;
+  var incrementWWRpct = UCVAstress1 !== 0 ? (incrementWWR/UCVAstress1*100) : NaN;
+
+  var lamDstress = (spreadDstress/10000)/LGDD;
+  var spDstress = survivalPD(lamDstress, n);
+  var PDDstress = spDstress.PD;
+  var DVAstress = -elFromProfile(ENED, PDDstress, LGDD);
+  var CVAstress = -UCVAstress2;
+  var BCVAstress = CVAstress + DVAstress;
+
+  var detCVA = CVAstress - CVAbase;
+  var incrDVA = DVAstress - DVAbase;
+  var partCompensee = detCVA !== 0 ? (incrDVA/Math.abs(detCVA)*100) : NaN;
+  var multipleBCVA = BCVAbase !== 0 ? (Math.abs(BCVAstress)/Math.abs(BCVAbase)) : NaN;
+
+  var html = '<table class="tabres"><tr><th>Année</th>';
+  for (var i=1;i<=n;i++) { html += '<th>'+i+'</th>'; }
+  html += '</tr><tr><td>PD_C base (%)</td>';
+  PDC.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr><tr><td>PD_D base (%)</td>';
+  PDD.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr><tr><td>PD_C stress mécanique (%)</td>';
+  PDCstress1.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr><tr><td>PD_C stress WWR (%)</td>';
+  PDCstress2.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr><tr><td>PD_D stress (%)</td>';
+  PDDstress.forEach(function(v){ html += '<td>'+fmt(v*100,4)+'</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>&lambda;_C base / &lambda;_D base</th><td>' + fmt(lamC*100,4) + ' % / ' + fmt(lamD*100,4) + ' %</td></tr>';
+  html += '<tr><th>UCVA base</th><td>' + fmt(UCVAbase,6) + ' M$</td></tr>';
+  html += '<tr><th>DVA base</th><td>' + fmt(DVAbase,6) + ' M$</td></tr>';
+  html += '<tr><th>CVA base / BCVA base</th><td>' + fmt(CVAbase,6) + ' M$ / ' + fmt(BCVAbase,6) + ' M$</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>UCVA stress mécanique (choc conjoint sans corrélation)</th><td>' + fmt(UCVAstress1,6) + ' M$ (&times;' + fmt(UCVAstress1/UCVAbase,2) + ' vs base)</td></tr>';
+  html += '<tr><th>UCVA stress WWR (&kappa;=' + fmt(kappa,2) + ' sur PD_C de la fenêtre choquée)</th><td>' + fmt(UCVAstress2,6) + ' M$ (&times;' + fmt(UCVAstress2/UCVAbase,2) + ' vs base)</td></tr>';
+  html += '<tr><th>Incrément WWR vs stress mécanique</th><td>' + fmt(incrementWWR,6) + ' M$ (' + (incrementWWRpct>=0?'+':'') + fmt(incrementWWRpct,2) + ' %)</td></tr>';
+  html += '<tr><th>DVA stressé</th><td>' + fmt(DVAstress,6) + ' M$</td></tr>';
+  html += '<tr><th>CVA stressé / BCVA stressé</th><td>' + fmt(CVAstress,6) + ' M$ / ' + fmt(BCVAstress,6) + ' M$</td></tr>';
+  html += '<tr><th>Dégradation du BCVA (base &rarr; stress)</th><td>' + fmt(BCVAstress-BCVAbase,6) + ' M$ (&times;' + fmt(multipleBCVA,2) + ' en valeur absolue)</td></tr>';
+  html += '<tr><th>Part de la détérioration du CVA compensée par le DVA</th><td>' + fmt(partCompensee,2) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ko">Le passage d\'un choc mécanique à un choc WWR explicite ajoute ' + fmt(Math.abs(incrementWWRpct),2) + ' % de UCVA supplémentaire</div>';
+  html += '<div class="valeur ' + (partCompensee<50?'ko':'ok') + '">Le DVA ne compense que ' + fmt(partCompensee,2) + ' % de la détérioration du CVA — ' + (partCompensee<50?'loin d\'être suffisant':'une part substantielle') + '</div>';
+
+  html += dessinerBarresCVA(UCVAbase, UCVAstress1, UCVAstress2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresCVA(base, stress1, stress2) {
+  var vals = [base, stress1, stress2];
+  var noms = ['Base (indépendance)', 'Stress mécanique', 'Stress WWR'];
+  var couleurs = ['var(--cgris,#5A5A5A)', 'var(--cintu,#E08000)', 'var(--cex,#2E8B57)'];
+  var largeur = 340, hauteur = 220, margeG = 45, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max(1e-6, Math.max.apply(null, vals)) * 1.25;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var yRef = yPix(base);
+  var largeurBarre = 55;
+  var xCentres = [];
+  for (var i=0;i<3;i++) { xCentres.push(margeG + (i+0.5)*((largeur-margeG-margeD)/3)); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yRef.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yRef.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-dasharray="4,3" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var v = vals[i];
+    var yTop = yPix(v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yTop-5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + fmt(v,4) + '</text>';
+    svg += '<text x="' + xCentres[i] + '" y="' + (yZero + 13).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">UCVA (M$)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerStressCCR(); calculerStressCVA(); };
+</script>
+</body>
+</html>

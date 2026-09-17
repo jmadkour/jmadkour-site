@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Score et notation de crédit — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Application : score et notation de crédit</h1>
+<p class="sous-titre">Calculatrice interactive — calibrer un score linéaire et le valider hors échantillon et hors période (exercice 5), classes de notation : différenciation, concentration et benchmarking (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Calibrer un score linéaire et le valider hors échantillon et hors période</h2>
+  <p class="aide">Score = beta0 + beta1 x1 + beta2 x2 + beta3 x3 ; un dossier est approuvé si son score est superieur ou egal au cutoff. La validation hors echantillon compare la PD des dossiers approuves a celle des dossiers rejetes (suivis a posteriori) et a la PD non conditionnelle du lot complet. Le test glissant (walk-forward) poole plusieurs fenetres hors periode successives.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Coefficients du modele et cutoff</h3>
+      <label for="c5_b0">beta0 (constante)</label><input type="number" id="c5_b0" value="12.0" step="0.1">
+      <label for="c5_b1">beta1 (x1 : couverture des interets)</label><input type="number" id="c5_b1" value="4.5" step="0.1">
+      <label for="c5_b2">beta2 (x2 : dette / fonds propres, %)</label><input type="number" id="c5_b2" value="-0.08" step="0.01">
+      <label for="c5_b3">beta3 (x3 : anciennete de la relation, annees)</label><input type="number" id="c5_b3" value="0.6" step="0.1">
+      <label for="c5_cutoff">Cutoff d'approbation</label><input type="number" id="c5_cutoff" value="20" step="1">
+    </div>
+    <div class="bloc" style="flex:1.4; min-width:280px;">
+      <h3>Trois dossiers a evaluer</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c5_tableClients">
+        <tr><th>Dossier</th><td>Client 1</td><td>Client 2</td><td>Client 3</td></tr>
+        <tr><th>x1</th>
+          <td><input type="number" class="c5-x1" value="3.5" step="0.1"></td>
+          <td><input type="number" class="c5-x1" value="1.2" step="0.1"></td>
+          <td><input type="number" class="c5-x1" value="6.0" step="0.1"></td>
+        </tr>
+        <tr><th>x2</th>
+          <td><input type="number" class="c5-x2" value="120" step="1"></td>
+          <td><input type="number" class="c5-x2" value="260" step="1"></td>
+          <td><input type="number" class="c5-x2" value="70" step="1"></td>
+        </tr>
+        <tr><th>x3</th>
+          <td><input type="number" class="c5-x3" value="6" step="1"></td>
+          <td><input type="number" class="c5-x3" value="1" step="1"></td>
+          <td><input type="number" class="c5-x3" value="10" step="1"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Validation hors echantillon (300 dossiers)</h3>
+      <label for="c5_nApp">Dossiers approuves (n)</label><input type="number" id="c5_nApp" value="220" step="1" min="1">
+      <label for="c5_dApp">... dont defauts</label><input type="number" id="c5_dApp" value="14" step="1" min="0">
+      <label for="c5_nRej">Dossiers rejetes (n)</label><input type="number" id="c5_nRej" value="80" step="1" min="1">
+      <label for="c5_dRej">... dont auraient fait defaut</label><input type="number" id="c5_dRej" value="22" step="1" min="0">
+    </div>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Test glissant — fenetre 1</h3>
+      <label for="c5_n1">n approuves</label><input type="number" id="c5_n1" value="150" step="1" min="1">
+      <label for="c5_d1">defauts</label><input type="number" id="c5_d1" value="9" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Test glissant — fenetre 2</h3>
+      <label for="c5_n2">n approuves</label><input type="number" id="c5_n2" value="180" step="1" min="1">
+      <label for="c5_d2">defauts</label><input type="number" id="c5_d2" value="11" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Test glissant — fenetre 3</h3>
+      <label for="c5_n3">n approuves</label><input type="number" id="c5_n3" value="200" step="1" min="1">
+      <label for="c5_d3">defauts</label><input type="number" id="c5_d3" value="15" step="1" min="0">
+    </div>
+  </div>
+  <button onclick="calculerScore()">Calculer</button>
+  <div id="resultatScore" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Classes de notation : différenciation, concentration et benchmarking</h2>
+  <p class="aide">PD empirique d'une classe = defauts / emprunteurs de la classe. La concentration est la part de chaque classe dans la population totale, comparee a un plafond interne. Le benchmarking compare la PD empirique de chaque classe aux seuils agences separant categories investissement (moins de 0,2 %) et categories speculatives (0,7 % a plus de 25 %).</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c5_tableClasses">
+    <tr><th>Classe</th><td>1 (AAA-A)</td><td>2 (BBB)</td><td>3 (BB)</td><td>4 (B)</td><td>5 (CCC-)</td></tr>
+    <tr><th>Emprunteurs n</th>
+      <td><input type="number" class="c5-cn" value="500" step="1" min="1"></td>
+      <td><input type="number" class="c5-cn" value="800" step="1" min="1"></td>
+      <td><input type="number" class="c5-cn" value="650" step="1" min="1"></td>
+      <td><input type="number" class="c5-cn" value="400" step="1" min="1"></td>
+      <td><input type="number" class="c5-cn" value="150" step="1" min="1"></td>
+    </tr>
+    <tr><th>Defauts d</th>
+      <td><input type="number" class="c5-cd" value="1" step="1" min="0"></td>
+      <td><input type="number" class="c5-cd" value="6" step="1" min="0"></td>
+      <td><input type="number" class="c5-cd" value="18" step="1" min="0"></td>
+      <td><input type="number" class="c5-cd" value="28" step="1" min="0"></td>
+      <td><input type="number" class="c5-cd" value="33" step="1" min="0"></td>
+    </tr>
+  </table>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Plafond et seuils agences</h3>
+      <label for="c5_concMax">Plafond de concentration par classe (%)</label><input type="number" id="c5_concMax" value="35" step="1" min="1" max="100">
+      <label for="c5_seuilIG">Seuil investment grade agences (%)</label><input type="number" id="c5_seuilIG" value="0.2" step="0.1" min="0">
+      <label for="c5_planchSpec">Plancher speculatif agences (%)</label><input type="number" id="c5_planchSpec" value="0.7" step="0.1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Migration de la classe 2 (annee suivante)</h3>
+      <label for="c5_migReste">Reste en classe 2</label><input type="number" id="c5_migReste" value="680" step="1" min="0">
+      <label for="c5_migBas">Migre vers classe 3 (degradation)</label><input type="number" id="c5_migBas" value="90" step="1" min="0">
+      <label for="c5_migHaut">Migre vers classe 1 (amelioration)</label><input type="number" id="c5_migHaut" value="30" step="1" min="0">
+    </div>
+  </div>
+  <button onclick="calculerClasses()">Calculer</button>
+  <div id="resultatClasses" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function calculerScore() {
+  var resDiv = document.getElementById('resultatScore');
+  var b0 = parseFloat(document.getElementById('c5_b0').value);
+  var b1 = parseFloat(document.getElementById('c5_b1').value);
+  var b2 = parseFloat(document.getElementById('c5_b2').value);
+  var b3 = parseFloat(document.getElementById('c5_b3').value);
+  var cutoff = parseFloat(document.getElementById('c5_cutoff').value);
+  var x1s = Array.prototype.map.call(document.querySelectorAll('.c5-x1'), function(el){ return parseFloat(el.value); });
+  var x2s = Array.prototype.map.call(document.querySelectorAll('.c5-x2'), function(el){ return parseFloat(el.value); });
+  var x3s = Array.prototype.map.call(document.querySelectorAll('.c5-x3'), function(el){ return parseFloat(el.value); });
+  var nApp = parseFloat(document.getElementById('c5_nApp').value);
+  var dApp = parseFloat(document.getElementById('c5_dApp').value);
+  var nRej = parseFloat(document.getElementById('c5_nRej').value);
+  var dRej = parseFloat(document.getElementById('c5_dRej').value);
+  var n1 = parseFloat(document.getElementById('c5_n1').value), d1 = parseFloat(document.getElementById('c5_d1').value);
+  var n2 = parseFloat(document.getElementById('c5_n2').value), d2 = parseFloat(document.getElementById('c5_d2').value);
+  var n3 = parseFloat(document.getElementById('c5_n3').value), d3 = parseFloat(document.getElementById('c5_d3').value);
+
+  var champsBase = [b0,b1,b2,b3,cutoff,nApp,dApp,nRej,dRej,n1,d1,n2,d2,n3,d3];
+  var tousValides = champsBase.concat(x1s).concat(x2s).concat(x3s).every(function(v){ return !isNaN(v); });
+  if (!tousValides || nApp<=0 || nRej<=0 || n1<=0 || n2<=0 || n3<=0 || dApp>nApp || dRej>nRej || d1>n1 || d2>n2 || d3>n3) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes, les effectifs doivent etre strictement positifs, et un nombre de defauts ne peut exceder l\'effectif correspondant.</p>';
+    return;
+  }
+
+  var noms = ['Client 1','Client 2','Client 3'];
+  var scores = x1s.map(function(x1,i){ return b0 + b1*x1 + b2*x2s[i] + b3*x3s[i]; });
+  var decisions = scores.map(function(s){ return s >= cutoff; });
+
+  var pdApp = dApp/nApp*100;
+  var pdRej = dRej/nRej*100;
+  var ratioRejApp = pdRej/pdApp;
+  var nTot = nApp + nRej;
+  var dTot = dApp + dRej;
+  var pdNonCond = dTot/nTot*100;
+  var reductionPp = pdNonCond - pdApp;
+  var reductionRel = pdNonCond>0 ? reductionPp/pdNonCond*100 : 0;
+
+  var pdF1 = d1/n1*100, pdF2 = d2/n2*100, pdF3 = d3/n3*100;
+  var moyenneSimple = (pdF1+pdF2+pdF3)/3;
+  var nPool = n1+n2+n3, dPool = d1+d2+d3;
+  var pdPoolee = dPool/nPool*100;
+  var ecartPoolVsApp = pdPoolee - pdApp;
+
+  var bonsRejetes = nRej - dRej;
+
+  var html = '<table class="tabres"><tr><th>Dossier</th><th>Score</th><th>Decision</th></tr>';
+  noms.forEach(function(nom,i){
+    html += '<tr><td>' + nom + '</td><td>' + fmt(scores[i],2) + '</td><td>' + (decisions[i] ? 'APPROUVE' : 'REJETE') + '</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>PD empirique des approuves</th><td>' + fmt(pdApp,4) + ' % (' + fmt(dApp,0) + ' / ' + fmt(nApp,0) + ')</td></tr>';
+  html += '<tr><th>PD empirique des rejetes (a posteriori)</th><td>' + fmt(pdRej,4) + ' % (' + fmt(dRej,0) + ' / ' + fmt(nRej,0) + ')</td></tr>';
+  html += '<tr><th>Ratio PD rejetes / PD approuves</th><td>' + fmt(ratioRejApp,4) + '</td></tr>';
+  html += '<tr><th>PD non conditionnelle (sans filtrage, ' + fmt(nTot,0) + ' dossiers)</th><td>' + fmt(pdNonCond,4) + ' %</td></tr>';
+  html += '<tr><th>Reduction du taux de defaut du livre finance</th><td>' + fmt(reductionPp,4) + ' pt (' + fmt(reductionRel,2) + ' % relatif)</td></tr>';
+  html += '<tr><th>PD fenetre 1 / 2 / 3 (walk-forward)</th><td>' + fmt(pdF1,4) + ' % / ' + fmt(pdF2,4) + ' % / ' + fmt(pdF3,4) + ' %</td></tr>';
+  html += '<tr><th>Moyenne simple des 3 fenetres</th><td>' + fmt(moyenneSimple,4) + ' %</td></tr>';
+  html += '<tr><th>Moyenne ponderee (poolee) des 3 fenetres</th><td>' + fmt(pdPoolee,4) + ' % (n=' + fmt(nPool,0) + ', d=' + fmt(dPool,0) + ')</td></tr>';
+  html += '<tr><th>Ecart PD poolee - PD approuves (b)</th><td>' + fmt(ecartPoolVsApp,4) + ' pt</td></tr>';
+  html += '<tr><th>"Bons" dossiers rejetes par erreur</th><td>' + fmt(bonsRejetes,0) + ' sur ' + fmt(nRej,0) + ' rejetes</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">Le score differencie : un dossier rejete a une PD a posteriori ' + fmt(ratioRejApp,2) + ' fois superieure a celle d\'un dossier approuve.</div>';
+  html += '<div class="valeur ' + (Math.abs(ecartPoolVsApp)<1 ? 'ok':'mid') + '">Coherence hors echantillon / walk-forward : ecart de ' + fmt(Math.abs(ecartPoolVsApp),2) + ' pt entre la PD poolee des 3 fenetres et la PD des approuves du test hors echantillon.</div>';
+
+  html += dessinerScore(pdApp, pdRej, pdNonCond, pdF1, pdF2, pdF3, pdPoolee);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerScore(pdApp, pdRej, pdNonCond, pdF1, pdF2, pdF3, pdPoolee) {
+  var barres = [
+    {label:'PD approuves', v: pdApp, coul: 'var(--ceco,#1F6FB2)'},
+    {label:'PD rejetes', v: pdRej, coul: 'var(--ceco,#1F6FB2)'},
+    {label:'PD non cond.', v: pdNonCond, coul: 'var(--ceco,#1F6FB2)'},
+    {label:'Fenetre 1', v: pdF1, coul: 'var(--cintu,#E08000)'},
+    {label:'Fenetre 2', v: pdF2, coul: 'var(--cintu,#E08000)'},
+    {label:'Fenetre 3', v: pdF3, coul: 'var(--cintu,#E08000)'},
+    {label:'Poolee', v: pdPoolee, coul: 'var(--cintu,#E08000)'}
+  ];
+  var n = barres.length;
+  var largeur = 520, hauteur = 260, margeG = 45, margeD = 15, margeH = 20, margeB = 55;
+  var vMax = Math.max.apply(null, barres.map(function(b){return b.v;})) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.55;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  barres.forEach(function(b,i){
+    var x = margeG + i*slot + slot*0.225;
+    var yTop = yPix(b.v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + b.coul + '"/>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + b.v.toFixed(2) + '</text>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor" transform="rotate(20 ' + (x+largeurBarre/2).toFixed(1) + ',' + (yZero + 14).toFixed(1) + ')">' + b.label + '</text>';
+  });
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">PD (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerClasses() {
+  var resDiv = document.getElementById('resultatClasses');
+  var ns = Array.prototype.map.call(document.querySelectorAll('.c5-cn'), function(el){ return parseFloat(el.value); });
+  var ds = Array.prototype.map.call(document.querySelectorAll('.c5-cd'), function(el){ return parseFloat(el.value); });
+  var concMax = parseFloat(document.getElementById('c5_concMax').value);
+  var seuilIG = parseFloat(document.getElementById('c5_seuilIG').value);
+  var planchSpec = parseFloat(document.getElementById('c5_planchSpec').value);
+  var migReste = parseFloat(document.getElementById('c5_migReste').value);
+  var migBas = parseFloat(document.getElementById('c5_migBas').value);
+  var migHaut = parseFloat(document.getElementById('c5_migHaut').value);
+
+  var tousValides = ns.concat(ds).every(function(v){ return !isNaN(v); }) && !isNaN(concMax) && !isNaN(seuilIG) && !isNaN(planchSpec) && !isNaN(migReste) && !isNaN(migBas) && !isNaN(migHaut);
+  var dOk = ds.every(function(d,i){ return d <= ns[i]; });
+  if (!tousValides || !dOk || ns.some(function(v){return v<=0;})) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes, les effectifs par classe doivent etre strictement positifs, et les defauts ne peuvent exceder l\'effectif de leur classe.</p>';
+    return;
+  }
+
+  var noms = ['Classe 1 (AAA-A)','Classe 2 (BBB)','Classe 3 (BB)','Classe 4 (B)','Classe 5 (CCC-)'];
+  var pds = ns.map(function(n,i){ return ds[i]/n*100; });
+  var nTot = ns.reduce(function(a,b){return a+b;},0);
+  var dTot = ds.reduce(function(a,b){return a+b;},0);
+  var pdGlobale = dTot/nTot*100;
+  var parts = ns.map(function(n){ return n/nTot*100; });
+  var maxPart = Math.max.apply(null, parts);
+  var idxMaxPart = parts.indexOf(maxPart);
+  var concentrationOk = maxPart <= concMax;
+
+  var ratios = [];
+  for (var i=1;i<pds.length;i++) { ratios.push(pds[i]/pds[i-1]); }
+
+  var html = '<table class="tabres"><tr><th>Classe</th><th>n</th><th>d</th><th>PD empirique</th><th>Part du portefeuille</th></tr>';
+  noms.forEach(function(nom,i){
+    html += '<tr><td>' + nom + '</td><td>' + fmt(ns[i],0) + '</td><td>' + fmt(ds[i],0) + '</td><td>' + fmt(pds[i],4) + ' %</td><td>' + fmt(parts[i],2) + ' %</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>PD globale du portefeuille</th><td>' + fmt(pdGlobale,4) + ' % (n=' + fmt(nTot,0) + ', d=' + fmt(dTot,0) + ')</td></tr>';
+  html += '<tr><th>Classe la plus peuplee</th><td>' + noms[idxMaxPart] + ' a ' + fmt(maxPart,2) + ' % (plafond ' + fmt(concMax,0) + ' %)</td></tr>';
+  for (var i=0;i<ratios.length;i++) {
+    html += '<tr><th>Ratio PD ' + noms[i+1] + ' / ' + noms[i] + '</th><td>' + fmt(ratios[i],3) + '</td></tr>';
+  }
+  html += '</table>';
+
+  html += '<div class="valeur ' + (concentrationOk?'ok':'ko') + '">' + (concentrationOk ? 'Le plafond de concentration est RESPECTE' : 'Le plafond de concentration est DEPASSE') + ' (' + fmt(maxPart,2) + ' % contre ' + fmt(concMax,0) + ' % autorise, classe la plus peuplee : ' + noms[idxMaxPart] + ')</div>';
+
+  var c1_vs_IG = pds[0] <= seuilIG;
+  html += '<div class="valeur ' + (c1_vs_IG?'ok':'ko') + '">Classe 1 (' + fmt(pds[0],4) + ' %) ' + (c1_vs_IG?'est bien':'n\'est PAS') + ' coherente avec le seuil investment grade (' + fmt(seuilIG,2) + ' %)</div>';
+
+  if (pds.length > 1) {
+    var c2 = pds[1];
+    var c2_speculative = c2 > planchSpec;
+    var c2_ig = c2 <= seuilIG;
+    var verdictC2 = c2_ig ? 'en categorie INVESTISSEMENT' : (c2_speculative ? 'en categorie SPECULATIVE' : 'en ZONE GRISE entre les deux seuils agences');
+    html += '<div class="valeur ' + (c2_ig?'ok':'ko') + '">Classe 2 (' + fmt(c2,4) + ' %), etiquette interne «BBB» : au sens strict des seuils agences, elle se situe ' + verdictC2 + '.</div>';
+  }
+
+  var migTotal = migReste + migBas + migHaut;
+  var stabilite = migTotal>0 ? migReste/migTotal*100 : 0;
+  var tauxDegrad = migTotal>0 ? migBas/migTotal*100 : 0;
+  var tauxAmelio = migTotal>0 ? migHaut/migTotal*100 : 0;
+  var ratioDegAme = migHaut>0 ? migBas/migHaut : NaN;
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Migration classe 2 : effectif total suivi</th><td>' + fmt(migTotal,0) + '</td></tr>';
+  html += '<tr><th>Taux de stabilite</th><td>' + fmt(stabilite,2) + ' %</td></tr>';
+  html += '<tr><th>Taux de degradation (vers classe 3)</th><td>' + fmt(tauxDegrad,2) + ' %</td></tr>';
+  html += '<tr><th>Taux d\'amelioration (vers classe 1)</th><td>' + fmt(tauxAmelio,2) + ' %</td></tr>';
+  html += '<tr><th>Ratio degradations / ameliorations</th><td>' + (isNaN(ratioDegAme) ? 'indefini (aucune amelioration)' : fmt(ratioDegAme,3)) + '</td></tr>';
+  html += '</table>';
+
+  html += dessinerClasses(noms, pds, seuilIG, planchSpec);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerClasses(noms, pds, seuilIG, planchSpec) {
+  var n = pds.length;
+  var largeur = 460, hauteur = 250, margeG = 45, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max.apply(null, pds.concat([planchSpec])) * 1.15 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var yIG = yPix(seuilIG);
+  var ySpec = yPix(planchSpec);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.5;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + ySpec.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + ySpec.toFixed(1) + '" stroke="var(--cintu,#E08000)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-4) + '" y="' + (ySpec-4).toFixed(1) + '" font-size="7" text-anchor="end" fill="currentColor">plancher spec. ' + planchSpec.toFixed(1) + ' %</text>';
+  svg += '<line x1="' + margeG + '" y1="' + yIG.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yIG.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1" stroke-dasharray="2,2"/>';
+  svg += '<text x="' + (margeG+2) + '" y="' + (yIG-4).toFixed(1) + '" font-size="7" text-anchor="start" fill="currentColor">seuil IG ' + seuilIG.toFixed(1) + ' %</text>';
+  for (var i = 0; i < n; i++) {
+    var x = margeG + i*slot + slot*0.25;
+    var yTop = yPix(pds[i]);
+    var h = yZero - yTop;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="var(--cdef,#4A3B8C)"/>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + pds[i].toFixed(2) + '</text>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + noms[i].replace('Classe ','C') + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">PD empirique (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerScore(); calculerClasses(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Le risque de crédit d'un portefeuille — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Application : le risque de crédit d'un portefeuille</h1>
+<p class="sous-titre">Calculatrice interactive — corrélation de défaut et probabilité de défaut conjoint (exercice 5), VaR de crédit d'un portefeuille granulaire homogène par le modèle à un facteur (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La corrélation de défaut et la probabilité de défaut conjoint</h2>
+  <p class="aide">Probabilité de défaut conjoint sous corrélation : pi12 = rho12 x racine(pi1 x (1-pi1) x pi2 x (1-pi2)) + pi1 x pi2. Modèle à un facteur : rho12 = beta au carré ; probabilité de défaut conditionnelle p(m) = Phi((k - beta x m) / racine(1 - beta au carré)), avec k = Phi inverse(pi).</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Émetteur 1</h3>
+      <label for="c10_pi1">Probabilité de défaut individuelle pi1 (%)</label>
+      <input type="number" id="c10_pi1" value="0.10" step="0.01" min="0.0001" max="99">
+    </div>
+    <div class="bloc">
+      <h3>Émetteur 2</h3>
+      <label for="c10_pi2">Probabilité de défaut individuelle pi2 (%)</label>
+      <input type="number" id="c10_pi2" value="3.00" step="0.01" min="0.0001" max="99">
+    </div>
+    <div class="bloc">
+      <h3>Corrélation et scénario</h3>
+      <label for="c10_rho12">Corrélation de défaut rho12 (%)</label>
+      <input type="number" id="c10_rho12" value="8" step="0.5" min="0" max="99">
+      <label for="c10_cible">Probabilité conjointe cible pour (b), en %</label>
+      <input type="number" id="c10_cible" value="0.10" step="0.01" min="0.0001" max="99">
+      <label for="c10_m">Réalisation du facteur de marché m, pour (d)</label>
+      <input type="number" id="c10_m" value="-2" step="0.1">
+    </div>
+  </div>
+  <button onclick="calculerCorrelation()">Calculer</button>
+  <div id="resultatCorrelation" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>La VaR de crédit d'un portefeuille granulaire homogène (modèle de Vasicek)</h2>
+  <p class="aide">Perte attendue EL = V x pi x LGD. Taux de défaut le pire cas WCDR(1 an, X) = Phi((Phi inverse(pi) + racine(rho) x Phi inverse(X)) / racine(1 - rho)). Quantile de perte = WCDR x V x LGD. VaR de crédit = quantile de perte moins EL.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Portefeuille</h3>
+      <label for="c10_V">Valeur totale du portefeuille V (millions $)</label>
+      <input type="number" id="c10_V" value="500" step="10" min="1">
+      <label for="c10_pi">Probabilité de défaut individuelle pi (%)</label>
+      <input type="number" id="c10_pi" value="3" step="0.1" min="0.001" max="99">
+      <label for="c10_lgd">Taux de perte en cas de défaut LGD (%)</label>
+      <input type="number" id="c10_lgd" value="60" step="1" min="1" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Corrélation d'actifs</h3>
+      <label for="c10_rho">Corrélation d'actifs rho de base (%)</label>
+      <input type="number" id="c10_rho" value="6" step="0.5" min="0.01" max="99">
+      <label for="c10_rhoAlt">Corrélation d'actifs alternative (%)</label>
+      <input type="number" id="c10_rhoAlt" value="20" step="0.5" min="0.01" max="99">
+    </div>
+    <div class="bloc">
+      <h3>Niveaux de confiance</h3>
+      <label for="c10_X1">Premier niveau de confiance X (%)</label>
+      <input type="number" id="c10_X1" value="99" step="0.1" min="50" max="99.999">
+      <label for="c10_X2">Second niveau de confiance X (%)</label>
+      <input type="number" id="c10_X2" value="99.9" step="0.1" min="50" max="99.999">
+    </div>
+  </div>
+  <button onclick="calculerVaR()">Calculer</button>
+  <div id="resultatVaR" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+// ---- Fonctions statistiques : loi normale standard ----
+// Phi(x) : fonction de répartition normale standard (approximation d'Abramowitz-Stegun, précision ~1e-7)
+function normCdf(x) {
+  var t = 1 / (1 + 0.2316419 * Math.abs(x));
+  var d = 0.3989422804014327 * Math.exp(-x * x / 2); // 1/sqrt(2*pi)
+  var p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return x >= 0 ? 1 - p : p;
+}
+// Phi^-1(p) : fonction quantile normale standard (algorithme de Peter Acklam, précision ~1.15e-9)
+function normInv(p) {
+  if (p <= 0) return -Infinity;
+  if (p >= 1) return Infinity;
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  var pLow = 0.02425, pHigh = 1 - pLow;
+  var q, r;
+  if (p < pLow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  } else if (p <= pHigh) {
+    q = p - 0.5; r = q*q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  }
+}
+
+function pDeM(k, beta, m) {
+  return normCdf((k - beta * m) / Math.sqrt(1 - beta * beta));
+}
+
+function calculerCorrelation() {
+  var resDiv = document.getElementById('resultatCorrelation');
+  var pi1 = parseFloat(document.getElementById('c10_pi1').value) / 100;
+  var pi2 = parseFloat(document.getElementById('c10_pi2').value) / 100;
+  var rho12 = parseFloat(document.getElementById('c10_rho12').value) / 100;
+  var cible = parseFloat(document.getElementById('c10_cible').value) / 100;
+  var m = parseFloat(document.getElementById('c10_m').value);
+
+  if ([pi1,pi2,rho12,cible,m].some(isNaN) || pi1<=0 || pi1>=1 || pi2<=0 || pi2>=1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les probabilités de défaut doivent être strictement comprises entre 0 et 100 %, et tous les champs doivent être renseignés.</p>';
+    return;
+  }
+
+  var sigmaTerme = Math.sqrt(pi1*(1-pi1)*pi2*(1-pi2));
+  var pi12_indep = pi1 * pi2;
+  var pi12_corr = rho12 * sigmaTerme + pi1 * pi2;
+  var facteur = pi12_corr / pi12_indep;
+  var rhoNecessaire = (cible - pi12_indep) / sigmaTerme;
+
+  var betaOk = rho12 >= 0 && rho12 <= 1;
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>Probabilité de défaut conjoint, indépendance (rho=0)</th><td>' + fmt(pi12_indep*100,5) + ' % = ' + fmt(pi12_indep*10000,3) + ' points de base</td></tr>';
+  html += '<tr><th>Probabilité de défaut conjoint, rho12 = ' + fmt(rho12*100,2) + ' %</th><td>' + fmt(pi12_corr*100,5) + ' % = ' + fmt(pi12_corr*10000,3) + ' points de base</td></tr>';
+  html += '<tr><th>Facteur multiplicatif</th><td>×' + fmt(facteur,3) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">(b) Corrélation nécessaire pour atteindre pi12 = ' + fmt(cible*100,4) + ' % : rho12 = ' + fmt(rhoNecessaire*100,3) + ' %' + (rhoNecessaire<0||rhoNecessaire>1 ? ' (hors de l\'intervalle [0,1] : cible irréaliste avec ces probabilités individuelles)' : '') + '</div>';
+
+  if (!betaOk) {
+    html += '<p class="erreur">(d) Le modèle à un facteur homogène requiert rho12 dans [0,1] pour définir beta = racine(rho12) ; ajustez rho12 pour calculer (d).</p>';
+  } else {
+    var beta = Math.sqrt(rho12);
+    var k1 = normInv(pi1), k2 = normInv(pi2);
+    var p1m = pDeM(k1, beta, m);
+    var p2m = pDeM(k2, beta, m);
+    html += '<table class="tabres">';
+    html += '<tr><th>(d) beta = racine(rho12)</th><td>' + fmt(beta,4) + '</td></tr>';
+    html += '<tr><th>Probabilité de défaut conditionnelle émetteur 1, p1(' + fmt(m,2) + ')</th><td>' + fmt(p1m*100,4) + ' % (facteur ×' + fmt(p1m/pi1,3) + ' vs pi1)</td></tr>';
+    html += '<tr><th>Probabilité de défaut conditionnelle émetteur 2, p2(' + fmt(m,2) + ')</th><td>' + fmt(p2m*100,4) + ' % (facteur ×' + fmt(p2m/pi2,3) + ' vs pi2)</td></tr>';
+    html += '</table>';
+  }
+
+  html += dessinerCorrelation(pi1*100, pi2*100, betaOk ? pDeM(normInv(pi1), Math.sqrt(rho12), m)*100 : null, betaOk ? pDeM(normInv(pi2), Math.sqrt(rho12), m)*100 : null);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCorrelation(pi1pct, pi2pct, p1mpct, p2mpct) {
+  var largeur = 460, hauteur = 260, margeG = 55, margeD = 15, margeH = 20, margeB = 55;
+  var vals = [pi1pct, pi2pct];
+  if (p1mpct !== null) vals.push(p1mpct, p2mpct);
+  var vMax = Math.max.apply(null, vals) * 1.25 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var groupes = p1mpct !== null ? 2 : 2;
+  var largeurGroupe = (largeur - margeG - margeD) / 2;
+  var largeurBarre = largeurGroupe * 0.28;
+
+  function xBarre(groupe, sousIndex, nSous) {
+    var centre = margeG + (groupe + 0.5) * largeurGroupe;
+    var decalage = (sousIndex - (nSous-1)/2) * (largeurBarre * 1.15);
+    return centre + decalage;
+  }
+
+  var nSous = p1mpct !== null ? 2 : 1;
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+
+  var donnees = [
+    { groupe: 0, nom: 'Émetteur 1', v1: pi1pct, v2: p1mpct },
+    { groupe: 1, nom: 'Émetteur 2', v1: pi2pct, v2: p2mpct }
+  ];
+  donnees.forEach(function(d) {
+    var x1 = xBarre(d.groupe, 0, nSous);
+    var y1t = yPix(d.v1);
+    svg += '<rect x="' + (x1-largeurBarre/2).toFixed(1) + '" y="' + y1t.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + (yZero-y1t).toFixed(1) + '" fill="var(--cgris,#5A5A5A)"/>';
+    svg += '<text x="' + x1.toFixed(1) + '" y="' + (y1t-4).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + d.v1.toFixed(2) + '</text>';
+    if (d.v2 !== null && d.v2 !== undefined) {
+      var x2 = xBarre(d.groupe, 1, nSous);
+      var y2t = yPix(d.v2);
+      svg += '<rect x="' + (x2-largeurBarre/2).toFixed(1) + '" y="' + y2t.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + (yZero-y2t).toFixed(1) + '" fill="var(--cintu,#E08000)"/>';
+      svg += '<text x="' + x2.toFixed(1) + '" y="' + (y2t-4).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + d.v2.toFixed(2) + '</text>';
+    }
+    svg += '<text x="' + (margeG + (d.groupe+0.5)*largeurGroupe).toFixed(1) + '" y="' + (yZero + 15).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + d.nom + '</text>';
+  });
+
+  svg += '<text x="12" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-15) + ')">Probabilité de défaut (%)</text>';
+  svg += '<rect x="' + margeG + '" y="4" width="9" height="9" fill="var(--cgris,#5A5A5A)"/><text x="' + (margeG+13) + '" y="12" font-size="7.5" fill="currentColor">Inconditionnelle</text>';
+  svg += '<rect x="' + (margeG+95) + '" y="4" width="9" height="9" fill="var(--cintu,#E08000)"/><text x="' + (margeG+108) + '" y="12" font-size="7.5" fill="currentColor">Conditionnelle p(m)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerVaR() {
+  var resDiv = document.getElementById('resultatVaR');
+  var V = parseFloat(document.getElementById('c10_V').value);
+  var pi = parseFloat(document.getElementById('c10_pi').value) / 100;
+  var lgd = parseFloat(document.getElementById('c10_lgd').value) / 100;
+  var rho = parseFloat(document.getElementById('c10_rho').value) / 100;
+  var rhoAlt = parseFloat(document.getElementById('c10_rhoAlt').value) / 100;
+  var X1 = parseFloat(document.getElementById('c10_X1').value) / 100;
+  var X2 = parseFloat(document.getElementById('c10_X2').value) / 100;
+
+  if ([V,pi,lgd,rho,rhoAlt,X1,X2].some(isNaN) || V<=0 || pi<=0 || pi>=1 || lgd<=0 || lgd>1 || rho<=0 || rho>=1 || rhoAlt<=0 || rhoAlt>=1 || X1<=0 || X1>=1 || X2<=0 || X2>=1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : V doit être positif, pi, LGD, rho, rho alternative et les niveaux de confiance doivent être des pourcentages strictement compris entre 0 et 100 (100 exclu pour pi, rho, X).</p>';
+    return;
+  }
+
+  var EL = V * pi * lgd;
+  var elPct = EL / V * 100;
+
+  function WCDR(rhoVal, Xval) {
+    return normCdf((normInv(pi) + Math.sqrt(rhoVal) * normInv(Xval)) / Math.sqrt(1 - rhoVal));
+  }
+
+  var w1 = WCDR(rho, X1);
+  var w2 = WCDR(rho, X2);
+  var q1 = w1 * V * lgd;
+  var q2 = w2 * V * lgd;
+  var var1 = q1 - EL;
+  var var2 = q2 - EL;
+
+  var w2alt = WCDR(rhoAlt, X2);
+  var q2alt = w2alt * V * lgd;
+  var var2alt = q2alt - EL;
+  var facteurVaR = var2alt / var2;
+
+  var html = '';
+  html += '<table class="tabres">';
+  html += '<tr><th>(a) Perte attendue EL = V × pi × LGD</th><td>' + fmt(EL,3) + ' millions $ (' + fmt(elPct,3) + ' % de V)</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>Corrélation</th><th>Confiance X</th><th>WCDR(1 an, X)</th><th>Quantile de perte</th><th>VaR de crédit</th></tr>';
+  html += '<tr><td>rho = ' + fmt(rho*100,2) + ' %</td><td>' + fmt(X1*100,3) + ' %</td><td>' + fmt(w1*100,3) + ' %</td><td>' + fmt(q1,3) + ' M$</td><td>' + fmt(var1,3) + ' M$</td></tr>';
+  html += '<tr><td>rho = ' + fmt(rho*100,2) + ' %</td><td>' + fmt(X2*100,3) + ' %</td><td>' + fmt(w2*100,3) + ' %</td><td>' + fmt(q2,3) + ' M$</td><td>' + fmt(var2,3) + ' M$</td></tr>';
+  html += '<tr><td>rho = ' + fmt(rhoAlt*100,2) + ' % (alternative)</td><td>' + fmt(X2*100,3) + ' %</td><td>' + fmt(w2alt*100,3) + ' %</td><td>' + fmt(q2alt,3) + ' M$</td><td>' + fmt(var2alt,3) + ' M$</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">(d) Facteur multiplicatif de la VaR de crédit à ' + fmt(X2*100,3) + ' % lorsque rho passe de ' + fmt(rho*100,2) + ' % à ' + fmt(rhoAlt*100,2) + ' % : ×' + fmt(facteurVaR,3) + '</div>';
+
+  html += dessinerVaR(rho, rhoAlt, X1, X2, var1, var2, var2alt, EL);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerVaR(rho, rhoAlt, X1, X2, var1, var2, var2alt, EL) {
+  var largeur = 460, hauteur = 260, margeG = 55, margeD = 15, margeH = 25, margeB = 55;
+  var vals = [var1, var2, var2alt, EL];
+  var vMax = Math.max.apply(null, vals) * 1.2 || 1;
+  var vMin = Math.min(0, Math.min.apply(null, vals)) * 1.1;
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var yEL = yPix(EL);
+  var n = 3;
+  var largeurGroupe = (largeur - margeG - margeD) / n;
+  var largeurBarre = largeurGroupe * 0.45;
+  var couleurs = ['var(--ceco,#1F6FB2)', 'var(--cintu,#E08000)', 'var(--cdef,#4A3B8C)'];
+  var labels = ['VaR ' + (X1*100).toFixed(1) + '%\n(rho=' + (rho*100).toFixed(0) + '%)', 'VaR ' + (X2*100).toFixed(1) + '%\n(rho=' + (rho*100).toFixed(0) + '%)', 'VaR ' + (X2*100).toFixed(1) + '%\n(rho=' + (rhoAlt*100).toFixed(0) + '%)'];
+  var valeurs = [var1, var2, var2alt];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yEL.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yEL.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (margeG+3) + '" y="' + (yEL-4).toFixed(1) + '" font-size="7.5" text-anchor="start" fill="currentColor">EL = ' + EL.toFixed(2) + '</text>';
+
+  for (var i = 0; i < n; i++) {
+    var centre = margeG + (i + 0.5) * largeurGroupe;
+    var v = valeurs[i];
+    var yTop = yPix(Math.max(v,0)), yBot = yPix(Math.min(v,0));
+    svg += '<rect x="' + (centre-largeurBarre/2).toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + Math.abs(yBot-yTop).toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + centre.toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + v.toFixed(1) + '</text>';
+    var lignesLabel = labels[i].split('\n');
+    svg += '<text x="' + centre.toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + lignesLabel[0] + '</text>';
+    svg += '<text x="' + centre.toFixed(1) + '" y="' + (yZero + 24).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + lignesLabel[1] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-15) + ')">VaR de crédit (M$)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCorrelation(); calculerVaR(); };
+</script>
+</body>
+</html>

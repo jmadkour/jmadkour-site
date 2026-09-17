@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — Le risque de contrepartie — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.4em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — Application : le risque de contrepartie</h1>
+<p class="sous-titre">Calculatrice interactive — décomposition xVA d'un swap de taux non collatéralisé (exercice 5), pic d'exposition (collateral spike) et période de risque de marge (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La décomposition xVA d'un swap de taux non collatéralisé</h2>
+  <p class="aide">Taux de risque moyen implicite lambda = spread CDS / (1 - taux de recouvrement). Probabilite de defaut cumulee Q(t) = 1 - exp(-lambda t). CVA = (1-R) x somme sur i de [q_i x EE_i x DF_i], DVA calcule symetriquement avec le profil ENE et le spread de la banque. FCA = sF x somme(EE_i x DF_i), FBA = sF x somme(ENE_i x DF_i), FVA = FCA - FBA. K_i = taux de capital x EE_i, KVA = cout du capital x somme(K_i x DF_i). Ajustement total = -CVA + DVA - FVA - KVA.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Profils d'exposition EE et ENE (M$), fin de chaque annee</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c14_tableEE">
+        <tr><th>Fin d'année</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+        <tr><th>EE (M$)</th>
+          <td><input type="number" class="c14-ee" value="4" step="0.5" min="0"></td>
+          <td><input type="number" class="c14-ee" value="7" step="0.5" min="0"></td>
+          <td><input type="number" class="c14-ee" value="8" step="0.5" min="0"></td>
+          <td><input type="number" class="c14-ee" value="6" step="0.5" min="0"></td>
+          <td><input type="number" class="c14-ee" value="3" step="0.5" min="0"></td>
+        </tr>
+        <tr><th>ENE (M$)</th>
+          <td><input type="number" class="c14-ene" value="2" step="0.5" min="0"></td>
+          <td><input type="number" class="c14-ene" value="4" step="0.5" min="0"></td>
+          <td><input type="number" class="c14-ene" value="5" step="0.5" min="0"></td>
+          <td><input type="number" class="c14-ene" value="4" step="0.5" min="0"></td>
+          <td><input type="number" class="c14-ene" value="2" step="0.5" min="0"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Crédit et financement</h3>
+      <label for="c14_spreadCp">Spread de CDS de la contrepartie (points de base)</label><input type="number" id="c14_spreadCp" value="150" step="5" min="0">
+      <label for="c14_spreadBanque">Spread de CDS de la banque (points de base)</label><input type="number" id="c14_spreadBanque" value="60" step="5" min="0">
+      <label for="c14_R">Taux de recouvrement R (%)</label><input type="number" id="c14_R" value="40" step="1" min="0" max="99">
+      <label for="c14_r">Taux sans risque r, composition continue (%)</label><input type="number" id="c14_r" value="2.5" step="0.1">
+      <label for="c14_sF">Spread de financement de la banque sF (points de base)</label><input type="number" id="c14_sF" value="70" step="5" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Capital réglementaire</h3>
+      <label for="c14_capRatio">Taux de capital (% de l'EE)</label><input type="number" id="c14_capRatio" value="14" step="1" min="0" max="100">
+      <label for="c14_kcap">Coût du capital k_cap (% par an)</label><input type="number" id="c14_kcap" value="12" step="0.5" min="0">
+    </div>
+  </div>
+  <button onclick="calculerXVA()">Calculer</button>
+  <div id="resultatXVA" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Le pic d'exposition (collateral spike) et la période de risque de marge (MPoR)</h2>
+  <p class="aide">PFE_99% (MPoR) = deltaV + z_0,99 x sigma x racine(MPoR), avec MPoR en jours ouvres. Le premier terme (le "pic") est un flux de tresorerie deja survenu et non encore collateralise ; le second terme (la "marge de marche") est le supplement d'exposition du a la volatilite ordinaire du portefeuille durant la fenetre de MPoR.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Pic et volatilité</h3>
+      <label for="c14_deltaV">Flux de trésorerie non collatéralisé ΔV (M$)</label><input type="number" id="c14_deltaV" value="8" step="0.5" min="0">
+      <label for="c14_sigma">Volatilité journalière du netting set σ (M$)</label><input type="number" id="c14_sigma" value="0.6" step="0.05" min="0">
+      <label for="c14_z99">Quantile normal z (99 % = 2,3263)</label><input type="number" id="c14_z99" value="2.3263" step="0.0001" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Conventions de MPoR (jours ouvrés)</h3>
+      <label for="c14_mporOtc">MPoR OTC bilatéral</label><input type="number" id="c14_mporOtc" value="10" step="1" min="1">
+      <label for="c14_mporCcp">MPoR compensation centrale (CCP)</label><input type="number" id="c14_mporCcp" value="5" step="1" min="1">
+      <label for="c14_mporAlt">MPoR alternative (ex. collatéral cash)</label><input type="number" id="c14_mporAlt" value="7" step="1" min="1">
+    </div>
+  </div>
+  <button onclick="calculerMPoR()">Calculer</button>
+  <div id="resultatMPoR" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+var ANNEES = [1,2,3,4,5];
+
+function calculerXVA() {
+  var resDiv = document.getElementById('resultatXVA');
+  var EE  = Array.prototype.map.call(document.querySelectorAll('.c14-ee'),  function(el){ return parseFloat(el.value); });
+  var ENE = Array.prototype.map.call(document.querySelectorAll('.c14-ene'), function(el){ return parseFloat(el.value); });
+  var spreadCp = parseFloat(document.getElementById('c14_spreadCp').value);
+  var spreadBanque = parseFloat(document.getElementById('c14_spreadBanque').value);
+  var Rpct = parseFloat(document.getElementById('c14_R').value);
+  var rpct = parseFloat(document.getElementById('c14_r').value);
+  var sFpb = parseFloat(document.getElementById('c14_sF').value);
+  var capRatioPct = parseFloat(document.getElementById('c14_capRatio').value);
+  var kcapPct = parseFloat(document.getElementById('c14_kcap').value);
+
+  var champs = EE.concat(ENE).concat([spreadCp, spreadBanque, Rpct, rpct, sFpb, capRatioPct, kcapPct]);
+  var valides = champs.every(function(v){ return !isNaN(v); });
+  if (!valides || Rpct < 0 || Rpct >= 100 || spreadCp < 0 || spreadBanque < 0 || sFpb < 0 || capRatioPct < 0 || kcapPct < 0 || EE.some(function(v){return v<0;}) || ENE.some(function(v){return v<0;})) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les expositions EE et ENE doivent être non négatives, le taux de recouvrement compris entre 0 % (inclus) et 100 % (exclu), et les spreads, le spread de financement, le taux de capital et le coût du capital doivent être non négatifs.</p>';
+    return;
+  }
+
+  var R = Rpct/100, r = rpct/100, sF = sFpb/10000, capRatio = capRatioPct/100, kcap = kcapPct/100;
+  var s_cp = spreadCp/10000, s_banque = spreadBanque/10000;
+
+  function profilDefaut(spread) {
+    var lam = spread/(1-R);
+    var Q = [0];
+    for (var t=1;t<=5;t++) Q.push(1-Math.exp(-lam*t));
+    var q = [];
+    for (var i=1;i<=5;i++) q.push(Q[i]-Q[i-1]);
+    return { lam: lam, Q: Q, q: q };
+  }
+
+  var DF = ANNEES.map(function(t){ return Math.exp(-r*t); });
+  var cp = profilDefaut(s_cp);
+  var banque = profilDefaut(s_banque);
+
+  function xvaCredit(exposition, q) {
+    var termes = [];
+    for (var i=0;i<5;i++) termes.push(q[i]*exposition[i]*DF[i]);
+    var somme = termes.reduce(function(a,b){return a+b;},0);
+    return { valeur: (1-R)*somme, termes: termes, somme: somme };
+  }
+
+  var res_cva = xvaCredit(EE, cp.q);
+  var CVA = res_cva.valeur;
+  var res_dva = xvaCredit(ENE, banque.q);
+  var DVA = res_dva.valeur;
+
+  var sommeEEDF = EE.reduce(function(a,v,i){ return a+v*DF[i]; }, 0);
+  var sommeENEDF = ENE.reduce(function(a,v,i){ return a+v*DF[i]; }, 0);
+  var FCA = sF*sommeEEDF;
+  var FBA = sF*sommeENEDF;
+  var FVA = FCA - FBA;
+
+  var K = EE.map(function(v){ return capRatio*v; });
+  var sommeKDF = K.reduce(function(a,v,i){ return a+v*DF[i]; }, 0);
+  var KVA = kcap*sommeKDF;
+
+  var netBilateral = -CVA + DVA;
+  var netTotal = -CVA + DVA - FVA - KVA;
+  var ratioDvaFba = FBA > 0 ? DVA/FBA*100 : 0;
+
+  var html = '<table class="tabres"><tr><th>Fin d\'année</th>';
+  ANNEES.forEach(function(t){ html += '<th>' + t + '</th>'; });
+  html += '</tr><tr><td>EE (M$)</td>';
+  EE.forEach(function(v){ html += '<td>' + fmt(v,2) + '</td>'; });
+  html += '</tr><tr><td>ENE (M$)</td>';
+  ENE.forEach(function(v){ html += '<td>' + fmt(v,2) + '</td>'; });
+  html += '</tr><tr><td>Facteur d\'actualisation DF</td>';
+  DF.forEach(function(v){ html += '<td>' + fmt(v,4) + '</td>'; });
+  html += '</tr><tr><td>q_i contrepartie (%)</td>';
+  cp.q.forEach(function(v){ html += '<td>' + fmt(v*100,4) + '</td>'; });
+  html += '</tr><tr><td>q_i banque (%)</td>';
+  banque.q.forEach(function(v){ html += '<td>' + fmt(v*100,4) + '</td>'; });
+  html += '</tr><tr><td>K_i = capital (M$)</td>';
+  K.forEach(function(v){ html += '<td>' + fmt(v,3) + '</td>'; });
+  html += '</tr></table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Taux de risque moyen contrepartie (lambda)</th><td>' + fmt(cp.lam*100,4) + ' % par an</td></tr>';
+  html += '<tr><th>Taux de risque moyen banque (lambda)</th><td>' + fmt(banque.lam*100,4) + ' % par an</td></tr>';
+  html += '<tr><th>CVA</th><td>' + fmt(CVA,4) + ' M$</td></tr>';
+  html += '<tr><th>DVA</th><td>' + fmt(DVA,4) + ' M$</td></tr>';
+  html += '<tr><th>somme(EE_i x DF_i)</th><td>' + fmt(sommeEEDF,4) + ' M$</td></tr>';
+  html += '<tr><th>somme(ENE_i x DF_i)</th><td>' + fmt(sommeENEDF,4) + ' M$</td></tr>';
+  html += '<tr><th>FCA</th><td>' + fmt(FCA,4) + ' M$</td></tr>';
+  html += '<tr><th>FBA</th><td>' + fmt(FBA,4) + ' M$</td></tr>';
+  html += '<tr><th>FVA = FCA - FBA</th><td>' + fmt(FVA,4) + ' M$</td></tr>';
+  html += '<tr><th>somme(K_i x DF_i)</th><td>' + fmt(sommeKDF,4) + ' M$</td></tr>';
+  html += '<tr><th>KVA</th><td>' + fmt(KVA,4) + ' M$</td></tr>';
+  html += '<tr><th>Ajustement bilatéral seul (-CVA+DVA)</th><td>' + fmt(netBilateral,4) + ' M$</td></tr>';
+  html += '<tr><th>Ajustement total (-CVA+DVA-FVA-KVA)</th><td>' + fmt(netTotal,4) + ' M$</td></tr>';
+  html += '<tr><th>Ratio DVA / FBA (chevauchement)</th><td>' + fmt(ratioDvaFba,2) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (netTotal<0?'ko':'ok') + '">Ajustement total ' + (netTotal<0?'NÉGATIF':'POSITIF') + ' pour la banque : ' + fmt(netTotal,4) + ' M$ (contre ' + fmt(netBilateral,4) + ' M$ pour le seul ajustement bilatéral)</div>';
+  html += '<div class="valeur mid">DVA/FBA = ' + fmt(ratioDvaFba,1) + ' % — plus ce ratio est proche de 100 %, plus le chevauchement conceptuel entre DVA et FBA signalé par le cours risque de produire un double comptage</div>';
+
+  html += dessinerXVA(EE, ENE, K);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerXVA(EE, ENE, K) {
+  var n = EE.length;
+  var largeur = 460, hauteur = 250, margeG = 45, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max.apply(null, EE.concat(ENE).concat(K)) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.24;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < n; i++) {
+    var xC0 = margeG + i*slot + slot*0.22;
+    var xC1 = margeG + i*slot + slot*0.50;
+    var xC2 = margeG + i*slot + slot*0.78;
+    var yTop0 = yPix(EE[i]), h0 = yZero-yTop0;
+    var yTop1 = yPix(ENE[i]), h1 = yZero-yTop1;
+    var yTop2 = yPix(K[i]), h2 = yZero-yTop2;
+    svg += '<rect x="' + (xC0-largeurBarre/2).toFixed(1) + '" y="' + yTop0.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h0.toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<rect x="' + (xC1-largeurBarre/2).toFixed(1) + '" y="' + yTop1.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h1.toFixed(1) + '" fill="var(--cintu,#E08000)"/>';
+    svg += '<rect x="' + (xC2-largeurBarre/2).toFixed(1) + '" y="' + yTop2.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h2.toFixed(1) + '" fill="var(--cex,#2E8B57)"/>';
+    svg += '<text x="' + xC1.toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + ANNEES[i] + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-10) + ')">M$</text>';
+  svg += '<rect x="' + margeG + '" y="4" width="9" height="9" fill="var(--ceco,#1F6FB2)"/><text x="' + (margeG+13) + '" y="12" font-size="7.5" fill="currentColor">EE</text>';
+  svg += '<rect x="' + (margeG+38) + '" y="4" width="9" height="9" fill="var(--cintu,#E08000)"/><text x="' + (margeG+51) + '" y="12" font-size="7.5" fill="currentColor">ENE</text>';
+  svg += '<rect x="' + (margeG+85) + '" y="4" width="9" height="9" fill="var(--cex,#2E8B57)"/><text x="' + (margeG+98) + '" y="12" font-size="7.5" fill="currentColor">Capital K_i</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerMPoR() {
+  var resDiv = document.getElementById('resultatMPoR');
+  var deltaV = parseFloat(document.getElementById('c14_deltaV').value);
+  var sigma = parseFloat(document.getElementById('c14_sigma').value);
+  var z99 = parseFloat(document.getElementById('c14_z99').value);
+  var mporOtc = parseFloat(document.getElementById('c14_mporOtc').value);
+  var mporCcp = parseFloat(document.getElementById('c14_mporCcp').value);
+  var mporAlt = parseFloat(document.getElementById('c14_mporAlt').value);
+
+  var champs = [deltaV, sigma, z99, mporOtc, mporCcp, mporAlt];
+  var valides = champs.every(function(v){ return !isNaN(v); });
+  if (!valides || deltaV < 0 || sigma < 0 || z99 < 0 || mporOtc <= 0 || mporCcp <= 0 || mporAlt <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : ΔV, σ et z doivent être non négatifs, et les trois MPoR doivent être strictement positives.</p>';
+    return;
+  }
+
+  function buffer(mpor) { return z99*sigma*Math.sqrt(mpor); }
+  function pfe99(mpor) { return deltaV + buffer(mpor); }
+
+  var bOtc = buffer(mporOtc), pOtc = pfe99(mporOtc);
+  var bCcp = buffer(mporCcp), pCcp = pfe99(mporCcp);
+  var bAlt = buffer(mporAlt), pAlt = pfe99(mporAlt);
+
+  var reductionTotalOtcCcp = pOtc > 0 ? (pOtc-pCcp)/pOtc*100 : 0;
+  var reductionBufferOtcCcp = bOtc > 0 ? (bOtc-bCcp)/bOtc*100 : 0;
+  var ratioTheorique = (1-Math.sqrt(mporCcp/mporOtc))*100;
+
+  var collateralDiff = pOtc - pCcp;
+
+  var reductionAltVsOtc = pOtc > 0 ? (pOtc-pAlt)/pOtc*100 : 0;
+  var partSpikeOtc = pOtc > 0 ? deltaV/pOtc*100 : 0;
+  var partSpikeAlt = pAlt > 0 ? deltaV/pAlt*100 : 0;
+
+  var html = '<table class="tabres"><tr><th>Convention</th><th>MPoR (jours)</th><th>Marge de marché (M$)</th><th>PFE_99% (M$)</th><th>Part de ΔV dans PFE (%)</th></tr>';
+  html += '<tr><td>CCP (compensation centrale)</td><td>' + fmt(mporCcp,0) + '</td><td>' + fmt(bCcp,4) + '</td><td>' + fmt(pCcp,4) + '</td><td>' + fmt(pCcp>0?deltaV/pCcp*100:0,2) + '</td></tr>';
+  html += '<tr><td>MPoR alternative</td><td>' + fmt(mporAlt,0) + '</td><td>' + fmt(bAlt,4) + '</td><td>' + fmt(pAlt,4) + '</td><td>' + fmt(partSpikeAlt,2) + '</td></tr>';
+  html += '<tr><td>OTC bilatéral</td><td>' + fmt(mporOtc,0) + '</td><td>' + fmt(bOtc,4) + '</td><td>' + fmt(pOtc,4) + '</td><td>' + fmt(partSpikeOtc,2) + '</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Réduction du PFE_99% total (OTC → CCP)</th><td>' + fmt(reductionTotalOtcCcp,2) + ' %</td></tr>';
+  html += '<tr><th>Réduction du seul terme de marge de marché (OTC → CCP)</th><td>' + fmt(reductionBufferOtcCcp,2) + ' % (théorique 1-racine(MPoR_CCP/MPoR_OTC) = ' + fmt(ratioTheorique,2) + ' %)</td></tr>';
+  html += '<tr><th>Collatéral additionnel requis, écart OTC − CCP</th><td>' + fmt(collateralDiff,4) + ' M$</td></tr>';
+  html += '<tr><th>Réduction du PFE_99% (MPoR alternative vs OTC)</th><td>' + fmt(reductionAltVsOtc,2) + ' %</td></tr>';
+  html += '</table>';
+
+  var coherent = Math.abs(reductionBufferOtcCcp - ratioTheorique) < 0.05;
+  html += '<div class="valeur ' + (coherent?'ok':'ko') + '">Vérification : réduction du buffer (' + fmt(reductionBufferOtcCcp,2) + ' %) ' + (coherent?'CONCORDE':'NE CONCORDE PAS') + ' avec le facteur théorique racine(MPoR_CCP/MPoR_OTC) (' + fmt(ratioTheorique,2) + ' %)</div>';
+  html += '<div class="valeur mid">Le pic fixe ΔV = ' + fmt(deltaV,2) + ' M$ ne varie jamais avec la MPoR : seule la marge de marché s\'y ajuste, ce qui explique pourquoi la réduction du PFE total est toujours inférieure à celle du seul terme de marge de marché</div>';
+
+  html += dessinerMPoR(deltaV, [{nom:'CCP ('+fmt(mporCcp,0)+'j)', buf:bCcp}, {nom:'Alt. ('+fmt(mporAlt,0)+'j)', buf:bAlt}, {nom:'OTC ('+fmt(mporOtc,0)+'j)', buf:bOtc}]);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerMPoR(deltaV, series) {
+  var n = series.length;
+  var largeur = 380, hauteur = 240, margeG = 50, margeD = 15, margeH = 20, margeB = 45;
+  var vMax = Math.max.apply(null, series.map(function(s){ return deltaV+s.buf; })) * 1.15 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.45;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < n; i++) {
+    var xC = margeG + i*slot + slot*0.5;
+    var yTopSpike = yPix(deltaV), hSpike = yZero-yTopSpike;
+    var yTopBuf = yPix(deltaV+series[i].buf), hBuf = yTopSpike-yTopBuf;
+    svg += '<rect x="' + (xC-largeurBarre/2).toFixed(1) + '" y="' + yTopSpike.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hSpike.toFixed(1) + '" fill="var(--cgris,#5A5A5A)"/>';
+    svg += '<rect x="' + (xC-largeurBarre/2).toFixed(1) + '" y="' + yTopBuf.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hBuf.toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<text x="' + xC.toFixed(1) + '" y="' + (yTopBuf-4).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + fmt(deltaV+series[i].buf,2) + '</text>';
+    svg += '<text x="' + xC.toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + series[i].nom + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">PFE_99% (M$)</text>';
+  svg += '<rect x="' + margeG + '" y="4" width="9" height="9" fill="var(--cgris,#5A5A5A)"/><text x="' + (margeG+13) + '" y="12" font-size="7.5" fill="currentColor">Pic fixe ΔV</text>';
+  svg += '<rect x="' + (margeG+80) + '" y="4" width="9" height="9" fill="var(--ceco,#1F6FB2)"/><text x="' + (margeG+93) + '" y="12" font-size="7.5" fill="currentColor">Marge de marché</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerXVA(); calculerMPoR(); };
+</script>
+</body>
+</html>

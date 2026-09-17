@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — La gestion du risque de crédit — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .avert { color: var(--cintu); font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.85em; margin-top: 0.4em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+  table.tabmat input[type=text] { width: 7.5em; padding: 0.2em; }
+  table.tabmat select { width: 8.5em; padding: 0.2em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.avert { color: var(--cintu) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Application : la gestion du risque de crédit</h1>
+<p class="sous-titre">Calculatrice interactive — perte attendue et provisionnement IFRS 9 d'un portefeuille de crédits (exercice 5), limites d'exposition, groupe connecté et provisionnement par catégorie (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La perte attendue et le provisionnement IFRS 9 d'un portefeuille de crédits</h2>
+  <p class="aide">EL = EAD &times; PD &times; LGD. La PD utilisée dépend de la strate retenue pour chaque crédit : Strate 1 (performant) &rarr; PD à 12 mois ; Strate 2 (dégradation significative) et Strate 3 (non performant) &rarr; PD à vie. Modifier la situation d'un crédit (par exemple faire passer Atlas Industries de « Performant » à « Dégradation significative ») reproduit la reclassification de l'exercice 5(b)&ndash;(c). Le choc de LGD additionnel reproduit le scénario de stress de l'exercice 5(d).</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c2_tableEL">
+    <tr>
+      <th>Crédit</th><th>EAD (M$)</th><th>PD 12 mois (%)</th><th>PD à vie (%)</th><th>LGD (%)</th><th>Retard (j)</th><th>Situation</th>
+    </tr>
+    <tr>
+      <td><input type="text" class="c2-nom" value="L1 Atlas Industries"></td>
+      <td><input type="number" class="c2-ead" value="150" step="5" min="0"></td>
+      <td><input type="number" class="c2-pd12" value="1.2" step="0.1" min="0" max="100"></td>
+      <td><input type="number" class="c2-pdvie" value="6" step="0.5" min="0" max="100"></td>
+      <td><input type="number" class="c2-lgd" value="40" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c2-retard" value="0" step="1" min="0"></td>
+      <td><select class="c2-sit"><option value="S1" selected>Performant (S1)</option><option value="S2">Dégradation sign. (S2)</option><option value="S3">Non performant (S3)</option></select></td>
+    </tr>
+    <tr>
+      <td><input type="text" class="c2-nom" value="L2 Négoce du Détroit"></td>
+      <td><input type="number" class="c2-ead" value="90" step="5" min="0"></td>
+      <td><input type="number" class="c2-pd12" value="3" step="0.1" min="0" max="100"></td>
+      <td><input type="number" class="c2-pdvie" value="15" step="0.5" min="0" max="100"></td>
+      <td><input type="number" class="c2-lgd" value="45" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c2-retard" value="50" step="1" min="0"></td>
+      <td><select class="c2-sit"><option value="S1">Performant (S1)</option><option value="S2" selected>Dégradation sign. (S2)</option><option value="S3">Non performant (S3)</option></select></td>
+    </tr>
+    <tr>
+      <td><input type="text" class="c2-nom" value="L3 Manufacture Rif"></td>
+      <td><input type="number" class="c2-ead" value="70" step="5" min="0"></td>
+      <td><input type="number" class="c2-pd12" value="0.8" step="0.1" min="0" max="100"></td>
+      <td><input type="number" class="c2-pdvie" value="4" step="0.5" min="0" max="100"></td>
+      <td><input type="number" class="c2-lgd" value="35" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c2-retard" value="10" step="1" min="0"></td>
+      <td><select class="c2-sit"><option value="S1" selected>Performant (S1)</option><option value="S2">Dégradation sign. (S2)</option><option value="S3">Non performant (S3)</option></select></td>
+    </tr>
+    <tr>
+      <td><input type="text" class="c2-nom" value="L4 Textiles du Nord"></td>
+      <td><input type="number" class="c2-ead" value="40" step="5" min="0"></td>
+      <td><input type="number" class="c2-pd12" value="0" step="0.1" min="0" max="100"></td>
+      <td><input type="number" class="c2-pdvie" value="100" step="0.5" min="0" max="100"></td>
+      <td><input type="number" class="c2-lgd" value="55" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c2-retard" value="130" step="1" min="0"></td>
+      <td><select class="c2-sit"><option value="S1">Performant (S1)</option><option value="S2">Dégradation sign. (S2)</option><option value="S3" selected>Non performant (S3)</option></select></td>
+    </tr>
+    <tr>
+      <td><input type="text" class="c2-nom" value="L5 Agro Tanger"></td>
+      <td><input type="number" class="c2-ead" value="100" step="5" min="0"></td>
+      <td><input type="number" class="c2-pd12" value="0.5" step="0.1" min="0" max="100"></td>
+      <td><input type="number" class="c2-pdvie" value="2.5" step="0.5" min="0" max="100"></td>
+      <td><input type="number" class="c2-lgd" value="30" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c2-retard" value="0" step="1" min="0"></td>
+      <td><select class="c2-sit"><option value="S1" selected>Performant (S1)</option><option value="S2">Dégradation sign. (S2)</option><option value="S3">Non performant (S3)</option></select></td>
+    </tr>
+  </table>
+  </div>
+  <div class="ligne" style="margin-top:0.6em;">
+    <div><label for="c2_lgdChoc">Choc de LGD additionnel appliqué à tous les crédits (points de %)</label><input type="number" id="c2_lgdChoc" value="10" step="1" min="0" max="100"></div>
+  </div>
+  <button onclick="calculerEL()">Calculer</button>
+  <div id="resultatEL" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Limites d'exposition, groupe connecté et provisionnement par catégorie</h2>
+  <p class="aide">Limite de client unique = pourcentage des fonds propres totaux. Plafond parties liées = pourcentage des fonds propres de catégorie 1 (Tier 1). Un « groupe connecté » se forme dès qu'un droit de vote croisé atteint le seuil retenu (15 à 20 % selon le chapitre) ou qu'un contrôle/une politique de nomination commune est établi ; ses expositions se consolident alors avant comparaison à la limite de client unique.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Fonds propres et limites réglementaires</h3>
+      <label for="c2_fp">Fonds propres totaux (M$)</label><input type="number" id="c2_fp" value="900" step="10" min="0">
+      <label for="c2_tier1">Fonds propres Tier 1 (M$)</label><input type="number" id="c2_tier1" value="800" step="10" min="0">
+      <label for="c2_limClientPct">Limite client unique (% des fonds propres)</label><input type="number" id="c2_limClientPct" value="20" step="1" min="0" max="100">
+      <label for="c2_plafondPLPct">Plafond parties liées (% du Tier 1)</label><input type="number" id="c2_plafondPLPct" value="15" step="1" min="0" max="100">
+      <label for="c2_seuilGroupe">Seuil de vote pour « groupe connecté » (%)</label><input type="number" id="c2_seuilGroupe" value="15" step="1" min="0" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Client unique</h3>
+      <label for="c2_clientNom">Nom du client</label><input type="text" id="c2_clientNom" value="Ferronor">
+      <label for="c2_clientExpo">Exposition totale (M$)</label><input type="number" id="c2_clientExpo" value="210" step="5" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Parties liées</h3>
+      <label for="c2_plExpo">Exposition agrégée aux parties liées (M$)</label><input type="number" id="c2_plExpo" value="130" step="5" min="0">
+    </div>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc" style="flex:2; min-width:360px;">
+      <h3>Groupe connecté (trois sociétés Y&#8321;, Y&#8322;, Y&#8323;)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat">
+        <tr><th></th><th>Y&#8321;</th><th>Y&#8322;</th><th>Y&#8323;</th></tr>
+        <tr><th>Exposition (M$)</th>
+          <td><input type="number" id="c2_y1" value="70" step="5" min="0"></td>
+          <td><input type="number" id="c2_y2" value="65" step="5" min="0"></td>
+          <td><input type="number" id="c2_y3" value="50" step="5" min="0"></td>
+        </tr>
+      </table>
+      </div>
+      <label for="c2_vote12">Droit de vote de Y&#8321; dans Y&#8322; (%)</label><input type="number" id="c2_vote12" value="18" step="1" min="0" max="100">
+      <label for="c2_vote23">Droit de vote de Y&#8322; dans Y&#8323; (%)</label><input type="number" id="c2_vote23" value="20" step="1" min="0" max="100">
+      <label style="display:flex; align-items:center; gap:0.5em; margin-top:0.6em;"><input type="checkbox" id="c2_controleCommun" checked style="width:auto;"> Actionnaire majoritaire commun et politique commune de nomination des dirigeants</label>
+    </div>
+    <div class="bloc">
+      <h3>Provisions déjà constituées</h3>
+      <label for="c2_provExist">Provisions au bilan (M$)</label><input type="number" id="c2_provExist" value="95" step="5" min="0">
+    </div>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc" style="flex:2; min-width:420px;">
+      <h3>Provisionnement par catégorie de classification des actifs</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c2_tableCat">
+        <tr><th>Catégorie</th><th>Encours (M$)</th><th>Taux (%)</th></tr>
+        <tr><td>Standard</td><td><input type="number" class="c2-cat-enc" value="2000" step="10" min="0"></td><td><input type="number" class="c2-cat-taux" value="1" step="0.5" min="0" max="100"></td></tr>
+        <tr><td>Sous surveillance</td><td><input type="number" class="c2-cat-enc" value="300" step="10" min="0"></td><td><input type="number" class="c2-cat-taux" value="5" step="0.5" min="0" max="100"></td></tr>
+        <tr><td>Sous-standard</td><td><input type="number" class="c2-cat-enc" value="120" step="10" min="0"></td><td><input type="number" class="c2-cat-taux" value="25" step="0.5" min="0" max="100"></td></tr>
+        <tr><td>Douteux</td><td><input type="number" class="c2-cat-enc" value="60" step="5" min="0"></td><td><input type="number" class="c2-cat-taux" value="50" step="0.5" min="0" max="100"></td></tr>
+        <tr><td>Perte</td><td><input type="number" class="c2-cat-enc" value="25" step="5" min="0"></td><td><input type="number" class="c2-cat-taux" value="100" step="0.5" min="0" max="100"></td></tr>
+      </table>
+      </div>
+    </div>
+  </div>
+  <button onclick="calculerLimites()">Calculer</button>
+  <div id="resultatLimites" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function strateLabel(s) { return s==='S1' ? 'Strate 1' : (s==='S2' ? 'Strate 2' : 'Strate 3'); }
+
+function calculerEL() {
+  var resDiv = document.getElementById('resultatEL');
+  var noms = Array.prototype.map.call(document.querySelectorAll('.c2-nom'), function(el){ return el.value || '(sans nom)'; });
+  var eads = Array.prototype.map.call(document.querySelectorAll('.c2-ead'), function(el){ return parseFloat(el.value); });
+  var pd12s = Array.prototype.map.call(document.querySelectorAll('.c2-pd12'), function(el){ return parseFloat(el.value); });
+  var pdvies = Array.prototype.map.call(document.querySelectorAll('.c2-pdvie'), function(el){ return parseFloat(el.value); });
+  var lgds = Array.prototype.map.call(document.querySelectorAll('.c2-lgd'), function(el){ return parseFloat(el.value); });
+  var retards = Array.prototype.map.call(document.querySelectorAll('.c2-retard'), function(el){ return parseFloat(el.value); });
+  var sits = Array.prototype.map.call(document.querySelectorAll('.c2-sit'), function(el){ return el.value; });
+  var lgdChoc = parseFloat(document.getElementById('c2_lgdChoc').value);
+
+  var n = eads.length;
+  var tousValides = eads.every(function(v){ return !isNaN(v) && v>=0; })
+    && pd12s.every(function(v){ return !isNaN(v) && v>=0 && v<=100; })
+    && pdvies.every(function(v){ return !isNaN(v) && v>=0 && v<=100; })
+    && lgds.every(function(v){ return !isNaN(v) && v>=0 && v<=100; })
+    && retards.every(function(v){ return !isNaN(v) && v>=0; })
+    && !isNaN(lgdChoc) && lgdChoc>=0;
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les EAD et retards doivent être des nombres non négatifs, les PD, LGD et le choc de LGD des pourcentages entre 0 et 100.</p>';
+    return;
+  }
+
+  var avertissements = [];
+  var elSansChoc = [], elAvecChoc = [], pdUtilisees = [];
+  for (var i=0;i<n;i++) {
+    var strate = sits[i];
+    var pdUtil = (strate==='S1') ? pd12s[i] : pdvies[i];
+    pdUtilisees.push(pdUtil);
+    elSansChoc.push(eads[i] * pdUtil/100 * lgds[i]/100);
+    var lgdStress = Math.min(100, lgds[i] + lgdChoc);
+    elAvecChoc.push(eads[i] * pdUtil/100 * lgdStress/100);
+    if (retards[i] >= 90 && strate !== 'S3') {
+      avertissements.push('« ' + noms[i] + ' » affiche un retard de ' + fmt(retards[i],0) + ' jours (&ge; 90) mais n\'est pas classé Non performant (S3) : incohérence à vérifier.');
+    }
+  }
+
+  var eadTotal = eads.reduce(function(a,b){return a+b;},0);
+  var elTotalSans = elSansChoc.reduce(function(a,b){return a+b;},0);
+  var elTotalAvec = elAvecChoc.reduce(function(a,b){return a+b;},0);
+  var tauxSans = eadTotal>0 ? elTotalSans/eadTotal*100 : 0;
+  var tauxAvec = eadTotal>0 ? elTotalAvec/eadTotal*100 : 0;
+
+  var html = '<table class="tabres"><tr><th>Crédit</th><th>EAD</th><th>Strate</th><th>PD utilisée</th><th>LGD</th><th>EL (sans choc)</th><th>LGD + choc</th><th>EL (avec choc)</th></tr>';
+  for (var i=0;i<n;i++) {
+    html += '<tr><td>' + noms[i] + '</td><td>' + fmt(eads[i],1) + '</td><td>' + strateLabel(sits[i]) + '</td><td>' + fmt(pdUtilisees[i],3) + ' %</td><td>' + fmt(lgds[i],1) + ' %</td><td>' + fmt(elSansChoc[i],4) + '</td><td>' + fmt(Math.min(100,lgds[i]+lgdChoc),1) + ' %</td><td>' + fmt(elAvecChoc[i],4) + '</td></tr>';
+  }
+  html += '<tr><td><strong>Total</strong></td><td><strong>' + fmt(eadTotal,1) + '</strong></td><td></td><td></td><td></td><td><strong>' + fmt(elTotalSans,4) + '</strong></td><td></td><td><strong>' + fmt(elTotalAvec,4) + '</strong></td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur">EL totale (sans choc) = ' + fmt(elTotalSans,4) + ' M$ &mdash; taux de couverture = ' + fmt(tauxSans,4) + ' %</div>';
+  html += '<div class="valeur mid">EL totale (avec choc de LGD +' + fmt(lgdChoc,0) + ' pts) = ' + fmt(elTotalAvec,4) + ' M$ &mdash; taux de couverture = ' + fmt(tauxAvec,4) + ' %</div>';
+  html += '<div class="valeur">Augmentation des provisions liée au choc = ' + fmt(elTotalAvec-elTotalSans,4) + ' M$ (+' + fmt(tauxAvec-tauxSans,4) + ' point de couverture)</div>';
+
+  if (avertissements.length) {
+    html += '<p class="avert">' + avertissements.join('<br>') + '</p>';
+  }
+
+  html += dessinerEL(noms, elSansChoc, elAvecChoc);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerEL(noms, elSans, elAvec) {
+  var n = noms.length;
+  var largeur = 620, hauteur = 260, margeG = 55, margeD = 15, margeH = 20, margeB = 55;
+  var vMax = Math.max(1, Math.max.apply(null, elSans.concat(elAvec))) * 1.20;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = Math.max(6, slot*0.32);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i=0;i<n;i++) {
+    var xC = margeG + i*slot + slot/2;
+    var x1 = xC - largeurBarre - 2, x2 = xC + 2;
+    var y1 = yPix(elSans[i]), y2 = yPix(elAvec[i]);
+    svg += '<rect x="' + x1.toFixed(1) + '" y="' + y1.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + (yZero-y1).toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<rect x="' + x2.toFixed(1) + '" y="' + y2.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + (yZero-y2).toFixed(1) + '" fill="var(--cintu,#E08000)"/>';
+    svg += '<text x="' + xC.toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + (noms[i].length>16 ? noms[i].slice(0,14)+'…' : noms[i]) + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-15) + ')">Perte attendue (M$)</text>';
+  svg += '<rect x="' + margeG + '" y="4" width="9" height="9" fill="var(--ceco,#1F6FB2)"/><text x="' + (margeG+13) + '" y="12" font-size="7.5" fill="currentColor">Sans choc</text>';
+  svg += '<rect x="' + (margeG+80) + '" y="4" width="9" height="9" fill="var(--cintu,#E08000)"/><text x="' + (margeG+93) + '" y="12" font-size="7.5" fill="currentColor">Avec choc de LGD</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerLimites() {
+  var resDiv = document.getElementById('resultatLimites');
+  var fp = parseFloat(document.getElementById('c2_fp').value);
+  var tier1 = parseFloat(document.getElementById('c2_tier1').value);
+  var limClientPct = parseFloat(document.getElementById('c2_limClientPct').value);
+  var plafondPLPct = parseFloat(document.getElementById('c2_plafondPLPct').value);
+  var seuilGroupe = parseFloat(document.getElementById('c2_seuilGroupe').value);
+  var clientNom = document.getElementById('c2_clientNom').value || 'Client';
+  var clientExpo = parseFloat(document.getElementById('c2_clientExpo').value);
+  var plExpo = parseFloat(document.getElementById('c2_plExpo').value);
+  var y1 = parseFloat(document.getElementById('c2_y1').value);
+  var y2 = parseFloat(document.getElementById('c2_y2').value);
+  var y3 = parseFloat(document.getElementById('c2_y3').value);
+  var vote12 = parseFloat(document.getElementById('c2_vote12').value);
+  var vote23 = parseFloat(document.getElementById('c2_vote23').value);
+  var controleCommun = document.getElementById('c2_controleCommun').checked;
+  var provExist = parseFloat(document.getElementById('c2_provExist').value);
+  var encours = Array.prototype.map.call(document.querySelectorAll('.c2-cat-enc'), function(el){ return parseFloat(el.value); });
+  var taux = Array.prototype.map.call(document.querySelectorAll('.c2-cat-taux'), function(el){ return parseFloat(el.value); });
+  var noms = ['Standard','Sous surveillance','Sous-standard','Douteux','Perte'];
+
+  var tousValides = [fp,tier1,limClientPct,plafondPLPct,seuilGroupe,clientExpo,plExpo,y1,y2,y3,vote12,vote23,provExist].every(function(v){ return !isNaN(v) && v>=0; })
+    && encours.every(function(v){ return !isNaN(v) && v>=0; }) && taux.every(function(v){ return !isNaN(v) && v>=0 && v<=100; });
+  if (!tousValides || fp<=0 || tier1<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les fonds propres et le Tier 1 doivent être strictement positifs, et tous les autres champs des nombres non négatifs (pourcentages entre 0 et 100).</p>';
+    return;
+  }
+
+  // (a) client unique
+  var limClient = fp * limClientPct/100;
+  var respecteClient = clientExpo <= limClient;
+  var depassementClient = Math.max(0, clientExpo - limClient);
+  var pctClient = clientExpo/fp*100;
+
+  // (b) groupe connecté
+  var estConnecte = (vote12 >= seuilGroupe) || (vote23 >= seuilGroupe) || controleCommun;
+  var expoGroupe = y1+y2+y3;
+  var respecteGroupe = expoGroupe <= limClient;
+  var depassementGroupe = Math.max(0, expoGroupe - limClient);
+  var pctGroupe = expoGroupe/fp*100;
+
+  // (c) parties liées
+  var plafondPL = tier1 * plafondPLPct/100;
+  var respectePL = plExpo <= plafondPL;
+  var depassementPL = Math.max(0, plExpo - plafondPL);
+  var pctPL = plExpo/tier1*100;
+
+  // (d) provisionnement par catégorie
+  var provisions = encours.map(function(e,i){ return e*taux[i]/100; });
+  var totalProv = provisions.reduce(function(a,b){return a+b;},0);
+  var totalEncours = encours.reduce(function(a,b){return a+b;},0);
+  var tauxCouverture = totalEncours>0 ? totalProv/totalEncours*100 : 0;
+  var dotation = totalProv - provExist;
+
+  var html = '';
+  html += '<table class="tabres"><tr><th>Exposition</th><th>Montant</th><th>Limite/plafond</th><th>% de la base</th><th>Statut</th></tr>';
+  html += '<tr><td>Client unique (' + clientNom + ')</td><td>' + fmt(clientExpo,1) + ' M$</td><td>' + fmt(limClient,1) + ' M$ (' + fmt(limClientPct,1) + ' % FP)</td><td>' + fmt(pctClient,2) + ' % FP</td><td>' + (respecteClient?'Respectée':'Dépassée de '+fmt(depassementClient,1)+' M$') + '</td></tr>';
+  html += '<tr><td>Groupe Y (' + (estConnecte?'connecté, consolidé':'non connecté, info.') + ')</td><td>' + fmt(expoGroupe,1) + ' M$</td><td>' + fmt(limClient,1) + ' M$ (' + fmt(limClientPct,1) + ' % FP)</td><td>' + fmt(pctGroupe,2) + ' % FP</td><td>' + (estConnecte ? (respecteGroupe?'Respectée':'Dépassée de '+fmt(depassementGroupe,1)+' M$') : 'N/A (expositions appréciées séparément)') + '</td></tr>';
+  html += '<tr><td>Parties liées</td><td>' + fmt(plExpo,1) + ' M$</td><td>' + fmt(plafondPL,1) + ' M$ (' + fmt(plafondPLPct,1) + ' % Tier 1)</td><td>' + fmt(pctPL,2) + ' % Tier 1</td><td>' + (respectePL?'Respecté':'Dépassé de '+fmt(depassementPL,1)+' M$') + '</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (estConnecte?'mid':'ok') + '">' + (estConnecte
+    ? 'Y&#8321;, Y&#8322;, Y&#8323; forment un groupe connecté (vote croisé &ge; ' + fmt(seuilGroupe,0) + ' % et/ou contrôle commun) : exposition consolidée = ' + fmt(expoGroupe,1) + ' M$'
+    : 'Aucun critère de groupe connecté n\'est satisfait : les trois expositions restent appréciées séparément') + '</div>';
+
+  html += '<table class="tabres"><tr><th>Catégorie</th><th>Encours (M$)</th><th>Taux</th><th>Provision (M$)</th></tr>';
+  for (var i=0;i<5;i++) {
+    html += '<tr><td>' + noms[i] + '</td><td>' + fmt(encours[i],1) + '</td><td>' + fmt(taux[i],1) + ' %</td><td>' + fmt(provisions[i],2) + '</td></tr>';
+  }
+  html += '<tr><td><strong>Total</strong></td><td><strong>' + fmt(totalEncours,1) + '</strong></td><td></td><td><strong>' + fmt(totalProv,2) + '</strong></td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur">Taux de couverture global = ' + fmt(tauxCouverture,4) + ' % (' + fmt(totalProv,2) + ' M$ / ' + fmt(totalEncours,1) + ' M$)</div>';
+  html += '<div class="valeur ' + (dotation>=0?'ko':'ok') + '">' + (dotation>=0
+    ? 'Dotation complémentaire nécessaire = ' + fmt(dotation,2) + ' M$ (provisions déjà constituées : ' + fmt(provExist,1) + ' M$)'
+    : 'Provisions déjà constituées suffisantes : excédent de ' + fmt(-dotation,2) + ' M$ par rapport à l\'exigence') + '</div>';
+
+  html += dessinerLimites([
+    {nom: clientNom, expo: clientExpo, limite: limClient},
+    {nom: 'Groupe Y', expo: expoGroupe, limite: limClient},
+    {nom: 'Parties liées', expo: plExpo, limite: plafondPL}
+  ]);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerLimites(items) {
+  var n = items.length;
+  var largeur = 360, hauteur = 240, margeG = 50, margeD = 15, margeH = 25, margeB = 45;
+  var vMax = Math.max.apply(null, items.map(function(it){ return Math.max(it.expo,it.limite); })) * 1.18 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = Math.max(8, slot*0.30);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i=0;i<n;i++) {
+    var xC = margeG + i*slot + slot/2;
+    var x1 = xC - largeurBarre - 2, x2 = xC + 2;
+    var y1 = yPix(items[i].expo), y2 = yPix(items[i].limite);
+    svg += '<rect x="' + x1.toFixed(1) + '" y="' + y1.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + (yZero-y1).toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<text x="' + (x1+largeurBarre/2).toFixed(1) + '" y="' + (y1-4).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + fmt(items[i].expo,0) + '</text>';
+    svg += '<rect x="' + x2.toFixed(1) + '" y="' + y2.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + (yZero-y2).toFixed(1) + '" fill="var(--cgris,#5A5A5A)"/>';
+    svg += '<text x="' + (x2+largeurBarre/2).toFixed(1) + '" y="' + (y2-4).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + fmt(items[i].limite,0) + '</text>';
+    svg += '<text x="' + xC.toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + items[i].nom + '</text>';
+  }
+  svg += '<text x="10" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-15) + ')">Millions $</text>';
+  svg += '<rect x="' + margeG + '" y="4" width="9" height="9" fill="var(--ceco,#1F6FB2)"/><text x="' + (margeG+13) + '" y="12" font-size="7.5" fill="currentColor">Exposition effective</text>';
+  svg += '<rect x="' + (margeG+110) + '" y="4" width="9" height="9" fill="var(--cgris,#5A5A5A)"/><text x="' + (margeG+123) + '" y="12" font-size="7.5" fill="currentColor">Limite applicable</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerEL(); calculerLimites(); };
+</script>
+</body>
+</html>

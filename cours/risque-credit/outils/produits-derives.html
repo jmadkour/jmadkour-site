@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Les produits dérivés — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — Application : les produits dérivés</h1>
+<p class="sous-titre">Calculatrice interactive — compensation centrale (CCP) et indicateur trompeur du notionnel (exercice 5), PFE de deux contreparties non collatéralisées et non-subadditivité de la VaR (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La compensation centrale (CCP) et l'indicateur trompeur du notionnel</h2>
+  <p class="aide">Exposition sans compensation = somme des seules valeurs de marché positives. Exposition avec compensation multilatérale = valeur nette du portefeuille, plafonnée à zéro. La marge initiale (IM) couvre l'exposition nette si elle lui est supérieure ; sinon, le manquant doit être couvert par la mutualisation des pertes entre membres compensateurs survivants.</p>
+  <div class="ligne3">
+    <div class="bloc" style="flex:2; min-width:440px;">
+      <h3>Portefeuille compensé de la banque défaillante (M$)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c13_tablePos">
+        <tr><th>Position</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+        <tr><th>Notionnel</th>
+          <td><input type="number" class="c13-not" value="500" step="10" min="0"></td>
+          <td><input type="number" class="c13-not" value="300" step="10" min="0"></td>
+          <td><input type="number" class="c13-not" value="800" step="10" min="0"></td>
+          <td><input type="number" class="c13-not" value="200" step="10" min="0"></td>
+          <td><input type="number" class="c13-not" value="400" step="10" min="0"></td>
+        </tr>
+        <tr><th>V_i (base)</th>
+          <td><input type="number" class="c13-v" value="60" step="5"></td>
+          <td><input type="number" class="c13-v" value="-25" step="5"></td>
+          <td><input type="number" class="c13-v" value="40" step="5"></td>
+          <td><input type="number" class="c13-v" value="-20" step="5"></td>
+          <td><input type="number" class="c13-v" value="15" step="5"></td>
+        </tr>
+        <tr><th>V_i' (stress)</th>
+          <td><input type="number" class="c13-vs" value="95" step="5"></td>
+          <td><input type="number" class="c13-vs" value="-30" step="5"></td>
+          <td><input type="number" class="c13-vs" value="55" step="5"></td>
+          <td><input type="number" class="c13-vs" value="-25" step="5"></td>
+          <td><input type="number" class="c13-vs" value="25" step="5"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Marge</h3>
+      <label for="c13_im">Marge initiale IM (M$)</label><input type="number" id="c13_im" value="90" step="5" min="0">
+      <p class="aide" style="margin-top:0.5em;">V_i &gt; 0 : la banque défaillante doit de l'argent à la CCP sur cette position. V_i &lt; 0 : la CCP lui en doit.</p>
+    </div>
+  </div>
+  <button onclick="calculerCCP()">Calculer</button>
+  <div id="resultatCCP" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>PFE de deux contreparties non collatéralisées : la non-subadditivité de la VaR</h2>
+  <p class="aide">Si la contrepartie fait défaut (probabilité pi), la banque perd l'intégralité de son exposition L ; sinon la perte est nulle. VaR au niveau de confiance alpha = plus petit x tel que P(perte &le; x) &ge; alpha. Expected shortfall (formule générale avec atome) : ES = [P(L&gt;VaR) x E(L | L&gt;VaR) + (P(L&le;VaR) - alpha) x VaR] / (1 - alpha). Cas comonotone (corrélation parfaite, borne de Fréchet supérieure) : l'événement de probabilité la plus faible est inclus dans celui de probabilité la plus forte.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Contrepartie C1</h3>
+      <label for="c13_pi1">Probabilité de défaut pi1 (%)</label><input type="number" id="c13_pi1" value="3" step="0.5" min="0.01" max="99.99">
+      <label for="c13_L1">Exposition perdue si défaut L1 (M$)</label><input type="number" id="c13_L1" value="8" step="0.5" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Contrepartie C2</h3>
+      <label for="c13_pi2">Probabilité de défaut pi2 (%)</label><input type="number" id="c13_pi2" value="3" step="0.5" min="0.01" max="99.99">
+      <label for="c13_L2">Exposition perdue si défaut L2 (M$)</label><input type="number" id="c13_L2" value="6" step="0.5" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Niveau de confiance</h3>
+      <label for="c13_alpha">Alpha (%)</label><input type="number" id="c13_alpha" value="95" step="0.5" min="50" max="99.99">
+    </div>
+  </div>
+  <button onclick="calculerPFE()">Calculer</button>
+  <div id="resultatPFE" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function calculerCCP() {
+  var resDiv = document.getElementById('resultatCCP');
+  var notional = Array.prototype.map.call(document.querySelectorAll('.c13-not'), function(el){ return parseFloat(el.value); });
+  var V = Array.prototype.map.call(document.querySelectorAll('.c13-v'), function(el){ return parseFloat(el.value); });
+  var Vs = Array.prototype.map.call(document.querySelectorAll('.c13-vs'), function(el){ return parseFloat(el.value); });
+  var IM = parseFloat(document.getElementById('c13_im').value);
+
+  var champs = notional.concat(V).concat(Vs).concat([IM]);
+  var valides = champs.every(function(v){ return !isNaN(v); }) && notional.every(function(v){ return v>=0; }) && IM>0;
+  if (!valides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les notionnels doivent être des nombres non négatifs et la marge initiale doit être strictement positive.</p>';
+    return;
+  }
+
+  var grossNotional = notional.reduce(function(a,b){return a+b;},0);
+  var sumV = V.reduce(function(a,b){return a+b;},0);
+  var expNoNetting = V.reduce(function(a,v){return a+Math.max(v,0);},0);
+  var expNetting = Math.max(sumV,0);
+  var reduction = expNoNetting>0 ? (expNoNetting-expNetting)/expNoNetting*100 : 0;
+  var surplus = IM - expNetting;
+
+  var sumVs = Vs.reduce(function(a,b){return a+b;},0);
+  var expNoNettingS = Vs.reduce(function(a,v){return a+Math.max(v,0);},0);
+  var expNettingS = Math.max(sumVs,0);
+  var reductionS = expNoNettingS>0 ? (expNoNettingS-expNettingS)/expNoNettingS*100 : 0;
+  var surplusS = IM - expNettingS;
+
+  var html = '<table class="tabres"><tr><th>Indicateur</th><th>Base</th><th>Stress</th></tr>';
+  html += '<tr><td>Notionnel brut total</td><td>' + fmt(grossNotional,1) + ' M$</td><td>' + fmt(grossNotional,1) + ' M$ (inchangé)</td></tr>';
+  html += '<tr><td>Somme des V_i (valeur nette)</td><td>' + fmt(sumV,1) + ' M$</td><td>' + fmt(sumVs,1) + ' M$</td></tr>';
+  html += '<tr><td>Exposition sans compensation</td><td>' + fmt(expNoNetting,1) + ' M$</td><td>' + fmt(expNoNettingS,1) + ' M$</td></tr>';
+  html += '<tr><td>Exposition avec compensation multilatérale</td><td>' + fmt(expNetting,1) + ' M$</td><td>' + fmt(expNettingS,1) + ' M$</td></tr>';
+  html += '<tr><td>Réduction obtenue par la compensation</td><td>' + fmt(reduction,2) + ' %</td><td>' + fmt(reductionS,2) + ' %</td></tr>';
+  html += '<tr><td>Marge excédentaire (+) / manquant (-)</td><td>' + (surplus>=0?'+':'') + fmt(surplus,1) + ' M$</td><td>' + (surplusS>=0?'+':'') + fmt(surplusS,1) + ' M$</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (expNoNetting>0 ? (expNetting/expNoNetting < 0.9 ? 'ok' : 'mid') : 'mid') + '">Notionnel brut (' + fmt(grossNotional,0) + ' M$) vs exposition nette (' + fmt(expNetting,1) + ' M$) : le notionnel représente ' + fmt(grossNotional>0?expNetting/grossNotional*100:0,2) + ' % du notionnel affiché — un indicateur trompeur du risque réel</div>';
+  html += '<div class="valeur ' + (surplus>=0?'ok':'ko') + '">Cas de base : marge ' + (surplus>=0?'SUFFISANTE':'INSUFFISANTE') + ' (excédent/manquant de ' + fmt(Math.abs(surplus),1) + ' M$)</div>';
+  html += '<div class="valeur ' + (surplusS>=0?'ok':'ko') + '">Cas de stress : marge ' + (surplusS>=0?'SUFFISANTE':'INSUFFISANTE') + (surplusS<0 ? ' — la mutualisation des pertes entre membres compensateurs doit couvrir ' + fmt(Math.abs(surplusS),1) + ' M$' : ' (excédent de ' + fmt(surplusS,1) + ' M$)') + '</div>';
+
+  html += dessinerCCP(expNetting, expNettingS, IM);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCCP(expBase, expStress, IM) {
+  var largeur = 340, hauteur = 230, margeG = 55, margeD = 15, margeH = 20, margeB = 40;
+  var vMax = Math.max(expBase, expStress, IM) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var yIM = yPix(IM);
+  var xCentres = [margeG + (largeur-margeG-margeD)*0.28, margeG + (largeur-margeG-margeD)*0.72];
+  var largeurBarre = 46;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yIM.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yIM.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-4) + '" y="' + (yIM-4).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="currentColor">IM = ' + IM.toFixed(0) + '</text>';
+  var vals = [expBase, expStress];
+  var couleurs = ['var(--ceco,#1F6FB2)', 'var(--cintu,#E08000)'];
+  var labels = ['Base', 'Stress'];
+  for (var i=0;i<2;i++) {
+    var yTop = yPix(Math.max(vals[i],0)), yBot = yZero;
+    var h = Math.abs(yBot-yTop);
+    svg += '<rect x="' + (xCentres[i]-largeurBarre/2).toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '"/>';
+    svg += '<text x="' + xCentres[i].toFixed(1) + '" y="' + (yTop-6).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + fmt(vals[i],1) + '</text>';
+    svg += '<text x="' + xCentres[i].toFixed(1) + '" y="' + (yZero+14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + labels[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Exposition nette (M$)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function distBernoulli(p, L) {
+  // returns array of [loss, prob], loss ascending
+  if (L === 0) return [[0, 1]];
+  return [[0, 1-p],[L, p]];
+}
+
+function mergeDist(pairs) {
+  // pairs: array of [loss, prob] possibly with duplicate losses; merges and sorts ascending
+  var map = {};
+  pairs.forEach(function(pr){
+    var key = pr[0].toFixed(9);
+    map[key] = (map[key]||0) + pr[1];
+  });
+  var out = Object.keys(map).map(function(k){ return [parseFloat(k), map[k]]; });
+  out.sort(function(a,b){ return a[0]-b[0]; });
+  return out;
+}
+
+function combineIndependent(p1, L1, p2, L2) {
+  var outcomes = [
+    [0, (1-p1)*(1-p2)],
+    [L2, (1-p1)*p2],
+    [L1, p1*(1-p2)],
+    [L1+L2, p1*p2]
+  ];
+  return mergeDist(outcomes);
+}
+
+function combineComonotone(p1, L1, p2, L2) {
+  // Frechet upper bound coupling for two Bernoulli marginals
+  var outcomes;
+  if (p1 <= p2) {
+    outcomes = [[0, 1-p2],[L2, p2-p1],[L1+L2, p1]];
+  } else {
+    outcomes = [[0, 1-p1],[L1, p1-p2],[L1+L2, p2]];
+  }
+  return mergeDist(outcomes);
+}
+
+function varEs(dist, alpha) {
+  // dist: array [[loss,prob],...] ascending by loss
+  var cum = 0, VaR = null;
+  for (var i=0;i<dist.length;i++) {
+    cum += dist[i][1];
+    if (VaR === null && cum >= alpha - 1e-12) { VaR = dist[i][0]; }
+  }
+  if (VaR === null) VaR = dist[dist.length-1][0];
+  var Pgreater = 0, sumLp = 0;
+  dist.forEach(function(d){ if (d[0] > VaR + 1e-9) { Pgreater += d[1]; sumLp += d[0]*d[1]; } });
+  var Egreater = Pgreater > 0 ? sumLp/Pgreater : 0;
+  var leftover = (1-alpha) - Pgreater;
+  var ES = (Pgreater*Egreater + leftover*VaR) / (1-alpha);
+  return { VaR: VaR, ES: ES, Pgreater: Pgreater, Egreater: Egreater };
+}
+
+function calculerPFE() {
+  var resDiv = document.getElementById('resultatPFE');
+  var pi1 = parseFloat(document.getElementById('c13_pi1').value)/100;
+  var L1 = parseFloat(document.getElementById('c13_L1').value);
+  var pi2 = parseFloat(document.getElementById('c13_pi2').value)/100;
+  var L2 = parseFloat(document.getElementById('c13_L2').value);
+  var alpha = parseFloat(document.getElementById('c13_alpha').value)/100;
+
+  var champs = [pi1, L1, pi2, L2, alpha];
+  var valides = champs.every(function(v){ return !isNaN(v); }) && pi1>0 && pi1<1 && pi2>0 && pi2<1 && L1>=0 && L2>=0 && alpha>0 && alpha<1;
+  if (!valides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les probabilités de défaut et le niveau de confiance doivent être strictement compris entre 0 et 100 %, et les expositions doivent être non négatives.</p>';
+    return;
+  }
+
+  var d1 = distBernoulli(pi1, L1);
+  var d2 = distBernoulli(pi2, L2);
+  var r1 = varEs(d1, alpha);
+  var r2 = varEs(d2, alpha);
+
+  var distIndep = combineIndependent(pi1, L1, pi2, L2);
+  var rIndep = varEs(distIndep, alpha);
+
+  var distComo = combineComonotone(pi1, L1, pi2, L2);
+  var rComo = varEs(distComo, alpha);
+
+  var sumVaR = r1.VaR + r2.VaR;
+  var sumES = r1.ES + r2.ES;
+
+  var html = '<table class="tabres"><tr><th>Cas</th><th>VaR &alpha;</th><th>ES &alpha;</th></tr>';
+  html += '<tr><td>C1 seul</td><td>' + fmt(r1.VaR,3) + ' M$</td><td>' + fmt(r1.ES,3) + ' M$</td></tr>';
+  html += '<tr><td>C2 seul</td><td>' + fmt(r2.VaR,3) + ' M$</td><td>' + fmt(r2.ES,3) + ' M$</td></tr>';
+  html += '<tr><td>Somme des deux individuelles</td><td>' + fmt(sumVaR,3) + ' M$</td><td>' + fmt(sumES,3) + ' M$</td></tr>';
+  html += '<tr><td>Combiné (indépendance)</td><td>' + fmt(rIndep.VaR,3) + ' M$</td><td>' + fmt(rIndep.ES,3) + ' M$</td></tr>';
+  html += '<tr><td>Combiné (comonotone)</td><td>' + fmt(rComo.VaR,3) + ' M$</td><td>' + fmt(rComo.ES,3) + ' M$</td></tr>';
+  html += '</table>';
+
+  var varViole = rIndep.VaR > sumVaR + 1e-9;
+  var esRespecte = rIndep.ES <= sumES + 1e-9;
+  html += '<div class="valeur ' + (varViole?'ko':'ok') + '">VaR sous indépendance : ' + fmt(rIndep.VaR,3) + ' M$ contre une somme individuelle de ' + fmt(sumVaR,3) + ' M$ — la sous-additivité est ' + (varViole?'VIOLÉE':'respectée') + '</div>';
+  html += '<div class="valeur ' + (esRespecte?'ok':'ko') + '">ES sous indépendance : ' + fmt(rIndep.ES,3) + ' M$ contre une somme individuelle de ' + fmt(sumES,3) + ' M$ — la sous-additivité est ' + (esRespecte?'respectée':'VIOLÉE') + '</div>';
+  var comoVarEq = Math.abs(rComo.VaR - sumVaR) < 1e-6;
+  var comoEsEq = Math.abs(rComo.ES - sumES) < 1e-6;
+  html += '<div class="valeur mid">Sous corrélation parfaite (comonotone) : VaR combinée = ' + fmt(rComo.VaR,3) + ' M$ (' + (comoVarEq?'= somme individuelle':'&ne; somme individuelle') + '), ES combinée = ' + fmt(rComo.ES,3) + ' M$ (' + (comoEsEq?'= somme individuelle : additivité exacte':'&ne; somme individuelle') + ')</div>';
+
+  html += dessinerPFE(r1, r2, rIndep, rComo);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerPFE(r1, r2, rIndep, rComo) {
+  var cats = [
+    {label:'C1 seul', VaR:r1.VaR, ES:r1.ES},
+    {label:'C2 seul', VaR:r2.VaR, ES:r2.ES},
+    {label:'Combiné (indép.)', VaR:rIndep.VaR, ES:rIndep.ES},
+    {label:'Combiné (comono.)', VaR:rComo.VaR, ES:rComo.ES}
+  ];
+  var n = cats.length;
+  var largeur = 460, hauteur = 250, margeG = 45, margeD = 15, margeH = 20, margeB = 48;
+  var vMax = Math.max.apply(null, cats.map(function(c){ return Math.max(c.VaR,c.ES); })) * 1.25 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.26;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i=0;i<n;i++) {
+    var xC0 = margeG + i*slot + slot*0.32;
+    var xC1 = margeG + i*slot + slot*0.68;
+    var yTop0 = yPix(cats[i].VaR), h0 = yZero-yTop0;
+    var yTop1 = yPix(cats[i].ES), h1 = yZero-yTop1;
+    svg += '<rect x="' + (xC0-largeurBarre/2).toFixed(1) + '" y="' + yTop0.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h0.toFixed(1) + '" fill="var(--cdef,#4A3B8C)"/>';
+    svg += '<rect x="' + (xC1-largeurBarre/2).toFixed(1) + '" y="' + yTop1.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h1.toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<text x="' + xC0.toFixed(1) + '" y="' + (yTop0-5).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + fmt(cats[i].VaR,2) + '</text>';
+    svg += '<text x="' + xC1.toFixed(1) + '" y="' + (yTop1-5).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + fmt(cats[i].ES,2) + '</text>';
+    var mots = cats[i].label.split(' ');
+    var yL = yZero + 12;
+    mots.forEach(function(mot){ svg += '<text x="' + ((xC0+xC1)/2).toFixed(1) + '" y="' + yL.toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + mot + '</text>'; yL += 8; });
+  }
+  svg += '<text x="10" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 10,' + (hauteur/2-15) + ')">Millions de dollars</text>';
+  svg += '<rect x="' + margeG + '" y="4" width="9" height="9" fill="var(--cdef,#4A3B8C)"/><text x="' + (margeG+13) + '" y="12" font-size="7.5" fill="currentColor">VaR</text>';
+  svg += '<rect x="' + (margeG+45) + '" y="4" width="9" height="9" fill="var(--ceco,#1F6FB2)"/><text x="' + (margeG+58) + '" y="12" font-size="7.5" fill="currentColor">ES</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCCP(); calculerPFE(); };
+</script>
+</body>
+</html>
