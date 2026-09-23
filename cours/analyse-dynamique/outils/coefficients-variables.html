@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Coefficients variables — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .etiquette { display: inline-block; padding: 0.3em 0.8em; border-radius: 12px; font-size: 0.9em; color: white; }
+  .normal { background: var(--ceco); } .resonance { background: var(--cintu); }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Coefficients variables</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse dynamique</p>
+
+<div class="panneau">
+  <h2>Épargne à versements géométriques, $K_{t+1}=aK_t+b\,r^t$ (détecte automatiquement la résonance $r=a$)</h2>
+  <div class="grille4">
+    <div><label for="coefA">a (rendement)</label><input id="coefA" value="1.05"></div>
+    <div><label for="coefB">b (versement de base)</label><input id="coefB" value="1000"></div>
+    <div><label for="coefR">r (croissance du versement)</label><input id="coefR" value="1.03"></div>
+    <div><label for="K0">K₀</label><input id="K0" value="0"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="horizon5">Horizon (périodes)</label><input id="horizon5" value="30"></div>
+    <div></div><div></div><div></div>
+  </div>
+  <button onclick="resoudreEpargne()">Résoudre par coefficients indéterminés</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphique5a" height="260"></canvas>
+</div>
+
+<div class="panneau">
+  <h2>Croissance à taux linéairement croissant, $\dot y=(\alpha+\beta t)y$</h2>
+  <div class="grille4">
+    <div><label for="alpha">α</label><input id="alpha" value="0.02"></div>
+    <div><label for="beta">β</label><input id="beta" value="0.01"></div>
+    <div><label for="y0c">y₀</label><input id="y0c" value="500"></div>
+    <div><label for="horizonC">Horizon</label><input id="horizonC" value="8"></div>
+  </div>
+  <button onclick="resoudreContinu()">Calculer $y(t)=y_0\exp(\alpha t+\beta t^2/2)$</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphique5b" height="260"></canvas>
+</div>
+
+<p class="avertissement">Cas résonant (discret) : lorsque $r=a$, la solution particulière prend la forme $C\,t\,a^t$ avec $C=b/a$, au lieu de $C=b/(r-a)$ dans le cas général — la croissance est alors amplifiée par le facteur $t$.</p>
+
+<script>
+let chart5a = null, chart5b = null;
+
+function resoudreEpargne() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const a = parseFloat(document.getElementById('coefA').value);
+    const b = parseFloat(document.getElementById('coefB').value);
+    const r = parseFloat(document.getElementById('coefR').value);
+    const K0 = parseFloat(document.getElementById('K0').value);
+    const horizon = parseInt(document.getElementById('horizon5').value);
+    if ([a,b,r,K0,horizon].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+
+    const resonance = Math.abs(r-a) < 1e-9;
+    let C, A;
+    if (resonance) { C = b/a; A = K0; }
+    else { C = b/(r-a); A = K0 - C; }
+
+    const pts = [];
+    for (let t=0;t<=horizon;t++){
+      const K = resonance ? A*Math.pow(a,t) + C*t*Math.pow(a,t) : A*Math.pow(a,t) + C*Math.pow(r,t);
+      pts.push({x:t,y:K});
+    }
+
+    let html = `<p><span class="etiquette ${resonance?'resonance':'normal'}">${resonance?'Cas de résonance (r = a)':'Cas non résonant'}</span></p>`;
+    html += `<p><strong>C = ${C.toFixed(4)}</strong>, <strong>A = ${A.toFixed(4)}</strong></p>`;
+    html += resonance
+      ? `<p><strong>Solution :</strong> K_t = ${A.toFixed(2)}×(${a})^t + ${C.toFixed(2)}×t×(${a})^t</p>`
+      : `<p><strong>Solution :</strong> K_t = ${A.toFixed(2)}×(${a})^t + ${C.toFixed(2)}×(${r})^t</p>`;
+    html += `<p><strong>K(${horizon}) = ${pts[pts.length-1].y.toFixed(2)}</strong></p>`;
+    resDiv.innerHTML = html;
+
+    if (chart5a) chart5a.destroy();
+    const ctx = document.getElementById('graphique5a').getContext('2d');
+    chart5a = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [{ label: 'K_t', data: pts, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 2 }] },
+      options: { responsive: true, scales: { x: { title: { display: true, text: 't (périodes)' } }, y: { title: { display: true, text: 'K_t' } } },
+        plugins: { title: { display: true, text: 'Trajectoire du capital épargné' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function resoudreContinu() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const alpha = parseFloat(document.getElementById('alpha').value);
+    const beta = parseFloat(document.getElementById('beta').value);
+    const y0 = parseFloat(document.getElementById('y0c').value);
+    const horizon = parseFloat(document.getElementById('horizonC').value);
+    if ([alpha,beta,y0,horizon].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+
+    const n = 60;
+    const pts = [];
+    for (let i=0;i<=n;i++){
+      const t = i*horizon/n;
+      const integrale = alpha*t + beta*t*t/2;
+      pts.push({x:t, y: y0*Math.exp(integrale)});
+    }
+
+    resDiv.innerHTML = `
+      <p><strong>Intégrale :</strong> ∫₀ᵗ(α+βs)ds = αt + βt²/2</p>
+      <p><strong>Solution :</strong> y(t) = ${y0}×exp(${alpha}t + ${beta/2}t²)</p>
+      <p><strong>y(${horizon}) = ${pts[pts.length-1].y.toFixed(2)}</strong></p>
+    `;
+
+    if (chart5b) chart5b.destroy();
+    const ctx = document.getElementById('graphique5b').getContext('2d');
+    chart5b = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [{ label: 'y(t)', data: pts, borderColor: '#1D9E75', backgroundColor: 'transparent', pointRadius: 0 }] },
+      options: { responsive: true, scales: { x: { type: 'linear', title: { display: true, text: 't' } }, y: { title: { display: true, text: 'y(t)' } } },
+        plugins: { title: { display: true, text: 'Croissance à taux linéairement croissant' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = function(){ resoudreEpargne(); resoudreContinu(); };
+</script>
+</body>
+</html>

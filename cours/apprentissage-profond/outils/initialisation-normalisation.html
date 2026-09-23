@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Initialisation et normalisation — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], input[type=text], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Initialisation et normalisation</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage profond</p>
+
+<div class="panneau">
+  <h2>1. Xavier vs He</h2>
+  <div class="ligne">
+    <div><label for="nInIn1">$n_{\text{entrée}}$</label><input type="number" id="nInIn1" value="64" step="1" min="1"></div>
+    <div><label for="nOutIn1">$n_{\text{sortie}}$</label><input type="number" id="nOutIn1" value="32" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerInit()">Calculer</button>
+  <div id="erreurI1" class="erreur"></div>
+  <div id="resultatI1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Standardisation, avec ou sans fuite</h2>
+  <p class="aide">Valeurs d'apprentissage, séparées par des virgules.</p>
+  <input type="text" id="trainIn2" value="45000, 52000, 38000, 61000, 47000">
+  <label for="testIn2">Valeurs de test (optionnel, pour illustrer la fuite)</label>
+  <input type="text" id="testIn2" value="90000, 95000">
+  <label for="xIn2">Observation à standardiser</label>
+  <input type="number" id="xIn2" value="55000" step="100">
+  <button onclick="calculerStandardisation()">Calculer</button>
+  <div id="erreurS2" class="erreur"></div>
+  <div id="resultatS2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Normalisation par lot</h2>
+  <label for="batchIn3">Activations du lot (séparées par des virgules)</label>
+  <input type="text" id="batchIn3" value="2, 4, 6, 8">
+  <div class="ligne">
+    <div><label for="gammaIn3">$\gamma$</label><input type="number" id="gammaIn3" value="1.5" step="0.1"></div>
+    <div><label for="betaIn3">$\beta$</label><input type="number" id="betaIn3" value="0.5" step="0.1"></div>
+  </div>
+  <button onclick="calculerBatchNorm()">Calculer</button>
+  <div id="erreurB3" class="erreur"></div>
+  <div id="resultatB3" class="resultat-zone"></div>
+  <svg id="svgBatchNorm3" width="450" height="200" viewBox="0 0 450 200"></svg>
+</div>
+
+<p class="avertissement">Rappels : variance Xavier $=2/(n_{\text{entrée}}+n_{\text{sortie}})$, variance He $=2/n_{\text{entrée}}$ ; les statistiques de standardisation se calculent sur l'apprentissage seul ; normalisation par lot $=(x-\text{moyenne})/\text{écart-type}$, puis remise à l'échelle $\gamma\times(\cdot)+\beta$.</p>
+
+<script>
+function calculerInit(){
+  const erreurDiv=document.getElementById('erreurI1'); const resDiv=document.getElementById('resultatI1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const nIn=parseFloat(document.getElementById('nInIn1').value);
+    const nOut=parseFloat(document.getElementById('nOutIn1').value);
+    if([nIn,nOut].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(nIn<1||nOut<1) throw new Error('Les deux valeurs doivent être strictement positives.');
+    const varXavier=2/(nIn+nOut);
+    const varHe=2/nIn;
+    let out='<table><tr><th>initialisation</th><th>variance</th><th>écart-type</th></tr>';
+    out+=`<tr><td>Xavier</td><td>${varXavier.toFixed(5)}</td><td>${Math.sqrt(varXavier).toFixed(4)}</td></tr>`;
+    out+=`<tr><td>He</td><td>${varHe.toFixed(5)}</td><td>${Math.sqrt(varHe).toFixed(4)}</td></tr></table>`;
+    out+=`<p>Rapport He/Xavier $=${(varHe/varXavier).toFixed(3)}$</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function meanStd(arr){
+  const m=arr.reduce((a,b)=>a+b,0)/arr.length;
+  const v=arr.reduce((a,b)=>a+(b-m)*(b-m),0)/arr.length;
+  return {mean:m, std:Math.sqrt(v)};
+}
+
+function calculerStandardisation(){
+  const erreurDiv=document.getElementById('erreurS2'); const resDiv=document.getElementById('resultatS2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const train=document.getElementById('trainIn2').value.split(',').map(s=>parseFloat(s.trim()));
+    const testRaw=document.getElementById('testIn2').value.trim();
+    const test=testRaw.length>0 ? testRaw.split(',').map(s=>parseFloat(s.trim())) : [];
+    const x=parseFloat(document.getElementById('xIn2').value);
+    if(train.some(isNaN)) throw new Error('Les valeurs d\'apprentissage doivent être numériques.');
+    if(test.some(isNaN)) throw new Error('Les valeurs de test doivent être numériques.');
+    if(isNaN(x)) throw new Error('L\'observation à standardiser doit être numérique.');
+    if(train.length<2) throw new Error('Au moins deux valeurs d\'apprentissage requises.');
+    const {mean:mTrain, std:sTrain}=meanStd(train);
+    const zTrain=(x-mTrain)/sTrain;
+    let out=`<p>Statistiques d'apprentissage : moyenne $=${mTrain.toFixed(2)}$, écart-type $=${sTrain.toFixed(2)}$</p>`;
+    out+=`<p>$z$ (statistiques correctes) $=\\mathbf{${zTrain.toFixed(4)}}$</p>`;
+    if(test.length>0){
+      const all=train.concat(test);
+      const {mean:mAll, std:sAll}=meanStd(all);
+      const zLeak=(x-mAll)/sAll;
+      out+=`<p>Statistiques polluées (apprentissage $+$ test) : moyenne $=${mAll.toFixed(2)}$, écart-type $=${sAll.toFixed(2)}$</p>`;
+      out+=`<p>$z$ (statistiques polluées, fuite) $=\\mathbf{${zLeak.toFixed(4)}}$</p>`;
+      if(Math.sign(zTrain)!==Math.sign(zLeak)) out+='<p style="color:#b00020;font-weight:bold;">Le signe de z change entre les deux calculs : la fuite peut inverser une décision fondée sur un seuil.</p>';
+    }
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerBatchNorm(){
+  const erreurDiv=document.getElementById('erreurB3'); const resDiv=document.getElementById('resultatB3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const batch=document.getElementById('batchIn3').value.split(',').map(s=>parseFloat(s.trim()));
+    const gamma=parseFloat(document.getElementById('gammaIn3').value);
+    const beta=parseFloat(document.getElementById('betaIn3').value);
+    if(batch.some(isNaN)) throw new Error('Toutes les activations doivent être numériques.');
+    if(isNaN(gamma)||isNaN(beta)) throw new Error('Gamma et beta doivent être numériques.');
+    if(batch.length<2) throw new Error('Au moins deux activations requises.');
+    const {mean:m, std:s}=meanStd(batch);
+    if(s===0) throw new Error('Écart-type nul : toutes les activations sont identiques.');
+    const norm=batch.map(x=>(x-m)/s);
+    const rescaled=norm.map(x=>gamma*x+beta);
+    let out=`<p>Moyenne $=${m.toFixed(4)}$, écart-type $=${s.toFixed(4)}$</p>`;
+    out+='<table><tr><th>brute</th>'+batch.map(x=>`<th>${x}</th>`).join('')+'</tr>';
+    out+='<tr><th>normalisée</th>'+norm.map(x=>`<td>${x.toFixed(4)}</td>`).join('')+'</tr>';
+    out+='<tr><th>après $\\gamma,\\beta$</th>'+rescaled.map(x=>`<td>${x.toFixed(4)}</td>`).join('')+'</tr></table>';
+    resDiv.innerHTML=out;
+    dessinerBatchNorm(batch,norm,rescaled);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgBatchNorm3').innerHTML=''; }
+}
+
+function dessinerBatchNorm(batch,norm,rescaled){
+  const svg=document.getElementById('svgBatchNorm3');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=450,H=200,padL=45,padR=15,padT=15,padB=30;
+  const n=batch.length;
+  const allVals=norm.concat(rescaled);
+  const ymin=Math.min(...allVals)*1.2, ymax=Math.max(...allVals)*1.2;
+  const xToPix=i=>padL+(i/(n-1))*(W-padL-padR);
+  const yToPix=y=>H-padB-((y-ymin)/(ymax-ymin))*(H-padT-padB);
+  function drawSeries(data,color){
+    let pts='';
+    data.forEach((v,i)=>{ pts += xToPix(i).toFixed(1)+','+yToPix(v).toFixed(1)+' '; });
+    const poly=document.createElementNS(ns,'polyline');
+    poly.setAttribute('points',pts); poly.setAttribute('fill','none'); poly.setAttribute('stroke',color); poly.setAttribute('stroke-width','2');
+    svg.appendChild(poly);
+  }
+  drawSeries(norm,'#1F6FB2');
+  drawSeries(rescaled,'#1D9E75');
+  const ref=document.createElementNS(ns,'line');
+  ref.setAttribute('x1',padL); ref.setAttribute('y1',yToPix(0)); ref.setAttribute('x2',W-padR); ref.setAttribute('y2',yToPix(0));
+  ref.setAttribute('stroke','#5A5A5A'); ref.setAttribute('stroke-dasharray','3,3');
+  svg.appendChild(ref);
+}
+
+window.onload=()=>{ calculerInit(); calculerStandardisation(); calculerBatchNorm(); };
+</script>
+</body>
+</html>

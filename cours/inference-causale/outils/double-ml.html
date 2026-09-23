@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Double machine learning — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; min-height: 6em; resize: vertical; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Le double machine learning</h1>
+<p class="sous-titre">Calculatrice interactive — Inférence causale</p>
+
+<div class="panneau">
+  <h2>Orthogonalisation par groupes (Frisch-Waugh non paramétrique)</h2>
+  <p class="aide">Une ligne par observation, au format "X,T,Y" (X = étiquette de groupe quelconque, T = 0 ou 1).</p>
+  <textarea id="donneesIn">0,0,10
+0,1,15
+0,1,17
+1,0,20
+1,0,22
+1,1,28</textarea>
+  <button onclick="calculerDML()">Calculer</button>
+  <div id="erreurDML" class="erreur"></div>
+  <div id="resultatDML" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\hat g(X)=E[Y\mid X]$, $\hat m(X)=E[T\mid X]$ (ici estimés par simples moyennes de groupe) ; résidus $\tilde Y=Y-\hat g(X)$, $\tilde T=T-\hat m(X)$ ; $\hat\tau=\dfrac{\sum_i \tilde T_i\tilde Y_i}{\sum_i \tilde T_i^2}$ ; en pratique, $\hat g$ et $\hat m$ doivent être estimés par fractionnement croisé (sur un bloc différent de celui où les résidus sont calculés) pour éviter le biais de sur-ajustement.</p>
+
+<script>
+function calculerDML(){
+  const erreurDiv=document.getElementById('erreurDML'); const resDiv=document.getElementById('resultatDML');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('donneesIn').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length<2) throw new Error('Au moins deux observations requises.');
+    const data=lignes.map(l=>{
+      const parts=l.split(',').map(s=>s.trim());
+      if(parts.length!==3) throw new Error('Format attendu : "X,T,Y" par ligne.');
+      const X=parts[0];
+      const T=parseFloat(parts[1]);
+      const Y=parseFloat(parts[2]);
+      if(isNaN(T)||isNaN(Y)) throw new Error('T et Y doivent etre numeriques.');
+      return {X,T,Y};
+    });
+    const groupes={};
+    data.forEach(d=>{
+      if(!groupes[d.X]) groupes[d.X]={T:[],Y:[]};
+      groupes[d.X].T.push(d.T);
+      groupes[d.X].Y.push(d.Y);
+    });
+    const gX={}, mX={};
+    let out='<table><tr><th>groupe X</th><th>g(X) = moyenne Y</th><th>m(X) = moyenne T</th></tr>';
+    Object.keys(groupes).forEach(k=>{
+      const g=groupes[k];
+      const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+      gX[k]=mean(g.Y); mX[k]=mean(g.T);
+      out+=`<tr><td>${k}</td><td>${gX[k].toFixed(3)}</td><td>${mX[k].toFixed(3)}</td></tr>`;
+    });
+    out+='</table>';
+    let num=0, den=0;
+    data.forEach(d=>{
+      const Ttilde=d.T-mX[d.X];
+      const Ytilde=d.Y-gX[d.X];
+      num+=Ttilde*Ytilde;
+      den+=Ttilde*Ttilde;
+    });
+    if(Math.abs(den)<1e-9) throw new Error('Le denominateur est nul (T ne varie pas au sein d\'un groupe).');
+    const tau=num/den;
+    out+=`<p>Numerateur (somme des T̃Ỹ) : ${num.toFixed(3)}</p>`;
+    out+=`<p>Denominateur (somme des T̃²) : ${den.toFixed(3)}</p>`;
+    out+=`<p><strong>tau estime : ${tau.toFixed(3)}</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerDML(); };
+</script>
+</body>
+</html>

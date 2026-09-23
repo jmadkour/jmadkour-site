@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Rendements, volatilité et corrélation — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Rendements, volatilité et corrélation</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse quantitative</p>
+
+<div class="panneau">
+  <h2>1. Rendement simple vs logarithmique, et mise à l'échelle de la volatilité</h2>
+  <div class="ligne">
+    <div><label for="P0In">$P_0$</label><input type="number" id="P0In" value="100" step="any" min="0.0001"></div>
+    <div><label for="P1In">$P_1$</label><input type="number" id="P1In" value="112" step="any" min="0"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="sigmaBase">$\sigma$ de base</label><input type="number" id="sigmaBase" value="0.014" step="any" min="0"></div>
+    <div><label for="hScale">périodes par an ($h$)</label><input type="number" id="hScale" value="252" step="any" min="1"></div>
+  </div>
+  <button onclick="calculerRendVol()">Calculer</button>
+  <div id="erreurRV" class="erreur"></div>
+  <div id="resultatRV" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Test de normalité de Jarque-Bera</h2>
+  <div class="ligne">
+    <div><label for="nJB">$n$</label><input type="number" id="nJB" value="300" step="1" min="1"></div>
+    <div><label for="skewJB">asymétrie $S$</label><input type="number" id="skewJB" value="-0.8" step="any"></div>
+    <div><label for="kurtJB">kurtosis $K$</label><input type="number" id="kurtJB" value="5.2" step="any"></div>
+  </div>
+  <label for="chi2JB">valeur critique $\chi^2_{0{,}05}(2)$</label>
+  <input type="number" id="chi2JB" value="5.99" step="any" min="0">
+  <button onclick="calculerJarqueBera()">Calculer</button>
+  <div id="erreurJB" class="erreur"></div>
+  <div id="resultatJB" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Modèle à un facteur et loi de puissance</h2>
+  <div class="ligne">
+    <div><label for="beta1In">$\beta_1$</label><input type="number" id="beta1In" value="0.6" step="any"></div>
+    <div><label for="beta2In">$\beta_2$</label><input type="number" id="beta2In" value="0.5" step="any"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="xRefPL">seuil de référence $x_0$</label><input type="number" id="xRefPL" value="0.10" step="any" min="0.0001"></div>
+    <div><label for="pRefPL">$\Pr(X>x_0)$ à ce seuil</label><input type="number" id="pRefPL" value="0.05" step="any" min="0" max="1"></div>
+    <div><label for="alphaPL">$\alpha$ (loi de puissance)</label><input type="number" id="alphaPL" value="3" step="any" min="0.1"></div>
+    <div><label for="xTestPL">seuil testé $x$</label><input type="number" id="xTestPL" value="0.20" step="any" min="0.0001"></div>
+  </div>
+  <button onclick="calculerFacteurPuissance()">Calculer</button>
+  <div id="erreurFP" class="erreur"></div>
+  <div id="resultatFP" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $R=(P_1-P_0)/P_0$, $r=\ln(P_1/P_0)$ ; $\sigma_h=\sqrt{h}\,\sigma$ (si absence d'autocorrélation) ; $JB=\frac{n}{6}(S^2+(K-3)^2/4)\sim\chi^2(2)$ sous normalité ; modèle à un facteur $\rho_{ij}=\beta_i\beta_j$ ; loi de puissance $\Pr(X>x)=Kx^{-\alpha}$.</p>
+
+<script>
+function calculerRendVol(){
+  const erreurDiv=document.getElementById('erreurRV'); const resDiv=document.getElementById('resultatRV');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const P0=parseFloat(document.getElementById('P0In').value);
+    const P1=parseFloat(document.getElementById('P1In').value);
+    const sigmaBase=parseFloat(document.getElementById('sigmaBase').value);
+    const h=parseFloat(document.getElementById('hScale').value);
+    if([P0,P1,sigmaBase,h].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(P0<=0||P1<0) throw new Error('Les prix doivent être positifs (P0 strictement).');
+    if(sigmaBase<0) throw new Error('Sigma doit être positif.');
+    if(h<=0) throw new Error('h doit être strictement positif.');
+    const R=(P1-P0)/P0;
+    const r=Math.log(P1/P0);
+    const sigmaScaled=sigmaBase*Math.sqrt(h);
+    let out=`<p>$R=${(R*100).toFixed(4)}\\%$ &nbsp;&nbsp; $r=${(r*100).toFixed(4)}\\%$ &nbsp;&nbsp; écart $=${((R-r)*100).toFixed(4)}$ points</p>
+      <p><strong>$\\sigma_{h}=\\sqrt{${h}}\\times${sigmaBase}=${(sigmaScaled*100).toFixed(4)}\\%$</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerJarqueBera(){
+  const erreurDiv=document.getElementById('erreurJB'); const resDiv=document.getElementById('resultatJB');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('nJB').value);
+    const S=parseFloat(document.getElementById('skewJB').value);
+    const K=parseFloat(document.getElementById('kurtJB').value);
+    const chi2crit=parseFloat(document.getElementById('chi2JB').value);
+    if([n,S,K,chi2crit].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(n<=0) throw new Error('n doit être strictement positif.');
+    const JB=(n/6)*(S*S+Math.pow(K-3,2)/4);
+    const rejet=JB>chi2crit;
+    let out=`<p><strong>$JB=${JB.toFixed(4)}$</strong></p>
+      <p>${rejet?'<span class="alerte">On rejette la normalité.</span>':'<span class="ok">On ne rejette pas la normalité.</span>'}</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerFacteurPuissance(){
+  const erreurDiv=document.getElementById('erreurFP'); const resDiv=document.getElementById('resultatFP');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const b1=parseFloat(document.getElementById('beta1In').value);
+    const b2=parseFloat(document.getElementById('beta2In').value);
+    const x0=parseFloat(document.getElementById('xRefPL').value);
+    const p0=parseFloat(document.getElementById('pRefPL').value);
+    const alpha=parseFloat(document.getElementById('alphaPL').value);
+    const x=parseFloat(document.getElementById('xTestPL').value);
+    if([b1,b2,x0,p0,alpha,x].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(x0<=0||x<=0) throw new Error('Les seuils doivent être strictement positifs.');
+    if(p0<0||p0>1) throw new Error('La probabilité de référence doit être comprise entre 0 et 1.');
+    const rho12=b1*b2;
+    const K=p0*Math.pow(x0,alpha);
+    const pX=K*Math.pow(x,-alpha);
+    let out=`<p>Corrélation modèle à un facteur $\\rho_{12}=\\beta_1\\beta_2=${rho12.toFixed(4)}$</p>
+      <p>$K=${K.toExponential(4)}$</p>
+      <p><strong>$\\Pr(X>${x})=${(pX*100).toFixed(4)}\\%$</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerRendVol(); calculerJarqueBera(); calculerFacteurPuissance(); };
+</script>
+</body>
+</html>

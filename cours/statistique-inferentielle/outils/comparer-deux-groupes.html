@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 16 — Comparer deux groupes — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  .panneau.apparie { border-left-color: var(--cex); } .panneau.apparie h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { resize: vertical; min-height: 3.2em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .souscolonnes { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.5em; margin-top: 0.4em; }
+  .souscolonnes fieldset { border: 1px solid #ddd; border-radius: 5px; padding: 0.6em 0.8em; }
+  .souscolonnes legend { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.85em; color: var(--cgris); padding: 0 0.4em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .panneau.apparie button { background: var(--cex); } .panneau.apparie button:hover { background: #23694333; background: #1f6b45; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .non-ok { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 16 — Comparer deux groupes</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Comparer deux moyennes (test de Welch)</h2>
+  <div class="souscolonnes">
+    <fieldset><legend>Groupe 1</legend>
+      <label for="n1">taille n₁</label><input id="n1" value="45">
+      <label for="m1">moyenne x̄₁</label><input id="m1" value="18.4">
+      <label for="s1">écart-type s₁</label><input id="s1" value="5.2">
+    </fieldset>
+    <fieldset><legend>Groupe 2</legend>
+      <label for="n2">taille n₂</label><input id="n2" value="38">
+      <label for="m2">moyenne x̄₂</label><input id="m2" value="16.1">
+      <label for="s2">écart-type s₂</label><input id="s2" value="4.6">
+    </fieldset>
+  </div>
+  <button onclick="testerWelch()">Comparer les deux moyennes</button>
+  <div id="erreurW" class="erreur"></div>
+  <div id="resultatW" class="resultat-zone"></div>
+  <div id="grapheW"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Comparer deux proportions</h2>
+  <div class="souscolonnes">
+    <fieldset><legend>Groupe 1</legend>
+      <label for="k1p">succès k₁</label><input id="k1p" value="54">
+      <label for="n1p">taille n₁</label><input id="n1p" value="180">
+    </fieldset>
+    <fieldset><legend>Groupe 2</legend>
+      <label for="k2p">succès k₂</label><input id="k2p" value="42">
+      <label for="n2p">taille n₂</label><input id="n2p" value="210">
+    </fieldset>
+  </div>
+  <button onclick="testerProportions()">Comparer les deux proportions</button>
+  <div id="erreurP" class="erreur"></div>
+  <div id="resultatP" class="resultat-zone"></div>
+</div>
+
+<div class="panneau apparie">
+  <h2>Échantillons appariés (avant / après)</h2>
+  <div class="grille2">
+    <div><label for="avantList">valeurs « avant » (séparées par des virgules)</label><textarea id="avantList">72,68,75,70,74,69,71,73,67,76</textarea></div>
+    <div><label for="apresList">valeurs « après » (séparées par des virgules)</label><textarea id="apresList">75,70,78,74,77,71,73,76,70,79</textarea></div>
+  </div>
+  <button onclick="testerApparie()">Tester les différences</button>
+  <div id="erreurA" class="erreur"></div>
+  <div id="resultatA" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : Welch, $t=(\overline x_1-\overline x_2)/\sqrt{s_1^2/n_1+s_2^2/n_2}$, ddl de Satterthwaite (interpolé ici sur une table usuelle). Proportions, $z=(f_1-f_2)/\sqrt{\widehat p(1-\widehat p)(1/n_1+1/n_2)}$ avec $\widehat p=(k_1+k_2)/(n_1+n_2)$. Apparié : réduire les deux séries à leurs différences $d_i$, puis test de Student à un échantillon sur $\overline d$. « Ne pas rejeter » ne prouve jamais l'égalité — cf. chapitre 13 sur la puissance.</p>
+
+<script>
+function erf(x){
+  const sign = x>=0?1:-1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z){ return 0.5*(1+erf(z/Math.sqrt(2))); }
+
+const dfList = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,40,60,120,Infinity];
+const t975 = [12.706,4.303,3.182,2.776,2.571,2.447,2.365,2.306,2.262,2.228,2.201,2.179,2.160,2.145,2.131,2.120,2.110,2.101,2.093,2.086,2.080,2.074,2.069,2.064,2.060,2.056,2.052,2.048,2.045,2.042,2.021,2.000,1.980,1.960];
+function interpoler(df, table){
+  if(df<=1) return table[0];
+  for(let i=0;i<dfList.length-1;i++){
+    const a=dfList[i], b=dfList[i+1];
+    if(df>=a && df<=b){
+      const invA=1/a, invB=isFinite(b)?1/b:0, invDf=1/df;
+      const frac=(invDf-invA)/(invB-invA);
+      return table[i]+frac*(table[i+1]-table[i]);
+    }
+  }
+  return table[table.length-1];
+}
+
+function dessinerCourbe(cible, tobs, seuil, xmax){
+  const w=520,h=200,pad=30;
+  xmax = xmax || 4;
+  const X=(x)=>pad+((x+xmax)/(2*xmax))*(w-pad-20);
+  const Y=(y)=>(h-pad)-y*(h-pad-20)/0.45;
+  let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+  let path='';
+  for(let i=0;i<=100;i++){
+    const x=-xmax+i*2*xmax/100;
+    const y=0.4*Math.exp(-x*x/2);
+    path+=(i===0?'M':'L')+X(x).toFixed(1)+','+Y(y).toFixed(1)+' ';
+  }
+  svg+=`<path d="${path}" fill="none" stroke="#5A5A5A" stroke-width="1.5"/>`;
+  svg+=`<line x1="${X(seuil)}" y1="${h-pad}" x2="${X(seuil)}" y2="${Y(0.4*Math.exp(-seuil*seuil/2))}" stroke="#B56600" stroke-dasharray="4,3"/>`;
+  svg+=`<line x1="${X(-seuil)}" y1="${h-pad}" x2="${X(-seuil)}" y2="${Y(0.4*Math.exp(-seuil*seuil/2))}" stroke="#B56600" stroke-dasharray="4,3"/>`;
+  const tc=Math.max(-xmax,Math.min(xmax,tobs));
+  svg+=`<line x1="${X(tc)}" y1="${h-pad}" x2="${X(tc)}" y2="${Y(0.4*Math.exp(-tc*tc/2))}" stroke="#1F6FB2" stroke-width="2"/>`;
+  svg+=`<text x="${X(tc)+4}" y="${h-pad-4}" font-size="10" fill="#1F6FB2">obs=${tobs.toFixed(3)}</text>`;
+  svg+=`<text x="${X(seuil)+3}" y="14" font-size="10" fill="#B56600">seuil=±${seuil.toFixed(3)}</text>`;
+  svg+='</svg>';
+  cible.innerHTML=svg;
+}
+
+function testerWelch(){
+  const erreurDiv=document.getElementById('erreurW'); const resDiv=document.getElementById('resultatW');
+  const grapheDiv=document.getElementById('grapheW');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const n1=parseFloat(document.getElementById('n1').value), m1=parseFloat(document.getElementById('m1').value), s1=parseFloat(document.getElementById('s1').value);
+    const n2=parseFloat(document.getElementById('n2').value), m2=parseFloat(document.getElementById('m2').value), s2=parseFloat(document.getElementById('s2').value);
+    if([n1,m1,s1,n2,m2,s2].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(n1<2||n2<2) throw new Error('n₁ et n₂ doivent être ≥2.');
+    if(s1<=0||s2<=0) throw new Error('s₁ et s₂ doivent être strictement positifs.');
+    const v1=s1*s1/n1, v2=s2*s2/n2;
+    const se=Math.sqrt(v1+v2);
+    const t=(m1-m2)/se;
+    const df=Math.pow(v1+v2,2)/(Math.pow(v1,2)/(n1-1)+Math.pow(v2,2)/(n2-1));
+    const seuil=interpoler(df,t975);
+    const rejet=Math.abs(t)>seuil;
+    resDiv.innerHTML=`<table><tr><th>erreur-type</th><th>t observé</th><th>ddl (Satterthwaite)</th><th>seuil (5%)</th><th>conclusion</th></tr>
+      <tr><td>${se.toFixed(3)}</td><td>${t.toFixed(4)}</td><td>${df.toFixed(2)}</td><td>±${seuil.toFixed(3)}</td><td class="${rejet?'non-ok':'ok'}">${rejet?'on rejette H₀ (m₁≠m₂)':'on ne rejette pas H₀'}</td></tr></table>`;
+    dessinerCourbe(grapheDiv, t, seuil, Math.max(4, Math.abs(t)+1));
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function testerProportions(){
+  const erreurDiv=document.getElementById('erreurP'); const resDiv=document.getElementById('resultatP');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const k1=parseFloat(document.getElementById('k1p').value), n1=parseFloat(document.getElementById('n1p').value);
+    const k2=parseFloat(document.getElementById('k2p').value), n2=parseFloat(document.getElementById('n2p').value);
+    if([k1,n1,k2,n2].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(n1<1||n2<1) throw new Error('n₁ et n₂ doivent être ≥1.');
+    if(k1<0||k1>n1||k2<0||k2>n2) throw new Error('k doit être compris entre 0 et n pour chaque groupe.');
+    const f1=k1/n1, f2=k2/n2;
+    const pchap=(k1+k2)/(n1+n2);
+    const se=Math.sqrt(pchap*(1-pchap)*(1/n1+1/n2));
+    const z=(f1-f2)/se;
+    const seuil=1.960;
+    const rejet=Math.abs(z)>seuil;
+    resDiv.innerHTML=`<table><tr><th>f₁</th><th>f₂</th><th>p̂ (pondérée)</th><th>erreur-type</th><th>z observé</th><th>conclusion</th></tr>
+      <tr><td>${f1.toFixed(4)}</td><td>${f2.toFixed(4)}</td><td>${pchap.toFixed(4)}</td><td>${se.toFixed(4)}</td><td>${z.toFixed(4)}</td><td class="${rejet?'non-ok':'ok'}">${rejet?'on rejette H₀ (p₁≠p₂)':'on ne rejette pas H₀'}</td></tr></table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function testerApparie(){
+  const erreurDiv=document.getElementById('erreurA'); const resDiv=document.getElementById('resultatA');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const avant=document.getElementById('avantList').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    const apres=document.getElementById('apresList').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    if(avant.length<2||apres.length<2) throw new Error('Il faut au moins 2 valeurs valides dans chaque série.');
+    if(avant.length!==apres.length) throw new Error(`Les deux séries doivent avoir la même longueur (avant: ${avant.length}, après: ${apres.length}).`);
+    const n=avant.length;
+    const diffs=avant.map((a,i)=>apres[i]-a);
+    const dbar=diffs.reduce((a,b)=>a+b,0)/n;
+    const variance=diffs.reduce((a,d)=>a+(d-dbar)*(d-dbar),0)/(n-1);
+    const sd=Math.sqrt(variance);
+    if(sd===0) throw new Error('Écart-type des différences nul : toutes les différences sont identiques, le test de Student ne s\'applique pas.');
+    const se=sd/Math.sqrt(n);
+    const t=dbar/se;
+    const df=n-1;
+    const seuil=interpoler(df,t975);
+    const rejet=Math.abs(t)>seuil;
+    resDiv.innerHTML=`<table><tr><th>n paires</th><th>d̄</th><th>s_d</th><th>erreur-type</th><th>t observé</th><th>ddl</th><th>seuil (5%)</th><th>conclusion</th></tr>
+      <tr><td>${n}</td><td>${dbar.toFixed(3)}</td><td>${sd.toFixed(3)}</td><td>${se.toFixed(3)}</td><td>${t.toFixed(4)}</td><td>${df}</td><td>±${seuil.toFixed(3)}</td><td class="${rejet?'non-ok':'ok'}">${rejet?'on rejette H₀ (d̄≠0)':'on ne rejette pas H₀'}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Différences individuelles : ${diffs.map(d=>d.toFixed(2)).join(', ')}</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ testerWelch(); testerProportions(); testerApparie(); };
+</script>
+</body>
+</html>

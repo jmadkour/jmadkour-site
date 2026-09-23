@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Densité, clustering et assortativité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 200px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .exemples { font-size: 0.82em; color: var(--cgris); margin-top: 0.4em; }
+  .exemples button { font-size: 0.78em; padding: 0.3em 0.7em; margin: 0.2em 0.3em 0 0; background: #eee; color: #333; }
+  .exemples button:hover { background: #ddd; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Densité, clustering et assortativité</h1>
+<p class="sous-titre">Calculatrice interactive — Théorie des réseaux</p>
+
+<div class="panneau">
+  <h2>Mesures du réseau entier</h2>
+  <p class="aide">Saisir un graphe non orienté. L'outil calcule densité $\rho$, degré moyen $\bar k$, clustering local $C_i$, clustering moyen $\bar C$, transitivité $T$, et assortativité $r$.</p>
+  <div class="ligne">
+    <div><label for="sommetsIn">Sommets (séparés par des virgules)</label><input type="text" id="sommetsIn" value="1,2,3,4,5,6,7"></div>
+  </div>
+  <label for="aretesIn">Arêtes (une par ligne, format A-B)</label>
+  <textarea id="aretesIn">1-2
+1-3
+2-3
+3-4
+4-5
+5-6
+5-7
+6-7</textarea>
+  <div class="exemples">
+    Exemples rapides :
+    <button onclick="chargerExemple('filrouge')">Réseau du cours</button>
+    <button onclick="chargerExemple('star')">Étoile pure (r=-1)</button>
+    <button onclick="chargerExemple('regular')">Groupes réguliers (r=+1)</button>
+    <button onclick="chargerExemple('hubtriangle')">Hub + triangle (Exercice 2)</button>
+  </div>
+  <button onclick="analyserGraphe()">Calculer</button>
+  <div id="erreurG" class="erreur"></div>
+  <div id="resultatG" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">L'assortativité n'exige pas un graphe connexe : elle est calculée directement sur les paires de degrés le long de chaque arête.</p>
+
+<script>
+function chargerExemple(nom){
+  const sommets = document.getElementById('sommetsIn');
+  const aretes = document.getElementById('aretesIn');
+  if(nom === 'filrouge'){
+    sommets.value = '1,2,3,4,5,6,7';
+    aretes.value = '1-2\n1-3\n2-3\n3-4\n4-5\n5-6\n5-7\n6-7';
+  } else if(nom === 'star'){
+    sommets.value = 'H,L1,L2,L3,L4';
+    aretes.value = 'H-L1\nH-L2\nH-L3\nH-L4';
+  } else if(nom === 'regular'){
+    sommets.value = 'x1,x2,y1,y2,y3,z1,z2,z3,z4';
+    aretes.value = 'x1-x2\ny1-y2\ny1-y3\ny2-y3\nz1-z2\nz1-z3\nz1-z4\nz2-z3\nz2-z4\nz3-z4';
+  } else if(nom === 'hubtriangle'){
+    sommets.value = 'Hub,l1,l2,l3,l4,l5,A,B,C';
+    aretes.value = 'Hub-l1\nHub-l2\nHub-l3\nHub-l4\nHub-l5\nHub-A\nA-B\nA-C\nB-C';
+  }
+  analyserGraphe();
+}
+
+function parserGraphe(){
+  const sommetsTxt = document.getElementById('sommetsIn').value.trim();
+  const aretesTxt = document.getElementById('aretesIn').value.trim();
+  if(!sommetsTxt) throw new Error('La liste des sommets ne peut pas être vide.');
+  const V = sommetsTxt.split(',').map(s => s.trim()).filter(s => s.length > 0);
+  if(V.length < 2) throw new Error('Il faut au moins deux sommets.');
+  const setV = new Set(V);
+  if(setV.size !== V.length) throw new Error('Les sommets doivent avoir des noms distincts.');
+  const E = [];
+  if(aretesTxt){
+    const lignes = aretesTxt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    for(const ligne of lignes){
+      const parts = ligne.split('-').map(s => s.trim());
+      if(parts.length !== 2) throw new Error(`Ligne d'arête invalide : "${ligne}".`);
+      const [a, b] = parts;
+      if(!setV.has(a)) throw new Error(`Le sommet "${a}" n'est pas dans la liste des sommets.`);
+      if(!setV.has(b)) throw new Error(`Le sommet "${b}" n'est pas dans la liste des sommets.`);
+      if(a === b) throw new Error(`Boucle non autorisée : "${ligne}".`);
+      E.push([a, b]);
+    }
+  }
+  return { V, E };
+}
+
+function buildAdj(V, E){
+  const adj = {};
+  for(const v of V) adj[v] = new Set();
+  for(const [a,b] of E){ adj[a].add(b); adj[b].add(a); }
+  return adj;
+}
+
+function density(V, E){ const n=V.length, m=E.length; return (2*m)/(n*(n-1)); }
+
+function localClustering(V, adj){
+  const C = {};
+  for(const v of V){
+    const neighbors = [...adj[v]];
+    const k = neighbors.length;
+    if(k<2){ C[v]=0; continue; }
+    let edgesAmong=0;
+    for(let i=0;i<neighbors.length;i++) for(let j=i+1;j<neighbors.length;j++) if(adj[neighbors[i]].has(neighbors[j])) edgesAmong++;
+    C[v] = edgesAmong/(k*(k-1)/2);
+  }
+  return C;
+}
+
+function transitivity(V, adj){
+  let triangleSum=0, triples=0;
+  for(const v of V){
+    const neighbors=[...adj[v]];
+    const k=neighbors.length;
+    triples += k*(k-1)/2;
+    for(let i=0;i<neighbors.length;i++) for(let j=i+1;j<neighbors.length;j++) if(adj[neighbors[i]].has(neighbors[j])) triangleSum++;
+  }
+  const triangles = triangleSum/3;
+  return { T: triples>0 ? (3*triangles)/triples : 0, triangles, triples };
+}
+
+function assortativity(V, E, adj){
+  const deg = {}; for(const v of V) deg[v]=adj[v].size;
+  const pairs = [];
+  for(const [a,b] of E){ pairs.push([deg[a],deg[b]]); pairs.push([deg[b],deg[a]]); }
+  const n = pairs.length;
+  if(n===0) return null;
+  const xs = pairs.map(p=>p[0]), ys = pairs.map(p=>p[1]);
+  const meanX = xs.reduce((a,b)=>a+b,0)/n, meanY = ys.reduce((a,b)=>a+b,0)/n;
+  let cov=0, varX=0, varY=0;
+  for(let i=0;i<n;i++){ cov += (xs[i]-meanX)*(ys[i]-meanY); varX += (xs[i]-meanX)**2; varY += (ys[i]-meanY)**2; }
+  if(varX===0 || varY===0) return null;
+  return cov/Math.sqrt(varX*varY);
+}
+
+function analyserGraphe(){
+  const erreurDiv = document.getElementById('erreurG');
+  const resDiv = document.getElementById('resultatG');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const { V, E } = parserGraphe();
+    const adj = buildAdj(V, E);
+    const n = V.length, m = E.length;
+    const deg = {}; for(const v of V) deg[v] = adj[v].size;
+
+    let out = '<h3>Mesures globales</h3>';
+    out += `<div class="valeur">n = ${n}</div><div class="valeur">m = ${m}</div>`;
+    out += `<div class="valeur">&rho; = ${density(V,E).toFixed(4)}</div><div class="valeur">k&#772; = ${(2*m/n).toFixed(4)}</div>`;
+
+    const C = localClustering(V, adj);
+    out += '<h3>Clustering local</h3>';
+    out += '<table><tr><th>Sommet</th><th>k<sub>i</sub></th><th>C_i</th></tr>';
+    for(const v of V) out += `<tr><td>${v}</td><td>${deg[v]}</td><td>${C[v].toFixed(4)}</td></tr>`;
+    out += '</table>';
+    const meanC = V.reduce((s,v)=>s+C[v],0)/n;
+    out += `<div class="valeur">C&#772; (moyenne) = ${meanC.toFixed(4)}</div>`;
+
+    const { T, triangles, triples } = transitivity(V, adj);
+    out += `<div class="valeur">triangles = ${triangles}</div><div class="valeur">triples = ${triples}</div><div class="valeur">T = ${T.toFixed(4)}</div>`;
+
+    const r = assortativity(V, E, adj);
+    out += '<h3>Assortativité</h3>';
+    if(r===null){
+      out += '<p class="aide">Non définie (graphe régulier : tous les degrés identiques, variance nulle).</p>';
+    } else {
+      out += `<div class="valeur">r = ${r.toFixed(4)}</div>`;
+      out += `<p>${r > 0.05 ? 'Réseau assortatif (les degrés semblables se relient entre eux).' : (r < -0.05 ? 'Réseau dissortatif (les gros degrés se lient aux petits — structure cœur-périphérie).' : 'Assortativité proche de zéro (pas de corrélation nette des degrés).')}</p>`;
+    }
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { analyserGraphe(); };
+</script>
+</body>
+</html>

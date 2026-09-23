@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — L'intégrale d'Itô — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.strat { border-left-color: var(--cex); }
+  .panneau.strat h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.strat button { background: var(--cex); }
+  .panneau.strat button:hover { background: #226b43; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — L'intégrale stochastique d'Itô</h1>
+<p class="sous-titre">Calculatrice interactive — Calcul stochastique pour la finance</p>
+
+<div class="panneau">
+  <h2>Isométrie d'Itô : variance de $\int_0^t b_s\,dW_s$</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir $b(s)$ en JavaScript (variable <code>s</code>). Exemples : <code>4</code>, <code>2*s</code>, <code>0.3*Math.exp(0.1*s)</code>.</p>
+  <div class="grille3">
+    <div><label for="bExpr">b(s) =</label><input id="bExpr" value="2*s"></div>
+    <div><label for="tVal">horizon $t$</label><input id="tVal" value="3"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerIsometrie()">Calculer la variance</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueHisto" height="240"></canvas>
+</div>
+
+<p class="avertissement">La variance théorique $\int_0^tb(s)^2ds$ (calculée par intégration numérique) est comparée à la variance empirique obtenue en simulant $2000$ trajectoires de la somme d'Itô $\sum_kb(t_k)(W_{t_{k+1}}-W_{t_k})$.</p>
+
+<div class="panneau strat">
+  <h2>Point gauche contre clairvoyance</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">On simule $n$ accroissements gaussiens indépendants, et on compare le gain d'une exposition constante (point gauche, licite) à celui d'une stratégie qui choisirait le signe de l'exposition en connaissant déjà l'accroissement (clairvoyante, interdite).</p>
+  <div class="grille3">
+    <div><label for="nPas">nombre de pas</label><input id="nPas" value="20"></div>
+    <div><label for="nSim">nombre de simulations</label><input id="nSim" value="2000"></div>
+    <div></div>
+  </div>
+  <button onclick="simulerStrategies()">Simuler et comparer</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<script>
+let chartHisto = null;
+
+function calculerIsometrie() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const bExpr = document.getElementById('bExpr').value;
+    const t = parseFloat(document.getElementById('tVal').value);
+    if (isNaN(t) || t<=0) throw new Error('t doit être strictement positif.');
+    const b = new Function('s', 'return ' + bExpr + ';');
+
+    // intégration numérique de b(s)^2 (méthode des rectangles, 2000 points)
+    const nInt = 2000, dsInt = t/nInt;
+    let varTheo = 0;
+    for (let i=0;i<nInt;i++){ const s = (i+0.5)*dsInt; varTheo += Math.pow(b(s),2)*dsInt; }
+
+    // simulation empirique
+    const nPasSim = 300, dt = t/nPasSim, nTraj = 2000;
+    const resultats = [];
+    for (let tr=0; tr<nTraj; tr++) {
+      let somme = 0;
+      for (let k=0;k<nPasSim;k++) {
+        const tk = k*dt;
+        const dW = Math.sqrt(dt)*(Math.random()<0.5?-1:1);
+        somme += b(tk)*dW;
+      }
+      resultats.push(somme);
+    }
+    const moyenne = resultats.reduce((s,v)=>s+v,0)/nTraj;
+    const varEmp = resultats.reduce((s,v)=>s+(v-moyenne)*(v-moyenne),0)/nTraj;
+
+    resDiv.innerHTML = `
+      <table><tr><th>Var théorique = &int; b(s)&sup2; ds</th><th>Var empirique (2000 trajectoires)</th><th>Moyenne empirique</th></tr>
+      <tr><td>${varTheo.toFixed(4)}</td><td>${varEmp.toFixed(4)}</td><td>${moyenne.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">La moyenne empirique doit rester proche de $0$ (espérance nulle de l'intégrale d'Itô), et les deux variances doivent se rapprocher.</p>
+    `;
+
+    // histogramme simple
+    const nBins = 20;
+    const minV = Math.min(...resultats), maxV = Math.max(...resultats);
+    const largeur = (maxV-minV)/nBins;
+    const bins = Array(nBins).fill(0);
+    resultats.forEach(v => { let idx = Math.floor((v-minV)/largeur); if (idx>=nBins) idx=nBins-1; if(idx<0) idx=0; bins[idx]++; });
+    const labels = bins.map((_,i)=> (minV+i*largeur).toFixed(2));
+
+    if (chartHisto) chartHisto.destroy();
+    chartHisto = new Chart(document.getElementById('graphiqueHisto').getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'fréquence', data: bins, backgroundColor: 'rgba(31,111,178,0.6)' }] },
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'valeur de l\'intégrale simulée' } }, y: { title: { display: true, text: 'fréquence' } } },
+        plugins: { title: { display: true, text: 'Distribution empirique de l\'intégrale stochastique' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function simulerStrategies() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const nPas = parseInt(document.getElementById('nPas').value);
+    const nSim = parseInt(document.getElementById('nSim').value);
+    if ([nPas,nSim].some(v=>isNaN(v)||v<1)) throw new Error('Les deux valeurs doivent être des entiers positifs.');
+
+    let sommeGainIto = 0, sommeGainClair = 0, nbItoPositif = 0, nbClairPositif = 0;
+    for (let s=0;s<nSim;s++) {
+      let gainIto = 0, gainClair = 0;
+      for (let k=0;k<nPas;k++) {
+        const dW = (Math.random()*2-1); // accroissement quelconque, positif ou négatif
+        gainIto += 1*dW;              // exposition constante décidée à l'avance
+        gainClair += Math.abs(dW);     // "connaît" déjà le signe : encaisse toujours la valeur absolue
+      }
+      sommeGainIto += gainIto; sommeGainClair += gainClair;
+      if (gainIto>0) nbItoPositif++;
+      if (gainClair>0) nbClairPositif++;
+    }
+    const moyIto = sommeGainIto/nSim, moyClair = sommeGainClair/nSim;
+
+    resDiv.innerHTML = `
+      <table><tr><th></th><th>gain moyen</th><th>% de simulations gagnantes</th></tr>
+      <tr><td>Point gauche (Itô)</td><td>${moyIto.toFixed(4)}</td><td>${(100*nbItoPositif/nSim).toFixed(1)} %</td></tr>
+      <tr><td>Clairvoyante (interdite)</td><td>${moyClair.toFixed(4)}</td><td>${(100*nbClairPositif/nSim).toFixed(1)} %</td></tr>
+      </table>
+      <p style="font-size:0.85em;color:var(--cgris);">La stratégie « point gauche » a un gain moyen proche de $0$ et gagne environ une fois sur deux ; la stratégie clairvoyante gagne quasiment à tous les coups — ce qui est précisément ce que la convention d'Itô interdit de modéliser comme une stratégie réalisable.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerIsometrie(); simulerStrategies(); };
+</script>
+</body>
+</html>

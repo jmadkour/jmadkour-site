@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Les indicateurs de forme — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.yule { border-left-color: var(--ceco); } .panneau.yule h2 { color: var(--ceco); }
+  .panneau.sensi { border-left-color: var(--cex); } .panneau.sensi h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.yule button { background: var(--ceco); } .panneau.yule button:hover { background: #17578f; }
+  .panneau.sensi button { background: var(--cex); } .panneau.sensi button:hover { background: #206040; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Les indicateurs de forme</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique descriptive</p>
+
+<div class="panneau">
+  <h2>Moments centrés, coefficient de Fisher et d'aplatissement</h2>
+  <label for="serie1">valeurs (virgules)</label>
+  <input id="serie1" value="60,62,58,61,59,95,57">
+  <button onclick="calculerForme()">Calculer moyenne, écart-type, γ1 et γ2</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau yule">
+  <h2>Coefficient de Yule à partir des quartiles</h2>
+  <div class="grille3">
+    <div><label for="q1Val">Q1</label><input id="q1Val" value="40"></div>
+    <div><label for="meVal">Médiane</label><input id="meVal" value="55"></div>
+    <div><label for="q3Val">Q3</label><input id="q3Val" value="60"></div>
+  </div>
+  <button onclick="calculerYule()">Calculer le coefficient de Yule</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau sensi">
+  <h2>Sensibilité : remplacer une valeur et comparer</h2>
+  <label for="serieAvant">série d'origine (virgules)</label>
+  <input id="serieAvant" value="18,22,20,25,19,40">
+  <label for="serieApres">série corrigée (virgules, même nombre de valeurs)</label>
+  <input id="serieApres" value="18,22,20,25,19,400">
+  <button onclick="calculerSensibilite()">Comparer γ1 et γ2 avant / après</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $m_r=\frac1n\sum(x_i-\bar{x})^r$ ; $\gamma_1=m_3/\sigma^3$ (positif = étalé à droite) ; $\gamma_2=m_4/\sigma^4$ (référence loi normale $=3$ ; au-delà : leptokurtique, queues épaisses) ; $A_Y=\dfrac{(Q_3-Me)-(Me-Q_1)}{Q_3-Q_1}$ (asymétrie du cœur de la distribution, robuste aux extrêmes). Toujours vérifier l'histogramme et la boîte à moustaches avant d'interpréter ces coefficients : ils sont très sensibles aux valeurs extrêmes.</p>
+
+<script>
+function moments(vals){
+  const n=vals.length;
+  const mean=vals.reduce((a,b)=>a+b,0)/n;
+  const m2=vals.reduce((a,b)=>a+Math.pow(b-mean,2),0)/n;
+  const m3=vals.reduce((a,b)=>a+Math.pow(b-mean,3),0)/n;
+  const m4=vals.reduce((a,b)=>a+Math.pow(b-mean,4),0)/n;
+  const sigma=Math.sqrt(m2);
+  const g1= sigma>0 ? m3/Math.pow(sigma,3) : NaN;
+  const g2= sigma>0 ? m4/Math.pow(sigma,4) : NaN;
+  return {n,mean,sigma,m3,m4,g1,g2};
+}
+
+function diagnosticForme(g1,g2){
+  let asym='à peu près symétrique';
+  if(Math.abs(g1)>=1) asym='fortement asymétrique';
+  else if(Math.abs(g1)>=0.5) asym='modérément asymétrique';
+  asym += g1>0.05 ? ' (étalée à droite)' : (g1<-0.05 ? ' (étalée à gauche)' : '');
+  let aplat='mésokurtique (proche de la loi normale)';
+  if(g2>3.2) aplat='leptokurtique (queues épaisses)';
+  else if(g2<2.8) aplat='platykurtique (distribution plus plate)';
+  return {asym,aplat};
+}
+
+function calculerForme(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const vals=document.getElementById('serie1').value.split(',').map(s=>parseFloat(s.trim()));
+    if(vals.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(vals.length<3) throw new Error('Il faut au moins 3 valeurs.');
+    const s=moments(vals);
+    const d=diagnosticForme(s.g1,s.g2);
+    resDiv.innerHTML=`<table><tr><th>n</th><th>moyenne</th><th>écart-type</th><th>γ1 (Fisher)</th><th>γ2 (aplatissement)</th></tr>
+      <tr><td>${s.n}</td><td>${s.mean.toFixed(3)}</td><td>${s.sigma.toFixed(3)}</td><td>${s.g1.toFixed(4)}</td><td>${s.g2.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Diagnostic : ${d.asym} ; ${d.aplat}.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerYule(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const q1=parseFloat(document.getElementById('q1Val').value);
+    const me=parseFloat(document.getElementById('meVal').value);
+    const q3=parseFloat(document.getElementById('q3Val').value);
+    if([q1,me,q3].some(isNaN)) throw new Error('Q1, médiane et Q3 doivent être des nombres.');
+    if(q3<=q1) throw new Error('Q3 doit être strictement supérieur à Q1.');
+    const AY=((q3-me)-(me-q1))/(q3-q1);
+    const sens = AY>0.05 ? 'étalement à droite du cœur de la distribution' : (AY<-0.05 ? 'étalement à gauche du cœur de la distribution' : 'cœur de la distribution presque symétrique');
+    resDiv.innerHTML=`<table><tr><th>Q3−Me</th><th>Me−Q1</th><th>A_Y</th></tr><tr><td>${(q3-me).toFixed(3)}</td><td>${(me-q1).toFixed(3)}</td><td><strong>${AY.toFixed(4)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Diagnostic : ${sens}. Rappel : A_Y ne dépend que des trois quartiles, il est donc robuste aux valeurs extrêmes situées hors de $[Q_1,Q_3]$.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerSensibilite(){
+  const erreurDiv=document.getElementById('erreur3'); const resDiv=document.getElementById('resultat3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const avant=document.getElementById('serieAvant').value.split(',').map(s=>parseFloat(s.trim()));
+    const apres=document.getElementById('serieApres').value.split(',').map(s=>parseFloat(s.trim()));
+    if(avant.some(isNaN)||apres.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(avant.length!==apres.length) throw new Error('Les deux séries doivent avoir le même nombre de valeurs.');
+    if(avant.length<3) throw new Error('Il faut au moins 3 valeurs.');
+    const sA=moments(avant), sB=moments(apres);
+    resDiv.innerHTML=`<table><tr><th></th><th>moyenne</th><th>écart-type</th><th>γ1</th><th>γ2</th></tr>
+      <tr><td>avant</td><td>${sA.mean.toFixed(3)}</td><td>${sA.sigma.toFixed(3)}</td><td>${sA.g1.toFixed(4)}</td><td>${sA.g2.toFixed(4)}</td></tr>
+      <tr><td>après</td><td>${sB.mean.toFixed(3)}</td><td>${sB.sigma.toFixed(3)}</td><td>${sB.g1.toFixed(4)}</td><td>${sB.g2.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Variation de la moyenne : ${((sB.mean-sA.mean)/Math.abs(sA.mean)*100).toFixed(1)}% ; de l'écart-type : ${((sB.sigma-sA.sigma)/Math.abs(sA.sigma)*100).toFixed(1)}% ; de γ1 : ${((sB.g1-sA.g1)).toFixed(3)} (variation absolue) ; de γ2 : ${((sB.g2-sA.g2)).toFixed(3)} (variation absolue). Une modification d'une seule valeur peut suffire à changer radicalement le diagnostic de forme.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerForme(); calculerYule(); calculerSensibilite(); };
+</script>
+</body>
+</html>

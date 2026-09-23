@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — De l'EDO à l'EDS — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — De l'EDO à l'EDS</h1>
+<p class="sous-titre">Calculatrice interactive — Calcul stochastique pour la finance</p>
+
+<div class="panneau">
+  <h2>Analyser $dX_t=a(X_t)\,dt+b(X_t)\,dW_t$</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir la dérive $a(X)$ et la diffusion $b(X)$ en JavaScript (utiliser la variable <code>X</code>). Exemples : <code>0.08*X</code> et <code>0.35*X</code> pour un brownien géométrique, ou <code>2*(10-X)</code> et <code>0.5</code> pour un ajustement bruité.</p>
+  <div class="grille3">
+    <div><label for="aExpr">a(X) =</label><input id="aExpr" value="0.08*X"></div>
+    <div><label for="bExpr">b(X) =</label><input id="bExpr" value="0.35*X"></div>
+    <div><label for="X0">$X_0$</label><input id="X0" value="120"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="dtVal">$\Delta t$ pour l'analyse ponctuelle</label><input id="dtVal" value="0.01"></div>
+    <div><label for="tHoriz">horizon de simulation $T$</label><input id="tHoriz" value="1"></div>
+    <div></div><div></div>
+  </div>
+  <button onclick="analyserEDS()">Analyser et simuler</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueEDS" height="280"></canvas>
+</div>
+
+<p class="avertissement">Le tableau donne, au point de départ $X_0$ : la dérive instantanée $a(X_0)$, la diffusion $b(X_0)$, le terme prévisible sur $\Delta t$ ($a(X_0)\Delta t$), l'écart-type imprévisible sur $\Delta t$ ($b(X_0)\sqrt{\Delta t}$), et le coefficient de $(dX)^2$ (soit $b(X_0)^2$). Le graphique simule une trajectoire complète par le schéma d'Euler-Maruyama : $X_{k+1}=X_k+a(X_k)\Delta t+b(X_k)\sqrt{\Delta t}\,\varepsilon_k$.</p>
+
+<script>
+let chartEDS = null;
+
+function analyserEDS() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const aExpr = document.getElementById('aExpr').value;
+    const bExpr = document.getElementById('bExpr').value;
+    const X0 = parseFloat(document.getElementById('X0').value);
+    const dt = parseFloat(document.getElementById('dtVal').value);
+    const T = parseFloat(document.getElementById('tHoriz').value);
+    if ([X0,dt,T].some(isNaN) || dt<=0 || T<=0) throw new Error('Vérifiez les valeurs numériques saisies.');
+
+    const a = new Function('X', 'return ' + aExpr + ';');
+    const b = new Function('X', 'return ' + bExpr + ';');
+
+    const a0 = a(X0), b0 = b(X0);
+    const derivTerme = a0*dt, diffStd = b0*Math.sqrt(dt), dX2coef = b0*b0;
+
+    resDiv.innerHTML = `
+      <table><tr><th>a(X0)</th><th>b(X0)</th><th>a(X0)&Delta;t</th><th>b(X0)&radic;&Delta;t</th><th>coefficient de (dX)&sup2;</th></tr>
+      <tr><td>${a0.toFixed(4)}</td><td>${b0.toFixed(4)}</td><td>${derivTerme.toFixed(5)}</td><td>${diffStd.toFixed(5)}</td><td>${dX2coef.toFixed(5)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Rapport (imprévisible / prévisible) sur ce pas : ${(Math.abs(diffStd/derivTerme)).toFixed(2)}.</p>
+    `;
+
+    const nPas = Math.max(50, Math.round(T/dt));
+    const dtSim = T/nPas;
+    const nTraj = 8;
+    const datasets = [];
+    for (let s=0;s<nTraj;s++) {
+      let X = X0;
+      const chemin = [{x:0,y:X}];
+      for (let k=1;k<=nPas;k++) {
+        const eps = Math.random()<0.5?-1:1;
+        X = X + a(X)*dtSim + b(X)*Math.sqrt(dtSim)*eps;
+        chemin.push({x:k*dtSim, y:X});
+      }
+      datasets.push({ data: chemin, borderColor: `hsla(${(s*47)%360},60%,45%,0.6)`, backgroundColor:'transparent', pointRadius:0, borderWidth:1 });
+    }
+
+    if (chartEDS) chartEDS.destroy();
+    chartEDS = new Chart(document.getElementById('graphiqueEDS').getContext('2d'), {
+      type: 'line',
+      data: { datasets },
+      options: { responsive:true, animation:false,
+        scales: { x:{title:{display:true,text:'t'}}, y:{title:{display:true,text:'X(t)'}} },
+        plugins: { legend:{display:false}, title:{display:true,text:'Trajectoires simulées par Euler-Maruyama'} } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = analyserEDS;
+</script>
+</body>
+</html>

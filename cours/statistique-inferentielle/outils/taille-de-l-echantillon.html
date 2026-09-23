@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Taille de l'échantillon — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Choisir la taille de l'échantillon</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Taille d'échantillon pour une moyenne</h2>
+  <div class="grille4">
+    <div><label for="sigma1">écart-type σ (étude antérieure ou pré-test)</label><input id="sigma1" value="2598.10"></div>
+    <div><label for="e1">précision voulue e (demi-largeur)</label><input id="e1" value="300"></div>
+    <div><label for="z1">quantile z</label><input id="z1" value="1.960"></div>
+    <div><label for="N1">population N (laisser vide si très grande)</label><input id="N1" value="500"></div>
+  </div>
+  <button onclick="calculerMoyenne()">Calculer n</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Taille d'échantillon pour une proportion</h2>
+  <div class="grille4">
+    <div><label for="p2">p supposé (0,5 par prudence si inconnu)</label><input id="p2" value="0.5"></div>
+    <div><label for="e2">marge d'erreur e</label><input id="e2" value="0.03"></div>
+    <div><label for="z2">quantile z</label><input id="z2" value="1.960"></div>
+    <div><label for="N2">population N (laisser vide si très grande)</label><input id="N2" value=""></div>
+  </div>
+  <div class="grille2">
+    <div><label for="taux2">taux de réponse attendu (laisser vide si 100%)</label><input id="taux2" value="0.60"></div>
+  </div>
+  <button onclick="calculerProportion()">Calculer n</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : moyenne, $n=(z_{\alpha/2}\sigma/e)^2$. Proportion, $n=z_{\alpha/2}^2\,p(1-p)/e^2$ (prendre $p=0{,}5$ par prudence). Ajustement population finie : $n_{\text{ajusté}}=n/(1+(n-1)/N)$. Ajustement taux de réponse : diviser par le taux attendu. La taille de la population $N$ n'intervient que par cet ajustement — sans lui, $N$ ne figure pas dans la formule de base.</p>
+
+<script>
+function calculerMoyenne(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const sigma=parseFloat(document.getElementById('sigma1').value);
+    const e=parseFloat(document.getElementById('e1').value);
+    const z=parseFloat(document.getElementById('z1').value);
+    const NRaw=document.getElementById('N1').value.trim();
+    if([sigma,e,z].some(isNaN)) throw new Error('σ, e et z doivent être des nombres.');
+    if(sigma<=0||e<=0||z<=0) throw new Error('σ, e et z doivent être strictement positifs.');
+    const nBase=Math.pow(z*sigma/e,2);
+    let html=`<table><tr><th>n de base (arrondi)</th></tr><tr><td><strong>${Math.ceil(nBase)}</strong> (${nBase.toFixed(1)})</td></tr></table>`;
+    if(NRaw!==''){
+      const N=parseFloat(NRaw);
+      if(isNaN(N)||N<=1) throw new Error('N doit être un nombre >1.');
+      const nAdj=nBase/(1+(nBase-1)/N);
+      html+=`<table><tr><th>n ajusté (population finie N=${N})</th></tr><tr><td><strong>${Math.ceil(nAdj)}</strong> (${nAdj.toFixed(1)})</td></tr></table>`;
+      if(nAdj>=N) html+=`<p style="font-size:0.85em;color:#b00020;">n ajusté atteint ou dépasse N : il faudrait recenser toute la population.</p>`;
+    }
+    resDiv.innerHTML=html;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerProportion(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const p=parseFloat(document.getElementById('p2').value);
+    const e=parseFloat(document.getElementById('e2').value);
+    const z=parseFloat(document.getElementById('z2').value);
+    const NRaw=document.getElementById('N2').value.trim();
+    const tauxRaw=document.getElementById('taux2').value.trim();
+    if([p,e,z].some(isNaN)) throw new Error('p, e et z doivent être des nombres.');
+    if(p<=0||p>=1) throw new Error('p doit être strictement compris entre 0 et 1.');
+    if(e<=0||z<=0) throw new Error('e et z doivent être strictement positifs.');
+    let nBase=(z*z*p*(1-p))/(e*e);
+    let html=`<table><tr><th>n de base (arrondi)</th></tr><tr><td><strong>${Math.ceil(nBase)}</strong> (${nBase.toFixed(1)})</td></tr></table>`;
+    let nCourant=nBase;
+    if(NRaw!==''){
+      const N=parseFloat(NRaw);
+      if(isNaN(N)||N<=1) throw new Error('N doit être un nombre >1.');
+      nCourant=nBase/(1+(nBase-1)/N);
+      html+=`<table><tr><th>n ajusté (population finie N=${N})</th></tr><tr><td><strong>${Math.ceil(nCourant)}</strong> (${nCourant.toFixed(1)})</td></tr></table>`;
+    }
+    if(tauxRaw!==''){
+      const taux=parseFloat(tauxRaw);
+      if(isNaN(taux)||taux<=0||taux>1) throw new Error('Le taux de réponse doit être compris entre 0 (exclu) et 1.');
+      const nEnvoyer=nCourant/taux;
+      html+=`<table><tr><th>nombre à contacter (taux de réponse ${(taux*100).toFixed(0)}%)</th></tr><tr><td><strong>${Math.ceil(nEnvoyer)}</strong> (${nEnvoyer.toFixed(1)})</td></tr></table>
+        <p style="font-size:0.85em;color:var(--cgris);">C'est ce dernier nombre qui doit figurer au devis.</p>`;
+    }
+    resDiv.innerHTML=html;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerMoyenne(); calculerProportion(); };
+</script>
+</body>
+</html>

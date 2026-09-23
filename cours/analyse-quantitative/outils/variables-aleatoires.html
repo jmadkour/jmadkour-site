@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Les variables aléatoires — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 180px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Les variables aléatoires</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse quantitative</p>
+
+<div class="panneau">
+  <h2>1. Moments d'une variable discrète</h2>
+  <p class="aide">Une ligne par valeur : <code>x probabilité</code>.</p>
+  <textarea id="distInput" rows="4">0 0.6
+1 0.3
+2 0.1</textarea>
+  <button onclick="calculerMoments()">Calculer</button>
+  <div id="erreurM" class="erreur"></div>
+  <div id="resultatM" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Transformation linéaire $Y=aX+b$</h2>
+  <div class="ligne">
+    <div><label for="EX">$E[X]$</label><input type="number" id="EX" value="5" step="any"></div>
+    <div><label for="VX">$V[X]$</label><input type="number" id="VX" value="4" step="any"></div>
+    <div><label for="skewX">Skew$(X)$</label><input type="number" id="skewX" value="-0.8" step="any"></div>
+    <div><label for="kurtX">Kurt$(X)$</label><input type="number" id="kurtX" value="5.2" step="any"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="aCoef">$a$</label><input type="number" id="aCoef" value="2" step="any"></div>
+    <div><label for="bCoef">$b$</label><input type="number" id="bCoef" value="10" step="any"></div>
+  </div>
+  <button onclick="calculerTransformation()">Calculer</button>
+  <div id="erreurT" class="erreur"></div>
+  <div id="resultatT" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Moyenne vs médiane sur une série (robustesse aux valeurs extrêmes)</h2>
+  <p class="aide">Valeurs séparées par des espaces ou des virgules.</p>
+  <textarea id="serieInput" rows="3">1.2, 1.5, 1.3, 1.4, 1.6, 1.3, 15.0</textarea>
+  <button onclick="calculerRobustesse()">Calculer</button>
+  <div id="erreurR" class="erreur"></div>
+  <div id="resultatR" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $E[X]=\sum_x xf_X(x)$, $V[X]=E[X^2]-(E[X])^2$ ; sous $Y=aX+b$, $E[Y]=aE[X]+b$, $V[Y]=a^2V[X]$, mais Skew et Kurt sont invariants ; la médiane et l'IQR sont robustes aux valeurs extrêmes, contrairement à la moyenne et à l'écart-type.</p>
+
+<script>
+function calculerMoments(){
+  const erreurDiv=document.getElementById('erreurM'); const resDiv=document.getElementById('resultatM');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('distInput').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<1) throw new Error('Au moins une valeur requise.');
+    const items=lignes.map(l=>{
+      const parts=l.split(/\s+/).map(Number);
+      if(parts.length!==2||parts.some(isNaN)) throw new Error('Ligne invalide : "'+l+'" (attendu "x probabilité").');
+      return {x:parts[0], p:parts[1]};
+    });
+    if(items.some(it=>it.p<0)) throw new Error('Les probabilités doivent être positives.');
+    const sommeP=items.reduce((s,it)=>s+it.p,0);
+    if(Math.abs(sommeP-1)>0.01) throw new Error('Les probabilités doivent sommer à 1 (somme actuelle : '+sommeP.toFixed(4)+').');
+    const EX=items.reduce((s,it)=>s+it.x*it.p,0);
+    const EX2=items.reduce((s,it)=>s+it.x*it.x*it.p,0);
+    const VX=EX2-EX*EX;
+    let out=`<table><tr><th>$x$</th><th>$\\Pr(X=x)$</th><th>$x\\cdot p$</th><th>$x^2\\cdot p$</th></tr>`;
+    items.forEach(it=>out+=`<tr><td>${it.x}</td><td>${it.p}</td><td>${(it.x*it.p).toFixed(4)}</td><td>${(it.x*it.x*it.p).toFixed(4)}</td></tr>`);
+    out+=`</table><p style="margin-top:0.6em;"><strong>$E[X]=${EX.toFixed(4)}$</strong> &nbsp;&nbsp; <strong>$V[X]=${VX.toFixed(4)}$</strong> &nbsp;&nbsp; $\\sigma_X=${Math.sqrt(Math.max(VX,0)).toFixed(4)}$</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerTransformation(){
+  const erreurDiv=document.getElementById('erreurT'); const resDiv=document.getElementById('resultatT');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const EX=parseFloat(document.getElementById('EX').value);
+    const VX=parseFloat(document.getElementById('VX').value);
+    const skewX=parseFloat(document.getElementById('skewX').value);
+    const kurtX=parseFloat(document.getElementById('kurtX').value);
+    const a=parseFloat(document.getElementById('aCoef').value);
+    const b=parseFloat(document.getElementById('bCoef').value);
+    if([EX,VX,skewX,kurtX,a,b].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(VX<0) throw new Error('La variance doit être positive.');
+    const EY=a*EX+b, VY=a*a*VX, sigmaY=Math.sqrt(VY);
+    let out=`<p>$E[Y]=${a}\\times${EX}+${b}=${EY.toFixed(4)}$</p>
+      <p>$V[Y]=${a}^2\\times${VX}=${VY.toFixed(4)}$ &nbsp;&nbsp; $\\sigma_Y=${sigmaY.toFixed(4)}$</p>
+      <p><strong>Skew$(Y)=${skewX}$</strong> et <strong>Kurt$(Y)=${kurtX}$</strong> (inchangés — invariants par transformation linéaire).</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerRobustesse(){
+  const erreurDiv=document.getElementById('erreurR'); const resDiv=document.getElementById('resultatR');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const vals=document.getElementById('serieInput').value.split(/[\s,]+/).map(s=>s.trim()).filter(s=>s.length>0).map(Number);
+    if(vals.some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if(vals.length<2) throw new Error('Au moins 2 valeurs requises.');
+    const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const sorted=[...vals].sort((a,b)=>a-b);
+    const n=sorted.length;
+    const median = n%2===1 ? sorted[(n-1)/2] : (sorted[n/2-1]+sorted[n/2])/2;
+    const iMax=vals.indexOf(Math.max(...vals));
+    const sansMax=vals.filter((_,i)=>i!==iMax);
+    const meanSans=sansMax.reduce((a,b)=>a+b,0)/sansMax.length;
+    let out=`<p>Moyenne (${n} valeurs) : $${mean.toFixed(4)}$ &nbsp;&nbsp; Médiane : $${median.toFixed(4)}$</p>
+      <p>En retirant la valeur maximale (${Math.max(...vals)}) : nouvelle moyenne $=${meanSans.toFixed(4)}$ (écart de ${(mean-meanSans).toFixed(4)}).</p>
+      <p class="ok">La médiane, elle, reste quasiment inchangée par le retrait d'une valeur extrême — c'est la robustesse illustrée par le cours.</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerMoments(); calculerTransformation(); calculerRobustesse(); };
+</script>
+</body>
+</html>

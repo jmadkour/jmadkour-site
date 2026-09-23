@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Les graphes — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1100px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, select, input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 6.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-end; }
+  .ligne > div { flex: 1; min-width: 200px; }
+  .case { display:flex; align-items:center; gap:0.4em; font-size:0.9em; color:var(--cgris); }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  button.secondaire { background: var(--ceco); }
+  button.secondaire:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .source { color: var(--cex); font-weight: bold; }
+  .puits { color: var(--cintu); font-weight: bold; }
+  .diag { background: #f0f0f0; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .non { color: #b00020; font-weight: bold; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  svg { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.6em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Les graphes : vocabulaire et représentation</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>Décrire le graphe</h2>
+  <div class="ligne">
+    <div>
+      <label for="orienteIn">Type de graphe</label>
+      <select id="orienteIn">
+        <option value="oui" selected>Orienté (un arc A→B ne vaut pas B→A)</option>
+        <option value="non">Non orienté (une liaison A–B vaut dans les deux sens)</option>
+      </select>
+    </div>
+    <div>
+      <label for="kIn">Puissance k à calculer (chemins de longueur k)</label>
+      <input type="number" id="kIn" value="2" min="1" max="8">
+    </div>
+  </div>
+  <p class="aide">Une ligne par arc/liaison : <code>Origine,Destination</code> ou, pour une valeur (poids), <code>Origine,Destination,valeur</code>. Les sommets isolés doivent aussi apparaître : ajouter une ligne <code>Sommet,</code> (destination vide) si besoin.</p>
+  <textarea id="arcsIn">P1,P2
+P1,P3
+P2,P4
+P3,P4
+P3,P5
+P4,P5</textarea>
+  <button onclick="calculer()">Calculer</button>
+  <div id="erreur" class="erreur"></div>
+  <div id="resultat" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels du cours : demi-degré entrant $d^-$ = nombre d'arcs qui arrivent ; demi-degré sortant $d^+$ = nombre d'arcs qui partent ; source = $d^-=0$ ; puits = $d^+=0$ ; $(A^k)_{ij}$ compte les chemins de longueur exactement $k$ de $i$ à $j$ ; un graphe (orienté) est fortement connexe si $A+A^2+\dots+A^{n-1}$ n'a aucun zéro hors de la diagonale ; la matrice des valeurs remplace les zéros d'absence d'arc par $+\infty$.</p>
+
+<script>
+function parseArcs(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const labelsSet = [];
+  const rawArcs = [];
+  function addLabel(l){ if(!labelsSet.includes(l)) labelsSet.push(l); }
+  lines.forEach(line=>{
+    const parts = line.split(',').map(s=>s.trim());
+    if(parts.length < 1 || parts[0]==='') throw new Error('Ligne invalide : "'+line+'"');
+    const a = parts[0];
+    addLabel(a);
+    if(parts.length===1 || parts[1]===''){
+      return; // sommet isolé déclaré seul
+    }
+    const b = parts[1];
+    addLabel(b);
+    let val = null;
+    if(parts.length>=3 && parts[2]!==''){
+      val = parseFloat(parts[2]);
+      if(isNaN(val)) throw new Error('Valeur non numérique sur la ligne : "'+line+'"');
+    }
+    rawArcs.push([a,b,val]);
+  });
+  if(labelsSet.length===0) throw new Error('Aucun sommet détecté.');
+  return {labels: labelsSet, arcs: rawArcs};
+}
+
+function buildMatrices(labels, arcs, oriented){
+  const n = labels.length;
+  const A = Array.from({length:n},()=>Array(n).fill(0));
+  const V = Array.from({length:n},()=>Array(n).fill(Infinity));
+  arcs.forEach(([a,b,val])=>{
+    const i = labels.indexOf(a), j = labels.indexOf(b);
+    A[i][j] = 1;
+    V[i][j] = (val===null ? 1 : val);
+    if(!oriented){
+      A[j][i] = 1;
+      V[j][i] = (val===null ? 1 : val);
+    }
+  });
+  return {A, V};
+}
+
+function degrees(labels, arcs, oriented){
+  const n = labels.length;
+  const inDeg = Array(n).fill(0), outDeg = Array(n).fill(0);
+  arcs.forEach(([a,b])=>{
+    const i = labels.indexOf(a), j = labels.indexOf(b);
+    outDeg[i]++; inDeg[j]++;
+    if(!oriented){ outDeg[j]++; inDeg[i]++; }
+  });
+  return {inDeg, outDeg};
+}
+
+function matMul(A,B){
+  const n=A.length, m=B[0].length, k=B.length;
+  const C = Array.from({length:n},()=>Array(m).fill(0));
+  for(let i=0;i<n;i++) for(let j=0;j<m;j++){
+    let s=0;
+    for(let t=0;t<k;t++) s += A[i][t]*B[t][j];
+    C[i][j]=s;
+  }
+  return C;
+}
+function matAdd(A,B){ return A.map((row,i)=>row.map((v,j)=>v+B[i][j])); }
+function matPow(A,k){
+  let R = A;
+  for(let p=1;p<k;p++) R = matMul(R,A);
+  return R;
+}
+
+function matTableHTML(labels, M, opts){
+  opts = opts || {};
+  let h = '<table><tr><th></th>';
+  labels.forEach(l=>h+=`<th>${l}</th>`);
+  h += '</tr>';
+  labels.forEach((li,i)=>{
+    h += `<tr><th>${li}</th>`;
+    labels.forEach((lj,j)=>{
+      let v = M[i][j];
+      if(v === Infinity) v = '+∞';
+      const cls = (i===j) ? 'diag' : '';
+      h += `<td class="${cls}">${v}</td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</table>';
+  return h;
+}
+
+function dessinerGraphe(labels, arcs, oriented){
+  const n = labels.length;
+  const cx = 260, cy = 220, r = 170;
+  const pos = labels.map((l,i)=>{
+    const angle = -Math.PI/2 + 2*Math.PI*i/n;
+    return [cx + r*Math.cos(angle), cy + r*Math.sin(angle)];
+  });
+  let svg = `<svg viewBox="0 0 520 440" width="520" height="440">`;
+  svg += `<defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5A5A5A"/></marker></defs>`;
+  arcs.forEach(([a,b,val])=>{
+    const i = labels.indexOf(a), j = labels.indexOf(b);
+    if(i===j) return;
+    const [x1,y1] = pos[i], [x2,y2] = pos[j];
+    const dx = x2-x1, dy = y2-y1, dist = Math.sqrt(dx*dx+dy*dy);
+    const ux = dx/dist, uy = dy/dist;
+    const nodeR = 22;
+    const sx = x1+ux*nodeR, sy = y1+uy*nodeR;
+    const ex = x2-ux*(nodeR+(oriented?9:0)), ey = y2-uy*(nodeR+(oriented?9:0));
+    svg += `<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="#5A5A5A" stroke-width="1.4" ${oriented?'marker-end="url(#arrowhead)"':''} />`;
+    if(val !== null){
+      const mx = (sx+ex)/2, my = (sy+ey)/2;
+      svg += `<rect x="${(mx-10).toFixed(1)}" y="${(my-9).toFixed(1)}" width="20" height="14" fill="#fafafa" opacity="0.85"/>`;
+      svg += `<text x="${mx.toFixed(1)}" y="${(my+2).toFixed(1)}" font-size="10" text-anchor="middle" fill="#B56600" font-family="Helvetica">${val}</text>`;
+    }
+  });
+  labels.forEach((l,i)=>{
+    const [x,y] = pos[i];
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="22" fill="#1F6FB21a" stroke="#1F6FB2" stroke-width="1.6"/>`;
+    svg += `<text x="${x.toFixed(1)}" y="${(y+4).toFixed(1)}" font-size="12" text-anchor="middle" fill="#1F6FB2" font-family="Helvetica" font-weight="bold">${l}</text>`;
+  });
+  svg += `</svg>`;
+  return svg;
+}
+
+function calculer(){
+  const erreurDiv = document.getElementById('erreur');
+  const resDiv = document.getElementById('resultat');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const oriented = document.getElementById('orienteIn').value === 'oui';
+    const k = parseInt(document.getElementById('kIn').value, 10);
+    if(isNaN(k) || k<1) throw new Error('k doit être un entier ≥ 1.');
+    const {labels, arcs} = parseArcs(document.getElementById('arcsIn').value);
+    const n = labels.length;
+    if(k > n) throw new Error('k ne peut pas dépasser le nombre de sommets ('+n+').');
+    const {A, V} = buildMatrices(labels, arcs, oriented);
+    const {inDeg, outDeg} = degrees(labels, arcs, oriented);
+
+    let out = '';
+    out += `<h3>Le graphe (${arcs.length} arc${arcs.length>1?'s':''}, ${n} sommet${n>1?'s':''})</h3>`;
+    out += dessinerGraphe(labels, arcs, oriented);
+
+    out += '<h3>Demi-degrés' + (oriented?'':' (degré = demi-degré entrant = demi-degré sortant)') + '</h3>';
+    out += '<table><tr><th>Sommet</th><th>d⁻ (entrant)</th><th>d⁺ (sortant)</th><th>Rôle</th></tr>';
+    labels.forEach((l,i)=>{
+      let role = '';
+      if(inDeg[i]===0 && outDeg[i]===0) role = 'isolé';
+      else if(inDeg[i]===0) role = '<span class="source">source</span>';
+      else if(outDeg[i]===0) role = '<span class="puits">puits</span>';
+      out += `<tr><td>${l}</td><td>${inDeg[i]}</td><td>${outDeg[i]}</td><td>${role}</td></tr>`;
+    });
+    out += '</table>';
+    const sumIn = inDeg.reduce((s,v)=>s+v,0), sumOut = outDeg.reduce((s,v)=>s+v,0);
+    out += `<p class="aide">Vérification : Σd⁻ = Σd⁺ = ${sumIn===sumOut? sumIn : sumIn+' ≠ '+sumOut} ${sumIn===sumOut?'= nombre d\'arcs ('+arcs.length+') ✓':'(incohérence à vérifier)'}</p>`;
+
+    out += '<h3>Matrice d\'adjacence A</h3>';
+    out += matTableHTML(labels, A);
+
+    out += `<h3>Matrice des valeurs (poids, +∞ si absent)</h3>`;
+    out += matTableHTML(labels, V);
+
+    const Ak = matPow(A, k);
+    out += `<h3>A<sup>${k}</sup> — chemins de longueur exactement ${k}</h3>`;
+    out += matTableHTML(labels, Ak);
+
+    if(oriented && n>=2){
+      let S = A, sum = A.map(r=>r.slice());
+      for(let p=2; p<=n-1; p++){ S = matMul(S, A); sum = matAdd(sum, S); }
+      out += `<h3>A + A<sup>2</sup> + … + A<sup>${Math.max(n-1,1)}</sup> — test de connexité forte</h3>`;
+      out += matTableHTML(labels, sum);
+      let zeroHorsDiag = false;
+      for(let i=0;i<n;i++) for(let j=0;j<n;j++) if(i!==j && sum[i][j]===0) zeroHorsDiag = true;
+      out += `<p>${zeroHorsDiag ? '<span class="non">Au moins un zéro hors diagonale → le graphe n\'est PAS fortement connexe.</span>' : '<span class="ok">Aucun zéro hors diagonale → le graphe est fortement connexe.</span>'}</p>`;
+    } else if(!oriented){
+      // connexité simple via BFS
+      const adj = Array.from({length:n},()=>[]);
+      arcs.forEach(([a,b])=>{ const i=labels.indexOf(a), j=labels.indexOf(b); adj[i].push(j); adj[j].push(i); });
+      const visited = Array(n).fill(false);
+      const stack=[0]; visited[0]=true; let count=1;
+      while(stack.length){ const u=stack.pop(); adj[u].forEach(v=>{ if(!visited[v]){ visited[v]=true; count++; stack.push(v); } }); }
+      out += `<h3>Test de connexité (graphe non orienté)</h3>`;
+      out += `<p>${count===n ? '<span class="ok">Tous les sommets sont atteints depuis '+labels[0]+' : le graphe est connexe.</span>' : '<span class="non">Seulement '+count+'/'+n+' sommets atteints depuis '+labels[0]+' : le graphe n\'est PAS connexe.</span>'}</p>`;
+    }
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculer(); };
+</script>
+</body>
+</html>

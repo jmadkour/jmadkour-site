@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Matrices particulières — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; resize: vertical; height: 4.5em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .matrice-visuelle { display: inline-grid; gap: 2px; margin: 0.6em 0; }
+  .cellule { display: flex; align-items: center; justify-content: center; min-width: 46px; min-height: 34px; border-radius: 3px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; font-weight: bold; color: white; }
+  .etiquette { display: inline-block; padding: 0.25em 0.7em; border-radius: 12px; font-size: 0.85em; margin: 0.2em 0.3em 0.2em 0; color: white; }
+  .oui { background: var(--cex); } .non { background: #bbb; color: #333; }
+  .legende { font-size: 0.8em; color: var(--cgris); }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Matrices particulières et sous-matrices</h1>
+<p class="sous-titre">Calculatrice interactive — Algèbre linéaire</p>
+
+<div class="panneau">
+  <h2>Diagnostic d'une matrice carrée</h2>
+  <label for="matA">Matrice A (carrée ; lignes séparées par ; , valeurs par des virgules)</label>
+  <textarea id="matA">1,2,3;0,4,5;0,0,6</textarea>
+  <button onclick="diagnostiquer()">Analyser</button>
+  <div id="erreurDiag" class="erreur"></div>
+  <div id="resultatDiag" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Deux vecteurs colonnes sont-ils linéairement dépendants ?</h2>
+  <p class="legende">Saisir deux vecteurs de même taille (composantes séparées par des virgules). Le test détecte la proportionnalité (dépendance à deux vecteurs) — cas le plus simple d'indépendance linéaire vu au chapitre 1.</p>
+  <label for="vecU">Vecteur u</label>
+  <textarea id="vecU" style="height:2.2em;">1,3,-1</textarea>
+  <label for="vecV">Vecteur v</label>
+  <textarea id="vecV" style="height:2.2em;">2,6,-2</textarea>
+  <button onclick="testerDependance()">Tester</button>
+  <div id="erreurDep" class="erreur"></div>
+  <div id="resultatDep" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Outil pédagogique : vérifie toujours un résultat obtenu ici en le refaisant à la main avant un examen.</p>
+
+<script>
+function parseMatrice(texte) {
+  return texte.trim().split(';').map(ligne =>
+    ligne.trim().split(',').map(v => {
+      const n = parseFloat(v.trim());
+      if (isNaN(n)) throw new Error('valeur non numérique : "' + v.trim() + '"');
+      return n;
+    })
+  );
+}
+function parseVecteur(texte) {
+  return texte.trim().split(',').map(v => {
+    const n = parseFloat(v.trim());
+    if (isNaN(n)) throw new Error('valeur non numérique : "' + v.trim() + '"');
+    return n;
+  });
+}
+function couleurPour(v, vmax) {
+  if (vmax === 0) vmax = 1;
+  const intensite = Math.min(Math.abs(v) / vmax, 1);
+  if (v >= 0) {
+    const c = Math.round(255 - intensite * (255 - 31)), g = Math.round(255 - intensite * (255 - 111)), b = Math.round(255 - intensite * (255 - 178));
+    return `rgb(${c},${g},${b})`;
+  } else {
+    const c = Math.round(255 - intensite * (255 - 224)), g = Math.round(255 - intensite * (255 - 128)), b = Math.round(255 - intensite * (255 - 0));
+    return `rgb(${c},${g},${b})`;
+  }
+}
+function afficherMatrice(M, conteneur) {
+  const m = M[0].length;
+  const vmax = Math.max(...M.flat().map(Math.abs));
+  const div = document.createElement('div');
+  div.className = 'matrice-visuelle';
+  div.style.gridTemplateColumns = `repeat(${m}, auto)`;
+  M.forEach(row => row.forEach(v => {
+    const cell = document.createElement('div');
+    cell.className = 'cellule';
+    cell.style.background = couleurPour(v, vmax);
+    cell.style.color = Math.abs(v) / (vmax||1) > 0.55 ? 'white' : '#333';
+    cell.textContent = Number.isInteger(v) ? v : v.toFixed(2);
+    div.appendChild(cell);
+  }));
+  conteneur.appendChild(div);
+}
+function etiquette(texte, vrai) {
+  const span = document.createElement('span');
+  span.className = 'etiquette ' + (vrai ? 'oui' : 'non');
+  span.textContent = texte + ' : ' + (vrai ? 'oui' : 'non');
+  return span;
+}
+
+function diagnostiquer() {
+  const erreurDiv = document.getElementById('erreurDiag');
+  const resDiv = document.getElementById('resultatDiag');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const A = parseMatrice(document.getElementById('matA').value);
+    const n = A.length;
+    if (!A.every(r => r.length === n)) throw new Error('La matrice doit être carrée (n lignes, n colonnes).');
+
+    let triSup = true, triInf = true, diagonale = true, symetrique = true, antisym = true;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i > j && A[i][j] !== 0) triSup = false;
+        if (j > i && A[i][j] !== 0) triInf = false;
+        if (i !== j && A[i][j] !== 0) diagonale = false;
+        if (A[i][j] !== A[j][i]) symetrique = false;
+        if (A[i][j] !== -A[j][i]) antisym = false;
+      }
+    }
+    const trace = A.reduce((s, row, i) => s + row[i], 0);
+
+    afficherMatrice(A, resDiv);
+    const zoneEtiquettes = document.createElement('div');
+    zoneEtiquettes.appendChild(etiquette('Triangulaire supérieure', triSup));
+    zoneEtiquettes.appendChild(etiquette('Triangulaire inférieure', triInf));
+    zoneEtiquettes.appendChild(etiquette('Diagonale', diagonale));
+    zoneEtiquettes.appendChild(etiquette('Symétrique', symetrique));
+    zoneEtiquettes.appendChild(etiquette('Antisymétrique', antisym));
+    resDiv.appendChild(zoneEtiquettes);
+    const p = document.createElement('p');
+    p.innerHTML = `<strong>Trace</strong> (somme des éléments diagonaux) = ${trace}.`;
+    resDiv.appendChild(p);
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function testerDependance() {
+  const erreurDiv = document.getElementById('erreurDep');
+  const resDiv = document.getElementById('resultatDep');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const u = parseVecteur(document.getElementById('vecU').value);
+    const v = parseVecteur(document.getElementById('vecV').value);
+    if (u.length !== v.length) throw new Error('u et v doivent avoir la même taille.');
+    let ratio = null, propor = true;
+    for (let i = 0; i < u.length; i++) {
+      if (v[i] === 0) { if (u[i] !== 0) { propor = false; break; } continue; }
+      const r = u[i] / v[i];
+      if (ratio === null) ratio = r;
+      else if (Math.abs(r - ratio) > 1e-9) { propor = false; break; }
+    }
+    const p = document.createElement('p');
+    if (propor && ratio !== null) {
+      p.innerHTML = `<span class="etiquette oui">Linéairement dépendants</span> : u = ${ratio.toFixed(3)} · v (proportionnalité constatée).`;
+    } else if (propor && ratio === null) {
+      p.innerHTML = `<span class="etiquette oui">Linéairement dépendants</span> : u est le vecteur nul.`;
+    } else {
+      p.innerHTML = `<span class="etiquette non">Linéairement indépendants</span> : aucun facteur de proportionnalité constant ne relie u et v.`;
+    }
+    resDiv.appendChild(p);
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = function() { diagnostiquer(); testerDependance(); };
+</script>
+</body>
+</html>

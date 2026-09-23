@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — L'AFC et la métrique du khi-deux — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 5.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 200px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — L'AFC et la métrique du khi-deux</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse des données avancée</p>
+
+<div class="panneau">
+  <h2>Tableau de contingence</h2>
+  <p class="aide">Une ligne du tableau par ligne de texte, valeurs séparées par des espaces ou des virgules. Exemple : le tableau CSP × motif du cours (5 lignes, 4 colonnes).</p>
+  <textarea id="tableInput" rows="6">14 2 5 1
+45 20 26 10
+8 40 8 16
+12 19 12 32
+5 1 17 7</textarea>
+  <div class="ligne">
+    <div><label for="nomsLignes">Noms des lignes (optionnel, un par ligne)</label>
+      <textarea id="nomsLignes" rows="5">Étudiant
+Employé
+Cadre
+Indépendant
+Retraité</textarea></div>
+    <div><label for="nomsCols">Noms des colonnes (optionnel, séparés par des virgules)</label>
+      <input type="text" id="nomsCols" value="Prix, Choix, Proximité, Service"></div>
+  </div>
+  <button onclick="analyserAFC()">Analyser le tableau</button>
+  <div id="erreurA" class="erreur"></div>
+  <div id="resultatA" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Distance du khi-deux entre deux profils</h2>
+  <p class="aide">Sélectionnez ci-dessous, après analyse, deux lignes du tableau pour voir le détail de leur distance.</p>
+  <div class="ligne">
+    <div><label for="ligneA">Ligne A (numéro, à partir de 1)</label><input type="number" id="ligneA" value="1" step="1"></div>
+    <div><label for="ligneB">Ligne B (numéro, à partir de 1)</label><input type="number" id="ligneB" value="2" step="1"></div>
+  </div>
+  <button onclick="calculerDistance()">Calculer la distance</button>
+  <div id="erreurD" class="erreur"></div>
+  <div id="resultatD" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : profil-ligne $=$ ligne $/$ total-ligne ; $\Phi^2=\chi^2/n$ est l'inertie totale de l'AFC ; le rapport (part d'inertie)/(poids) d'une ligne indique son atypicité (proche de 1 $=$ conforme au profil moyen) ; deux colonnes de profils proportionnels entre les lignes peuvent être fusionnées sans changer les distances du khi-deux entre lignes (équivalence distributionnelle).</p>
+
+<script>
+let dernierTableau=null, dernierNomsLignes=null;
+
+function parseTable(){
+  const lines=document.getElementById('tableInput').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+  const table=lines.map(l=>l.split(/[\s,]+/).filter(x=>x.length>0).map(Number));
+  if(table.length<2) throw new Error('Au moins 2 lignes requises.');
+  const p=table[0].length;
+  if(p<2) throw new Error('Au moins 2 colonnes requises.');
+  table.forEach((row,i)=>{ if(row.length!==p) throw new Error('Toutes les lignes doivent avoir le même nombre de colonnes ('+p+').'); if(row.some(isNaN)) throw new Error('Valeurs non numériques à la ligne '+(i+1)+'.'); if(row.some(v=>v<0)) throw new Error('Les effectifs doivent être positifs.'); });
+  return table;
+}
+
+function analyserAFC(){
+  const erreurDiv=document.getElementById('erreurA'); const resDiv=document.getElementById('resultatA');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const table=parseTable();
+    const I=table.length, J=table[0].length;
+    let nomsL=document.getElementById('nomsLignes').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(nomsL.length!==I) nomsL=table.map((_,i)=>'Ligne '+(i+1));
+    let nomsC=document.getElementById('nomsCols').value.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+    if(nomsC.length!==J) nomsC=table[0].map((_,j)=>'Col '+(j+1));
+
+    const n=table.reduce((s,row)=>s+row.reduce((a,b)=>a+b,0),0);
+    const totLignes=table.map(row=>row.reduce((a,b)=>a+b,0));
+    const totCols=Array(J).fill(0);
+    table.forEach(row=>row.forEach((v,j)=>totCols[j]+=v));
+    const fLignes=totLignes.map(t=>t/n);
+    const fCols=totCols.map(t=>t/n);
+
+    // chi2 et attendus
+    let chi2=0;
+    const attendus=table.map((row,i)=>row.map((v,j)=>{
+      const e=totLignes[i]*totCols[j]/n;
+      chi2+=(v-e)*(v-e)/e;
+      return e;
+    }));
+    const phi2=chi2/n;
+    const ddl=(I-1)*(J-1);
+    const rang=Math.min(I-1,J-1);
+
+    // profils-lignes
+    const profils=table.map((row,i)=>row.map(v=>v/totLignes[i]));
+    const profilMoyen=fCols;
+
+    // inertie par ligne : I(i) = poids_i * d2(profil_i, profil_moyen)
+    const inertiesLignes=profils.map((prof,i)=>{
+      let d2=0;
+      for(let j=0;j<J;j++) d2+= (prof[j]-profilMoyen[j])**2/fCols[j];
+      return fLignes[i]*d2;
+    });
+    const inertieTotaleCheck=inertiesLignes.reduce((a,b)=>a+b,0);
+
+    dernierTableau=table; dernierNomsLignes=nomsL;
+
+    let out=`<p>$n=${n}$ &nbsp;&nbsp; $\\chi^2=${chi2.toFixed(3)}$ ($ddl=${ddl}$ degrés de liberté) &nbsp;&nbsp; $\\Phi^2=\\chi^2/n=${phi2.toFixed(4)}$ &nbsp;&nbsp; rang max de l'AFC $=\\min(${I-1},${J-1})=${rang}$</p>`;
+
+    out+=`<table><tr><th>ligne</th>`;
+    nomsC.forEach(c=>out+=`<th>profil : ${c}</th>`);
+    out+=`<th>poids $f_{i\\cdot}$</th><th>part d'inertie</th><th>ratio inertie/poids</th></tr>`;
+    profils.forEach((prof,i)=>{
+      const partInertie=inertiesLignes[i]/inertieTotaleCheck;
+      const ratio=partInertie/fLignes[i];
+      out+=`<tr><td>${nomsL[i]}</td>`;
+      prof.forEach(p=>out+=`<td>${(100*p).toFixed(1)} %</td>`);
+      out+=`<td>${fLignes[i].toFixed(3)}</td><td>${(100*partInertie).toFixed(1)} %</td><td>${ratio.toFixed(2)}${ratio>1.3?' <span class="alerte">atypique</span>':(ratio<0.7?' <span class="ok">proche moyenne</span>':'')}</td></tr>`;
+    });
+    out+=`<tr><td><em>Profil moyen</em></td>`;
+    profilMoyen.forEach(p=>out+=`<td>${(100*p).toFixed(1)} %</td>`);
+    out+=`<td>1.000</td><td>100.0 %</td><td>—</td></tr>`;
+    out+=`</table>`;
+    out+=`<p style="font-size:0.85em;color:var(--cgris);">Vérification : somme des inerties par ligne $=${inertieTotaleCheck.toFixed(4)}$, à comparer à $\\Phi^2=${phi2.toFixed(4)}$ ${Math.abs(inertieTotaleCheck-phi2)<0.01*Math.max(1,phi2)?'<span class="ok">(cohérent)</span>':''}</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerDistance(){
+  const erreurDiv=document.getElementById('erreurD'); const resDiv=document.getElementById('resultatD');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    if(!dernierTableau) throw new Error("Cliquez d'abord sur « Analyser le tableau ».");
+    const ia=parseInt(document.getElementById('ligneA').value)-1;
+    const ib=parseInt(document.getElementById('ligneB').value)-1;
+    const I=dernierTableau.length, J=dernierTableau[0].length;
+    if(isNaN(ia)||isNaN(ib)||ia<0||ib<0||ia>=I||ib>=I) throw new Error('Numéros de ligne invalides (entre 1 et '+I+').');
+    if(ia===ib) throw new Error('Choisissez deux lignes différentes.');
+    const n=dernierTableau.reduce((s,row)=>s+row.reduce((a,b)=>a+b,0),0);
+    const totCols=Array(J).fill(0);
+    dernierTableau.forEach(row=>row.forEach((v,j)=>totCols[j]+=v));
+    const fCols=totCols.map(t=>t/n);
+    const totA=dernierTableau[ia].reduce((a,b)=>a+b,0), totB=dernierTableau[ib].reduce((a,b)=>a+b,0);
+    const profA=dernierTableau[ia].map(v=>v/totA), profB=dernierTableau[ib].map(v=>v/totB);
+    let d2=0; const termes=[];
+    for(let j=0;j<J;j++){ const t=(profA[j]-profB[j])**2/fCols[j]; termes.push(t); d2+=t; }
+    let out=`<p>$\\text{profil}(${dernierNomsLignes[ia]})=(${profA.map(v=>(100*v).toFixed(1)).join('\\,;\\,')})\\,\\%$</p>
+      <p>$\\text{profil}(${dernierNomsLignes[ib]})=(${profB.map(v=>(100*v).toFixed(1)).join('\\,;\\,')})\\,\\%$</p>
+      <table><tr><th>colonne</th>${termes.map((_,j)=>`<th>terme ${j+1}</th>`).join('')}</tr>
+      <tr><td>valeur</td>${termes.map(t=>`<td>${t.toFixed(4)}</td>`).join('')}</tr></table>
+      <p style="margin-top:0.6em;"><strong>$d^2_{\\chi^2}(${dernierNomsLignes[ia]},${dernierNomsLignes[ib]})=${d2.toFixed(4)}$</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ analyserAFC(); calculerDistance(); };
+</script>
+</body>
+</html>

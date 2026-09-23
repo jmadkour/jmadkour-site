@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — La p-value — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.peche { border-left-color: var(--cintu); } .panneau.peche h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.peche button { background: var(--cintu); } .panneau.peche button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .non-ok { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — La p-value</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Calculer une p-value (loi normale)</h2>
+  <div class="grille3">
+    <div><label for="z1">statistique Z observée</label><input id="z1" value="1.589"></div>
+    <div><label for="alpha1">seuil α</label><input id="alpha1" value="0.05"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerP()">Calculer les p-values</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <div id="graphe1"></div>
+</div>
+
+<div class="panneau peche">
+  <h2>Le risque de la pêche aux résultats</h2>
+  <div class="grille3">
+    <div><label for="nbTests2">nombre de tests indépendants effectués</label><input id="nbTests2" value="20"></div>
+    <div><label for="alpha2">seuil α par test</label><input id="alpha2" value="0.05"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerPeche()">Calculer le risque global</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $p<\alpha \Rightarrow$ on rejette $H_0$. La p-value est calculée en supposant $H_0$ vraie ; ce n'est ni $P(H_0)$, ni le risque de se tromper, ni une mesure d'importance de l'effet. Tester $k$ hypothèses indépendantes au seuil α donne $P(\text{au moins un rejet à tort})=1-(1-\alpha)^k$ si aucun effet réel n'existe.</p>
+
+<script>
+function erf(x){
+  const sign = x>=0?1:-1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z){ return 0.5*(1+erf(z/Math.sqrt(2))); }
+
+function calculerP(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  const grapheDiv=document.getElementById('graphe1');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const z=parseFloat(document.getElementById('z1').value);
+    const alpha=parseFloat(document.getElementById('alpha1').value);
+    if([z,alpha].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(alpha<=0||alpha>=1) throw new Error('α doit être strictement compris entre 0 et 1.');
+    const pUni = z>=0 ? 1-Phi(z) : Phi(z);
+    const pBi = 2*(1-Phi(Math.abs(z)));
+    const rejetUni = pUni<alpha, rejetBi = pBi<alpha;
+    resDiv.innerHTML=`<table><tr><th>forme</th><th>p-value</th><th>p &lt; α=${alpha} ?</th><th>conclusion</th></tr>
+      <tr><td>unilatéral</td><td>${pUni.toFixed(4)}</td><td class="${rejetUni?'ok':'non-ok'}">${rejetUni?'oui':'non'}</td><td>${rejetUni?'on rejette H₀':'on ne rejette pas H₀'}</td></tr>
+      <tr><td>bilatéral</td><td>${pBi.toFixed(4)}</td><td class="${rejetBi?'ok':'non-ok'}">${rejetBi?'oui':'non'}</td><td>${rejetBi?'on rejette H₀':'on ne rejette pas H₀'}</td></tr></table>`;
+    const w=520,h=220,pad=30;
+    const X=(x)=>pad+((x+4)/8)*(w-pad-20);
+    const Y=(y)=>(h-pad)-y*(h-pad-20)/0.45;
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    let path='';
+    for(let i=0;i<=100;i++){
+      const x=-4+i*8/100;
+      const y=0.4*Math.exp(-x*x/2);
+      path+=(i===0?'M':'L')+X(x).toFixed(1)+','+Y(y).toFixed(1)+' ';
+    }
+    svg+=`<path d="${path}" fill="none" stroke="#5A5A5A" stroke-width="1.5"/>`;
+    const zc=Math.max(-4,Math.min(4,z));
+    svg+=`<line x1="${X(zc)}" y1="${h-pad}" x2="${X(zc)}" y2="${Y(0.4*Math.exp(-zc*zc/2))}" stroke="#B56600" stroke-dasharray="4,3"/>`;
+    svg+=`<text x="${X(zc)+4}" y="${h-pad-4}" font-size="10" fill="#B56600">Z=${z}</text>`;
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerPeche(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const k=parseInt(document.getElementById('nbTests2').value);
+    const alpha=parseFloat(document.getElementById('alpha2').value);
+    if(isNaN(k)||k<1) throw new Error('Le nombre de tests doit être ≥1.');
+    if(isNaN(alpha)||alpha<=0||alpha>=1) throw new Error('α doit être strictement compris entre 0 et 1.');
+    const risque=1-Math.pow(1-alpha,k);
+    resDiv.innerHTML=`<table><tr><th>nombre de tests k</th><th>α par test</th><th>P(au moins un rejet à tort)</th></tr>
+      <tr><td>${k}</td><td>${alpha}</td><td><strong>${(risque*100).toFixed(1)}%</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Même si aucun des ${k} tests ne correspond à un effet réel, il y a ${(risque*100).toFixed(1)}% de chances de trouver au moins un résultat « significatif » par pur hasard.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerP(); calculerPeche(); };
+</script>
+</body>
+</html>

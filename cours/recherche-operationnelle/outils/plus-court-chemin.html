@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Le plus court chemin — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1100px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, select, input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 6.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-end; }
+  .ligne > div { flex: 1; min-width: 180px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .fige { background: #eef0fb; font-weight: bold; color: var(--cdef); }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  svg { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.6em; }
+  .chemin { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Le plus court chemin</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>Décrire le réseau et lancer Dijkstra</h2>
+  <div class="ligne">
+    <div>
+      <label for="modeIn">Mode de la valuation</label>
+      <select id="modeIn">
+        <option value="longueur" selected>Longueur à minimiser (distance, temps, coût)</option>
+        <option value="fiabilite">Probabilité à maximiser (fiabilité) — transformation −ln(p) automatique</option>
+      </select>
+    </div>
+    <div>
+      <label for="sourceIn">Sommet de départ</label>
+      <input type="text" id="sourceIn" value="A">
+    </div>
+  </div>
+  <p class="aide">Une ligne par arc : <code>Origine,Destination,valeur</code> (longueur ≥ 0, ou probabilité dans $]0,1]$ selon le mode).</p>
+  <textarea id="arcsIn">A,B,4
+A,C,2
+B,C,5
+B,D,10
+C,E,3
+E,D,4
+E,F,9
+D,F,11</textarea>
+  <button onclick="calculer()">Calculer</button>
+  <div id="erreur" class="erreur"></div>
+  <div id="resultat" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappel : Dijkstra exige des longueurs positives ou nulles. En mode fiabilité, chaque probabilité $p$ est remplacée par $\ell=-\ln(p)\geq0$ avant de lancer l'algorithme, puisque minimiser $\sum\ell$ équivaut à maximiser $\prod p$. Les potentiels affichés en fin de calcul, $\pi(i)=d(i)$, vérifient $\ell(i,j)\geq\pi(j)-\pi(i)$ pour tout arc, avec égalité sur les arcs de l'arborescence des plus courts chemins — la même condition de dualité que pour le transport (MODI) et l'affectation (algorithme hongrois).</p>
+
+<script>
+function parseArcs(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const labelsSet = [];
+  const arcs = [];
+  function addLabel(l){ if(!labelsSet.includes(l)) labelsSet.push(l); }
+  lines.forEach(line=>{
+    const parts = line.split(',').map(s=>s.trim());
+    if(parts.length < 3) throw new Error('Ligne invalide (attendu Origine,Destination,valeur) : "'+line+'"');
+    const a = parts[0], b = parts[1];
+    const v = parseFloat(parts[2]);
+    if(a==='' || b==='') throw new Error('Sommet manquant sur la ligne : "'+line+'"');
+    if(isNaN(v)) throw new Error('Valeur non numérique sur la ligne : "'+line+'"');
+    addLabel(a); addLabel(b);
+    arcs.push([a,b,v]);
+  });
+  if(labelsSet.length===0) throw new Error('Aucun sommet détecté.');
+  return {labels: labelsSet, arcs};
+}
+
+function dijkstra(labels, edges, source){
+  const dist = {}, prev = {}, order = [];
+  labels.forEach(n=>dist[n]=Infinity);
+  if(!labels.includes(source)) throw new Error('Le sommet de départ "'+source+'" n\'apparaît dans aucun arc.');
+  dist[source] = 0;
+  const visited = new Set();
+  const adj = {}; labels.forEach(n=>adj[n]=[]);
+  edges.forEach(([a,b,w])=>{
+    if(w < 0) throw new Error('Longueur négative sur l\'arc '+a+'→'+b+' : Dijkstra exige des longueurs ≥ 0 (utiliser Bellman-Ford sinon).');
+    adj[a].push([b,w]);
+  });
+  const trace = [];
+  trace.push({finalise:null, dist:{...dist}});
+  while(visited.size < labels.length){
+    let u = null, best = Infinity;
+    labels.forEach(n=>{ if(!visited.has(n) && dist[n] < best){ best = dist[n]; u = n; } });
+    if(u === null) break;
+    visited.add(u); order.push(u);
+    adj[u].forEach(([v,w])=>{
+      if(dist[u] + w < dist[v]){ dist[v] = dist[u] + w; prev[v] = u; }
+    });
+    trace.push({finalise:u, dist:{...dist}});
+  }
+  return {dist, prev, order, trace};
+}
+
+function cheminVers(prev, source, target){
+  if(source === target) return [source];
+  const p = [target];
+  let c = target;
+  while(c !== source){
+    c = prev[c];
+    if(c === undefined) return null;
+    p.unshift(c);
+  }
+  return p;
+}
+
+function dessinerGraphe(labels, arcs, cheminArcs){
+  const n = labels.length;
+  const cx = 260, cy = 220, r = 170;
+  const pos = labels.map((l,i)=>{
+    const angle = -Math.PI/2 + 2*Math.PI*i/n;
+    return [cx + r*Math.cos(angle), cy + r*Math.sin(angle)];
+  });
+  const cheminSet = new Set((cheminArcs||[]).map(([a,b])=>a+'|'+b));
+  let svg = `<svg viewBox="0 0 520 440" width="520" height="440">`;
+  svg += `<defs>
+    <marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5A5A5A"/></marker>
+    <marker id="ah2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#1F6FB2"/></marker>
+  </defs>`;
+  arcs.forEach(([a,b,val])=>{
+    const i = labels.indexOf(a), j = labels.indexOf(b);
+    if(i===j) return;
+    const [x1,y1] = pos[i], [x2,y2] = pos[j];
+    const dx = x2-x1, dy = y2-y1, dist = Math.sqrt(dx*dx+dy*dy);
+    const ux = dx/dist, uy = dy/dist;
+    const nodeR = 22;
+    const sx = x1+ux*nodeR, sy = y1+uy*nodeR;
+    const ex = x2-ux*(nodeR+9), ey = y2-uy*(nodeR+9);
+    const surChemin = cheminSet.has(a+'|'+b);
+    svg += `<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="${surChemin?'#1F6FB2':'#5A5A5A'}" stroke-width="${surChemin?3:1.4}" marker-end="url(#${surChemin?'ah2':'ah'})" />`;
+    const mx = (sx+ex)/2, my = (sy+ey)/2;
+    svg += `<rect x="${(mx-14).toFixed(1)}" y="${(my-9).toFixed(1)}" width="28" height="14" fill="#fafafa" opacity="0.88"/>`;
+    svg += `<text x="${mx.toFixed(1)}" y="${(my+2).toFixed(1)}" font-size="10" text-anchor="middle" fill="#B56600" font-family="Helvetica">${val}</text>`;
+  });
+  labels.forEach((l,i)=>{
+    const [x,y] = pos[i];
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="22" fill="#1F6FB21a" stroke="#1F6FB2" stroke-width="1.6"/>`;
+    svg += `<text x="${x.toFixed(1)}" y="${(y+4).toFixed(1)}" font-size="12" text-anchor="middle" fill="#1F6FB2" font-family="Helvetica" font-weight="bold">${l}</text>`;
+  });
+  svg += `</svg>`;
+  return svg;
+}
+
+function calculer(){
+  const erreurDiv = document.getElementById('erreur');
+  const resDiv = document.getElementById('resultat');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const mode = document.getElementById('modeIn').value;
+    const source = document.getElementById('sourceIn').value.trim();
+    const {labels, arcs: arcsOrig} = parseArcs(document.getElementById('arcsIn').value);
+
+    let arcsCalc;
+    if(mode === 'fiabilite'){
+      arcsCalc = arcsOrig.map(([a,b,p])=>{
+        if(p<=0 || p>1) throw new Error('En mode fiabilité, chaque valeur doit être une probabilité dans ]0,1] (reçu '+p+' pour '+a+'→'+b+').');
+        return [a,b,-Math.log(p)];
+      });
+    } else {
+      arcsCalc = arcsOrig;
+    }
+
+    const {dist, prev, order, trace} = dijkstra(labels, arcsCalc, source);
+
+    let out = '';
+    out += `<h3>Le réseau</h3>`;
+    // afficher d'abord sans chemin surligné tant qu'on n'a pas choisi de cible ; ici on surligne l'arborescence complète
+    const arbre = [];
+    labels.forEach(l=>{ if(prev[l]!==undefined) arbre.push([prev[l], l]); });
+    out += dessinerGraphe(labels, arcsOrig, arbre);
+    out += `<p class="aide">En violet épais : l'arborescence des plus courts chemins depuis ${source}.</p>`;
+
+    out += '<h3>Trace de l\'algorithme (marques successives)</h3>';
+    out += '<table><tr><th>Sommet définitivé</th>' + labels.map(l=>`<th>${l}</th>`).join('') + '</tr>';
+    trace.forEach(step=>{
+      out += `<tr><td>${step.finalise===null ? 'Départ' : step.finalise}</td>`;
+      labels.forEach(l=>{
+        const v = step.dist[l];
+        const txt = (v===Infinity) ? '∞' : (mode==='fiabilite' ? v.toFixed(3) : (Number.isInteger(v)?v:v.toFixed(2)));
+        const cls = (step.finalise===l) ? 'fige' : '';
+        out += `<td class="${cls}">${txt}</td>`;
+      });
+      out += '</tr>';
+    });
+    out += '</table>';
+
+    out += '<h3>Distances (ou longueurs transformées) définitives et chemins depuis '+source+'</h3>';
+    out += '<table><tr><th>Sommet</th><th>' + (mode==='fiabilite' ? 'Σ(−ln p)' : 'Distance') + '</th>' + (mode==='fiabilite' ? '<th>Fiabilité du chemin</th>' : '') + '<th>Chemin</th></tr>';
+    labels.forEach(l=>{
+      const chemin = cheminVers(prev, source, l);
+      const cheminTxt = chemin ? chemin.join(' → ') : '(inaccessible)';
+      const dTxt = (dist[l]===Infinity) ? '∞' : (mode==='fiabilite' ? dist[l].toFixed(3) : (Number.isInteger(dist[l])?dist[l]:dist[l].toFixed(2)));
+      let fiabTxt = '';
+      if(mode==='fiabilite' && dist[l]!==Infinity){
+        fiabTxt = `<td>${Math.exp(-dist[l]).toFixed(4)}</td>`;
+      } else if(mode==='fiabilite'){
+        fiabTxt = '<td>—</td>';
+      }
+      out += `<tr><td>${l}</td><td>${dTxt}</td>${fiabTxt}<td>${cheminTxt}</td></tr>`;
+    });
+    out += '</table>';
+
+    out += '<h3>Vérification des écarts duaux (potentiels π = distances)</h3>';
+    out += '<p class="aide">Δ(i,j) = ℓ(i,j) − (π(j) − π(i)) doit être ≥ 0 pour tout arc, et = 0 exactement sur les arcs de l\'arborescence retenue.</p>';
+    out += '<table><tr><th>Arc</th><th>ℓ(i,j)</th><th>π(j)−π(i)</th><th>Δ(i,j)</th><th>Sur l\'arborescence ?</th></tr>';
+    let dualOK = true;
+    arcsCalc.forEach(([a,b,w],idx)=>{
+      const pa = dist[a], pb = dist[b];
+      if(pa===Infinity || pb===Infinity){
+        out += `<tr><td>${a}→${b}</td><td colspan="4">sommet non atteint — non testable</td></tr>`;
+        return;
+      }
+      const delta = w - (pb - pa);
+      if(delta < -1e-9) dualOK = false;
+      const surArbre = (prev[b]===a);
+      out += `<tr><td>${a}→${b}</td><td>${w.toFixed(3)}</td><td>${(pb-pa).toFixed(3)}</td><td>${delta.toFixed(3)}</td><td>${surArbre?'<span class="ok">oui</span>':'non'}</td></tr>`;
+    });
+    out += '</table>';
+    out += `<p>${dualOK ? '<span class="ok">Tous les écarts sont ≥ 0 : la solution est optimale (test de dualité vérifié).</span>' : 'Anomalie : un écart est négatif (vérifier les données).'}</p>`;
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculer(); };
+</script>
+</body>
+</html>

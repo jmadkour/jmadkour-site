@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Fonctions de plusieurs variables — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Fonctions de plusieurs variables</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse mathématique (fonctions de 2 variables)</p>
+
+<div class="panneau">
+  <h2>Gradient, élasticités et courbes de niveau de f(x,y)</h2>
+  <div class="grille3">
+    <div><label for="fonc">f(x,y) =</label><input id="fonc" value="x^2+3*x*y-y^2"></div>
+    <div><label for="px">x =</label><input id="px" value="1"></div>
+    <div><label for="py">y =</label><input id="py" value="2"></div>
+  </div>
+  <button onclick="analyser()">Calculer</button>
+  <div id="erreur" class="erreur"></div>
+  <div id="resultat" class="resultat-zone"></div>
+  <canvas id="graphique" height="280"></canvas>
+</div>
+
+<p class="avertissement">Syntaxe : <code>^</code> pour la puissance, <code>*</code> pour la multiplication, <code>ln(x)</code>, <code>exp(x)</code>, <code>sqrt(x)</code>. Dérivées partielles et élasticités estimées par différences finies. Le graphique trace les courbes de niveau de f autour du point choisi.</p>
+
+<script>
+function compiler(expr) {
+  const e = expr.replace(/\^/g, '**').replace(/ln\(/g, 'Math.log(').replace(/exp\(/g, 'Math.exp(').replace(/sqrt\(/g, 'Math.sqrt(');
+  return new Function('x', 'y', 'return ' + e + ';');
+}
+
+function analyser() {
+  const erreurDiv = document.getElementById('erreur');
+  const resDiv = document.getElementById('resultat');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const f = compiler(document.getElementById('fonc').value);
+    const x0 = parseFloat(document.getElementById('px').value);
+    const y0 = parseFloat(document.getElementById('py').value);
+    if (isNaN(x0) || isNaN(y0)) throw new Error('x et y doivent être numériques.');
+
+    const h = 1e-5;
+    const f0 = f(x0, y0);
+    const fx = (f(x0+h, y0) - f(x0-h, y0)) / (2*h);
+    const fy = (f(x0, y0+h) - f(x0, y0-h)) / (2*h);
+    if (!isFinite(f0) || !isFinite(fx) || !isFinite(fy)) throw new Error('f n\'est pas définie ou dérivable en ce point.');
+
+    const p1 = document.createElement('p');
+    p1.innerHTML = `<strong>f(${x0},${y0}) = ${f0.toFixed(5)}</strong>`;
+    resDiv.appendChild(p1);
+    const p2 = document.createElement('p');
+    p2.innerHTML = `<strong>∇f(${x0},${y0}) = (${fx.toFixed(5)}, ${fy.toFixed(5)})</strong>`;
+    resDiv.appendChild(p2);
+    const p3 = document.createElement('p');
+    p3.innerHTML = `Plan tangent : z ≈ ${f0.toFixed(4)} + (${fx.toFixed(4)})(x−${x0}) + (${fy.toFixed(4)})(y−${y0})`;
+    resDiv.appendChild(p3);
+
+    if (Math.abs(x0) > 1e-9 && Math.abs(f0) > 1e-9) {
+      const Ex = (x0/f0) * fx;
+      const p4 = document.createElement('p');
+      p4.innerHTML = `Élasticité par rapport à x : E<sub>f</sub><sup>x</sup> = (x/f)·∂f/∂x ≈ ${Ex.toFixed(5)}`;
+      resDiv.appendChild(p4);
+    }
+    if (Math.abs(y0) > 1e-9 && Math.abs(f0) > 1e-9) {
+      const Ey = (y0/f0) * fy;
+      const p5 = document.createElement('p');
+      p5.innerHTML = `Élasticité par rapport à y : E<sub>f</sub><sup>y</sup> = (y/f)·∂f/∂y ≈ ${Ey.toFixed(5)}`;
+      resDiv.appendChild(p5);
+    }
+
+    // Courbes de niveau : nuage de points colorés selon f(x,y)
+    const pts = [];
+    const rayon = Math.max(2, Math.abs(x0)*0.8, Math.abs(y0)*0.8);
+    for (let xi = x0-rayon; xi <= x0+rayon; xi += rayon/25) {
+      for (let yi = y0-rayon; yi <= y0+rayon; yi += rayon/25) {
+        const v = f(xi, yi);
+        if (isFinite(v)) pts.push({ x: xi, y: yi, v });
+      }
+    }
+    const vmax = Math.max(...pts.map(p=>Math.abs(p.v))) || 1;
+    const couleurs = pts.map(p => {
+      const t = Math.min(Math.abs(p.v)/vmax, 1);
+      return p.v >= 0 ? `rgba(31,111,178,${0.15+0.7*t})` : `rgba(224,128,0,${0.15+0.7*t})`;
+    });
+
+    if (window.chartAM3) window.chartAM3.destroy();
+    const ctx = document.getElementById('graphique').getContext('2d');
+    window.chartAM3 = new Chart(ctx, {
+      type: 'scatter',
+      data: { datasets: [
+        { label: 'f(x,y) (bleu>0, orange<0)', data: pts, backgroundColor: couleurs, pointRadius: 6 },
+        { label: 'point choisi', data: [{x:x0,y:y0}], backgroundColor: '#1D9E75', pointRadius: 8 }
+      ]},
+      options: { responsive: true, aspectRatio: 1.3, scales: { x: { title: { display: true, text: 'x' } }, y: { title: { display: true, text: 'y' } } },
+        plugins: { title: { display: true, text: 'Signe et intensité de f(x,y) autour du point' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = analyser;
+</script>
+</body>
+</html>

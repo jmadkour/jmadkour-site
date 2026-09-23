@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — L'analyse de sensibilité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — L'analyse de sensibilité</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>Intervalles de sensibilité (deux variables, deux contraintes $\leq$ saturées)</h2>
+  <p class="aide">$\max Z=c_1x+c_2y$ sous $a_1x+b_1y\leq d_1$, $a_2x+b_2y\leq d_2$, les deux saturées à l'optimum.</p>
+  <div class="ligne">
+    <div><label for="c1In">Objectif : coeff. de x</label><input type="number" id="c1In" value="30" step="0.01"></div>
+    <div><label for="c2In">Objectif : coeff. de y</label><input type="number" id="c2In" value="25" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="a1In">Contrainte 1 : coeff. x</label><input type="number" id="a1In" value="2" step="0.01"></div>
+    <div><label for="b1In">Contrainte 1 : coeff. y</label><input type="number" id="b1In" value="1" step="0.01"></div>
+    <div><label for="d1In">Contrainte 1 : disponible</label><input type="number" id="d1In" value="100" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="a2In">Contrainte 2 : coeff. x</label><input type="number" id="a2In" value="1" step="0.01"></div>
+    <div><label for="b2In">Contrainte 2 : coeff. y</label><input type="number" id="b2In" value="1" step="0.01"></div>
+    <div><label for="d2In">Contrainte 2 : disponible</label><input type="number" id="d2In" value="80" step="0.01"></div>
+  </div>
+  <button onclick="analyserSensibilite()">Calculer les intervalles</button>
+  <div id="erreurSens" class="erreur"></div>
+  <div id="resultatSens" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Un nouveau produit est-il rentable ?</h2>
+  <p class="aide">À partir des prix duaux calculés ci-dessus.</p>
+  <div class="ligne">
+    <div><label for="aNouvIn">Consommation ressource 1</label><input type="number" id="aNouvIn" value="3" step="0.01"></div>
+    <div><label for="bNouvIn">Consommation ressource 2</label><input type="number" id="bNouvIn" value="2" step="0.01"></div>
+    <div><label for="margeNouvIn">Marge proposée</label><input type="number" id="margeNouvIn" value="40" step="0.01"></div>
+  </div>
+  <button onclick="verifierNouveauProduit()">Vérifier</button>
+  <div id="resultatNouv" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : un second membre reste valable tant que la base ne change pas (variables de base positives) ; un coefficient de l'objectif reste valable tant que la pente de l'objectif reste entre celles des deux contraintes actives ; un nouveau produit est rentable si sa marge dépasse son coût d'opportunité aux prix duaux.</p>
+
+<script>
+function simplexFinal(c,A,b){
+  const m=2,n=2;
+  let T=[[A[0][0],A[0][1],1,0,b[0]],[A[1][0],A[1][1],0,1,b[1]]];
+  let basis=[2,3];
+  let cj=c.concat([0,0]);
+  let iter=0;
+  while(true){
+    let zj=[0,0,0,0];
+    for(let j=0;j<4;j++){ let s=0; for(let i=0;i<2;i++) s+=cj[basis[i]]*T[i][j]; zj[j]=s; }
+    let reduced=cj.map((cc,j)=>cc-zj[j]);
+    let enter=-1,best=1e-9;
+    for(let j=0;j<4;j++){ if(reduced[j]>best){ best=reduced[j]; enter=j; } }
+    if(enter===-1) return {T,basis,reduced};
+    let leave=-1,bestRatio=Infinity;
+    for(let i=0;i<2;i++){ if(T[i][enter]>1e-9){ const ratio=T[i][4]/T[i][enter]; if(ratio<bestRatio-1e-9){ bestRatio=ratio; leave=i; } } }
+    if(leave===-1) throw new Error('Solution non bornée.');
+    const piv=T[leave][enter];
+    T[leave]=T[leave].map(v=>v/piv);
+    for(let i=0;i<2;i++){ if(i!==leave){ const f=T[i][enter]; T[i]=T[i].map((v,j)=>v-f*T[leave][j]); } }
+    basis[leave]=enter;
+    iter++;
+    if(iter>20) throw new Error('Trop d\'itérations.');
+  }
+}
+
+let dernierU=null, dernierV=null;
+
+function analyserSensibilite(){
+  const erreurDiv=document.getElementById('erreurSens'); const resDiv=document.getElementById('resultatSens');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const c1=parseFloat(document.getElementById('c1In').value);
+    const c2=parseFloat(document.getElementById('c2In').value);
+    const a1=parseFloat(document.getElementById('a1In').value);
+    const b1=parseFloat(document.getElementById('b1In').value);
+    const d1=parseFloat(document.getElementById('d1In').value);
+    const a2=parseFloat(document.getElementById('a2In').value);
+    const b2=parseFloat(document.getElementById('b2In').value);
+    const d2=parseFloat(document.getElementById('d2In').value);
+    if([c1,c2,a1,b1,d1,a2,b2,d2].some(isNaN)) throw new Error('Tous les coefficients doivent etre numeriques.');
+
+    const {T,basis,reduced}=simplexFinal([c1,c2],[[a1,b1],[a2,b2]],[d1,d2]);
+    if(!(basis.includes(0)&&basis.includes(1))) throw new Error('Les deux variables x et y ne sont pas toutes deux en base a l\'optimum : cet outil suppose que les deux contraintes sont simultanement actives.');
+    const xRow=basis.indexOf(0), yRow=basis.indexOf(1);
+    const xStar=T[xRow][4], yStar=T[yRow][4];
+    const Z=c1*xStar+c2*yStar;
+
+    const Be1x=T[xRow][2], Be1y=T[yRow][2];
+    const Be2x=T[xRow][3], Be2y=T[yRow][3];
+    function deltaRange(cX,cY,xS,yS){
+      let lo=-Infinity,hi=Infinity;
+      if(cX>0) lo=Math.max(lo,-xS/cX); else if(cX<0) hi=Math.min(hi,-xS/cX);
+      if(cY>0) lo=Math.max(lo,-yS/cY); else if(cY<0) hi=Math.min(hi,-yS/cY);
+      return [lo,hi];
+    }
+    const b1r=deltaRange(Be1x,Be1y,xStar,yStar);
+    const b2r=deltaRange(Be2x,Be2y,xStar,yStar);
+    function cRange(rowIdx){
+      let lo=-Infinity,hi=Infinity;
+      [2,3].forEach(col=>{ const coeff=T[rowIdx][col]; const cur=reduced[col]; if(coeff>0) hi=Math.min(hi,cur/coeff); else if(coeff<0) lo=Math.max(lo,cur/coeff); });
+      return [lo,hi];
+    }
+    const c1r=cRange(xRow), c2r=cRange(yRow);
+
+    const detD=a1*b2-b1*a2;
+    const u=(c1*b2-c2*a2)/detD;
+    const v=(a1*c2-b1*c1)/detD;
+    const W=d1*u+d2*v;
+
+    let out=`<p>Solution optimale : x=${xStar.toFixed(3)}, y=${yStar.toFixed(3)}, Z*=${Z.toFixed(3)}.</p>`;
+    out+=`<p>Prix duaux : u=${u.toFixed(3)} (ressource 1), v=${v.toFixed(3)} (ressource 2). Vérification : W*=${W.toFixed(3)}.</p>`;
+    out+='<table><tr><th>Paramètre</th><th>Borne inf.</th><th>Valeur actuelle</th><th>Borne sup.</th></tr>';
+    out+=`<tr><td>Second membre 1 (d1)</td><td>${(d1+b1r[0]).toFixed(3)}</td><td>${d1}</td><td>${(d1+b1r[1]).toFixed(3)}</td></tr>`;
+    out+=`<tr><td>Second membre 2 (d2)</td><td>${(d2+b2r[0]).toFixed(3)}</td><td>${d2}</td><td>${(d2+b2r[1]).toFixed(3)}</td></tr>`;
+    out+=`<tr><td>Coefficient c1</td><td>${(c1+c1r[0]).toFixed(3)}</td><td>${c1}</td><td>${(c1+c1r[1]).toFixed(3)}</td></tr>`;
+    out+=`<tr><td>Coefficient c2</td><td>${(c2+c2r[0]).toFixed(3)}</td><td>${c2}</td><td>${(c2+c2r[1]).toFixed(3)}</td></tr>`;
+    out+='</table>';
+    resDiv.innerHTML=out;
+    dernierU=u; dernierV=v;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; dernierU=null; dernierV=null; }
+}
+
+function verifierNouveauProduit(){
+  const resDiv=document.getElementById('resultatNouv');
+  if(dernierU===null){ resDiv.innerHTML='<p class="alerte">Calculer d\'abord les prix duaux ci-dessus.</p>'; return; }
+  const a=parseFloat(document.getElementById('aNouvIn').value);
+  const b=parseFloat(document.getElementById('bNouvIn').value);
+  const marge=parseFloat(document.getElementById('margeNouvIn').value);
+  if([a,b,marge].some(isNaN)){ resDiv.innerHTML='<p class="alerte">Valeurs numeriques requises.</p>'; return; }
+  const cout=a*dernierU+b*dernierV;
+  let out=`<p>Coût d'opportunité : ${a}×${dernierU.toFixed(3)} + ${b}×${dernierV.toFixed(3)} = ${cout.toFixed(3)}.</p>`;
+  if(marge>cout+1e-9) out+=`<p class="ok">Rentable : la marge (${marge}) dépasse le coût d'opportunité (${cout.toFixed(3)}).</p>`;
+  else if(marge<cout-1e-9) out+=`<p class="alerte">Non rentable : la marge (${marge}) est inférieure au coût d'opportunité (${cout.toFixed(3)}).</p>`;
+  else out+='<p>Indifférence exacte.</p>';
+  resDiv.innerHTML=out;
+}
+
+window.onload=()=>{ analyserSensibilite(); verifierNouveauProduit(); };
+</script>
+</body>
+</html>

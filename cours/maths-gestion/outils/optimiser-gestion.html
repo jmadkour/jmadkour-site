@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Optimiser en gestion — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.eoq { border-left-color: var(--cintu); }
+  .panneau.eoq h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.eoq button { background: var(--cintu); }
+  .panneau.eoq button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .etiquette { display: inline-block; padding: 0.25em 0.6em; border-radius: 10px; font-size: 0.85em; color: white; margin-right: 0.4em; }
+  .maxi { background: var(--ceco); } .mini { background: var(--cintu); }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Optimiser en gestion</h1>
+<p class="sous-titre">Calculatrice interactive — Mathématiques pour la gestion</p>
+
+<div class="panneau">
+  <h2>Optimum de profit ou de coût moyen sur un intervalle</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir R(q) et C(q) en JavaScript (ou C(q) seul pour minimiser un coût moyen, en laissant R(q) à 0). Exemples : <code>50*q</code>, <code>q*(60-0.15*q)</code>, <code>400+10*q+0.25*q*q</code>.</p>
+  <div class="grille2">
+    <div><label for="rExpr">R(q) =</label><input id="rExpr" value="50*q"></div>
+    <div><label for="cExpr">C(q) =</label><input id="cExpr" value="400+10*q+0.25*q*q"></div>
+  </div>
+  <div class="grille3">
+    <div><label for="modeSel">Objectif</label>
+      <select id="modeSel" style="width:100%;padding:0.5em;border:1px solid #ccc;border-radius:4px;font-family:'Helvetica Neue',Arial,sans-serif;">
+        <option value="profit">Maximiser le profit Π(q)=R(q)-C(q)</option>
+        <option value="cm">Minimiser le coût moyen CM(q)=C(q)/q</option>
+      </select>
+    </div>
+    <div><label for="qmin">borne inférieure</label><input id="qmin" value="0"></div>
+    <div><label for="qmax">borne supérieure</label><input id="qmax" value="150"></div>
+  </div>
+  <button onclick="optimiser()">Trouver l'optimum</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueOpt" height="280"></canvas>
+</div>
+
+<p class="avertissement">Les points critiques sont trouvés par balayage numérique du signe de la dérivée (différence centrée), confirmés par le signe de la dérivée seconde, puis comparés aux bornes du domaine pour identifier l'optimum global — exactement la méthode du chapitre 3, appliquée ici au profit ou au coût moyen.</p>
+
+<div class="panneau eoq">
+  <h2>Modèle de Wilson (quantité économique de commande)</h2>
+  <div class="grille3">
+    <div><label for="Dval">Demande annuelle $D$</label><input id="Dval" value="8000"></div>
+    <div><label for="Kval">Coût fixe par commande $K$</label><input id="Kval" value="150"></div>
+    <div><label for="hval">Coût de stockage unitaire $h$</label><input id="hval" value="3"></div>
+  </div>
+  <button onclick="calculerEOQ()">Calculer $q^\star$</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphiqueEOQ" height="260"></canvas>
+</div>
+
+<script>
+let chartOpt = null, chartEOQ = null;
+
+function optimiser() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const rExpr = document.getElementById('rExpr').value;
+    const cExpr = document.getElementById('cExpr').value;
+    const mode = document.getElementById('modeSel').value;
+    const qmin = parseFloat(document.getElementById('qmin').value);
+    const qmax = parseFloat(document.getElementById('qmax').value);
+    if ([qmin,qmax].some(isNaN) || qmax<=qmin) throw new Error('Bornes invalides.');
+    if (qmin <= 0 && mode === 'cm') throw new Error('Pour le coût moyen, la borne inférieure doit être strictement positive (division par q).');
+
+    const R = new Function('q','return '+rExpr+';');
+    const C = new Function('q','return '+cExpr+';');
+    const f = mode === 'profit' ? (q => R(q)-C(q)) : (q => C(q)/q);
+    const nomF = mode === 'profit' ? 'Π(q)' : 'CM(q)';
+
+    const h = 1e-4;
+    const fp = x => (f(x+h)-f(x-h))/(2*h);
+    const fpp = x => (fp(x+h)-fp(x-h))/(2*h);
+
+    const n = 2000;
+    let critiques = [];
+    let prevSign = Math.sign(fp(qmin));
+    for (let i=1;i<=n;i++){
+      const x = qmin + i*(qmax-qmin)/n;
+      const s = Math.sign(fp(x));
+      if (s !== 0 && prevSign !== 0 && s !== prevSign) {
+        let lo = qmin+(i-1)*(qmax-qmin)/n, hi = x;
+        for (let k=0;k<40;k++){ const mid=(lo+hi)/2; if (Math.sign(fp(mid))===prevSign) lo=mid; else hi=mid; }
+        critiques.push((lo+hi)/2);
+      }
+      prevSign = s;
+    }
+
+    const candidats = [{x:qmin, type:'borne'}, ...critiques.map(c=>({x:c, type:'critique'})), {x:qmax, type:'borne'}];
+    let table = `<table><tr><th>q</th><th>${nomF}</th><th>nature</th></tr>`;
+    let best = mode==='profit' ? {x:null, val:-Infinity} : {x:null, val:Infinity};
+    candidats.forEach(c => {
+      const val = f(c.x);
+      let nature = c.type === 'borne' ? 'borne' : (fpp(c.x) < 0 ? 'max local' : fpp(c.x) > 0 ? 'min local' : 'indéterminé');
+      table += `<tr><td>${c.x.toFixed(4)}</td><td>${val.toFixed(4)}</td><td>${nature}</td></tr>`;
+      if (mode==='profit' ? val > best.val : val < best.val) best = {x:c.x, val};
+    });
+    table += '</table>';
+
+    let html = `<p><strong>Points critiques trouvés :</strong> ${critiques.length ? critiques.map(c=>c.toFixed(4)).join(', ') : 'aucun'}</p>`;
+    html += table;
+    const etiquette = mode==='profit' ? 'Profit maximal global' : 'Coût moyen minimal global';
+    html += `<p><span class="etiquette ${mode==='profit'?'maxi':'mini'}">${etiquette}</span> ${nomF} = ${best.val.toFixed(4)} en q = ${best.x.toFixed(4)}</p>`;
+    resDiv.innerHTML = html;
+
+    const pts = [];
+    for (let i=0;i<=200;i++){ const x = qmin + i*(qmax-qmin)/200; try { pts.push({x, y: f(x)}); } catch(e){} }
+
+    if (chartOpt) chartOpt.destroy();
+    const ctx = document.getElementById('graphiqueOpt').getContext('2d');
+    chartOpt = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [
+        { label: nomF, data: pts, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'points remarquables', data: candidats.map(c=>({x:c.x,y:f(c.x)})), borderColor: '#B56600', backgroundColor: '#B56600', pointRadius: 5, showLine: false }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'q' } }, y: { title: { display: true, text: nomF } } },
+        plugins: { title: { display: true, text: mode==='profit' ? 'Profit en fonction de q' : 'Coût moyen en fonction de q' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerEOQ() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const D = parseFloat(document.getElementById('Dval').value);
+    const K = parseFloat(document.getElementById('Kval').value);
+    const h = parseFloat(document.getElementById('hval').value);
+    if ([D,K,h].some(v=>isNaN(v)||v<=0)) throw new Error('D, K et h doivent être des nombres strictement positifs.');
+
+    const qStar = Math.sqrt(2*K*D/h);
+    const coutCommande = q => K*D/q;
+    const coutStockage = q => h*q/2;
+    const T = q => coutCommande(q)+coutStockage(q);
+    const Tstar = T(qStar);
+
+    resDiv.innerHTML = `
+      <p><strong>$q^\\star = \\sqrt{2KD/h} \\approx ${qStar.toFixed(2)}$</strong> unités par commande.</p>
+      <p>Coût de commande à l'optimum : ${coutCommande(qStar).toFixed(2)} — Coût de stockage à l'optimum : ${coutStockage(qStar).toFixed(2)} (toujours égaux à l'optimum).</p>
+      <p><strong>Coût total annuel minimal : $T(q^\\star) \\approx ${Tstar.toFixed(2)}$</strong> dirhams.</p>
+    `;
+
+    const qmax = qStar*2.2;
+    const ptsCmd = [], ptsSto = [], ptsTot = [];
+    for (let i=1;i<=200;i++){ const q = qmax*i/200; ptsCmd.push({x:q,y:coutCommande(q)}); ptsSto.push({x:q,y:coutStockage(q)}); ptsTot.push({x:q,y:T(q)}); }
+
+    if (chartEOQ) chartEOQ.destroy();
+    const ctx = document.getElementById('graphiqueEOQ').getContext('2d');
+    chartEOQ = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [
+        { label: 'coût de commande KD/q', data: ptsCmd, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'coût de stockage hq/2', data: ptsSto, borderColor: '#B56600', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'coût total T(q)', data: ptsTot, borderColor: '#1D9E75', borderDash: [5,3], backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'q* optimal', data: [{x:qStar,y:Tstar}], borderColor: '#1F6FB2', backgroundColor: '#1F6FB2', pointRadius: 5, showLine:false }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'q' } }, y: { title: { display: true, text: 'coût annuel' } } },
+        plugins: { title: { display: true, text: 'Modèle de Wilson' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { optimiser(); calculerEOQ(); };
+</script>
+</body>
+</html>

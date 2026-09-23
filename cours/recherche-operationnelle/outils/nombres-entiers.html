@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — Programmation en nombres entiers — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1100px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-end; }
+  .ligne > div { flex: 1; min-width: 180px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.83em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.55em; text-align: center; }
+  .entiere { background: #eaf6ee; color: var(--cex); font-weight: bold; }
+  .elague { background: #fdeedb; color: var(--cintu); }
+  .meilleure { background: #eef0fb; color: var(--cdef); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.1em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — La programmation en nombres entiers</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>Séparation et évaluation (deux variables)</h2>
+  <p class="aide">$\max\;c_1x+c_2y$ sous deux contraintes $a x+by\leq c$, $x,y\geq0$ entiers.</p>
+  <div class="ligne">
+    <div><label for="c1In">Coefficient de $x$</label><input type="number" id="c1In" value="7"></div>
+    <div><label for="c2In">Coefficient de $y$</label><input type="number" id="c2In" value="6"></div>
+  </div>
+  <label>Contrainte 1 : <code>a,b,c</code></label>
+  <input type="text" id="cons1In" value="3,4,18">
+  <label>Contrainte 2 : <code>a,b,c</code></label>
+  <input type="text" id="cons2In" value="5,2,17">
+  <button onclick="calculerBB()">Résoudre par séparation et évaluation</button>
+  <div id="erreurBB" class="erreur"></div>
+  <div id="resultatBB" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Sac à dos 0/1 (portefeuille de projets)</h2>
+  <p class="aide">Une ligne par projet : <code>Nom,VAN,Coût</code>.</p>
+  <textarea id="itemsIn">I1,40,25
+I2,55,35
+I3,35,20</textarea>
+  <div class="ligne">
+    <div><label for="budgetIn">Budget</label><input type="number" id="budgetIn" value="60"></div>
+  </div>
+  <button onclick="calculerKnapsack()">Énumérer les combinaisons</button>
+  <div id="erreurKS" class="erreur"></div>
+  <div id="resultatKS" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : la relaxation continue borne toujours l'optimum entier ($Z^*_{\text{entier}}\leq Z^*_{\text{continu}}$ en maximisation) ; on sépare sur une variable fractionnaire $v$ en créant les sous-problèmes $\leq\lfloor v\rfloor$ et $\geq\lceil v\rceil$, sans jamais perdre de point entier ; on élague une branche dont la borne ne dépasse pas la meilleure solution entière déjà connue. Le sac à dos $0/1$ à peu d'objets s'énumère directement (toutes les combinaisons), sans qu'il soit nécessaire de séparer.</p>
+
+<script>
+function solveLP2(cons1, cons2, c1, c2, extraCons){
+  extraCons = extraCons || [];
+  const allCons = [cons1, cons2].concat(extraCons);
+  const lines = [{a:1,b:0,c:0},{a:0,b:1,c:0}].concat(allCons.map(([a,b,c])=>({a,b,c})));
+  const verts = [];
+  for(let i=0;i<lines.length;i++) for(let j=i+1;j<lines.length;j++){
+    const {a:a1,b:b1,c:cc1}=lines[i], {a:a2,b:b2,c:cc2}=lines[j];
+    const det = a1*b2-a2*b1;
+    if(Math.abs(det)<1e-9) continue;
+    const x = (cc1*b2-cc2*b1)/det;
+    const y = (a1*cc2-a2*cc1)/det;
+    if(x < -1e-6 || y < -1e-6) continue;
+    const feasible = allCons.every(([a,b,c])=> a*x+b*y <= c+1e-6);
+    if(feasible) verts.push([Math.round(x*1e6)/1e6, Math.round(y*1e6)/1e6]);
+  }
+  const uniq = [];
+  verts.forEach(v=>{ if(!uniq.some(u=>Math.abs(u[0]-v[0])<1e-6 && Math.abs(u[1]-v[1])<1e-6)) uniq.push(v); });
+  let best=null, bestZ=-Infinity;
+  uniq.forEach(([x,y])=>{ const Z=c1*x+c2*y; if(Z>bestZ){ bestZ=Z; best=[x,y]; } });
+  return {feasible: best!==null, best, bestZ};
+}
+
+function isInt(v){ return Math.abs(v-Math.round(v)) < 1e-6; }
+
+function branchAndBound(cons1, cons2, c1, c2){
+  const nodes = [];
+  let incumbent = null, incumbentZ = -Infinity;
+  const stack = [{extra: [], label: 'Racine', depth: 0}];
+  let guard = 0;
+  while(stack.length && guard < 500){
+    guard++;
+    const node = stack.pop();
+    const r = solveLP2(cons1, cons2, c1, c2, node.extra);
+    if(!r.feasible){
+      nodes.push({...node, status: 'infaisable', Z: null, point: null});
+      continue;
+    }
+    const [x,y] = r.best;
+    const entiere = isInt(x) && isInt(y);
+    if(entiere){
+      if(r.bestZ > incumbentZ + 1e-9){ incumbent = [Math.round(x), Math.round(y)]; incumbentZ = r.bestZ; }
+      nodes.push({...node, status: 'entiere', Z: r.bestZ, point: [Math.round(x),Math.round(y)]});
+      continue;
+    }
+    if(r.bestZ <= incumbentZ + 1e-9){
+      nodes.push({...node, status: 'elaguee', Z: r.bestZ, point: [x,y]});
+      continue;
+    }
+    nodes.push({...node, status: 'fractionnaire', Z: r.bestZ, point: [x,y]});
+    // separer sur x si fractionnaire, sinon y
+    if(!isInt(x)){
+      stack.push({extra: node.extra.concat([[1,0,Math.floor(x)]]), label: node.label+' ∧ x≤'+Math.floor(x), depth: node.depth+1});
+      stack.push({extra: node.extra.concat([[-1,0,-Math.ceil(x)]]), label: node.label+' ∧ x≥'+Math.ceil(x), depth: node.depth+1});
+    } else {
+      stack.push({extra: node.extra.concat([[0,1,Math.floor(y)]]), label: node.label+' ∧ y≤'+Math.floor(y), depth: node.depth+1});
+      stack.push({extra: node.extra.concat([[0,-1,-Math.ceil(y)]]), label: node.label+' ∧ y≥'+Math.ceil(y), depth: node.depth+1});
+    }
+  }
+  return {nodes, incumbent, incumbentZ};
+}
+
+function parseCons(text){
+  const parts = text.split(',').map(s=>parseFloat(s.trim()));
+  if(parts.length !== 3 || parts.some(isNaN)) throw new Error('Contrainte invalide (attendu a,b,c) : "'+text+'"');
+  return parts;
+}
+
+function calculerBB(){
+  const erreurDiv = document.getElementById('erreurBB');
+  const resDiv = document.getElementById('resultatBB');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const c1 = parseFloat(document.getElementById('c1In').value);
+    const c2 = parseFloat(document.getElementById('c2In').value);
+    if(isNaN(c1) || isNaN(c2)) throw new Error('Coefficients de l\'objectif invalides.');
+    const cons1 = parseCons(document.getElementById('cons1In').value);
+    const cons2 = parseCons(document.getElementById('cons2In').value);
+
+    const root = solveLP2(cons1, cons2, c1, c2);
+    if(!root.feasible) throw new Error('Le domaine est vide : vérifier les contraintes.');
+
+    const {nodes, incumbent, incumbentZ} = branchAndBound(cons1, cons2, c1, c2);
+
+    let out = '';
+    out += `<h3>Relaxation continue (racine)</h3>`;
+    out += `<p>Optimum continu : $(x,y)=(${root.best[0].toFixed(3)},\\ ${root.best[1].toFixed(3)})$, $Z=${root.bestZ.toFixed(3)}$</p>`;
+
+    out += '<h3>Nœuds explorés</h3>';
+    out += '<table><tr><th>Nœud</th><th>Point (relaxation)</th><th>Z</th><th>Statut</th></tr>';
+    nodes.forEach(n=>{
+      let cls = '';
+      let statusTxt = n.status;
+      if(n.status==='entiere'){ cls='entiere'; statusTxt='entière'; if(incumbent && n.point[0]===incumbent[0] && n.point[1]===incumbent[1] && Math.abs(n.Z-incumbentZ)<1e-6) cls='meilleure'; }
+      if(n.status==='elaguee'){ cls='elague'; statusTxt='élaguée (borne ≤ meilleure connue)'; }
+      if(n.status==='infaisable'){ statusTxt='infaisable'; }
+      const ptTxt = n.point ? `(${n.point[0].toFixed ? n.point[0].toFixed(3) : n.point[0]}, ${n.point[1].toFixed ? n.point[1].toFixed(3) : n.point[1]})` : '—';
+      out += `<tr class="${cls}"><td>${n.label}</td><td>${ptTxt}</td><td>${n.Z!==null ? n.Z.toFixed(3) : '—'}</td><td>${statusTxt}</td></tr>`;
+    });
+    out += '</table>';
+
+    if(incumbent){
+      out += `<div class="valeur">Optimum entier : x=${incumbent[0]}, y=${incumbent[1]}, Z=${incumbentZ.toFixed(3)}</div>`;
+    } else {
+      out += '<p class="aide">Aucune solution entière trouvée (domaine entier vide ou recherche interrompue).</p>';
+    }
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerKnapsack(){
+  const erreurDiv = document.getElementById('erreurKS');
+  const resDiv = document.getElementById('resultatKS');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const lines = document.getElementById('itemsIn').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    const budget = parseFloat(document.getElementById('budgetIn').value);
+    if(isNaN(budget) || budget<0) throw new Error('Budget invalide.');
+    const items = lines.map(line=>{
+      const parts = line.split(',').map(s=>s.trim());
+      if(parts.length<3) throw new Error('Ligne invalide (attendu Nom,VAN,Coût) : "'+line+'"');
+      const [name, vanS, coutS] = parts;
+      const van = parseFloat(vanS), cout = parseFloat(coutS);
+      if(isNaN(van) || isNaN(cout)) throw new Error('Valeurs non numériques pour '+name);
+      return {name, van, cout};
+    });
+    const n = items.length;
+    if(n > 20) throw new Error('Trop de projets pour une énumération complète dans cette calculatrice (limite 20).');
+
+    let combos = [];
+    for(let m=0; m < (1<<n); m++){
+      let cost=0, van=0, sel=[];
+      items.forEach((it,i)=>{ if(m & (1<<i)){ cost+=it.cout; van+=it.van; sel.push(it.name); } });
+      combos.push({sel, cost, van, feasible: cost<=budget});
+    }
+    const feasibles = combos.filter(c=>c.feasible);
+    const best = feasibles.reduce((a,b)=> b.van>a.van ? b : a, {van:-Infinity});
+
+    let out = `<h3>Les ${combos.length} combinaisons</h3>`;
+    out += '<table><tr><th>Portefeuille</th><th>Coût</th><th>Réalisable</th><th>VAN</th></tr>';
+    combos.forEach(c=>{
+      const isBest = c.feasible && Math.abs(c.van-best.van)<1e-9 && c.sel.join(',')===best.sel.join(',');
+      out += `<tr class="${isBest?'meilleure':''}"><td>{${c.sel.join(', ')||'∅'}}</td><td>${c.cost}</td><td>${c.feasible?'<span class="ok">oui</span>':'non'}</td><td>${c.feasible?c.van:'—'}</td></tr>`;
+    });
+    out += '</table>';
+    out += `<div class="valeur">Portefeuille optimal : {${best.sel.join(', ')}} — VAN = ${best.van}</div>`;
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerBB(); calculerKnapsack(); };
+</script>
+</body>
+</html>

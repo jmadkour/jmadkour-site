@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Régression sur discontinuité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — La régression sur discontinuité</h1>
+<p class="sous-titre">Calculatrice interactive — Inférence causale</p>
+
+<div class="panneau">
+  <h2>1. Discontinuité nette ou floue</h2>
+  <div class="ligne">
+    <div><label for="yBasIn">Résultat juste en dessous du seuil</label><input type="number" id="yBasIn" value="40" step="0.1"></div>
+    <div><label for="yHautIn">Résultat juste au-dessus du seuil</label><input type="number" id="yHautIn" value="52" step="0.1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="pBasIn">P(traite) juste en dessous (%)</label><input type="number" id="pBasIn" value="0" min="0" max="100" step="0.1"></div>
+    <div><label for="pHautIn">P(traite) juste au-dessus (%)</label><input type="number" id="pHautIn" value="100" min="0" max="100" step="0.1"></div>
+  </div>
+  <button onclick="calculerRDD()">Calculer</button>
+  <div id="erreurRDD" class="erreur"></div>
+  <div id="resultatRDD" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Détecter une manipulation (test de densité)</h2>
+  <p class="aide">Effectifs de tranches successives autour du seuil (la tranche juste avant le seuil, puis juste après, sont comparées aux autres).</p>
+  <textarea id="effectifsIn">118,121,15,310,124,119</textarea>
+  <p class="aide">Format : liste d'effectifs séparés par des virgules ; les deux valeurs centrales sont celles de part et d'autre du seuil.</p>
+  <button onclick="calculerDensite()">Analyser</button>
+  <div id="erreurDens" class="erreur"></div>
+  <div id="resultatDens" class="resultat-zone"></div>
+  <svg id="svgDens" width="420" height="200" viewBox="0 0 420 200"></svg>
+</div>
+
+<p class="avertissement">Rappels : discontinuité nette si $P(T{=}1)$ passe de $0$ à $1$ au seuil, floue sinon ; estimateur $=\dfrac{\text{saut de } Y}{\text{saut de } P(T{=}1)}$ ; l'effet identifié est local au voisinage du seuil, et ne s'extrapole pas sans hypothèse supplémentaire ; un amoncellement ou un creux anormal de la densité près du seuil signale une possible manipulation.</p>
+
+<script>
+function calculerRDD(){
+  const erreurDiv=document.getElementById('erreurRDD'); const resDiv=document.getElementById('resultatRDD');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const yBas=parseFloat(document.getElementById('yBasIn').value);
+    const yHaut=parseFloat(document.getElementById('yHautIn').value);
+    const pBas=parseFloat(document.getElementById('pBasIn').value)/100;
+    const pHaut=parseFloat(document.getElementById('pHautIn').value)/100;
+    if([yBas,yHaut,pBas,pHaut].some(isNaN)) throw new Error('Toutes les valeurs doivent etre numeriques.');
+    if(pBas<0||pBas>1||pHaut<0||pHaut>1) throw new Error('Les probabilites doivent etre entre 0 et 100%.');
+    const sautY=yHaut-yBas;
+    const sautP=pHaut-pBas;
+    if(Math.abs(sautP)<1e-9) throw new Error('Le saut de probabilite de traitement ne peut pas etre nul.');
+    const estimateur=sautY/sautP;
+    const nette=Math.abs(pBas)<1e-9&&Math.abs(pHaut-1)<1e-9;
+    let out='<table><tr><th>quantite</th><th>valeur</th></tr>';
+    out+=`<tr><td>Type de discontinuite</td><td>${nette?'nette':'floue'}</td></tr>`;
+    out+=`<tr><td>Saut de Y</td><td>${sautY.toFixed(3)}</td></tr>`;
+    out+=`<tr><td>Saut de P(traite)</td><td>${sautP.toFixed(3)}</td></tr>`;
+    out+=`<tr><td>Estimateur (effet local)</td><td>${estimateur.toFixed(3)}</td></tr></table>`;
+    if(!nette) out+='<p>Discontinuite floue : l\'effet local est le rapport des deux sauts, pas le seul saut de Y.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerDensite(){
+  const erreurDiv=document.getElementById('erreurDens'); const resDiv=document.getElementById('resultatDens');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const vals=document.getElementById('effectifsIn').value.split(',').map(s=>parseFloat(s.trim()));
+    if(vals.length<4||vals.some(v=>isNaN(v)||v<0)) throw new Error('Fournir au moins 4 effectifs positifs separes par des virgules.');
+    const mid=Math.floor(vals.length/2);
+    const avantSeuil=vals[mid-1], apresSeuil=vals[mid];
+    const autres=vals.filter((v,i)=>i!==mid-1&&i!==mid);
+    const moyenneAutres=autres.reduce((a,b)=>a+b,0)/autres.length;
+    let out='<table><tr><th>tranche</th><th>effectif</th><th>ecart a la moyenne des autres tranches</th></tr>';
+    out+=`<tr><td>juste avant le seuil</td><td>${avantSeuil}</td><td>${(avantSeuil-moyenneAutres).toFixed(1)}</td></tr>`;
+    out+=`<tr><td>juste apres le seuil</td><td>${apresSeuil}</td><td>${(apresSeuil-moyenneAutres).toFixed(1)}</td></tr></table>`;
+    out+=`<p>Moyenne des autres tranches : ${moyenneAutres.toFixed(1)}</p>`;
+    const seuilAlerte=0.30*moyenneAutres;
+    if(Math.abs(avantSeuil-moyenneAutres)>seuilAlerte||Math.abs(apresSeuil-moyenneAutres)>seuilAlerte){
+      out+='<p class="alerte">Anomalie detectee : au moins une des deux tranches encadrant le seuil s\'ecarte fortement des tranches voisines, ce qui suggere une possible manipulation.</p>';
+    } else {
+      out+='<p class="ok">Pas d\'anomalie marquee : les tranches encadrant le seuil restent proches des autres.</p>';
+    }
+    resDiv.innerHTML=out;
+    dessinerDensite(vals, mid);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgDens').innerHTML=''; }
+}
+
+function dessinerDensite(vals, mid){
+  const svg=document.getElementById('svgDens');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=420,H=200,padL=40,padR=15,padT=15,padB=30;
+  const maxV=Math.max(...vals)*1.15;
+  const step=(W-padL-padR)/vals.length;
+  vals.forEach((v,i)=>{
+    const x=padL+i*step+step*0.15;
+    const h=(v/maxV)*(H-padT-padB);
+    const rect=document.createElementNS(ns,'rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',H-padB-h);
+    rect.setAttribute('width',step*0.7); rect.setAttribute('height',h);
+    rect.setAttribute('fill', (i===mid-1||i===mid) ? '#b00020' : '#1F6FB2');
+    svg.appendChild(rect);
+    const txt=document.createElementNS(ns,'text');
+    txt.setAttribute('x',x+step*0.35); txt.setAttribute('y',H-padB-h-4);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','10');
+    txt.textContent=v;
+    svg.appendChild(txt);
+  });
+  const axe=document.createElementNS(ns,'line');
+  axe.setAttribute('x1',padL); axe.setAttribute('y1',H-padB); axe.setAttribute('x2',W-padR); axe.setAttribute('y2',H-padB);
+  axe.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axe);
+  const seuilX=padL+mid*step;
+  const seuilLigne=document.createElementNS(ns,'line');
+  seuilLigne.setAttribute('x1',seuilX); seuilLigne.setAttribute('y1',padT); seuilLigne.setAttribute('x2',seuilX); seuilLigne.setAttribute('y2',H-padB);
+  seuilLigne.setAttribute('stroke','#B56600'); seuilLigne.setAttribute('stroke-dasharray','4,3');
+  svg.appendChild(seuilLigne);
+}
+
+window.onload=()=>{ calculerRDD(); calculerDensite(); };
+</script>
+</body>
+</html>

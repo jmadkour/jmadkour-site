@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 16 — Uniforme et exponentielle — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.expo { border-left-color: var(--cex); }
+  .panneau.expo h2 { color: var(--cex); }
+  .panneau.sla { border-left-color: var(--cintu); }
+  .panneau.sla h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.expo button { background: var(--cex); }
+  .panneau.expo button:hover { background: #206040; }
+  .panneau.sla button { background: var(--cintu); }
+  .panneau.sla button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 16 — Uniforme et exponentielle</h1>
+<p class="sous-titre">Calculatrice interactive — Probabilités</p>
+
+<div class="panneau">
+  <h2>Loi uniforme U[a;b] et transformée inverse</h2>
+  <div class="grille4">
+    <div><label for="aUnif">a</label><input id="aUnif" value="5"></div>
+    <div><label for="bUnif">b</label><input id="bUnif" value="20"></div>
+    <div><label for="cUnif">c (pour P(c≤X≤d))</label><input id="cUnif" value="10"></div>
+    <div><label for="dUnif">d (pour P(c≤X≤d))</label><input id="dUnif" value="15"></div>
+  </div>
+  <div class="grille3">
+    <div><label for="uSim">U (nombre uniforme sur [0,1], pour la simulation)</label><input id="uSim" value="0.7"></div>
+    <div></div><div></div>
+  </div>
+  <button onclick="calculerUniforme()">Calculer E(X), V(X), P(c≤X≤d) et simuler X</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau expo">
+  <h2>Loi exponentielle : survie et absence de mémoire</h2>
+  <div class="grille4">
+    <div><label for="lambdaExpo">λ</label><input id="lambdaExpo" value="0.125"></div>
+    <div><label for="tExpo">t (pour P(X&gt;t))</label><input id="tExpo" value="5"></div>
+    <div><label for="sMemo">s (âge déjà atteint)</label><input id="sMemo" value="5"></div>
+    <div><label for="tMemo">t (attente supplémentaire)</label><input id="tMemo" value="3"></div>
+  </div>
+  <button onclick="calculerExponentielle()">Calculer E(X), P(X&gt;t) et tester l'absence de mémoire</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphiqueExpo" height="220"></canvas>
+</div>
+
+<div class="panneau sla">
+  <h2>Dimensionner un seuil (SLA) : résoudre F(t)=α</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Utilise le même λ que le panneau ci-dessus.</p>
+  <div class="grille3">
+    <div><label for="alphaSLA">niveau de service α (ex. 0,9 pour 90%)</label><input id="alphaSLA" value="0.9"></div>
+    <div></div><div></div>
+  </div>
+  <button onclick="calculerSLA()">Trouver t tel que F(t)=α</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : uniforme — E(X)=(a+b)/2, V(X)=(b-a)²/12, P(c≤X≤d)=(d-c)/(b-a), X=a+(b-a)U (transformée inverse). Exponentielle — f(x)=λe^(-λx), P(X&gt;t)=e^(-λt), E(X)=σ(X)=1/λ, absence de mémoire P(X&gt;s+t|X&gt;s)=P(X&gt;t).</p>
+
+<script>
+function calculerUniforme() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const a = parseFloat(document.getElementById('aUnif').value);
+    const b = parseFloat(document.getElementById('bUnif').value);
+    const c = parseFloat(document.getElementById('cUnif').value);
+    const d = parseFloat(document.getElementById('dUnif').value);
+    const u = parseFloat(document.getElementById('uSim').value);
+    if ([a,b,c,d,u].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (b<=a) throw new Error('b doit être strictement supérieur à a.');
+    if (c<a || d>b || c>d) throw new Error('[c,d] doit être inclus dans [a,b].');
+    if (u<0 || u>1) throw new Error('U doit être compris entre 0 et 1.');
+
+    const EX = (a+b)/2, VX = Math.pow(b-a,2)/12, sigX = Math.sqrt(VX);
+    const Pcd = (d-c)/(b-a);
+    const Xsim = a + (b-a)*u;
+
+    resDiv.innerHTML = `
+      <table><tr><th>E(X)</th><th>V(X)</th><th>σ(X)</th><th>P(${c}≤X≤${d})</th><th>X simulé (U=${u})</th></tr>
+      <tr><td>${EX.toFixed(4)}</td><td>${VX.toFixed(4)}</td><td>${sigX.toFixed(4)}</td><td>${Pcd.toFixed(4)}</td><td><strong>${Xsim.toFixed(4)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Méthode de la transformée inverse : on tire U uniformément sur [0,1], puis X=F⁻¹(U)=a+(b-a)U pour la loi uniforme.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+let chartExpo = null;
+function calculerExponentielle() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const lambda = parseFloat(document.getElementById('lambdaExpo').value);
+    const t = parseFloat(document.getElementById('tExpo').value);
+    const s = parseFloat(document.getElementById('sMemo').value);
+    const tm = parseFloat(document.getElementById('tMemo').value);
+    if ([lambda,t,s,tm].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (lambda<=0) throw new Error('λ doit être strictement positif.');
+    if (t<0 || s<0 || tm<0) throw new Error('t, s et l\'attente supplémentaire doivent être positifs ou nuls.');
+
+    const EX = 1/lambda;
+    const Pgtt = Math.exp(-lambda*t);
+    const PgtSplusT = Math.exp(-lambda*(s+tm));
+    const PgtS = Math.exp(-lambda*s);
+    const condProb = PgtSplusT/PgtS;
+    const PgtTm = Math.exp(-lambda*tm);
+
+    resDiv.innerHTML = `
+      <table><tr><th>E(X)=σ(X)=1/λ</th><th>P(X&gt;${t})</th></tr>
+      <tr><td>${EX.toFixed(4)}</td><td>${Pgtt.toFixed(6)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Absence de mémoire — après un âge de ${s}, P(X&gt;${s+tm}|X&gt;${s}) = ${condProb.toFixed(6)}, à comparer à P(X&gt;${tm}) = ${PgtTm.toFixed(6)} : ${Math.abs(condProb-PgtTm)<1e-9 ? '<strong>identiques</strong>, la loi exponentielle oublie l\'âge déjà atteint.' : '<strong>différentes</strong>.'}</p>
+    `;
+
+    const labels = [], valeurs = [];
+    const tmax = Math.max(5*EX, t+2, s+tm+2);
+    for (let x=0; x<=tmax; x+=tmax/60) { labels.push(x.toFixed(2)); valeurs.push(Math.exp(-lambda*x)); }
+    if (chartExpo) chartExpo.destroy();
+    chartExpo = new Chart(document.getElementById('graphiqueExpo').getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: [{ label: 'P(X>t)', data: valeurs, borderColor:'#1D9E75', backgroundColor:'transparent', borderWidth:2, pointRadius:0 }] },
+      options: { responsive: true, scales: { x: { title: { display:true, text:'t' } }, y: { title: { display:true, text:'P(X>t)' }, min:0, max:1 } },
+        plugins: { title: { display:true, text:'Fonction de survie de la loi exponentielle' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerSLA() {
+  const erreurDiv = document.getElementById('erreur3');
+  const resDiv = document.getElementById('resultat3');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const lambda = parseFloat(document.getElementById('lambdaExpo').value);
+    const alpha = parseFloat(document.getElementById('alphaSLA').value);
+    if ([lambda,alpha].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (lambda<=0) throw new Error('λ doit être strictement positif.');
+    if (alpha<=0 || alpha>=1) throw new Error('α doit être strictement compris entre 0 et 1.');
+
+    const t = -Math.log(1-alpha)/lambda;
+
+    resDiv.innerHTML = `
+      <table><tr><th>α</th><th>seuil t tel que F(t)=α</th></tr>
+      <tr><td>${alpha}</td><td><strong>${t.toFixed(4)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">t = −ln(1−α)/λ. Ce seuil, et non la moyenne 1/λ=${(1/lambda).toFixed(2)}, est le bon indicateur pour un engagement de service.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerUniforme(); calculerExponentielle(); calculerSLA(); };
+</script>
+</body>
+</html>

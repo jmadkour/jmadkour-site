@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Le programme linéaire et ses formes — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], input[type=text], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 6em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  code { background: #f0f0f0; padding: 0.1em 0.3em; border-radius: 3px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Le programme linéaire et ses formes</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>1. Convertir un système de contraintes en forme standard</h2>
+  <p class="aide">Une ligne par contrainte, au format "coefficients séparés par des virgules ; sens ; valeur", où sens = le (&le;), ge (&ge;) ou eq (=). Exemple pour deux variables : "2,1;le;100". Le nombre de coefficients fixe le nombre de variables de décision.</p>
+  <textarea id="contraintesIn">2,1;le;100
+1,1;le;80
+0,1;ge;10</textarea>
+  <button onclick="convertirStandard()">Convertir</button>
+  <div id="erreurConv" class="erreur"></div>
+  <div id="resultatConv" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Compter les choix de base possibles</h2>
+  <p class="aide">Nombre de variables de décision, puis nombre de contraintes (une variable d'écart est ajoutée par contrainte). Le calcul se déduit automatiquement du panneau 1 si vous avez cliqué sur "Convertir", mais vous pouvez aussi saisir directement.</p>
+  <div class="ligne">
+    <div><label for="nVarIn">Variables de décision</label><input type="number" id="nVarIn" value="2" step="1" min="1"></div>
+    <div><label for="mConIn">Contraintes (= équations après conversion)</label><input type="number" id="mConIn" value="2" step="1" min="1"></div>
+  </div>
+  <button onclick="compterBases()">Calculer</button>
+  <div id="erreurBase" class="erreur"></div>
+  <div id="resultatBase" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : une contrainte $\leq$ reçoit $+e_i$, une contrainte $\geq$ reçoit $-e_i$ (variable de surplus), une contrainte $=$ n'a besoin d'aucune variable ; $\min$ se réécrit $\max(-\cdot)$ ; le nombre de choix de base $\binom{n}{m}$ compte toutes les solutions de base algébriques, mais seules celles à composantes positives ou nulles sont réalisables.</p>
+
+<script>
+function comb(n,k){
+  if(k<0||k>n) return 0;
+  k=Math.min(k,n-k);
+  let r=1;
+  for(let i=0;i<k;i++){ r=r*(n-i)/(i+1); }
+  return Math.round(r);
+}
+
+function convertirStandard(){
+  const erreurDiv=document.getElementById('erreurConv'); const resDiv=document.getElementById('resultatConv');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('contraintesIn').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length<1) throw new Error('Au moins une contrainte requise.');
+    let nVars=null;
+    const parsed=lignes.map((l,idx)=>{
+      const parts=l.split(';').map(s=>s.trim());
+      if(parts.length!==3) throw new Error('Format attendu : "coeffs;sens;valeur" (ligne '+(idx+1)+').');
+      const coeffs=parts[0].split(',').map(s=>parseFloat(s.trim()));
+      if(coeffs.some(isNaN)) throw new Error('Coefficients non numeriques (ligne '+(idx+1)+').');
+      if(nVars===null) nVars=coeffs.length;
+      else if(coeffs.length!==nVars) throw new Error('Nombre de coefficients incoherent (ligne '+(idx+1)+').');
+      const sens=parts[1];
+      if(!['le','ge','eq'].includes(sens)) throw new Error('Sens invalide (le, ge ou eq) a la ligne '+(idx+1)+'.');
+      const val=parseFloat(parts[2]);
+      if(isNaN(val)) throw new Error('Valeur non numerique (ligne '+(idx+1)+').');
+      return {coeffs,sens,val};
+    });
+    const m=parsed.length;
+    let nEcarts=0;
+    let out='<table><tr><th>contrainte d\'origine</th><th>forme standard</th></tr>';
+    let ecartIdx=1;
+    const varNames=Array.from({length:nVars},(_,i)=>'x'+(i+1));
+    parsed.forEach(p=>{
+      const membre=p.coeffs.map((c,i)=>`${c}${varNames[i]}`).join('+');
+      let symbOrig, standard;
+      if(p.sens==='le'){
+        symbOrig='&le;';
+        standard=`${membre}+e${ecartIdx}=${p.val} (e${ecartIdx}&ge;0)`;
+        ecartIdx++; nEcarts++;
+      } else if(p.sens==='ge'){
+        symbOrig='&ge;';
+        standard=`${membre}-e${ecartIdx}=${p.val} (e${ecartIdx}&ge;0, surplus)`;
+        ecartIdx++; nEcarts++;
+      } else {
+        symbOrig='=';
+        standard=`${membre}=${p.val} (aucune variable ajoutee)`;
+      }
+      out+=`<tr><td>${membre} ${symbOrig} ${p.val}</td><td>${standard}</td></tr>`;
+    });
+    out+='</table>';
+    const nTotal=nVars+nEcarts;
+    out+=`<p>Variables de decision : <strong>${nVars}</strong>. Variables d'ecart ajoutees : <strong>${nEcarts}</strong>. Total <strong>n=${nTotal}</strong> variables pour <strong>m=${m}</strong> equations. Degres de liberte : n-m=<strong>${nTotal-m}</strong>.</p>`;
+    out+=`<p>Nombre de choix de base <code>C(n,m)</code> : <strong>${comb(nTotal,m)}</strong> (rappel : ce nombre ne garantit pas la realisabilite de chaque choix).</p>`;
+    resDiv.innerHTML=out;
+    document.getElementById('nVarIn').value=nTotal;
+    document.getElementById('mConIn').value=m;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function compterBases(){
+  const erreurDiv=document.getElementById('erreurBase'); const resDiv=document.getElementById('resultatBase');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseInt(document.getElementById('nVarIn').value,10);
+    const m=parseInt(document.getElementById('mConIn').value,10);
+    if(isNaN(n)||isNaN(m)) throw new Error('n et m doivent etre des entiers.');
+    if(m>n) throw new Error('m ne peut pas depasser n.');
+    const dof=n-m;
+    const nb=comb(n,m);
+    resDiv.innerHTML=`<p>Avec <strong>n=${n}</strong> variables et <strong>m=${m}</strong> equations : degres de liberte <strong>${dof}</strong> (on fixe ${dof} variable(s) hors base a zero et l'on resout pour les ${m} restantes). Nombre de choix de base possibles : <strong>C(${n},${m})=${nb}</strong>.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ convertirStandard(); compterBases(); };
+</script>
+</body>
+</html>

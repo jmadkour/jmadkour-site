@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Les quantiles — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.brutes { border-left-color: var(--ceco); } .panneau.brutes h2 { color: var(--ceco); }
+  .panneau.ratio { border-left-color: var(--cex); } .panneau.ratio h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.brutes button { background: var(--ceco); } .panneau.brutes button:hover { background: #17578f; }
+  .panneau.ratio button { background: var(--cex); } .panneau.ratio button:hover { background: #206040; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  svg { margin-top: 0.8em; width: 100%; height: auto; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .badge-outlier { color: #b00020; font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Les quantiles</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique descriptive</p>
+
+<div class="panneau">
+  <h2>Quantile d'ordre p sur données groupées (interpolation)</h2>
+  <label for="classesQ">une ligne par classe : borneInf,borneSup,effectif</label>
+  <textarea id="classesQ" rows="4">3000,4000,30
+4000,5000,90
+5000,6000,120
+6000,8000,60</textarea>
+  <label for="pQ">ordre p (ex. 0,25 pour Q1 ; 0,5 pour la médiane ; 0,75 pour Q3 ; 0,1 pour D1 ; 0,9 pour D9)</label>
+  <input id="pQ" value="0.25">
+  <button onclick="calculerQuantileGroupe()">Calculer le quantile d'ordre p</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau brutes">
+  <h2>Boîte à moustaches et règle des 1,5 IQ (données brutes)</h2>
+  <label for="serieBrute">valeurs (virgules)</label>
+  <input id="serieBrute" value="3200,3900,3600,4500,3700,9800,4000,3400,4100,3800,4300">
+  <button onclick="calculerBoxplot()">Calculer Q1, médiane, Q3, détecter les valeurs atypiques et tracer la boîte à moustaches</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <div id="svgZone"></div>
+</div>
+
+<div class="panneau ratio">
+  <h2>Rapport interdécile D9/D1</h2>
+  <div class="grille2">
+    <div><label for="d1Val">D1</label><input id="d1Val" value="2200"></div>
+    <div><label for="d9Val">D9</label><input id="d9Val" value="6800"></div>
+  </div>
+  <button onclick="calculerRatio()">Calculer le rapport interdécile</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : quantile groupé $q_p=e_{i-1}+a_i\times(p-F_{i-1})/(F_i-F_{i-1})$ ; quantile sur données brutes par la méthode du rang $p(n+1)$ avec interpolation si le rang n'est pas entier ; règle des 1,5 IQ : seuil bas $=Q_1-1{,}5\,IQ$, seuil haut $=Q_3+1{,}5\,IQ$ ; rapport interdécile $D_9/D_1$ : indicateur robuste d'inégalité qui ignore ce qui se passe au-delà de $D_1$ et $D_9$.</p>
+
+<script>
+function quantileGroupe(p, classes, total){
+  let cum=0;
+  for(const c of classes){
+    const Fbefore=cum/total;
+    cum+=c.n;
+    const Fafter=cum/total;
+    if(Fafter>=p){
+      if(Fafter===Fbefore) return c.lo;
+      return c.lo+(c.hi-c.lo)*(p-Fbefore)/(Fafter-Fbefore);
+    }
+  }
+  return classes[classes.length-1].hi;
+}
+
+function calculerQuantileGroupe(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('classesQ').value.trim().split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    const classes=lignes.map(l=>{
+      const v=l.split(',').map(s=>parseFloat(s.trim()));
+      if(v.length!==3||v.some(isNaN)) throw new Error('Chaque ligne doit contenir 3 nombres : borneInf,borneSup,effectif.');
+      return {lo:v[0],hi:v[1],n:v[2]};
+    });
+    const p=parseFloat(document.getElementById('pQ').value);
+    if(isNaN(p)||p<=0||p>=1) throw new Error('p doit être strictement compris entre 0 et 1.');
+    const total=classes.reduce((a,c)=>a+c.n,0);
+    let cum=0, lignesTable='';
+    classes.forEach(c=>{ cum+=c.n; const F=cum/total; lignesTable+=`<tr><td>[${c.lo},${c.hi}[</td><td>${c.n}</td><td>${F.toFixed(4)}</td></tr>`; });
+    const q=quantileGroupe(p, classes, total);
+    resDiv.innerHTML=`<table><tr><th>classe</th><th>n_i</th><th>F_i</th></tr>${lignesTable}</table>
+      <table><tr><th>p</th><th>quantile q_p</th></tr><tr><td>${p}</td><td><strong>${q.toFixed(4)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${(100*p).toFixed(0)}% des observations sont inférieures ou égales à ${q.toFixed(2)}.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function quantileRaw(p, sorted){
+  const n=sorted.length;
+  const rank=p*(n+1);
+  if(rank<1) return sorted[0];
+  if(rank>n) return sorted[n-1];
+  const lo=Math.floor(rank), hi=Math.ceil(rank);
+  if(lo===hi) return sorted[lo-1];
+  const frac=rank-lo;
+  return sorted[lo-1]+frac*(sorted[hi-1]-sorted[lo-1]);
+}
+
+function calculerBoxplot(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2'); const svgZone=document.getElementById('svgZone');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; svgZone.innerHTML='';
+  try{
+    const vals=document.getElementById('serieBrute').value.split(',').map(s=>parseFloat(s.trim()));
+    if(vals.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(vals.length<4) throw new Error('Il faut au moins 4 valeurs.');
+    const sorted=[...vals].sort((a,b)=>a-b);
+    const Q1=quantileRaw(0.25,sorted), Me=quantileRaw(0.5,sorted), Q3=quantileRaw(0.75,sorted);
+    const IQR=Q3-Q1;
+    const seuilBas=Q1-1.5*IQR, seuilHaut=Q3+1.5*IQR;
+    const outliers=sorted.filter(v=>v<seuilBas||v>seuilHaut);
+    const nonOutliers=sorted.filter(v=>v>=seuilBas&&v<=seuilHaut);
+    const whiskerMin=Math.min(...nonOutliers), whiskerMax=Math.max(...nonOutliers);
+    resDiv.innerHTML=`<table><tr><th>n</th><th>Q1</th><th>médiane</th><th>Q3</th><th>IQ</th><th>seuil bas</th><th>seuil haut</th></tr>
+      <tr><td>${sorted.length}</td><td>${Q1.toFixed(2)}</td><td>${Me.toFixed(2)}</td><td>${Q3.toFixed(2)}</td><td>${IQR.toFixed(2)}</td><td>${seuilBas.toFixed(2)}</td><td>${seuilHaut.toFixed(2)}</td></tr></table>
+      <p style="font-size:0.85em;">${outliers.length>0 ? `<span class="badge-outlier">${outliers.length} valeur(s) atypique(s) détectée(s)</span> : ${outliers.map(v=>v.toFixed(1)).join(', ')}` : 'Aucune valeur atypique détectée.'}</p>`;
+    // dessin SVG
+    const margin=40, width=760, height=110;
+    const dataMin=Math.min(...sorted), dataMax=Math.max(...sorted);
+    const pad=(dataMax-dataMin)*0.08 || 1;
+    const domainMin=dataMin-pad, domainMax=dataMax+pad;
+    const scale=x=> margin + (x-domainMin)/(domainMax-domainMin)*(width-2*margin);
+    let svg=`<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="10">`;
+    svg+=`<line x1="${margin}" y1="80" x2="${width-margin}" y2="80" stroke="#999"/>`;
+    // ticks
+    const nTicks=6;
+    for(let i=0;i<=nTicks;i++){
+      const v=domainMin+(domainMax-domainMin)*i/nTicks;
+      const x=scale(v);
+      svg+=`<line x1="${x}" y1="76" x2="${x}" y2="84" stroke="#999"/><text x="${x}" y="96" text-anchor="middle" fill="#5A5A5A">${v.toFixed(0)}</text>`;
+    }
+    // whiskers
+    svg+=`<line x1="${scale(whiskerMin)}" y1="50" x2="${scale(Q1)}" y2="50" stroke="#1F6FB2" stroke-width="2"/>`;
+    svg+=`<line x1="${scale(Q3)}" y1="50" x2="${scale(whiskerMax)}" y2="50" stroke="#1F6FB2" stroke-width="2"/>`;
+    svg+=`<line x1="${scale(whiskerMin)}" y1="35" x2="${scale(whiskerMin)}" y2="65" stroke="#1F6FB2" stroke-width="2"/>`;
+    svg+=`<line x1="${scale(whiskerMax)}" y1="35" x2="${scale(whiskerMax)}" y2="65" stroke="#1F6FB2" stroke-width="2"/>`;
+    // box
+    svg+=`<rect x="${scale(Q1)}" y="30" width="${scale(Q3)-scale(Q1)}" height="40" fill="#1F6FB2" fill-opacity="0.15" stroke="#1F6FB2" stroke-width="2"/>`;
+    svg+=`<line x1="${scale(Me)}" y1="30" x2="${scale(Me)}" y2="70" stroke="#B56600" stroke-width="2"/>`;
+    // outliers
+    outliers.forEach(v=>{ svg+=`<circle cx="${scale(v)}" cy="50" r="4" fill="none" stroke="#1F6FB2" stroke-width="2"/>`; });
+    svg+=`<text x="${scale(Q1)}" y="20" text-anchor="middle" fill="#1F6FB2">Q1=${Q1.toFixed(0)}</text>`;
+    svg+=`<text x="${scale(Me)}" y="20" text-anchor="middle" fill="#B56600">Me=${Me.toFixed(0)}</text>`;
+    svg+=`<text x="${scale(Q3)}" y="20" text-anchor="middle" fill="#1F6FB2">Q3=${Q3.toFixed(0)}</text>`;
+    svg+=`</svg>`;
+    svgZone.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerRatio(){
+  const erreurDiv=document.getElementById('erreur3'); const resDiv=document.getElementById('resultat3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const d1=parseFloat(document.getElementById('d1Val').value);
+    const d9=parseFloat(document.getElementById('d9Val').value);
+    if(isNaN(d1)||isNaN(d9)) throw new Error('D1 et D9 doivent être des nombres.');
+    if(d1<=0) throw new Error('D1 doit être strictement positif.');
+    const ratio=d9/d1;
+    let niveau='modérées';
+    if(ratio>=5) niveau='très fortes';
+    else if(ratio>=3.5) niveau='fortes';
+    else if(ratio>=2.5) niveau='modérées à fortes';
+    resDiv.innerHTML=`<table><tr><th>D1</th><th>D9</th><th>D9/D1</th></tr><tr><td>${d1}</td><td>${d9}</td><td><strong>${ratio.toFixed(3)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Le revenu (ou salaire) séparant les 10% les mieux rémunérés est environ ${ratio.toFixed(2)} fois plus élevé que celui séparant les 10% les moins bien rémunérés — inégalités qualifiées ici de ${niveau} au sens de cet indicateur. Rappel : cet indicateur ignore la répartition en-deçà de D1 et au-delà de D9.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerQuantileGroupe(); calculerBoxplot(); calculerRatio(); };
+</script>
+</body>
+</html>

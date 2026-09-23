@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Le vocabulaire commun — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Le vocabulaire commun</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse dynamique</p>
+
+<div class="panneau">
+  <h2>État stationnaire et trajectoire, $y_{t+1}=ay_t+b$ ou $\dot y=ay+b$</h2>
+  <div class="grille4">
+    <div><label for="regime">Régime</label>
+      <select id="regime"><option value="discret">Discret</option><option value="continu">Continu</option></select>
+    </div>
+    <div><label for="coefA">a</label><input id="coefA" value="0.8"></div>
+    <div><label for="coefB">b</label><input id="coefB" value="200"></div>
+    <div><label for="y0">Valeur initiale y₀</label><input id="y0" value="1500"></div>
+  </div>
+  <div class="grille2">
+    <div><label for="horizon1">Horizon (périodes ou temps)</label><input id="horizon1" value="10"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerTrajectoire()">Calculer l'état stationnaire et tracer la trajectoire</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphique1" height="260"></canvas>
+</div>
+
+<div class="panneau">
+  <h2>Construire un équivalent discret d'un modèle continu (même état stationnaire)</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Donne les coefficients $a_{\text{discret}}=\mathrm{e}^{a_{\text{continu}}}$ et $b_{\text{discret}}$ tels que $K_{t+1}=a_{\text{discret}}K_t+b_{\text{discret}}$ possède le même $y^\star$ que $\dot y=a_{\text{continu}}y+b_{\text{continu}}$.</p>
+  <div class="grille2">
+    <div><label for="acontinu">a (continu)</label><input id="acontinu" value="-0.1"></div>
+    <div><label for="bcontinu">b (continu)</label><input id="bcontinu" value="50"></div>
+  </div>
+  <button onclick="convertir()">Convertir en équivalent discret</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Régime discret : $y^\star=b/(1-a)$, $y_t=y^\star+(y_0-y^\star)a^t$. Régime continu : $y^\star=-b/a$, $y(t)=y^\star+(y_0-y^\star)\mathrm{e}^{at}$.</p>
+
+<script>
+let chart1 = null;
+
+function calculerTrajectoire() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const regime = document.getElementById('regime').value;
+    const a = parseFloat(document.getElementById('coefA').value);
+    const b = parseFloat(document.getElementById('coefB').value);
+    const y0 = parseFloat(document.getElementById('y0').value);
+    const horizon = parseFloat(document.getElementById('horizon1').value);
+    if ([a,b,y0,horizon].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if (regime==='discret' && a===1) throw new Error('Cas dégénéré a=1 (discret) : pas d\'état stationnaire fini, croissance linéaire.');
+    if (regime==='continu' && a===0) throw new Error('Cas dégénéré a=0 (continu) : pas d\'état stationnaire fini, croissance linéaire.');
+
+    const ystar = regime==='discret' ? b/(1-a) : -b/a;
+    const n = 60;
+    const pts = [];
+    for (let i=0;i<=n;i++){
+      const t = i*horizon/n;
+      const y = regime==='discret' ? ystar+(y0-ystar)*Math.pow(a,t) : ystar+(y0-ystar)*Math.exp(a*t);
+      pts.push({x:t,y:y});
+    }
+    const stable = regime==='discret' ? Math.abs(a)<1 : a<0;
+
+    resDiv.innerHTML = `
+      <p><strong>État stationnaire :</strong> y* = ${ystar.toFixed(4)}</p>
+      <p><strong>Stabilité :</strong> ${stable ? 'stable (la trajectoire converge vers y*)' : 'instable (la trajectoire s\'éloigne de y*)'}</p>
+      <p><strong>Solution :</strong> ${regime==='discret' ? `y_t = ${ystar.toFixed(2)} + (${y0}-${ystar.toFixed(2)})×(${a})^t` : `y(t) = ${ystar.toFixed(2)} + (${y0}-${ystar.toFixed(2)})×e^{${a}t}`}</p>
+    `;
+
+    if (chart1) chart1.destroy();
+    const ctx = document.getElementById('graphique1').getContext('2d');
+    chart1 = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [
+        { label: 'y(t)', data: pts, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'y* (état stationnaire)', data: [{x:0,y:ystar},{x:horizon,y:ystar}], borderColor: '#5A5A5A', borderDash: [6,4], pointRadius: 0 }
+      ]},
+      options: { responsive: true, scales: { x: { type: 'linear', title: { display: true, text: regime==='discret' ? 't (périodes)' : 't (temps)' } }, y: { title: { display: true, text: 'y' } } },
+        plugins: { title: { display: true, text: 'Trajectoire vers l\'état stationnaire' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function convertir() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const acontinu = parseFloat(document.getElementById('acontinu').value);
+    const bcontinu = parseFloat(document.getElementById('bcontinu').value);
+    if ([acontinu,bcontinu].some(isNaN)) throw new Error('a et b doivent être numériques.');
+    if (acontinu===0) throw new Error('a=0 (continu) : pas d\'état stationnaire fini pour convertir.');
+    const ystar = -bcontinu/acontinu;
+    const adisc = Math.exp(acontinu);
+    const bdisc = ystar*(1-adisc);
+
+    resDiv.innerHTML = `
+      <p><strong>État stationnaire (continu) :</strong> y* = ${ystar.toFixed(4)}</p>
+      <p><strong>a discret équivalent :</strong> e^(${acontinu}) = ${adisc.toFixed(4)}</p>
+      <p><strong>b discret équivalent :</strong> ${bdisc.toFixed(4)}</p>
+      <p><strong>Modèle discret :</strong> y_{t+1} = ${adisc.toFixed(4)}×y_t + ${bdisc.toFixed(4)}</p>
+      <p style="font-size:0.85em;color:var(--cgris);">Vérification : b/(1-a) = ${bdisc.toFixed(4)}/(1-${adisc.toFixed(4)}) = ${(bdisc/(1-adisc)).toFixed(4)} ≈ y* ✓</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = function(){ calculerTrajectoire(); convertir(); };
+</script>
+</body>
+</html>

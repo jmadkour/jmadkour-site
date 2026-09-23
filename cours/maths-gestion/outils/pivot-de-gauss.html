@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Le pivot de Gauss — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .etiquette { display: inline-block; padding: 0.25em 0.6em; border-radius: 10px; font-size: 0.85em; color: white; margin-right: 0.4em; }
+  .unique { background: var(--ceco); } .incompatible { background: #b00020; } .indetermine { background: var(--cintu); }
+  table.matrice { border-collapse: collapse; margin: 0.5em 0; }
+  table.matrice td { border: 1px solid #999; padding: 0.35em 0.6em; font-family: "Courier New", monospace; text-align: right; }
+  table.matrice td.sep { border-right: 2px solid #333; }
+  .etape-titre { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.85em; color: var(--cgris); margin-top: 0.8em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Le pivot de Gauss</h1>
+<p class="sous-titre">Calculatrice interactive — Mathématiques pour la gestion</p>
+
+<div class="panneau">
+  <h2>Résoudre un système par descente et remontée</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir la matrice augmentée $[A\mid b]$, une ligne par ligne, les lignes séparées par « ; » et les termes par « , » (le dernier terme de chaque ligne est le second membre). Exemple pour le système de l'exercice 1 : <code>1,2,3,20;2,5,3,38;1,0,8,22</code>.</p>
+  <textarea id="augmentee" rows="3">1,2,3,20;2,5,3,38;1,0,8,22</textarea>
+  <button onclick="resoudreGauss()">Résoudre par le pivot de Gauss</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">L'outil applique un pivot partiel (le plus grand coefficient en valeur absolue dans la colonne traitée), comme le font les logiciels, ce qui peut donner un ordre de lignes différent de celui obtenu « à la main » avec des pivots égaux à 1 — mais la solution finale est bien sûr identique. Chaque étape de la descente est affichée.</p>
+
+<script>
+function formatAugmentee(M, nInc) {
+  let html = '<table class="matrice">';
+  M.forEach(row => {
+    html += '<tr>' + row.map((v,j) => `<td class="${j===nInc-1?'sep':''}">${Math.abs(v)<1e-9?0:(Number.isInteger(Math.round(v*1000)/1000)?Math.round(v):v.toFixed(3))}</td>`).join('') + '</tr>';
+  });
+  html += '</table>';
+  return html;
+}
+
+function resoudreGauss() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const texte = document.getElementById('augmentee').value;
+    const lignes = texte.trim().split(';').map(l => l.trim()).filter(l => l.length>0);
+    let M = lignes.map(l => l.split(',').map(v => parseFloat(v.trim())));
+    const nCols = M[0].length;
+    if (M.some(row => row.length !== nCols || row.some(isNaN))) throw new Error('Format invalide : toutes les lignes doivent avoir le même nombre de termes, tous numériques.');
+    const n = M.length;
+    const nInc = nCols - 1;
+    if (nInc < 1) throw new Error("La matrice doit avoir au moins une inconnue et un second membre.");
+
+    let html = '<p class="etape-titre">Matrice augmentée de départ :</p>' + formatAugmentee(M, nInc);
+
+    let ligneEchange = [];
+    let pivotCol = 0, pivotRow = 0;
+    for (let col=0; col<Math.min(n,nInc) && pivotRow<n; col++) {
+      // pivot partiel : plus grand |coef| dans la colonne, parmi les lignes restantes
+      let maxRow = pivotRow, maxVal = Math.abs(M[pivotRow][col]);
+      for (let r=pivotRow+1; r<n; r++) { if (Math.abs(M[r][col]) > maxVal) { maxVal = Math.abs(M[r][col]); maxRow = r; } }
+      if (maxVal < 1e-9) continue; // colonne déjà nulle sous le pivot courant
+      if (maxRow !== pivotRow) {
+        [M[pivotRow], M[maxRow]] = [M[maxRow], M[pivotRow]];
+        html += `<p class="etape-titre">Échange $L_{${pivotRow+1}}\\leftrightarrow L_{${maxRow+1}}$ :</p>` + formatAugmentee(M, nInc);
+      }
+      for (let r=pivotRow+1; r<n; r++) {
+        if (Math.abs(M[r][col]) < 1e-9) continue;
+        const facteur = M[r][col]/M[pivotRow][col];
+        for (let c=0; c<nCols; c++) M[r][c] -= facteur*M[pivotRow][c];
+        html += `<p class="etape-titre">$L_{${r+1}}\\leftarrow L_{${r+1}} - (${facteur.toFixed(3)})\\,L_{${pivotRow+1}}$ :</p>` + formatAugmentee(M, nInc);
+      }
+      pivotRow++;
+    }
+
+    // Analyse des lignes nulles
+    let incompatible = false, rangUtile = 0;
+    for (let r=0;r<n;r++) {
+      const coefsNuls = M[r].slice(0,nInc).every(v => Math.abs(v) < 1e-7);
+      const bNonNul = Math.abs(M[r][nInc]) > 1e-7;
+      if (coefsNuls && bNonNul) incompatible = true;
+      if (!coefsNuls) rangUtile++;
+    }
+
+    if (incompatible) {
+      resDiv.innerHTML = html + `<p><span class="etiquette incompatible">Aucune solution</span> une ligne se lit $0=$ (non nul) : le système est incompatible.</p>`;
+      return;
+    }
+
+    if (rangUtile < nInc) {
+      resDiv.innerHTML = html + `<p><span class="etiquette indetermine">Infinité de solutions</span> seulement ${rangUtile} équation(s) utile(s) pour ${nInc} inconnue(s) : le système est indéterminé (une ou plusieurs variables libres).</p>`;
+      return;
+    }
+
+    // Remontée (back-substitution), en supposant une forme triangulaire nInc x nInc utile
+    const sol = Array(nInc).fill(0);
+    for (let r=nInc-1; r>=0; r--) {
+      let somme = M[r][nInc];
+      for (let c=r+1;c<nInc;c++) somme -= M[r][c]*sol[c];
+      sol[r] = somme / M[r][r];
+    }
+    let tableSol = '<table class="matrice"><tr>' + sol.map((_,i)=>`<th style="font-family:Helvetica Neue,Arial,sans-serif;">$x_{${i+1}}$</th>`).join('') + '</tr><tr>' + sol.map(v=>`<td>${v.toFixed(4)}</td>`).join('') + '</tr></table>';
+    resDiv.innerHTML = html + `<p><span class="etiquette unique">Solution unique</span></p>` + tableSol;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = resoudreGauss;
+</script>
+</body>
+</html>

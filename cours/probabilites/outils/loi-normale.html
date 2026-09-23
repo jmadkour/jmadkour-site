@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 17 — La loi normale — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.quantile { border-left-color: var(--cex); }
+  .panneau.quantile h2 { color: var(--cex); }
+  .panneau.approx { border-left-color: var(--cintu); }
+  .panneau.approx h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.quantile button { background: var(--cex); }
+  .panneau.quantile button:hover { background: #206040; }
+  .panneau.approx button { background: var(--cintu); }
+  .panneau.approx button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 17 — La loi normale</h1>
+<p class="sous-titre">Calculatrice interactive — Probabilités</p>
+
+<div class="panneau">
+  <h2>Standardiser et lire la table : P(X≤x), P(X&gt;x), P(a≤X≤b)</h2>
+  <div class="grille4">
+    <div><label for="mVal">m (moyenne)</label><input id="mVal" value="100"></div>
+    <div><label for="sVal">σ (écart-type)</label><input id="sVal" value="15"></div>
+    <div><label for="xaVal">a</label><input id="xaVal" value="85"></div>
+    <div><label for="xbVal">b</label><input id="xbVal" value="122.5"></div>
+  </div>
+  <button onclick="calculerNormale()">Calculer cotes z, Π(z) et probabilités</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueNormale" height="220"></canvas>
+</div>
+
+<div class="panneau quantile">
+  <h2>Lecture inverse : trouver x tel que P(X≤x)=α</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Utilise les mêmes m et σ que ci-dessus.</p>
+  <div class="grille3">
+    <div><label for="alphaQ">α</label><input id="alphaQ" value="0.95"></div>
+    <div></div><div></div>
+  </div>
+  <button onclick="calculerQuantileNormal()">Trouver x tel que Π((x-m)/σ)=α</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau approx">
+  <h2>Approximer une binomiale B(n;p) par une normale, avec correction de continuité</h2>
+  <div class="grille4">
+    <div><label for="nApprox">n</label><input id="nApprox" value="100"></div>
+    <div><label for="pApprox">p</label><input id="pApprox" value="0.05"></div>
+    <div><label for="seuilApprox">seuil k (pour P(X≥k))</label><input id="seuilApprox" value="10"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerApproxNormale()">Comparer approximation normale (avec/sans correction) et binomiale exacte</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : Z=(X-m)/σ ~ N(0;1) ; P(X≤x)=Π((x-m)/σ) ; P(X&gt;x)=1-Π(z) ; P(a≤X≤b)=Π(zb)-Π(za). Approximation binomiale : X≈N(np;√(np(1-p))) si np≥5 et n(1-p)≥5, avec correction de continuité (remplacer k par k-0,5 pour P(X≥k)).</p>
+
+<script>
+function erf(x){
+  const sign = x<0?-1:1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z){ return 0.5*(1+erf(z/Math.sqrt(2))); }
+function PhiInv(alpha){
+  // dichotomie sur Phi
+  let lo=-8, hi=8;
+  for (let i=0;i<80;i++){ const mid=(lo+hi)/2; if (Phi(mid)<alpha) lo=mid; else hi=mid; }
+  return (lo+hi)/2;
+}
+function comb(n,k){
+  if (k<0 || k>n) return 0;
+  k = Math.min(k, n-k);
+  let logC = 0;
+  for (let i=0;i<k;i++) logC += Math.log(n-i) - Math.log(i+1);
+  return Math.exp(logC);
+}
+function binomP(n,p,k){ return comb(n,k) * Math.pow(p,k) * Math.pow(1-p,n-k); }
+function binomCDF(n,p,k){ let s=0; for (let x=0;x<=k;x++) s+=binomP(n,p,x); return s; }
+
+let chartNormale = null;
+function calculerNormale() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const m = parseFloat(document.getElementById('mVal').value);
+    const s = parseFloat(document.getElementById('sVal').value);
+    const xa = parseFloat(document.getElementById('xaVal').value);
+    const xb = parseFloat(document.getElementById('xbVal').value);
+    if ([m,s,xa,xb].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (s<=0) throw new Error('σ doit être strictement positif.');
+    if (xb<xa) throw new Error('b doit être supérieur ou égal à a.');
+
+    const za = (xa-m)/s, zb = (xb-m)/s;
+    const Phia = Phi(za), Phib = Phi(zb);
+    const Pinterval = Phib - Phia;
+
+    resDiv.innerHTML = `
+      <table><tr><th>z(a)</th><th>z(b)</th><th>Π(z(a))</th><th>Π(z(b))</th><th>P(X≤a)</th><th>P(X&gt;b)</th><th>P(a≤X≤b)</th></tr>
+      <tr><td>${za.toFixed(4)}</td><td>${zb.toFixed(4)}</td><td>${Phia.toFixed(4)}</td><td>${Phib.toFixed(4)}</td><td>${Phia.toFixed(4)}</td><td>${(1-Phib).toFixed(4)}</td><td>${Pinterval.toFixed(4)}</td></tr></table>
+    `;
+
+    const labels = [], valeurs = [], couleurs = [];
+    const lo = m-4*s, hi = m+4*s;
+    for (let i=0;i<=100;i++) { const x=lo+(hi-lo)*i/100; labels.push(x.toFixed(1)); valeurs.push((1/(s*Math.sqrt(2*Math.PI)))*Math.exp(-0.5*Math.pow((x-m)/s,2))); couleurs.push((x>=xa && x<=xb) ? '#B56600' : '#1F6FB2'); }
+    if (chartNormale) chartNormale.destroy();
+    chartNormale = new Chart(document.getElementById('graphiqueNormale').getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: [{ label: 'f(x)', data: valeurs, borderColor:'#1F6FB2', backgroundColor:'rgba(31,111,178,0.1)', fill:true, borderWidth:2, pointRadius:0 }] },
+      options: { responsive: true, scales: { x: { title: { display:true, text:'x' } }, y: { title: { display:true, text:'f(x)' } } },
+        plugins: { title: { display:true, text:`N(${m};${s}) — aire entre a et b = ${Pinterval.toFixed(4)}` } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerQuantileNormal() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const m = parseFloat(document.getElementById('mVal').value);
+    const s = parseFloat(document.getElementById('sVal').value);
+    const alpha = parseFloat(document.getElementById('alphaQ').value);
+    if ([m,s,alpha].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (s<=0) throw new Error('σ doit être strictement positif.');
+    if (alpha<=0 || alpha>=1) throw new Error('α doit être strictement compris entre 0 et 1.');
+
+    const z = PhiInv(alpha);
+    const x = m + z*s;
+
+    resDiv.innerHTML = `
+      <table><tr><th>α</th><th>z tel que Π(z)=α</th><th>x=m+zσ</th></tr>
+      <tr><td>${alpha}</td><td>${z.toFixed(4)}</td><td><strong>${x.toFixed(4)}</strong></td></tr></table>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerApproxNormale() {
+  const erreurDiv = document.getElementById('erreur3');
+  const resDiv = document.getElementById('resultat3');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const n = parseInt(document.getElementById('nApprox').value);
+    const p = parseFloat(document.getElementById('pApprox').value);
+    const k = parseInt(document.getElementById('seuilApprox').value);
+    if ([n,p,k].some(isNaN)) throw new Error('n, p et le seuil doivent être des nombres.');
+    if (n<=0 || !Number.isInteger(n)) throw new Error('n doit être un entier strictement positif.');
+    if (p<0 || p>1) throw new Error('p doit être compris entre 0 et 1.');
+
+    const mu = n*p, sig = Math.sqrt(n*p*(1-p));
+    const conditionOK = (n*p>=5 && n*(1-p)>=5);
+    const exact = 1 - binomCDF(n,p,k-1);
+    const zAvecCorrection = (k-0.5-mu)/sig;
+    const approxAvecCorrection = 1 - Phi(zAvecCorrection);
+    const zSansCorrection = (k-mu)/sig;
+    const approxSansCorrection = 1 - Phi(zSansCorrection);
+
+    resDiv.innerHTML = `
+      <table><tr><th>conditions np≥5, n(1-p)≥5</th><th>μ=np</th><th>σ=√(np(1-p))</th></tr>
+      <tr><td>${conditionOK ? 'satisfaites' : 'NON satisfaites'}</td><td>${mu.toFixed(3)}</td><td>${sig.toFixed(3)}</td></tr></table>
+      <table><tr><th>méthode</th><th>P(X≥${k})</th></tr>
+      <tr><td>binomiale exacte</td><td>${exact.toFixed(4)}</td></tr>
+      <tr><td>normale, avec correction de continuité</td><td>${approxAvecCorrection.toFixed(4)}</td></tr>
+      <tr><td>normale, sans correction (à éviter)</td><td>${approxSansCorrection.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">La correction de continuité (remplacer k par k−0,5) rapproche nettement l'approximation normale de la valeur binomiale exacte, surtout lorsque n n'est pas très grand.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerNormale(); calculerQuantileNormal(); calculerApproxNormale(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Les lois univariées usuelles — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=number], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 160px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .barres { display: flex; align-items: flex-end; gap: 3px; height: 140px; margin-top: 0.8em; border-bottom: 1px solid #ccc; padding: 0 4px; }
+  .barre { flex: 1; background: var(--ceco); border-radius: 2px 2px 0 0; position: relative; min-width: 8px; }
+  .barre span { position: absolute; top: -1.3em; left: 50%; transform: translateX(-50%); font-size: 0.65em; color: var(--cgris); white-space: nowrap; }
+  .barre em { position: absolute; bottom: -1.3em; left: 50%; transform: translateX(-50%); font-size: 0.65em; color: var(--cgris); font-style: normal; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Les lois univariées usuelles</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse quantitative</p>
+
+<div class="panneau">
+  <h2>1. Loi binomiale : moments et validité de l'approximation normale</h2>
+  <div class="ligne">
+    <div><label for="binN">$n$</label><input type="number" id="binN" value="20" step="1" min="1"></div>
+    <div><label for="binP">$p$</label><input type="number" id="binP" value="0.3" step="any" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerBinomiale()">Calculer</button>
+  <div id="erreurBin" class="erreur"></div>
+  <div id="resultatBin" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Loi de Poisson : probabilités ponctuelles $\Pr(Y=k)$</h2>
+  <div class="ligne">
+    <div><label for="poisLambda">$\lambda$</label><input type="number" id="poisLambda" value="4" step="any" min="0"></div>
+    <div><label for="poisKmax">$k$ maximum affiché</label><input type="number" id="poisKmax" value="9" step="1" min="1" max="25"></div>
+  </div>
+  <button onclick="calculerPoisson()">Calculer</button>
+  <div id="erreurPois" class="erreur"></div>
+  <div id="resultatPois" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Variance d'un mélange de deux lois normales</h2>
+  <div class="ligne">
+    <div><label for="mu1">$\mu_1$</label><input type="number" id="mu1" value="0" step="any"></div>
+    <div><label for="var1">$\sigma_1^2$</label><input type="number" id="var1" value="1" step="any" min="0"></div>
+    <div><label for="w1">poids $w_1$</label><input type="number" id="w1" value="0.9" step="any" min="0" max="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="mu2">$\mu_2$</label><input type="number" id="mu2" value="0" step="any"></div>
+    <div><label for="var2">$\sigma_2^2$</label><input type="number" id="var2" value="9" step="any" min="0"></div>
+    <div><label for="w2">poids $w_2$ ($=1-w_1$, auto)</label><input type="number" id="w2" value="0.1" step="any" min="0" max="1" disabled></div>
+  </div>
+  <button onclick="calculerMelange()">Calculer</button>
+  <div id="erreurMel" class="erreur"></div>
+  <div id="resultatMel" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>4. Correction log-normale (Jensen) : $E[S_1]=S_0\,e^{\mu+\sigma^2/2}$</h2>
+  <div class="ligne">
+    <div><label for="S0">$S_0$</label><input type="number" id="S0" value="100" step="any" min="0"></div>
+    <div><label for="muR">$\mu$ (rendement log)</label><input type="number" id="muR" value="0.05" step="any"></div>
+    <div><label for="sigmaR">$\sigma$ (rendement log)</label><input type="number" id="sigmaR" value="0.20" step="any" min="0"></div>
+  </div>
+  <button onclick="calculerLogNormale()">Calculer</button>
+  <div id="erreurLN" class="erreur"></div>
+  <div id="resultatLN" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : Binomiale $B(n,p)$ : $E[Y]=np$, $V[Y]=np(1-p)$, approximation normale recommandée seulement si $np\ge10$ ET $n(1-p)\ge10$. Poisson $P(\lambda)$ : $E[Y]=V[Y]=\lambda$, $\Pr(Y=k)=\lambda^k e^{-\lambda}/k!$. Mélange de deux normales : $E[X]=w_1\mu_1+w_2\mu_2$, $V[X]=w_1(\sigma_1^2+\mu_1^2)+w_2(\sigma_2^2+\mu_2^2)-(E[X])^2$. Log-normale : si $\ln(S_1/S_0)\sim\mathcal N(\mu,\sigma^2)$, alors $E[S_1]=S_0e^{\mu+\sigma^2/2}\neq S_0e^{\mu}$ (inégalité de Jensen).</p>
+
+<script>
+function factoriel(k){ let f=1; for(let i=2;i<=k;i++) f*=i; return f; }
+function poissonPMF(lambda,k){ return Math.pow(lambda,k)*Math.exp(-lambda)/factoriel(k); }
+
+function calculerBinomiale(){
+  const erreurDiv=document.getElementById('erreurBin'); const resDiv=document.getElementById('resultatBin');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseInt(document.getElementById('binN').value);
+    const p=parseFloat(document.getElementById('binP').value);
+    if(isNaN(n)||isNaN(p)) throw new Error('Valeurs numériques requises.');
+    if(n<1) throw new Error('n doit être au moins 1.');
+    if(p<0||p>1) throw new Error('p doit être compris entre 0 et 1.');
+    const EY=n*p, VY=n*p*(1-p), sigmaY=Math.sqrt(VY);
+    const npVal=n*p, nqVal=n*(1-p);
+    const condNP=npVal>=10, condNQ=nqVal>=10;
+    const approxOk=condNP&&condNQ;
+    let out=`<p>$E[Y]=np=${n}\\times${p}=${EY.toFixed(4)}$ &nbsp;&nbsp; $V[Y]=np(1-p)=${VY.toFixed(4)}$ &nbsp;&nbsp; $\\sigma_Y=${sigmaY.toFixed(4)}$</p>`;
+    out+=`<p>$np=${npVal.toFixed(2)}$ (${condNP?'<span class="ok">≥10 ✓</span>':'<span class="alerte">&lt;10 ✗</span>'}) &nbsp;&nbsp; $n(1-p)=${nqVal.toFixed(2)}$ (${condNQ?'<span class="ok">≥10 ✓</span>':'<span class="alerte">&lt;10 ✗</span>'})</p>`;
+    out+=`<p><strong>${approxOk?'<span class="ok">Approximation normale recommandée (les deux conditions sont satisfaites).</span>':'<span class="alerte">Approximation normale NON recommandée (au moins une condition échoue).</span>'}</strong></p>`;
+    const maxH=Math.max(npVal,nqVal,10);
+    out+=`<div class="barres">
+      <div class="barre" style="height:${(npVal/maxH*120).toFixed(0)}px; background:${condNP?'#1D9E75':'#b00020'};"><span>np=${npVal.toFixed(1)}</span><em>np</em></div>
+      <div class="barre" style="height:${(nqVal/maxH*120).toFixed(0)}px; background:${condNQ?'#1D9E75':'#b00020'};"><span>n(1-p)=${nqVal.toFixed(1)}</span><em>n(1-p)</em></div>
+      <div class="barre" style="height:${(10/maxH*120).toFixed(0)}px; background:#B56600;"><span>seuil=10</span><em>seuil</em></div>
+    </div>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerPoisson(){
+  const erreurDiv=document.getElementById('erreurPois'); const resDiv=document.getElementById('resultatPois');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lambda=parseFloat(document.getElementById('poisLambda').value);
+    const kmax=parseInt(document.getElementById('poisKmax').value);
+    if(isNaN(lambda)||isNaN(kmax)) throw new Error('Valeurs numériques requises.');
+    if(lambda<0) throw new Error('Lambda doit être positif.');
+    if(kmax<1||kmax>25) throw new Error('k maximum doit être compris entre 1 et 25.');
+    const probs=[];
+    for(let k=0;k<=kmax;k++) probs.push(poissonPMF(lambda,k));
+    const maxP=Math.max(...probs);
+    let out=`<p>$E[Y]=V[Y]=\\lambda=${lambda}$</p>`;
+    out+='<div class="barres">';
+    probs.forEach((p,k)=>{ out+=`<div class="barre" style="height:${(p/maxP*120).toFixed(0)}px;"><span>${(p*100).toFixed(1)}%</span><em>${k}</em></div>`; });
+    out+='</div>';
+    out+='<table><tr><th>k</th>'+probs.map((_,k)=>`<th>${k}</th>`).join('')+'</tr><tr><th>Pr(Y=k)</th>'+probs.map(p=>`<td>${p.toFixed(5)}</td>`).join('')+'</tr></table>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerMelange(){
+  const erreurDiv=document.getElementById('erreurMel'); const resDiv=document.getElementById('resultatMel');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const mu1=parseFloat(document.getElementById('mu1').value);
+    const var1=parseFloat(document.getElementById('var1').value);
+    const w1=parseFloat(document.getElementById('w1').value);
+    const mu2=parseFloat(document.getElementById('mu2').value);
+    const var2=parseFloat(document.getElementById('var2').value);
+    if([mu1,var1,w1,mu2,var2].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(w1<0||w1>1) throw new Error('w1 doit être compris entre 0 et 1.');
+    if(var1<0||var2<0) throw new Error('Les variances doivent être positives.');
+    const w2=1-w1;
+    document.getElementById('w2').value=w2.toFixed(4);
+    const Emel=w1*mu1+w2*mu2;
+    const Vmel=w1*(var1+mu1*mu1)+w2*(var2+mu2*mu2)-Emel*Emel;
+    let out=`<p>$w_2=1-w_1=${w2.toFixed(4)}$</p>
+      <p>$E[\\text{mélange}]=w_1\\mu_1+w_2\\mu_2=${Emel.toFixed(4)}$</p>
+      <p><strong>$V[\\text{mélange}]=${Vmel.toFixed(4)}$</strong></p>`;
+    if(Math.abs(mu1-mu2)<1e-9){
+      out+=`<p style="font-size:0.85em;color:var(--cgris);">Comme $\\mu_1=\\mu_2$, ce résultat se simplifie en $V=w_1\\sigma_1^2+w_2\\sigma_2^2=${(w1*var1+w2*var2).toFixed(4)}$ (aucun terme de dispersion entre groupes).</p>`;
+    }
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerLogNormale(){
+  const erreurDiv=document.getElementById('erreurLN'); const resDiv=document.getElementById('resultatLN');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const S0=parseFloat(document.getElementById('S0').value);
+    const mu=parseFloat(document.getElementById('muR').value);
+    const sigma=parseFloat(document.getElementById('sigmaR').value);
+    if([S0,mu,sigma].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(S0<=0) throw new Error('S0 doit être strictement positif.');
+    if(sigma<0) throw new Error('Sigma doit être positif.');
+    const naive=S0*Math.exp(mu);
+    const correct=S0*Math.exp(mu+sigma*sigma/2);
+    const gap=correct-naive;
+    let out=`<p>Valeur naïve $S_0e^{\\mu}=${naive.toFixed(4)}$</p>
+      <p><strong>Valeur correcte $E[S_1]=S_0e^{\\mu+\\sigma^2/2}=${correct.toFixed(4)}$</strong></p>
+      <p>Écart (correction de Jensen) $=${gap.toFixed(4)}$</p>`;
+    const maxV=Math.max(naive,correct);
+    out+=`<div class="barres">
+      <div class="barre" style="height:${(naive/maxV*120).toFixed(0)}px; background:#B56600;"><span>${naive.toFixed(2)}</span><em>naïf</em></div>
+      <div class="barre" style="height:${(correct/maxV*120).toFixed(0)}px; background:#1D9E75;"><span>${correct.toFixed(2)}</span><em>correct</em></div>
+    </div>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerBinomiale(); calculerPoisson(); calculerMelange(); calculerLogNormale(); };
+</script>
+</body>
+</html>

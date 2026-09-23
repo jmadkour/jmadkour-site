@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Couverture et Black-Scholes — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.pde { border-left-color: var(--cintu); }
+  .panneau.pde h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.pde button { background: var(--cintu); }
+  .panneau.pde button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Couverture et équation de Black-Scholes</h1>
+<p class="sous-titre">Calculatrice interactive — Calcul stochastique pour la finance</p>
+
+<div class="panneau">
+  <h2>La couverture en delta annule-t-elle bien le risque ?</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">
+    $d\Pi=\big(V_t+\mu SV_S+\tfrac12\sigma^2S^2V_{SS}-\Delta\mu S\big)dt+\sigma S(V_S-\Delta)\,dW$. Faites varier $\Delta$ et $\mu$ pour observer ce qui s'annule et ce qui reste.
+  </p>
+  <div class="grille5">
+    <div><label for="Vt">V_t</label><input id="Vt" value="-2"></div>
+    <div><label for="VS">V_S</label><input id="VS" value="0.6"></div>
+    <div><label for="VSS">V_SS</label><input id="VSS" value="0.008"></div>
+    <div><label for="S">S</label><input id="S" value="90"></div>
+    <div><label for="sigma">σ</label><input id="sigma" value="0.3"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="delta">Δ (couverture choisie)</label><input id="delta" value="0.6"></div>
+    <div><label for="mu1">μ (scénario 1)</label><input id="mu1" value="0.05"></div>
+    <div><label for="mu2">μ (scénario 2)</label><input id="mu2" value="0.20"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerCouverture()">Calculer d&#928; sous les deux scénarios de μ</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Essayez Δ = V_S : le coefficient de dW devient nul et la dérive de dΠ devient identique sous les deux valeurs de μ — c'est exactement la disparition de μ démontrée dans le cours.</p>
+
+<div class="panneau pde">
+  <h2>Résoudre l'équation de Black-Scholes pour V_t (le theta)</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">
+    À partir de $V_t+rSV_S+\tfrac12\sigma^2S^2V_{SS}=rV$, on isole $V_t=rV-rSV_S-\tfrac12\sigma^2S^2V_{SS}$.
+  </p>
+  <div class="grille5">
+    <div><label for="r2">r</label><input id="r2" value="0.03"></div>
+    <div><label for="V2">V</label><input id="V2" value="8.4"></div>
+    <div><label for="VS2">V_S</label><input id="VS2" value="0.6"></div>
+    <div><label for="VSS2">V_SS</label><input id="VSS2" value="0.008"></div>
+    <div><label for="S2">S</label><input id="S2" value="90"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="sigma2">σ</label><input id="sigma2" value="0.3"></div>
+    <div></div><div></div><div></div>
+  </div>
+  <button onclick="resoudrePDE()">Calculer V_t</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphiquePayoff" height="220"></canvas>
+</div>
+
+<script>
+let chartPayoff = null;
+
+function calculerCouverture() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const Vt = parseFloat(document.getElementById('Vt').value);
+    const VS = parseFloat(document.getElementById('VS').value);
+    const VSS = parseFloat(document.getElementById('VSS').value);
+    const S = parseFloat(document.getElementById('S').value);
+    const sigma = parseFloat(document.getElementById('sigma').value);
+    const delta = parseFloat(document.getElementById('delta').value);
+    const mu1 = parseFloat(document.getElementById('mu1').value);
+    const mu2 = parseFloat(document.getElementById('mu2').value);
+    if ([Vt,VS,VSS,S,sigma,delta,mu1,mu2].some(v=>isNaN(v))) throw new Error('Toutes les valeurs doivent être des nombres.');
+
+    const coefDW = sigma*S*(VS-delta);
+    function deriveMu(mu){ return Vt + mu*S*VS + 0.5*sigma*sigma*S*S*VSS - delta*mu*S; }
+    const d1 = deriveMu(mu1), d2 = deriveMu(mu2);
+
+    resDiv.innerHTML = `
+      <table><tr><th>coefficient de dW dans dΠ</th><th>dérive avec μ=${mu1}</th><th>dérive avec μ=${mu2}</th></tr>
+      <tr><td>${coefDW.toFixed(5)}</td><td>${d1.toFixed(5)}</td><td>${d2.toFixed(5)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${Math.abs(coefDW)<1e-9
+        ? 'Le coefficient de dW est nul : le portefeuille est localement sans risque.'
+        : 'Le coefficient de dW est non nul : le portefeuille reste exposé au hasard.'}
+        ${Math.abs(d1-d2)<1e-9 ? ' Les deux dérives sont identiques : μ a disparu.' : ' Les deux dérives diffèrent : μ n\'a pas disparu (la couverture n\'est pas exactement Δ=V_S).'}</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function resoudrePDE() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const r = parseFloat(document.getElementById('r2').value);
+    const V = parseFloat(document.getElementById('V2').value);
+    const VS = parseFloat(document.getElementById('VS2').value);
+    const VSS = parseFloat(document.getElementById('VSS2').value);
+    const S = parseFloat(document.getElementById('S2').value);
+    const sigma = parseFloat(document.getElementById('sigma2').value);
+    if ([r,V,VS,VSS,S,sigma].some(v=>isNaN(v))) throw new Error('Toutes les valeurs doivent être des nombres.');
+
+    const rV = r*V, rSVs = r*S*VS, convexite = 0.5*sigma*sigma*S*S*VSS;
+    const VtCalc = rV - rSVs - convexite;
+
+    resDiv.innerHTML = `
+      <table><tr><th>rV</th><th>rS·V_S</th><th>½σ²S²V_SS</th><th>V_t = rV - rS·V_S - ½σ²S²V_SS</th></tr>
+      <tr><td>${rV.toFixed(4)}</td><td>${rSVs.toFixed(4)}</td><td>${convexite.toFixed(4)}</td><td><strong>${VtCalc.toFixed(4)}</strong></td></tr></table>
+    `;
+
+    // payoff illustratif d'un call, pour rappel visuel de la convexité (K = S arrondi)
+    const K = Math.round(S/10)*10;
+    const labels = [], call = [];
+    for (let s=K*0.5; s<=K*1.5; s+=(K*1.0/40)) { labels.push(s.toFixed(0)); call.push(Math.max(s-K,0)); }
+    if (chartPayoff) chartPayoff.destroy();
+    chartPayoff = new Chart(document.getElementById('graphiquePayoff').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'payoff du call (K='+K+')', data: call, borderColor: '#B56600', backgroundColor:'transparent', borderWidth:2, pointRadius:0 }] },
+      options: { responsive: true, scales: { x: { title: { display:true, text:'S_T' } }, y: { title: { display:true, text:'gain' } } },
+        plugins: { title: { display:true, text:'La convexité du payoff est ce que ½σ²S²V_SS mesure' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerCouverture(); resoudrePDE(); };
+</script>
+</body>
+</html>

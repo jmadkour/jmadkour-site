@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Fonctions de deux variables — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.tms { border-left-color: var(--cex); }
+  .panneau.tms h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.tms button { background: var(--cex); }
+  .panneau.tms button:hover { background: #226b43; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+  .deuxgraphs { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin-top: 0.8em; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Les fonctions de deux variables</h1>
+<p class="sous-titre">Calculatrice interactive — Mathématiques pour la gestion</p>
+
+<div class="panneau">
+  <h2>Dérivées partielles, premières et secondes, en un point</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir f(x,y) en JavaScript. Exemples : <code>4*x*x*y-3*x*y*y+5*x-2*y</code>, <code>12*Math.pow(x,1/3)*Math.pow(y,2/3)</code>.</p>
+  <div class="grille3">
+    <div><label for="fExpr">f(x,y) =</label><input id="fExpr" value="4*x*x*y-3*x*y*y+5*x-2*y"></div>
+    <div><label for="x0">$x_0$</label><input id="x0" value="2"></div>
+    <div><label for="y0">$y_0$</label><input id="y0" value="1"></div>
+  </div>
+  <button onclick="analyserPartielles()">Calculer les dérivées</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <div class="deuxgraphs">
+    <canvas id="graphiqueX" height="220"></canvas>
+    <canvas id="graphiqueY" height="220"></canvas>
+  </div>
+</div>
+
+<p class="avertissement">Chaque dérivée (première ou seconde) est estimée par différence centrée en figeant l'autre variable, exactement comme au chapitre 2, appliqué tour à tour à chaque direction. Les deux graphiques montrent les deux coupes de la surface passant par le point choisi : $f(x,y_0)$ à gauche et $f(x_0,y)$ à droite.</p>
+
+<div class="panneau tms">
+  <h2>Courbe de niveau (isoquante / courbe d'indifférence) et taux marginal de substitution</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir f(x,y), un point $(x_0,y_0)$ sur la courbe de niveau, et une fourchette de recherche pour $y$ (pour résoudre $f(x,y)=f(x_0,y_0)$ à chaque $x$ par bissection).</p>
+  <div class="grille3">
+    <div><label for="fExpr2">f(x,y) =</label><input id="fExpr2" value="12*Math.pow(x,1/3)*Math.pow(y,2/3)"></div>
+    <div><label for="x0b">$x_0$</label><input id="x0b" value="8"></div>
+    <div><label for="y0b">$y_0$</label><input id="y0b" value="27"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="xmin2">$x$ min</label><input id="xmin2" value="1"></div>
+    <div><label for="xmax2">$x$ max</label><input id="xmax2" value="40"></div>
+    <div><label for="ymin2">$y$ min (recherche)</label><input id="ymin2" value="0.01"></div>
+    <div><label for="ymax2">$y$ max (recherche)</label><input id="ymax2" value="300"></div>
+  </div>
+  <button onclick="tracerNiveau()">Tracer la courbe de niveau</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphiqueNiveau" height="260"></canvas>
+</div>
+
+<p class="avertissement">Le taux marginal de substitution est $\mathrm{TMS}=\left(\partial f/\partial x\right)/\left(\partial f/\partial y\right)$ au point choisi : la pente (changée de signe) de la courbe de niveau en ce point.</p>
+
+<script>
+let chartX = null, chartY = null, chartNiveau = null;
+
+function dcentree(g, x) { const h = 1e-4; return (g(x+h)-g(x-h))/(2*h); }
+
+function analyserPartielles() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const expr = document.getElementById('fExpr').value;
+    const x0 = parseFloat(document.getElementById('x0').value);
+    const y0 = parseFloat(document.getElementById('y0').value);
+    if ([x0,y0].some(isNaN)) throw new Error('x0 et y0 doivent être numériques.');
+    const f = new Function('x','y','return '+expr+';');
+
+    const fx = x => dcentree(xx => f(xx,y0), x);
+    const fy = y => dcentree(yy => f(x0,yy), y);
+    const fxAt = fx(x0), fyAt = fy(y0);
+    const fxx = dcentree(xx => fx(xx), x0);
+    const fyy = dcentree(yy => fy(yy), y0);
+    const fxy = dcentree(yy => dcentree(xx => f(xx,yy), x0), y0);
+
+    resDiv.innerHTML = `
+      <p><strong>f(${x0},${y0}) = ${f(x0,y0).toFixed(4)}</strong></p>
+      <table>
+        <tr><th>&part;f/&part;x</th><th>&part;f/&part;y</th><th>f''_xx</th><th>f''_yy</th><th>f''_xy</th></tr>
+        <tr><td>${fxAt.toFixed(4)}</td><td>${fyAt.toFixed(4)}</td><td>${fxx.toFixed(4)}</td><td>${fyy.toFixed(4)}</td><td>${fxy.toFixed(4)}</td></tr>
+      </table>
+      <p style="font-size:0.85em;color:var(--cgris);">Comparez ces valeurs numériques à votre calcul formel avec les règles du chapitre.</p>
+    `;
+
+    const fenetre = Math.max(Math.abs(x0),1)*1.5+1;
+    const ptsX = [], ptsY = [];
+    for (let i=0;i<=80;i++){
+      const xx = x0-fenetre + i*(2*fenetre)/80;
+      try { ptsX.push({x:xx, y: f(xx,y0)}); } catch(e){}
+    }
+    const fenetreY = Math.max(Math.abs(y0),1)*1.5+1;
+    for (let i=0;i<=80;i++){
+      const yy = y0-fenetreY + i*(2*fenetreY)/80;
+      try { ptsY.push({x:yy, y: f(x0,yy)}); } catch(e){}
+    }
+
+    if (chartX) chartX.destroy();
+    chartX = new Chart(document.getElementById('graphiqueX').getContext('2d'), {
+      type: 'line',
+      data: { datasets: [
+        { label: `f(x, ${y0})`, data: ptsX, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'point', data: [{x:x0,y:f(x0,y0)}], borderColor: '#B56600', backgroundColor: '#B56600', pointRadius: 5, showLine:false }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'x' } }, y: { title: { display: true, text: `f(x, y0)` } } },
+        plugins: { title: { display: true, text: 'Coupe selon x (y fixé)' } } }
+    });
+
+    if (chartY) chartY.destroy();
+    chartY = new Chart(document.getElementById('graphiqueY').getContext('2d'), {
+      type: 'line',
+      data: { datasets: [
+        { label: `f(${x0}, y)`, data: ptsY, borderColor: '#1D9E75', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'point', data: [{x:y0,y:f(x0,y0)}], borderColor: '#B56600', backgroundColor: '#B56600', pointRadius: 5, showLine:false }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'y' } }, y: { title: { display: true, text: `f(x0, y)` } } },
+        plugins: { title: { display: true, text: 'Coupe selon y (x fixé)' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function tracerNiveau() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const expr = document.getElementById('fExpr2').value;
+    const x0 = parseFloat(document.getElementById('x0b').value);
+    const y0 = parseFloat(document.getElementById('y0b').value);
+    const xmin = parseFloat(document.getElementById('xmin2').value);
+    const xmax = parseFloat(document.getElementById('xmax2').value);
+    const ymin = parseFloat(document.getElementById('ymin2').value);
+    const ymax = parseFloat(document.getElementById('ymax2').value);
+    if ([x0,y0,xmin,xmax,ymin,ymax].some(isNaN) || xmax<=xmin || ymax<=ymin) throw new Error('Vérifiez les bornes saisies.');
+
+    const f = new Function('x','y','return '+expr+';');
+    const c = f(x0,y0);
+
+    function resoudreY(xVal) {
+      let lo = ymin, hi = ymax;
+      let flo = f(xVal,lo)-c, fhi = f(xVal,hi)-c;
+      if (Math.sign(flo) === Math.sign(fhi)) return null;
+      for (let k=0;k<60;k++){
+        const mid = (lo+hi)/2, fm = f(xVal,mid)-c;
+        if (Math.sign(fm) === Math.sign(flo)) { lo = mid; flo = fm; } else { hi = mid; }
+      }
+      return (lo+hi)/2;
+    }
+
+    const pts = [];
+    const n = 120;
+    for (let i=0;i<=n;i++){
+      const xVal = xmin + i*(xmax-xmin)/n;
+      const yVal = resoudreY(xVal);
+      if (yVal !== null) pts.push({x:xVal, y:yVal});
+    }
+    if (pts.length < 2) throw new Error("Impossible de résoudre f(x,y)=c dans la fourchette de y donnée : élargissez-la.");
+
+    const h = 1e-4;
+    const fx0 = (f(x0+h,y0)-f(x0-h,y0))/(2*h);
+    const fy0 = (f(x0,y0+h)-f(x0,y0-h))/(2*h);
+    const tms = fx0/fy0;
+
+    resDiv.innerHTML = `
+      <p>Niveau constant : $f(x_0,y_0) = ${c.toFixed(4)}$</p>
+      <p>$\\partial f/\\partial x = ${fx0.toFixed(4)}$, $\\partial f/\\partial y = ${fy0.toFixed(4)}$</p>
+      <p><strong>TMS = ${tms.toFixed(4)}</strong> au point $(${x0},${y0})$.</p>
+    `;
+
+    if (chartNiveau) chartNiveau.destroy();
+    chartNiveau = new Chart(document.getElementById('graphiqueNiveau').getContext('2d'), {
+      type: 'line',
+      data: { datasets: [
+        { label: `courbe de niveau f(x,y)=${c.toFixed(2)}`, data: pts, borderColor: '#1D9E75', backgroundColor: 'transparent', pointRadius: 0, showLine: true },
+        { label: 'point choisi', data: [{x:x0,y:y0}], borderColor: '#B56600', backgroundColor: '#B56600', pointRadius: 6, showLine:false }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'x' } }, y: { title: { display: true, text: 'y' } } },
+        plugins: { title: { display: true, text: "Courbe de niveau (isoquante / courbe d'indifférence)" } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { analyserPartielles(); tracerNiveau(); };
+</script>
+</body>
+</html>

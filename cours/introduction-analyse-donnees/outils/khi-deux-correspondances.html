@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — Du khi-deux à l'AFC — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; min-height: 5.5em; resize: vertical; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — Du khi-deux à l'analyse des correspondances</h1>
+<p class="sous-titre">Calculatrice interactive — Introduction à l'analyse des données</p>
+
+<div class="panneau">
+  <h2>Tableau de contingence : effectifs attendus, $\chi^2$, $\Phi^2$, profils</h2>
+  <p style="font-size:0.85em;color:var(--cgris);margin-top:0;">Une ligne du tableau par ligne de texte, valeurs séparées par des virgules. Noms de ligne optionnels en première colonne (texte non numérique).</p>
+  <textarea id="tableInput" rows="4">Jeunes, 30, 60, 10
+Familles, 80, 40, 30
+Seniors, 90, 20, 40</textarea>
+  <button onclick="calculerAFC()">Calculer</button>
+  <div id="erreurT" class="erreur"></div>
+  <div id="resultatT" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : attendu $=\dfrac{\text{total ligne}\times\text{total colonne}}{n}$. $\chi^2=\sum\dfrac{(\text{observé}-\text{attendu})^2}{\text{attendu}}$. $\Phi^2=\chi^2/n$ (inertie totale de l'AFC). Nombre d'axes $=\min(\text{lignes},\text{colonnes})-1$. Profil-ligne $=$ effectifs de la ligne divisés par son total.</p>
+
+<script>
+function calculerAFC(){
+  const erreurDiv=document.getElementById('erreurT'); const resDiv=document.getElementById('resultatT');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('tableInput').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length<2) throw new Error('Il faut au moins 2 lignes.');
+    const nomsLignes=[]; const data=[];
+    lignes.forEach(l=>{
+      const parts=l.split(',').map(s=>s.trim());
+      let nom, vals;
+      if(isNaN(parseFloat(parts[0]))){ nom=parts[0]; vals=parts.slice(1).map(Number); }
+      else { nom=`Ligne ${nomsLignes.length+1}`; vals=parts.map(Number); }
+      if(vals.some(isNaN)||vals.length<1) throw new Error(`Ligne "${l}" : valeurs numériques attendues.`);
+      nomsLignes.push(nom); data.push(vals);
+    });
+    const nbCols=data[0].length;
+    if(data.some(r=>r.length!==nbCols)) throw new Error('Toutes les lignes doivent avoir le même nombre de colonnes.');
+    const nbLignes=data.length;
+    const totLignes=data.map(r=>r.reduce((a,b)=>a+b,0));
+    const totCols=[]; for(let j=0;j<nbCols;j++){ totCols.push(data.reduce((s,r)=>s+r[j],0)); }
+    const n=totLignes.reduce((a,b)=>a+b,0);
+    if(n<=0) throw new Error('Effectif total nul ou négatif.');
+
+    const attendu=data.map((r,i)=>r.map((v,j)=>totLignes[i]*totCols[j]/n));
+    let chi2=0;
+    data.forEach((r,i)=>r.forEach((v,j)=>{ chi2+=(v-attendu[i][j])**2/attendu[i][j]; }));
+    const ddl=(nbLignes-1)*(nbCols-1);
+    const phi2=chi2/n;
+    const nbAxes=Math.min(nbLignes,nbCols)-1;
+
+    let out=`<table><tr><th>catégorie</th>`;
+    for(let j=0;j<nbCols;j++) out+=`<th>col ${j+1}</th>`;
+    out+=`<th>total</th></tr>`;
+    data.forEach((r,i)=>{
+      out+=`<tr><td>${nomsLignes[i]}</td>`;
+      r.forEach((v,j)=>{ out+=`<td>${v} (${attendu[i][j].toFixed(1)})</td>`; });
+      out+=`<td>${totLignes[i]}</td></tr>`;
+    });
+    out+=`<tr><td>total</td>`; totCols.forEach(v=>out+=`<td>${v}</td>`); out+=`<td>${n}</td></tr></table>`;
+    out+=`<p style="margin-top:0.6em;">(observé (attendu) dans chaque case)</p>`;
+    out+=`<p><strong>$\\chi^2=${chi2.toFixed(3)}$</strong> pour $${ddl}$ degrés de liberté &nbsp;&nbsp; <strong>$\\Phi^2=\\chi^2/n=${phi2.toFixed(4)}$</strong> &nbsp;&nbsp; nombre d'axes AFC $=\\min(${nbLignes},${nbCols})-1=${nbAxes}$</p>`;
+
+    out+='<p style="margin-top:0.8em;">Profils-lignes (%) :</p><table><tr><th>catégorie</th>';
+    for(let j=0;j<nbCols;j++) out+=`<th>col ${j+1}</th>`; out+='</tr>';
+    data.forEach((r,i)=>{
+      out+=`<tr><td>${nomsLignes[i]}</td>`;
+      r.forEach(v=>{ out+=`<td>${(100*v/totLignes[i]).toFixed(1)} %</td>`; });
+      out+='</tr>';
+    });
+    out+=`<tr><td>ensemble</td>`; totCols.forEach(v=>out+=`<td>${(100*v/n).toFixed(1)} %</td>`); out+='</tr></table>';
+
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerAFC(); };
+</script>
+</body>
+</html>

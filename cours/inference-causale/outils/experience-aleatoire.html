@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — L'expérience aléatoire — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 160px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  fieldset { border: 1px solid #ddd; border-radius: 4px; margin-top: 0.8em; padding: 0.6em; }
+  legend { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.85em; color: var(--cgris); padding: 0 0.4em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — L'expérience aléatoire, référence de toutes les méthodes</h1>
+<p class="sous-titre">Calculatrice interactive — Inférence causale</p>
+
+<div class="panneau">
+  <h2>1. ITT contre comparaison par traitement reçu</h2>
+  <p class="aide">Effectifs assignés, effectifs ayant réellement reçu le traitement dans chaque bras, et taux d'issue favorable selon la réception réelle.</p>
+  <fieldset>
+    <legend>Groupe assigné au traitement</legend>
+    <div class="ligne">
+      <div><label for="nTIn">Effectif assigné T=1</label><input type="number" id="nTIn" value="1000" min="1" step="1"></div>
+      <div><label for="recoitTIn">Reçoivent réellement le traitement</label><input type="number" id="recoitTIn" value="600" min="0" step="1"></div>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Groupe assigné au témoin</legend>
+    <div class="ligne">
+      <div><label for="nCIn">Effectif assigné T=0</label><input type="number" id="nCIn" value="1000" min="1" step="1"></div>
+      <div><label for="recoitCIn">Reçoivent le traitement (contamination)</label><input type="number" id="recoitCIn" value="50" min="0" step="1"></div>
+    </div>
+  </fieldset>
+  <div class="ligne">
+    <div><label for="tauxRecuIn">Taux d'issue favorable si traitement reçu (%)</label><input type="number" id="tauxRecuIn" value="70" min="0" max="100" step="0.1"></div>
+    <div><label for="tauxNonRecuIn">Taux d'issue favorable si non reçu (%)</label><input type="number" id="tauxNonRecuIn" value="50" min="0" max="100" step="0.1"></div>
+  </div>
+  <button onclick="calculerITT()">Calculer</button>
+  <div id="erreurITT" class="erreur"></div>
+  <div id="resultatITT" class="resultat-zone"></div>
+  <svg id="svgITT" width="380" height="200" viewBox="0 0 380 200"></svg>
+</div>
+
+<div class="panneau">
+  <h2>2. Différence de moyennes sous randomisation</h2>
+  <p class="aide">Sous assignation aléatoire, le biais de sélection est nul : la différence observée estime directement l'ATE.</p>
+  <div class="ligne">
+    <div><label for="yT1In">Résultat moyen, groupe traité</label><input type="number" id="yT1In" value="4200" step="1"></div>
+    <div><label for="yT0In">Résultat moyen, groupe témoin</label><input type="number" id="yT0In" value="3900" step="1"></div>
+  </div>
+  <button onclick="calculerATE()">Calculer</button>
+  <div id="resultatATE" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : sous randomisation, $(Y(0),Y(1))\perp T$, donc $E[Y\mid T{=}1]-E[Y\mid T{=}0]=\text{ATE}$ ; en cas de non-conformité, l'intention de traiter (ITT) compare selon l'assignation, non selon le traitement réellement reçu, ce qui évite de réintroduire une sélection, au prix d'une dilution de l'effet mesuré.</p>
+
+<script>
+function calculerITT(){
+  const erreurDiv=document.getElementById('erreurITT'); const resDiv=document.getElementById('resultatITT');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const nT=parseFloat(document.getElementById('nTIn').value);
+    const recoitT=parseFloat(document.getElementById('recoitTIn').value);
+    const nC=parseFloat(document.getElementById('nCIn').value);
+    const recoitC=parseFloat(document.getElementById('recoitCIn').value);
+    const tauxRecu=parseFloat(document.getElementById('tauxRecuIn').value)/100;
+    const tauxNonRecu=parseFloat(document.getElementById('tauxNonRecuIn').value)/100;
+    if([nT,recoitT,nC,recoitC,tauxRecu,tauxNonRecu].some(isNaN)) throw new Error('Toutes les valeurs doivent etre numeriques.');
+    if(recoitT>nT||recoitC>nC) throw new Error('Le nombre de personnes ayant recu le traitement ne peut pas depasser l\'effectif assigne.');
+    if(nT<=0||nC<=0) throw new Error('Les effectifs doivent etre strictement positifs.');
+
+    const nonRecoitT=nT-recoitT, nonRecoitC=nC-recoitC;
+    const empT=(recoitT*tauxRecu+nonRecoitT*tauxNonRecu)/nT;
+    const empC=(recoitC*tauxRecu+nonRecoitC*tauxNonRecu)/nC;
+    const itt=(empT-empC)*100;
+
+    const totalRecu=recoitT+recoitC, totalNonRecu=nonRecoitT+nonRecoitC;
+    const diffNaive=(tauxRecu-tauxNonRecu)*100;
+
+    const tauxNet=(recoitT/nT)-(recoitC/nC);
+    const effetVrai=tauxRecu-tauxNonRecu;
+    const ittPredit=effetVrai*tauxNet*100;
+
+    let out='<table><tr><th>quantite</th><th>valeur</th></tr>';
+    out+=`<tr><td>Taux d'issue favorable, assignes T=1</td><td>${(empT*100).toFixed(2)}%</td></tr>`;
+    out+=`<tr><td>Taux d'issue favorable, assignes T=0</td><td>${(empC*100).toFixed(2)}%</td></tr>`;
+    out+=`<tr><td>ITT (par assignation)</td><td>${itt.toFixed(2)} points</td></tr>`;
+    out+=`<tr><td>Comparaison naive (par reception reelle)</td><td>${diffNaive.toFixed(2)} points</td></tr>`;
+    out+=`<tr><td>Taux de conformite net</td><td>${(tauxNet*100).toFixed(2)}%</td></tr>`;
+    out+=`<tr><td>Effet reel x taux net (verification)</td><td>${ittPredit.toFixed(2)} points</td></tr></table>`;
+    if(Math.abs(diffNaive)>Math.abs(itt)+1e-6){
+      out+='<p style="color:#b00020;font-weight:bold;">La comparaison naive par reception reelle est plus grande en valeur absolue que l\'ITT : elle reintroduit une selection et surestime typiquement l\'effet.</p>';
+    }
+    resDiv.innerHTML=out;
+    dessinerITT(itt,diffNaive);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgITT').innerHTML=''; }
+}
+
+function dessinerITT(itt,naif){
+  const svg=document.getElementById('svgITT');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=380,H=200,padL=45,padR=15,padT=15,padB=40;
+  const vals=[itt,naif]; const labels=['ITT (assignation)','naive (recu)'];
+  const maxAbs=Math.max(5,...vals.map(Math.abs))*1.2;
+  const yZero=H-padB;
+  const step=(W-padL-padR)/2;
+  vals.forEach((v,i)=>{
+    const x=padL+i*step+step*0.25;
+    const h=(Math.abs(v)/maxAbs)*(H-padT-padB);
+    const rect=document.createElementNS(ns,'rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',yZero-h);
+    rect.setAttribute('width',step*0.5); rect.setAttribute('height',h);
+    rect.setAttribute('fill', i===0 ? '#1D9E75' : '#B56600');
+    svg.appendChild(rect);
+    const txt=document.createElementNS(ns,'text');
+    txt.setAttribute('x',x+step*0.25); txt.setAttribute('y',yZero-h-6);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','11');
+    txt.textContent=v.toFixed(1);
+    svg.appendChild(txt);
+    const lbl=document.createElementNS(ns,'text');
+    lbl.setAttribute('x',x+step*0.25); lbl.setAttribute('y',H-padB+18);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-size','10');
+    lbl.textContent=labels[i];
+    svg.appendChild(lbl);
+  });
+  const axe=document.createElementNS(ns,'line');
+  axe.setAttribute('x1',padL); axe.setAttribute('y1',yZero); axe.setAttribute('x2',W-padR); axe.setAttribute('y2',yZero);
+  axe.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axe);
+}
+
+function calculerATE(){
+  const resDiv=document.getElementById('resultatATE');
+  const yT1=parseFloat(document.getElementById('yT1In').value);
+  const yT0=parseFloat(document.getElementById('yT0In').value);
+  if(isNaN(yT1)||isNaN(yT0)){ resDiv.innerHTML='<p class="erreur">Valeurs invalides.</p>'; return; }
+  const diff=yT1-yT0;
+  resDiv.innerHTML=`<table><tr><th>quantite</th><th>valeur</th></tr>
+    <tr><td>E[Y|T=1]</td><td>${yT1}</td></tr>
+    <tr><td>E[Y|T=0]</td><td>${yT0}</td></tr>
+    <tr><td>Difference observee = ATE estime</td><td>${diff.toFixed(2)}</td></tr></table>
+    <p>Sous randomisation, le biais de selection est nul : cette difference est directement une estimation de l'ATE, sans avoir a conditionner sur quoi que ce soit.</p>`;
+}
+
+window.onload=()=>{ calculerITT(); calculerATE(); };
+</script>
+</body>
+</html>

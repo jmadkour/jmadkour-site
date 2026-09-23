@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Les indicateurs de dispersion — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.transfo { border-left-color: var(--ceco); } .panneau.transfo h2 { color: var(--ceco); }
+  .panneau.cv { border-left-color: var(--cex); } .panneau.cv h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.transfo button { background: var(--ceco); } .panneau.transfo button:hover { background: #17578f; }
+  .panneau.cv button { background: var(--cex); } .panneau.cv button:hover { background: #206040; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Les indicateurs de dispersion</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique descriptive</p>
+
+<div class="panneau">
+  <h2>Étendue, écart absolu moyen, variance et écart-type (König-Huygens)</h2>
+  <label for="serie1">valeurs (virgules)</label>
+  <input id="serie1" value="15,22,18,30,25,20,28,24">
+  <button onclick="calculerDispersion()">Calculer tous les indicateurs de dispersion</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau transfo">
+  <h2>Effet d'une transformation linéaire $y=ax+b$ sur la variance</h2>
+  <label for="serie2">valeurs (virgules)</label>
+  <input id="serie2" value="100,120,90,150,130,110">
+  <div class="grille2">
+    <div><label for="aVal">multiplicateur a</label><input id="aVal" value="1.15"></div>
+    <div><label for="bVal">constante additive b</label><input id="bVal" value="50"></div>
+  </div>
+  <button onclick="calculerTransfo()">Comparer V(x), V(x+b) et V(ax)</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau cv">
+  <h2>Coefficient de variation — comparer deux séries</h2>
+  <div class="grille2">
+    <div>
+      <label for="meanA">série A : moyenne</label><input id="meanA" value="450">
+      <label for="stdA">série A : écart-type</label><input id="stdA" value="60">
+    </div>
+    <div>
+      <label for="meanB">série B : moyenne</label><input id="meanB" value="12">
+      <label for="stdB">série B : écart-type</label><input id="stdB" value="3">
+    </div>
+  </div>
+  <button onclick="calculerCV()">Calculer et comparer les CV</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $V(x)=\overline{x^2}-\bar{x}^2$ (König-Huygens) ; $V(x+b)=V(x)$ (une constante additive ne change pas la dispersion) ; $V(ax)=a^2V(x)$ (une multiplication par $a$ multiplie la variance par $a^2$, donc l'écart-type par $|a|$) ; $CV=\sigma_x/\bar{x}$ est invariant par transformation proportionnelle ($CV(ax)=CV(x)$) mais change avec un ajout constant.</p>
+
+<script>
+function stats(vals){
+  const n=vals.length;
+  const mean=vals.reduce((a,b)=>a+b,0)/n;
+  const meanSq=vals.reduce((a,b)=>a+b*b,0)/n;
+  const V=meanSq-mean*mean;
+  const sigma=Math.sqrt(V);
+  return {n,mean,meanSq,V,sigma};
+}
+
+function calculerDispersion(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const vals=document.getElementById('serie1').value.split(',').map(s=>parseFloat(s.trim()));
+    if(vals.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(vals.length<2) throw new Error('Il faut au moins 2 valeurs.');
+    const s=stats(vals);
+    const etendue=Math.max(...vals)-Math.min(...vals);
+    const eam=vals.reduce((a,b)=>a+Math.abs(b-s.mean),0)/s.n;
+    const cv= s.mean!==0 ? s.sigma/s.mean : NaN;
+    resDiv.innerHTML=`<table><tr><th>n</th><th>moyenne</th><th>étendue</th><th>écart absolu moyen</th><th>variance</th><th>écart-type</th><th>CV</th></tr>
+      <tr><td>${s.n}</td><td>${s.mean.toFixed(3)}</td><td>${etendue.toFixed(3)}</td><td>${eam.toFixed(3)}</td><td>${s.V.toFixed(3)}</td><td>${s.sigma.toFixed(3)}</td><td>${isNaN(cv)?'—':cv.toFixed(3)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">L'écart-type (${s.sigma.toFixed(2)}) est toujours $\\geq$ l'écart absolu moyen (${eam.toFixed(2)}) : le carré pénalise davantage les grands écarts.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerTransfo(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const vals=document.getElementById('serie2').value.split(',').map(s=>parseFloat(s.trim()));
+    if(vals.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    const a=parseFloat(document.getElementById('aVal').value);
+    const b=parseFloat(document.getElementById('bVal').value);
+    if(isNaN(a)||isNaN(b)) throw new Error('a et b doivent être des nombres.');
+    const s0=stats(vals);
+    const sB=stats(vals.map(v=>v+b));
+    const sA=stats(vals.map(v=>v*a));
+    resDiv.innerHTML=`<table><tr><th></th><th>moyenne</th><th>variance (calculée)</th><th>variance (formule)</th></tr>
+      <tr><td>x</td><td>${s0.mean.toFixed(3)}</td><td>${s0.V.toFixed(3)}</td><td>—</td></tr>
+      <tr><td>x+b (b=${b})</td><td>${sB.mean.toFixed(3)}</td><td>${sB.V.toFixed(3)}</td><td>${s0.V.toFixed(3)} (=V(x))</td></tr>
+      <tr><td>a·x (a=${a})</td><td>${sA.mean.toFixed(3)}</td><td>${sA.V.toFixed(3)}</td><td>${(a*a*s0.V).toFixed(3)} (=a²V(x))</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Les colonnes \"variance (calculée)\" et \"variance (formule)\" coïncident, ce qui vérifie numériquement $V(x+b)=V(x)$ et $V(ax)=a^2V(x)$.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerCV(){
+  const erreurDiv=document.getElementById('erreur3'); const resDiv=document.getElementById('resultat3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const meanA=parseFloat(document.getElementById('meanA').value), stdA=parseFloat(document.getElementById('stdA').value);
+    const meanB=parseFloat(document.getElementById('meanB').value), stdB=parseFloat(document.getElementById('stdB').value);
+    if([meanA,stdA,meanB,stdB].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(meanA<=0||meanB<=0) throw new Error('Les deux moyennes doivent être strictement positives.');
+    const cvA=stdA/meanA, cvB=stdB/meanB;
+    const plusDisperse = cvA>cvB ? 'A' : (cvB>cvA ? 'B' : 'égales');
+    resDiv.innerHTML=`<table><tr><th></th><th>moyenne</th><th>écart-type</th><th>CV</th></tr>
+      <tr><td>série A</td><td>${meanA}</td><td>${stdA}</td><td>${cvA.toFixed(4)}</td></tr>
+      <tr><td>série B</td><td>${meanB}</td><td>${stdB}</td><td>${cvB.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${plusDisperse==='égales' ? 'Les deux séries ont la même dispersion relative.' : `La série ${plusDisperse} est relativement plus dispersée (CV plus élevé), même si son écart-type absolu peut être plus petit ou plus grand.`}</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerDispersion(); calculerTransfo(); calculerCV(); };
+</script>
+</body>
+</html>

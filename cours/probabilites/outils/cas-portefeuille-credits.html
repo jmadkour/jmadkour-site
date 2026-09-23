@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — Étude de cas : portefeuille de crédits — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.corr { border-left-color: var(--cintu); }
+  .panneau.corr h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.corr button { background: var(--cintu); }
+  .panneau.corr button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — Étude de cas : un portefeuille de crédits</h1>
+<p class="sous-titre">Calculatrice interactive — Probabilités</p>
+
+<div class="panneau">
+  <h2>Du portefeuille au capital réglementaire</h2>
+  <div class="grille4">
+    <div><label for="nVal">n (crédits)</label><input id="nVal" value="200"></div>
+    <div><label for="pVal">p (probabilité de défaut)</label><input id="pVal" value="0.04"></div>
+    <div><label for="lgdVal">perte par défaut (dh)</label><input id="lgdVal" value="100000"></div>
+    <div><label for="confVal">niveau de confiance</label><input id="confVal" value="0.99"></div>
+  </div>
+  <button onclick="calculerPortefeuille()">Calculer E(X), σ(X), quantile et capital</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiquePortefeuille" height="240"></canvas>
+</div>
+
+<div class="panneau corr">
+  <h2>Ce que l'indépendance cache : effet d'une corrélation entre défauts</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Utilise les mêmes n, p et perte unitaire que ci-dessus.</p>
+  <div class="grille3">
+    <div><label for="rhoVal">ρ (corrélation entre paires de défauts)</label><input id="rhoVal" value="0.15"></div>
+    <div></div><div></div>
+  </div>
+  <button onclick="calculerCorrelation()">Comparer σ(X) et le capital, indépendant vs corrélé</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : X~B(n;p), E(X)=np, V(X)=np(1-p) sous indépendance. Capital = perte au quantile − perte moyenne. Avec corrélation ρ entre paires : V(X)=n·p(1-p)+n(n-1)·ρ·p(1-p). Approximation normale du quantile : E(X)+z·σ(X), avec z≈2,33 pour 99% et z≈2,58 pour 99,5%.</p>
+
+<script>
+function comb(n,k){
+  if (k<0 || k>n) return 0;
+  k = Math.min(k, n-k);
+  let logC = 0;
+  for (let i=0;i<k;i++) logC += Math.log(n-i) - Math.log(i+1);
+  return Math.exp(logC);
+}
+function binomP(n,p,k){ return comb(n,k) * Math.pow(p,k) * Math.pow(1-p,n-k); }
+function binomCDF(n,p,k){ let s=0; for (let x=0;x<=k;x++) s+=binomP(n,p,x); return s; }
+function quantileBinom(n,p,conf){
+  for (let k=0;k<=n;k++) { if (binomCDF(n,p,k) >= conf) return k; }
+  return n;
+}
+function zScore(conf){
+  // approximation simple pour quelques niveaux usuels, sinon interpolation grossière
+  if (conf>=0.999) return 3.09;
+  if (conf>=0.995) return 2.58;
+  if (conf>=0.99) return 2.33;
+  if (conf>=0.975) return 1.96;
+  if (conf>=0.95) return 1.645;
+  if (conf>=0.9) return 1.28;
+  return 1.0;
+}
+
+let chartPortefeuille = null;
+function calculerPortefeuille() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const n = parseInt(document.getElementById('nVal').value);
+    const p = parseFloat(document.getElementById('pVal').value);
+    const lgd = parseFloat(document.getElementById('lgdVal').value);
+    const conf = parseFloat(document.getElementById('confVal').value);
+    if ([n,p,lgd,conf].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (n<=0 || !Number.isInteger(n)) throw new Error('n doit être un entier strictement positif.');
+    if (p<0 || p>1) throw new Error('p doit être compris entre 0 et 1.');
+    if (conf<=0 || conf>=1) throw new Error('Le niveau de confiance doit être strictement compris entre 0 et 1.');
+
+    const EX = n*p, VX = n*p*(1-p), sigX = Math.sqrt(VX);
+    const q = quantileBinom(n,p,conf);
+    const perteMoyenne = EX*lgd;
+    const perteQuantile = q*lgd;
+    const capital = perteQuantile - perteMoyenne;
+
+    resDiv.innerHTML = `
+      <table><tr><th>E(X)</th><th>σ(X)</th><th>quantile (${(conf*100).toFixed(1)}%)</th><th>perte moyenne</th><th>perte au quantile</th><th>capital</th></tr>
+      <tr><td>${EX.toFixed(3)}</td><td>${sigX.toFixed(3)}</td><td>${q}</td><td>${perteMoyenne.toLocaleString('fr-FR')} dh</td><td>${perteQuantile.toLocaleString('fr-FR')} dh</td><td><strong>${capital.toLocaleString('fr-FR')} dh</strong></td></tr></table>
+    `;
+
+    const labels = [], valeurs = [], couleurs = [];
+    const kmax = Math.min(n, Math.ceil(EX+5*sigX));
+    for (let x=0; x<=kmax; x++) { labels.push(x); valeurs.push(binomP(n,p,x)); couleurs.push(x>=q ? '#B56600' : '#1F6FB2'); }
+    if (chartPortefeuille) chartPortefeuille.destroy();
+    chartPortefeuille = new Chart(document.getElementById('graphiquePortefeuille').getContext('2d'), {
+      type: 'bar',
+      data: { labels: labels, datasets: [{ label: 'P(X=k)', data: valeurs, backgroundColor: couleurs }] },
+      options: { responsive: true, scales: { x: { title: { display:true, text:'k (nombre de défauts)' } }, y: { title: { display:true, text:'P(X=k)' } } },
+        plugins: { title: { display:true, text:`Loi du nombre de défauts (orange : k ≥ quantile ${(conf*100).toFixed(1)}%)` }, legend: { display:false } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerCorrelation() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const n = parseInt(document.getElementById('nVal').value);
+    const p = parseFloat(document.getElementById('pVal').value);
+    const lgd = parseFloat(document.getElementById('lgdVal').value);
+    const conf = parseFloat(document.getElementById('confVal').value);
+    const rho = parseFloat(document.getElementById('rhoVal').value);
+    if ([n,p,lgd,conf,rho].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (rho<-1 || rho>1) throw new Error('ρ doit être compris entre -1 et 1.');
+
+    const VXi = p*(1-p);
+    const VindepTot = n*VXi;
+    const sigIndep = Math.sqrt(VindepTot);
+    const VcorrTot = n*VXi + n*(n-1)*rho*VXi;
+    const sigCorr = Math.sqrt(Math.max(VcorrTot,0));
+    const z = zScore(conf);
+    const EX = n*p;
+    const capitalIndep = z*sigIndep*lgd;
+    const capitalCorr = z*sigCorr*lgd;
+    const ratio = sigIndep>0 ? sigCorr/sigIndep : NaN;
+
+    resDiv.innerHTML = `
+      <table><tr><th>scénario</th><th>σ(X)</th><th>capital approx. (z=${z})</th></tr>
+      <tr><td>indépendant</td><td>${sigIndep.toFixed(3)}</td><td>${capitalIndep.toLocaleString('fr-FR', {maximumFractionDigits:0})} dh</td></tr>
+      <tr><td>corrélé (ρ=${rho})</td><td>${sigCorr.toFixed(3)}</td><td>${capitalCorr.toLocaleString('fr-FR', {maximumFractionDigits:0})} dh</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">L'espérance E(X)=${EX.toFixed(2)} reste identique dans les deux scénarios ; c'est uniquement l'écart-type qui change, ici d'un facteur ${ratio.toFixed(2)}. Toute l'information sur le risque supplémentaire est contenue dans la corrélation, invisible dans la seule moyenne.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerPortefeuille(); calculerCorrelation(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Diagrammes en escalier et de phase — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+  svg { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Diagrammes en escalier et de phase</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse dynamique</p>
+
+<div class="panneau">
+  <h2>Diagramme en escalier (régime discret), $y_{t+1}=ay_t+b$</h2>
+  <div class="grille4">
+    <div><label for="coefA">a</label><input id="coefA" value="-0.6"></div>
+    <div><label for="coefB">b</label><input id="coefB" value="4000"></div>
+    <div><label for="y0">y₀</label><input id="y0" value="3000"></div>
+    <div><label for="nIter">Nombre d'itérations</label><input id="nIter" value="6"></div>
+  </div>
+  <button onclick="tracerEscalier()">Tracer l'escalier</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueEscalier" height="320"></canvas>
+</div>
+
+<div class="panneau">
+  <h2>Diagramme de phase (régime continu), $\dot y=ay+b$</h2>
+  <div class="grille4">
+    <div><label for="coefAc">a</label><input id="coefAc" value="-0.25"></div>
+    <div><label for="coefBc">b</label><input id="coefBc" value="20"></div>
+    <div></div><div></div>
+  </div>
+  <button onclick="tracerPhase()">Tracer le diagramme de phase</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <div id="phaseSvg"></div>
+</div>
+
+<p class="avertissement">Escalier : chaque marche alterne un déplacement vertical (vers la droite $y_{t+1}=ay_t+b$) et un déplacement horizontal (vers la bissectrice $y_{t+1}=y_t$). Si $a>0$, l'escalier reste d'un seul côté ; si $a<0$, il alterne de part et d'autre de l'état stationnaire, dessinant une spirale.</p>
+
+<script>
+let chartEsc = null;
+
+function tracerEscalier() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const a = parseFloat(document.getElementById('coefA').value);
+    const b = parseFloat(document.getElementById('coefB').value);
+    const y0 = parseFloat(document.getElementById('y0').value);
+    const nIter = parseInt(document.getElementById('nIter').value);
+    if ([a,b,y0,nIter].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if (a === 1) throw new Error('a=1 : cas dégénéré, pas d\'état stationnaire, le diagramme en escalier ne converge pas vers un point fixe.');
+
+    const ystar = b/(1-a);
+    const escalier = [];
+    let y = y0;
+    const valeurs = [y0];
+    for (let i=0;i<nIter;i++){
+      const y1 = a*y+b;
+      escalier.push({x:y,y:y});
+      escalier.push({x:y,y:y1});
+      escalier.push({x:y1,y:y1});
+      y = y1;
+      valeurs.push(y);
+    }
+    const allVals = valeurs.concat([ystar]);
+    const lo = Math.min(...allVals), hi = Math.max(...allVals);
+    const marge = (hi-lo)*0.15 || Math.abs(ystar)*0.1 || 1;
+    const xmin = lo-marge, xmax = hi+marge;
+    const droite = [{x:xmin,y:a*xmin+b},{x:xmax,y:a*xmax+b}];
+    const bissectrice = [{x:xmin,y:xmin},{x:xmax,y:xmax}];
+
+    resDiv.innerHTML = `
+      <p><strong>État stationnaire :</strong> y* = ${ystar.toFixed(4)}</p>
+      <p><strong>Valeurs :</strong> ${valeurs.slice(0,Math.min(7,valeurs.length)).map(v=>v.toFixed(2)).join(' → ')}${valeurs.length>7?' → …':''}</p>
+      <p><strong>Forme de l'escalier :</strong> ${a<0 ? 'spirale (oscillation autour de y*)' : 'marches unilatérales (approche monotone)'} , ${Math.abs(a)<1 ? 'convergente' : 'divergente'}.</p>
+    `;
+
+    if (chartEsc) chartEsc.destroy();
+    const ctx = document.getElementById('graphiqueEscalier').getContext('2d');
+    chartEsc = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [
+        { label: `droite y_{t+1}=${a}y_t+${b}`, data: droite, borderColor: '#1D9E75', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'bissectrice y_{t+1}=y_t', data: bissectrice, borderColor: '#5A5A5A', borderDash: [6,4], backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'escalier', data: escalier, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0 }
+      ]},
+      options: { responsive: true, aspectRatio: 1, scales: { x: { type: 'linear', title: { display: true, text: 'y_t' }, min: xmin, max: xmax }, y: { title: { display: true, text: 'y_{t+1}' }, min: xmin, max: xmax } },
+        plugins: { title: { display: true, text: 'Diagramme en escalier' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function tracerPhase() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  const svgDiv = document.getElementById('phaseSvg');
+  erreurDiv.textContent = ''; resDiv.innerHTML = ''; svgDiv.innerHTML = '';
+  try {
+    const a = parseFloat(document.getElementById('coefAc').value);
+    const b = parseFloat(document.getElementById('coefBc').value);
+    if ([a,b].some(isNaN)) throw new Error('a et b doivent être numériques.');
+    if (a === 0) throw new Error('a=0 : cas dégénéré, pas d\'état stationnaire fini.');
+
+    const ystar = -b/a;
+    const stable = a<0;
+    const gauche = ystar - 10, droite = ystar + 10;
+    const fGauche = a*gauche+b;
+    const fDroite = a*droite+b;
+    const flecheGaucheDroite = fGauche > 0; // si positif, y augmente donc flèche vers la droite
+
+    resDiv.innerHTML = `
+      <p><strong>État stationnaire :</strong> y* = ${ystar.toFixed(4)}</p>
+      <p><strong>Stabilité :</strong> ${stable ? 'stable (flèches convergent vers y*)' : 'instable (flèches divergent de y*)'}</p>
+      <p><strong>ẏ à gauche de y* :</strong> ${fGauche.toFixed(2)} (${fGauche>0?'y croît → flèche vers la droite':'y décroît → flèche vers la gauche'})</p>
+      <p><strong>ẏ à droite de y* :</strong> ${fDroite.toFixed(2)} (${fDroite>0?'y croît → flèche vers la droite':'y décroît → flèche vers la gauche'})</p>
+    `;
+
+    const largeur = 500, hauteur = 120, cx = 250;
+    const fleche1 = fGauche > 0 ? `<line x1="90" y1="60" x2="150" y2="60" stroke="#1F6FB2" stroke-width="3" marker-end="url(#arrow)"/>`
+                                 : `<line x1="150" y1="60" x2="90" y2="60" stroke="#1F6FB2" stroke-width="3" marker-end="url(#arrow)"/>`;
+    const fleche2 = fDroite > 0 ? `<line x1="350" y1="60" x2="410" y2="60" stroke="#1F6FB2" stroke-width="3" marker-end="url(#arrow)"/>`
+                                 : `<line x1="410" y1="60" x2="350" y2="60" stroke="#1F6FB2" stroke-width="3" marker-end="url(#arrow)"/>`;
+    svgDiv.innerHTML = `
+      <svg width="${largeur}" height="${hauteur}" viewBox="0 0 ${largeur} ${hauteur}">
+        <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#1F6FB2"/></marker></defs>
+        <line x1="20" y1="60" x2="480" y2="60" stroke="#5A5A5A" stroke-width="2"/>
+        <circle cx="${cx}" cy="60" r="5" fill="#B56600"/>
+        <text x="${cx}" y="90" text-anchor="middle" font-family="Helvetica" font-size="14" fill="#B56600">y* = ${ystar.toFixed(2)}</text>
+        ${fleche1}
+        ${fleche2}
+        <text x="90" y="40" text-anchor="middle" font-family="Helvetica" font-size="12" fill="#1a1a1a">y=${gauche.toFixed(1)}</text>
+        <text x="410" y="40" text-anchor="middle" font-family="Helvetica" font-size="12" fill="#1a1a1a">y=${droite.toFixed(1)}</text>
+      </svg>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = function(){ tracerEscalier(); tracerPhase(); };
+</script>
+</body>
+</html>

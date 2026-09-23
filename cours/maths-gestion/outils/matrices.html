@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Les matrices — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  .boutons { display: flex; flex-wrap: wrap; gap: 0.6em; margin-top: 1em; }
+  button { background: var(--cdef); color: white; border: none; padding: 0.6em 1.2em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.9em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.matrice { border-collapse: collapse; margin: 0.4em 0; }
+  table.matrice td { border: 1px solid #999; padding: 0.4em 0.7em; font-family: "Courier New", monospace; text-align: right; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Les matrices</h1>
+<p class="sous-titre">Calculatrice interactive — Mathématiques pour la gestion</p>
+
+<div class="panneau">
+  <h2>Opérations sur deux matrices</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir chaque matrice ligne par ligne, les lignes séparées par « ; » et les termes par « , ». Exemple pour $\begin{pmatrix}4&7\\2&5\end{pmatrix}$ : <code>4,7;2,5</code>.</p>
+  <div class="grille2">
+    <div><label for="matA">Matrice A</label><textarea id="matA" rows="3">4,7;2,5</textarea></div>
+    <div><label for="matB">Matrice B</label><textarea id="matB" rows="3">1,3;6,2</textarea></div>
+  </div>
+  <div class="grille2">
+    <div><label for="scalaireK">Scalaire k (pour k·A)</label><input id="scalaireK" value="3"></div>
+    <div></div>
+  </div>
+  <div class="boutons">
+    <button onclick="calculer('addition')">A + B</button>
+    <button onclick="calculer('soustraction')">A − B</button>
+    <button onclick="calculer('scalaire')">k · A</button>
+    <button onclick="calculer('produitAB')">A × B</button>
+    <button onclick="calculer('produitBA')">B × A</button>
+    <button onclick="calculer('transposeeA')">A transposée</button>
+  </div>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Avant tout produit, l'outil vérifie automatiquement le contrôle de format $(m\times n)(n\times p)=(m\times p)$ et signale une erreur si les deux « nombres du milieu » ne coïncident pas — exactement le réflexe à acquérir dans ce chapitre.</p>
+
+<script>
+function parseMatrice(texte) {
+  const lignes = texte.trim().split(';').map(l => l.trim()).filter(l => l.length > 0);
+  const M = lignes.map(l => l.split(',').map(v => parseFloat(v.trim())));
+  const nCols = M[0].length;
+  if (M.some(row => row.length !== nCols || row.some(isNaN))) {
+    throw new Error("Format invalide : vérifiez que toutes les lignes ont le même nombre de termes, tous numériques.");
+  }
+  return M;
+}
+
+function formatMatrice(M) {
+  let html = '<table class="matrice">';
+  M.forEach(row => {
+    html += '<tr>' + row.map(v => `<td>${Number.isInteger(v) ? v : v.toFixed(4)}</td>`).join('') + '</tr>';
+  });
+  html += '</table>';
+  return html;
+}
+
+function ajouter(A,B,signe) {
+  if (A.length !== B.length || A[0].length !== B[0].length) throw new Error(`Formats incompatibles pour l'addition : A est ${A.length}×${A[0].length}, B est ${B.length}×${B[0].length}. L'addition exige le même format.`);
+  return A.map((row,i) => row.map((v,j) => v + signe*B[i][j]));
+}
+
+function multiplier(A,B) {
+  const m = A.length, n = A[0].length, n2 = B.length, p = B[0].length;
+  if (n !== n2) throw new Error(`Produit impossible : A est (${m}×${n}), B est (${n2}×${p}). Les deux nombres du milieu (${n} et ${n2}) ne coïncident pas.`);
+  const C = Array.from({length:m}, () => Array(p).fill(0));
+  for (let i=0;i<m;i++) for (let j=0;j<p;j++) for (let k=0;k<n;k++) C[i][j] += A[i][k]*B[k][j];
+  return C;
+}
+
+function transposer(A) {
+  const m = A.length, n = A[0].length;
+  const T = Array.from({length:n}, () => Array(m).fill(0));
+  for (let i=0;i<m;i++) for (let j=0;j<n;j++) T[j][i] = A[i][j];
+  return T;
+}
+
+function calculer(operation) {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const A = parseMatrice(document.getElementById('matA').value);
+    const B = parseMatrice(document.getElementById('matB').value);
+    const k = parseFloat(document.getElementById('scalaireK').value);
+
+    let html = `<p>A est de format $(${A.length}\\times${A[0].length})$, B est de format $(${B.length}\\times${B[0].length})$.</p>`;
+
+    if (operation === 'addition') {
+      html += `<p><strong>A + B =</strong></p>` + formatMatrice(ajouter(A,B,1));
+    } else if (operation === 'soustraction') {
+      html += `<p><strong>A − B =</strong></p>` + formatMatrice(ajouter(A,B,-1));
+    } else if (operation === 'scalaire') {
+      if (isNaN(k)) throw new Error('Le scalaire k doit être numérique.');
+      html += `<p><strong>${k}·A =</strong></p>` + formatMatrice(A.map(row => row.map(v => k*v)));
+    } else if (operation === 'produitAB') {
+      const AB = multiplier(A,B);
+      html += `<p><strong>A × B</strong> (format $${A.length}\\times${B[0].length}$) =</p>` + formatMatrice(AB);
+    } else if (operation === 'produitBA') {
+      const BA = multiplier(B,A);
+      html += `<p><strong>B × A</strong> (format $${B.length}\\times${A[0].length}$) =</p>` + formatMatrice(BA);
+    } else if (operation === 'transposeeA') {
+      html += `<p><strong>A transposée</strong> (format $${A[0].length}\\times${A.length}$) =</p>` + formatMatrice(transposer(A));
+    }
+    resDiv.innerHTML = html;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => calculer('addition');
+</script>
+</body>
+</html>

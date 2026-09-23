@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Diagonalisation — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; resize: vertical; height: 3.5em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Diagonalisation des matrices carrées</h1>
+<p class="sous-titre">Calculatrice interactive — Algèbre linéaire (matrices 2×2)</p>
+
+<div class="panneau">
+  <h2>Valeurs propres, vecteurs propres et diagonalisabilité</h2>
+  <label for="matA">Matrice A (2×2)</label>
+  <textarea id="matA">3,1;1,3</textarea>
+  <button onclick="analyser()">Analyser</button>
+  <div id="erreur" class="erreur"></div>
+  <div id="resultat" class="resultat-zone"></div>
+  <canvas id="graphique" height="260"></canvas>
+</div>
+
+<p class="avertissement">Outil limité aux matrices 2×2, pour lesquelles le polynôme caractéristique se résout par la formule du second degré ($\lambda^2-(\operatorname{tr}A)\lambda+\det A=0$). Les vecteurs propres affichés sont normalisés pour la lisibilité du graphique.</p>
+
+<script>
+let chartInstance = null;
+
+function parseMatrice(texte) {
+  return texte.trim().split(';').map(ligne => ligne.trim().split(',').map(v => {
+    const n = parseFloat(v.trim());
+    if (isNaN(n)) throw new Error('valeur non numérique : "' + v.trim() + '"');
+    return n;
+  }));
+}
+
+function vecteurPropre(A, lambda) {
+  // Résout (A - lambda I) v = 0 pour une matrice 2x2
+  const a = A[0][0] - lambda, b = A[0][1], c = A[1][0], d = A[1][1] - lambda;
+  let v;
+  if (Math.abs(b) > 1e-9) {
+    v = [b, -a];
+  } else if (Math.abs(a) > 1e-9) {
+    v = [0, 1];
+  } else if (Math.abs(d) > 1e-9 || Math.abs(c) > 1e-9) {
+    v = [d, -c];
+  } else {
+    v = [1, 0];
+  }
+  const norme = Math.sqrt(v[0]*v[0] + v[1]*v[1]) || 1;
+  return [v[0]/norme, v[1]/norme];
+}
+
+function analyser() {
+  const erreurDiv = document.getElementById('erreur');
+  const resDiv = document.getElementById('resultat');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const A = parseMatrice(document.getElementById('matA').value);
+    if (A.length !== 2 || A[0].length !== 2) throw new Error('Cet outil traite uniquement les matrices 2×2.');
+
+    const trace = A[0][0] + A[1][1];
+    const det = A[0][0]*A[1][1] - A[0][1]*A[1][0];
+    const discriminant = trace*trace - 4*det;
+
+    const p1 = document.createElement('p');
+    p1.innerHTML = `<strong>Polynôme caractéristique :</strong> λ² − (${trace})λ + (${det}) = 0, discriminant = ${discriminant.toFixed(4)}`;
+    resDiv.appendChild(p1);
+
+    if (discriminant < -1e-9) {
+      const p2 = document.createElement('p');
+      p2.innerHTML = 'Discriminant négatif : les valeurs propres sont <strong>complexes non réelles</strong> — A n\'est <strong>pas diagonalisable</strong> (dans ℝ).';
+      resDiv.appendChild(p2);
+      if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+      return;
+    }
+
+    const racine = Math.sqrt(Math.max(discriminant, 0));
+    const l1 = (trace + racine) / 2, l2 = (trace - racine) / 2;
+
+    const p2 = document.createElement('p');
+    p2.innerHTML = `<strong>Valeurs propres :</strong> λ₁ = ${l1.toFixed(4)}, λ₂ = ${l2.toFixed(4)}`;
+    resDiv.appendChild(p2);
+
+    let diagnostic;
+    if (Math.abs(discriminant) < 1e-9) {
+      // valeur propre double : vérifier la dimension de l'espace propre
+      const a = A[0][0] - l1, b = A[0][1], c = A[1][0], d = A[1][1] - l1;
+      const estScalaire = Math.abs(a) < 1e-9 && Math.abs(b) < 1e-9 && Math.abs(c) < 1e-9 && Math.abs(d) < 1e-9;
+      diagnostic = estScalaire
+        ? 'Valeur propre double, mais A − λI = 0 : l\'espace propre est de dimension 2. <strong>A est diagonalisable</strong> (en fait A est déjà scalaire).'
+        : 'Valeur propre double, et A − λI ≠ 0 : l\'espace propre est de dimension 1 < 2. <strong>A n\'est pas diagonalisable.</strong>';
+    } else {
+      diagnostic = 'Deux valeurs propres réelles distinctes : <strong>A est diagonalisable.</strong>';
+    }
+    const p3 = document.createElement('p');
+    p3.innerHTML = diagnostic;
+    resDiv.appendChild(p3);
+
+    const v1 = vecteurPropre(A, l1);
+    const v2 = Math.abs(discriminant) < 1e-9 ? null : vecteurPropre(A, l2);
+    const p4 = document.createElement('p');
+    p4.innerHTML = `<strong>Direction propre pour λ₁ :</strong> (${v1[0].toFixed(3)}, ${v1[1].toFixed(3)})` + (v2 ? `<br><strong>Direction propre pour λ₂ :</strong> (${v2[0].toFixed(3)}, ${v2[1].toFixed(3)})` : '');
+    resDiv.appendChild(p4);
+
+    if (chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('graphique').getContext('2d');
+    const datasets = [{ label: `λ₁=${l1.toFixed(2)}`, data: [{x:0,y:0},{x:v1[0],y:v1[1]}], borderColor: '#1F6FB2', backgroundColor: '#1F6FB2', showLine: true, pointRadius: [0,4] }];
+    if (v2) datasets.push({ label: `λ₂=${l2.toFixed(2)}`, data: [{x:0,y:0},{x:v2[0],y:v2[1]}], borderColor: '#B56600', backgroundColor: '#B56600', showLine: true, pointRadius: [0,4] });
+    chartInstance = new Chart(ctx, {
+      type: 'scatter',
+      data: { datasets },
+      options: { responsive: true, aspectRatio: 1.4,
+        scales: { x: { min: -1.5, max: 1.5, title: { display: true, text: 'x' } }, y: { min: -1.5, max: 1.5, title: { display: true, text: 'y' } } },
+        plugins: { title: { display: true, text: 'Directions propres (normalisées)' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = analyser;
+</script>
+</body>
+</html>

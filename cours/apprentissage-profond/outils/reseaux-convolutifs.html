@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Les réseaux convolutifs — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Les réseaux convolutifs</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage profond</p>
+
+<div class="panneau">
+  <h2>1. Dense contre convolutif : le coût en paramètres</h2>
+  <div class="ligne">
+    <div><label for="hIn1">Hauteur image</label><input type="number" id="hIn1" value="64" step="1" min="1"></div>
+    <div><label for="wIn1">Largeur image</label><input type="number" id="wIn1" value="64" step="1" min="1"></div>
+    <div><label for="cIn1">Canaux d'entrée</label><input type="number" id="cIn1" value="1" step="1" min="1"></div>
+    <div><label for="nOutIn1">Sorties denses</label><input type="number" id="nOutIn1" value="50" step="1" min="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="kIn1">Taille du filtre</label><input type="number" id="kIn1" value="5" step="1" min="1"></div>
+    <div><label for="nfIn1">Nombre de filtres</label><input type="number" id="nfIn1" value="16" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerParams()">Calculer</button>
+  <div id="erreurP1" class="erreur"></div>
+  <div id="resultatP1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Taille de sortie d'une convolution</h2>
+  <div class="ligne">
+    <div><label for="inIn2">Taille entrée</label><input type="number" id="inIn2" value="32" step="1" min="1"></div>
+    <div><label for="kIn2">Taille filtre</label><input type="number" id="kIn2" value="3" step="1" min="1"></div>
+    <div><label for="pIn2">Remplissage</label><input type="number" id="pIn2" value="1" step="1" min="0"></div>
+    <div><label for="sIn2">Pas</label><input type="number" id="sIn2" value="1" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerTailleSortie()">Calculer</button>
+  <div id="erreurT2" class="erreur"></div>
+  <div id="resultatT2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Convolution causale 1D (moyenne mobile apprise)</h2>
+  <p class="aide">Série chronologique, valeurs séparées par des virgules (ordre : ancien vers récent).</p>
+  <input type="text" id="serieIn3" value="10, 12, 9, 15, 11, 14">
+  <label for="poidsIn3">Poids du filtre $(w_0,w_1,\ldots)$, appliqués à $(y_t,y_{t-1},\ldots)$</label>
+  <input type="text" id="poidsIn3" value="0.5, 0.3, 0.2">
+  <div class="ligne">
+    <div><label for="biaisIn3">Biais</label><input type="number" id="biaisIn3" value="0.1" step="0.01"></div>
+  </div>
+  <button onclick="calculerConv1D()">Calculer</button>
+  <div id="erreurC3" class="erreur"></div>
+  <div id="resultatC3" class="resultat-zone"></div>
+  <svg id="svgConv3" width="450" height="200" viewBox="0 0 450 200"></svg>
+</div>
+
+<p class="avertissement">Rappels : paramètres dense $=H\times W\times C\times n_{\text{sortie}}+n_{\text{sortie}}$ ; paramètres convolutifs $=(k\times k\times C+1)\times n_{\text{filtres}}$ ; taille de sortie $=\lfloor(\text{entrée}-k+2p)/s\rfloor+1$ ; convolution causale $1$D : $z_t=\sum_i w_i\,y_{t-i}+b$, activation appliquée ensuite.</p>
+
+<script>
+function calculerParams(){
+  const erreurDiv=document.getElementById('erreurP1'); const resDiv=document.getElementById('resultatP1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const h=parseFloat(document.getElementById('hIn1').value);
+    const w=parseFloat(document.getElementById('wIn1').value);
+    const c=parseFloat(document.getElementById('cIn1').value);
+    const nOut=parseFloat(document.getElementById('nOutIn1').value);
+    const k=parseFloat(document.getElementById('kIn1').value);
+    const nf=parseFloat(document.getElementById('nfIn1').value);
+    if([h,w,c,nOut,k,nf].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if([h,w,c,nOut,k,nf].some(v=>v<1)) throw new Error('Toutes les valeurs doivent être strictement positives.');
+    const dense=h*w*c*nOut+nOut;
+    const conv=(k*k*c+1)*nf;
+    let out='<table><tr><th>architecture</th><th>paramètres</th></tr>';
+    out+=`<tr><td>dense</td><td>${dense.toLocaleString('fr-FR')}</td></tr>`;
+    out+=`<tr><td>convolutive</td><td>${conv.toLocaleString('fr-FR')}</td></tr></table>`;
+    out+=`<p>Rapport dense/convolutif $\\approx\\mathbf{${(dense/conv).toFixed(1)}}$</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerTailleSortie(){
+  const erreurDiv=document.getElementById('erreurT2'); const resDiv=document.getElementById('resultatT2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const inSz=parseFloat(document.getElementById('inIn2').value);
+    const k=parseFloat(document.getElementById('kIn2').value);
+    const p=parseFloat(document.getElementById('pIn2').value);
+    const s=parseFloat(document.getElementById('sIn2').value);
+    if([inSz,k,p,s].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if(s<1) throw new Error('Le pas doit être au moins 1.');
+    if(inSz-k+2*p<0) throw new Error('Le filtre est plus grand que l\'entrée remplie : configuration invalide.');
+    const out=Math.floor((inSz-k+2*p)/s)+1;
+    resDiv.innerHTML=`<p>Taille de sortie $=\\lfloor(${inSz}-${k}+2\\times${p})/${s}\\rfloor+1=\\mathbf{${out}}$</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerConv1D(){
+  const erreurDiv=document.getElementById('erreurC3'); const resDiv=document.getElementById('resultatC3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const serie=document.getElementById('serieIn3').value.split(',').map(s=>parseFloat(s.trim()));
+    const poids=document.getElementById('poidsIn3').value.split(',').map(s=>parseFloat(s.trim()));
+    const biais=parseFloat(document.getElementById('biaisIn3').value);
+    if(serie.some(isNaN)) throw new Error('La série doit être entièrement numérique.');
+    if(poids.some(isNaN)) throw new Error('Les poids doivent être numériques.');
+    if(isNaN(biais)) throw new Error('Le biais doit être numérique.');
+    const k=poids.length;
+    if(serie.length<k) throw new Error('La série est trop courte pour ce filtre.');
+    const sorties=[];
+    for(let t=k-1;t<serie.length;t++){
+      let z=biais;
+      for(let i=0;i<k;i++){ z+=poids[i]*serie[t-i]; }
+      const a=Math.max(0,z);
+      sorties.push({t:t+1, z, a});
+    }
+    let out='<table><tr><th>position</th><th>z</th><th>ReLU(z)</th></tr>';
+    sorties.forEach(s=>{ out+=`<tr><td>${s.t}</td><td>${s.z.toFixed(3)}</td><td>${s.a.toFixed(3)}</td></tr>`; });
+    out+='</table>';
+    resDiv.innerHTML=out;
+    dessinerConv(serie,sorties);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgConv3').innerHTML=''; }
+}
+
+function dessinerConv(serie,sorties){
+  const svg=document.getElementById('svgConv3');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=450,H=200,padL=45,padR=15,padT=15,padB=30;
+  const n=serie.length;
+  const allVals=serie.concat(sorties.map(s=>s.a));
+  const ymin=Math.min(...allVals)*0.9, ymax=Math.max(...allVals)*1.1;
+  const xToPix=i=>padL+(i/(n-1))*(W-padL-padR);
+  const yToPix=y=>H-padB-((y-ymin)/(ymax-ymin))*(H-padT-padB);
+  let ptsSerie='';
+  serie.forEach((v,i)=>{ ptsSerie += xToPix(i).toFixed(1)+','+yToPix(v).toFixed(1)+' '; });
+  const poly1=document.createElementNS(ns,'polyline');
+  poly1.setAttribute('points',ptsSerie); poly1.setAttribute('fill','none'); poly1.setAttribute('stroke','#1F6FB2'); poly1.setAttribute('stroke-width','2');
+  svg.appendChild(poly1);
+  let ptsConv='';
+  sorties.forEach(s=>{ ptsConv += xToPix(s.t-1).toFixed(1)+','+yToPix(s.a).toFixed(1)+' '; });
+  const poly2=document.createElementNS(ns,'polyline');
+  poly2.setAttribute('points',ptsConv); poly2.setAttribute('fill','none'); poly2.setAttribute('stroke','#1D9E75'); poly2.setAttribute('stroke-width','2');
+  svg.appendChild(poly2);
+}
+
+window.onload=()=>{ calculerParams(); calculerTailleSortie(); calculerConv1D(); };
+</script>
+</body>
+</html>

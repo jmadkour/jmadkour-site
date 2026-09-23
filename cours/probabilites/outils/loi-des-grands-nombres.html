@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 19 — La loi des grands nombres — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.cout { border-left-color: var(--cintu); }
+  .panneau.cout h2 { color: var(--cintu); }
+  .panneau.correl { border-left-color: var(--cex); }
+  .panneau.correl h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.cout button { background: var(--cintu); }
+  .panneau.cout button:hover { background: #b56600; }
+  .panneau.correl button { background: var(--cex); }
+  .panneau.correl button:hover { background: #206040; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 19 — La loi des grands nombres</h1>
+<p class="sous-titre">Calculatrice interactive — Probabilités</p>
+
+<div class="panneau">
+  <h2>σ(X̄ₙ) : la règle du √n</h2>
+  <div class="grille3">
+    <div><label for="sigmaVal">σ (écart-type individuel)</label><input id="sigmaVal" value="20"></div>
+    <div><label for="n1Val">n (échantillon 1)</label><input id="n1Val" value="25"></div>
+    <div><label for="n2Val">n (échantillon 2)</label><input id="n2Val" value="100"></div>
+  </div>
+  <button onclick="calculerRacineN()">Comparer σ(X̄ₙ) pour les deux tailles d'échantillon</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueRacineN" height="220"></canvas>
+</div>
+
+<div class="panneau cout">
+  <h2>Le coût d'une précision donnée</h2>
+  <div class="grille4">
+    <div><label for="n0Val">n initial</label><input id="n0Val" value="1100"></div>
+    <div><label for="coutUnitaire">coût par observation</label><input id="coutUnitaire" value="25"></div>
+    <div><label for="facteurPrecision">précision voulue (× meilleure)</label><input id="facteurPrecision" value="2"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerCout()">Calculer le nouvel échantillon et son coût</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau correl">
+  <h2>Quand la corrélation limite la mutualisation</h2>
+  <div class="grille4">
+    <div><label for="pVal">p (probabilité individuelle)</label><input id="pVal" value="0.04"></div>
+    <div><label for="rhoVal">ρ (corrélation par paire)</label><input id="rhoVal" value="0.15"></div>
+    <div><label for="nMaxVal">n maximum affiché</label><input id="nMaxVal" value="2000"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerCorrelationLGN()">Tracer σ(X̄ₙ), indépendant vs corrélé, et le plancher</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+  <canvas id="graphiqueCorrelLGN" height="240"></canvas>
+</div>
+
+<p class="avertissement">Rappels : E(X̄ₙ)=m, V(X̄ₙ)=σ²/n (indépendance), σ(X̄ₙ)=σ/√n. Sous corrélation ρ par paire : V(X̄ₙ)=V(Xᵢ)[1+(n-1)ρ]/n, qui tend vers ρ·V(Xᵢ) quand n→∞ (un plancher qui ne s'annule pas).</p>
+
+<script>
+let chartRacineN = null;
+function calculerRacineN() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const sigma = parseFloat(document.getElementById('sigmaVal').value);
+    const n1 = parseInt(document.getElementById('n1Val').value);
+    const n2 = parseInt(document.getElementById('n2Val').value);
+    if ([sigma,n1,n2].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (sigma<=0 || n1<=0 || n2<=0) throw new Error('σ et les tailles d\'échantillon doivent être strictement positifs.');
+
+    const sig1 = sigma/Math.sqrt(n1), sig2 = sigma/Math.sqrt(n2);
+    const facteurN = n2/n1, facteurSig = sig1/sig2;
+
+    resDiv.innerHTML = `
+      <table><tr><th>n</th><th>V(X̄ₙ)=σ²/n</th><th>σ(X̄ₙ)=σ/√n</th></tr>
+      <tr><td>${n1}</td><td>${(sigma*sigma/n1).toFixed(4)}</td><td>${sig1.toFixed(4)}</td></tr>
+      <tr><td>${n2}</td><td>${(sigma*sigma/n2).toFixed(4)}</td><td>${sig2.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">n a été multiplié par ${facteurN.toFixed(2)} ; σ(X̄ₙ) a été divisé par ${facteurSig.toFixed(2)} (≈√${facteurN.toFixed(2)}=${Math.sqrt(facteurN).toFixed(2)}).</p>
+    `;
+
+    const labels = [], valeurs = [];
+    const nMax = Math.max(n1,n2)*1.2;
+    for (let n=Math.min(n1,5); n<=nMax; n+=nMax/60) { labels.push(Math.round(n)); valeurs.push(sigma/Math.sqrt(n)); }
+    if (chartRacineN) chartRacineN.destroy();
+    chartRacineN = new Chart(document.getElementById('graphiqueRacineN').getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: [{ label: 'σ(X̄ₙ)', data: valeurs, borderColor:'#1F6FB2', backgroundColor:'transparent', borderWidth:2, pointRadius:0 }] },
+      options: { responsive: true, scales: { x: { title: { display:true, text:'n' } }, y: { title: { display:true, text:'σ(X̄ₙ)' } } },
+        plugins: { title: { display:true, text:'σ(X̄ₙ) décroît en 1/√n' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerCout() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const n0 = parseFloat(document.getElementById('n0Val').value);
+    const cout = parseFloat(document.getElementById('coutUnitaire').value);
+    const facteur = parseFloat(document.getElementById('facteurPrecision').value);
+    if ([n0,cout,facteur].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (n0<=0 || cout<=0 || facteur<=0) throw new Error('Toutes les valeurs doivent être strictement positives.');
+
+    const nNouveau = n0*facteur*facteur;
+    const coutInitial = n0*cout;
+    const coutNouveau = nNouveau*cout;
+
+    resDiv.innerHTML = `
+      <table><tr><th>échantillon initial</th><th>coût initial</th><th>nouvel échantillon (×${facteur} précision)</th><th>nouveau coût</th><th>facteur budget</th></tr>
+      <tr><td>${n0}</td><td>${coutInitial.toLocaleString('fr-FR')} dh</td><td>${nNouveau.toLocaleString('fr-FR')}</td><td>${coutNouveau.toLocaleString('fr-FR')} dh</td><td>${(facteur*facteur).toFixed(2)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Une précision multipliée par ${facteur} exige un échantillon (et un budget) multipliés par ${facteur}²=${(facteur*facteur).toFixed(2)}.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+let chartCorrelLGN = null;
+function calculerCorrelationLGN() {
+  const erreurDiv = document.getElementById('erreur3');
+  const resDiv = document.getElementById('resultat3');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const p = parseFloat(document.getElementById('pVal').value);
+    const rho = parseFloat(document.getElementById('rhoVal').value);
+    const nMax = parseInt(document.getElementById('nMaxVal').value);
+    if ([p,rho,nMax].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (p<0 || p>1) throw new Error('p doit être compris entre 0 et 1.');
+    if (rho<-1 || rho>1) throw new Error('ρ doit être compris entre -1 et 1.');
+    if (nMax<=1) throw new Error('n maximum doit être strictement supérieur à 1.');
+
+    const Vxi = p*(1-p);
+    const plancher = Math.max(rho*Vxi, 0);
+    const sigPlancher = Math.sqrt(plancher);
+
+    resDiv.innerHTML = `
+      <table><tr><th>V(Xᵢ)=p(1-p)</th><th>plancher ρ·V(Xᵢ)</th><th>√(plancher)</th></tr>
+      <tr><td>${Vxi.toFixed(4)}</td><td>${plancher.toFixed(4)}</td><td>${sigPlancher.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Sous corrélation, σ(X̄ₙ) ne tend pas vers 0 mais vers ce plancher ${sigPlancher.toFixed(4)}, quel que soit n.</p>
+    `;
+
+    const labels = [], vIndep = [], vCorr = [], vPlancher = [];
+    const nMin = 5;
+    const nPoints = 60;
+    for (let i=0; i<=nPoints; i++) {
+      const n = Math.round(nMin * Math.pow(nMax/nMin, i/nPoints));
+      labels.push(n);
+      vIndep.push(Math.sqrt(Vxi/n));
+      vCorr.push(Math.sqrt(Vxi*(1+(n-1)*rho)/n));
+      vPlancher.push(sigPlancher);
+    }
+    if (chartCorrelLGN) chartCorrelLGN.destroy();
+    chartCorrelLGN = new Chart(document.getElementById('graphiqueCorrelLGN').getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: [
+        { label: 'corrélé (ρ='+rho+')', data: vCorr, borderColor:'#1D9E75', backgroundColor:'transparent', borderWidth:2, pointRadius:0 },
+        { label: 'indépendant', data: vIndep, borderColor:'#1F6FB2', backgroundColor:'transparent', borderWidth:2, pointRadius:0, borderDash:[5,5] },
+        { label: 'plancher', data: vPlancher, borderColor:'#5A5A5A', backgroundColor:'transparent', borderWidth:1, pointRadius:0, borderDash:[2,2] }
+      ] },
+      options: { responsive: true, scales: { x: { type:'logarithmic', title: { display:true, text:'n (échelle log)' } }, y: { title: { display:true, text:'σ(X̄ₙ)' } } },
+        plugins: { title: { display:true, text:'La corrélation empêche σ(X̄ₙ) de s\'annuler' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerRacineN(); calculerCout(); calculerCorrelationLGN(); };
+</script>
+</body>
+</html>

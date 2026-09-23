@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Une colonne, un graphique — Calculatrice interactive</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.cumul { border-left-color: var(--ceco); } .panneau.cumul h2 { color: var(--ceco); }
+  .panneau.axe { border-left-color: var(--cintu); } .panneau.axe h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.cumul button { background: var(--ceco); } .panneau.cumul button:hover { background: #17578f; }
+  .panneau.axe button { background: var(--cintu); } .panneau.axe button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  canvas { max-height: 280px; margin-top: 0.8em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Une colonne, un graphique</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique descriptive</p>
+
+<div class="panneau cumul">
+  <h2>Courbe cumulative et médiane par interpolation</h2>
+  <label for="classesMed">une ligne par classe : borneInf,borneSup,effectif</label>
+  <textarea id="classesMed" rows="4">0,2,45
+2,4,90
+4,6,105
+6,10,60</textarea>
+  <button onclick="calculerMediane()">Tracer F(x) et calculer la médiane</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphCumul"></canvas>
+</div>
+
+<div class="panneau axe">
+  <h2>L'effet d'un axe tronqué</h2>
+  <div class="grille3">
+    <div><label for="valA">valeur année 1</label><input id="valA" value="8.2"></div>
+    <div><label for="valB">valeur année 2</label><input id="valB" value="8.5"></div>
+    <div><label for="axeMin">départ de l'axe tronqué</label><input id="axeMin" value="8"></div>
+  </div>
+  <button onclick="calculerAxe()">Comparer axe tronqué et axe à zéro</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphAxe"></canvas>
+</div>
+
+<p class="avertissement">Rappels : Me=e_(i−1)+a_i×(0,5−F_(i−1))/(F_i−F_(i−1)) ; un axe des ordonnées qui ne part pas de zéro exagère visuellement les écarts. Bâtons séparés pour le qualitatif/discret ; rectangles jointifs pour le continu ; secteurs seulement pour des parts d'un tout avec peu de modalités.</p>
+
+<script>
+let chartCumul=null, chartAxe=null;
+
+function calculerMediane(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('classesMed').value.trim().split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    const classes=lignes.map(l=>{
+      const p=l.split(',').map(s=>parseFloat(s.trim()));
+      if(p.length!==3||p.some(isNaN)) throw new Error('Chaque ligne doit contenir 3 nombres : borneInf,borneSup,effectif.');
+      return {lo:p[0],hi:p[1],n:p[2]};
+    });
+    const total=classes.reduce((a,c)=>a+c.n,0);
+    let cum=0; const points=[{x:classes[0].lo,y:0}]; let lignesTable='';
+    let Fprev=0, classeMediane=null, lo_m=0, a_m=0;
+    classes.forEach(c=>{
+      cum+=c.n;
+      const F=cum/total;
+      lignesTable+=`<tr><td>[${c.lo},${c.hi}[</td><td>${c.n}</td><td>${F.toFixed(4)}</td></tr>`;
+      points.push({x:c.hi,y:F});
+      if(classeMediane===null && F>=0.5){ classeMediane=`[${c.lo},${c.hi}[`; lo_m=c.lo; a_m=c.hi-c.lo; }
+      Fprev=F;
+    });
+    // recompute properly to get F_{i-1} for the median class
+    let cum2=0, Fim1=0;
+    for(const c of classes){
+      const Fi=(cum2+c.n)/total;
+      if(Fi>=0.5){ Fim1=cum2/total; break; }
+      cum2+=c.n;
+    }
+    const median = lo_m + a_m*(0.5-Fim1)/( (classes.find(c=>c.lo===lo_m).n/total + Fim1) - Fim1 );
+    // simpler: recompute Fi_class directly
+    let cum3=0, medianVal=null;
+    for(const c of classes){
+      const F_before=cum3/total;
+      cum3+=c.n;
+      const F_after=cum3/total;
+      if(medianVal===null && F_after>=0.5){
+        medianVal = c.lo + (c.hi-c.lo)*(0.5-F_before)/(F_after-F_before);
+      }
+    }
+    resDiv.innerHTML=`<table><tr><th>classe</th><th>n_i</th><th>F_i</th></tr>${lignesTable}</table>
+      <table><tr><th>classe médiane</th><th>médiane (interpolation)</th></tr>
+      <tr><td>${classeMediane}</td><td><strong>${medianVal.toFixed(4)}</strong></td></tr></table>`;
+    if(chartCumul) chartCumul.destroy();
+    chartCumul=new Chart(document.getElementById('graphCumul'),{type:'line',data:{datasets:[{label:'F(x)',data:points,borderColor:'#1F6FB2',backgroundColor:'rgba(31,111,178,0.1)',fill:true,tension:0}]},options:{scales:{x:{type:'linear',title:{display:true,text:'x'}},y:{title:{display:true,text:'F(x)'},min:0,max:1}}}});
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerAxe(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const a=parseFloat(document.getElementById('valA').value);
+    const b=parseFloat(document.getElementById('valB').value);
+    const axeMin=parseFloat(document.getElementById('axeMin').value);
+    if([a,b,axeMin].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(axeMin>=Math.min(a,b)) throw new Error('Le départ de l\'axe tronqué doit être inférieur aux deux valeurs.');
+    const axeMax=Math.max(a,b)*1.05;
+    const propA_tronque=(a-axeMin)/(axeMax-axeMin);
+    const propB_tronque=(b-axeMin)/(axeMax-axeMin);
+    const ratioTronque=propB_tronque/propA_tronque;
+    const ratioReel=b/a;
+    resDiv.innerHTML=`<table><tr><th>hauteur visuelle A (axe tronqué)</th><th>hauteur visuelle B (axe tronqué)</th><th>ratio visuel</th><th>ratio réel (b/a)</th></tr>
+      <tr><td>${(propA_tronque*100).toFixed(1)} %</td><td>${(propB_tronque*100).toFixed(1)} %</td><td><strong>${ratioTronque.toFixed(2)}</strong></td><td><strong>${ratioReel.toFixed(4)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Avec un axe partant de zéro, les deux barres seraient quasiment identiques (écart réel de ${((ratioReel-1)*100).toFixed(2)} %) ; l'axe tronqué les rend visuellement très différentes.</p>`;
+    if(chartAxe) chartAxe.destroy();
+    chartAxe=new Chart(document.getElementById('graphAxe'),{type:'bar',data:{labels:['année 1 (tronqué)','année 2 (tronqué)','année 1 (zéro)','année 2 (zéro)'],datasets:[{data:[a,b,a,b],backgroundColor:['#1F6FB2','#B56600','#1F6FB2','#B56600']}]},options:{plugins:{legend:{display:false}},scales:{y:{min:0}}}});
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerMediane(); calculerAxe(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Systèmes à deux variables — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .etiquette { display: inline-block; padding: 0.3em 0.8em; border-radius: 12px; font-size: 0.9em; color: white; }
+  .stable { background: var(--ceco); } .instable { background: #b00020; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Systèmes à deux variables</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse dynamique</p>
+
+<div class="panneau">
+  <h2>Matrice $A=\begin{pmatrix}a&b\\c&d\end{pmatrix}$, système $\dot Y=AY$ (continu)</h2>
+  <div class="grille4">
+    <div><label for="ma">a</label><input id="ma" value="-3"></div>
+    <div><label for="mb">b</label><input id="mb" value="1"></div>
+    <div><label for="mc">c</label><input id="mc" value="2"></div>
+    <div><label for="md">d</label><input id="md" value="-2"></div>
+  </div>
+  <button onclick="analyserSysteme()">Calculer valeurs propres et portrait de phase</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphique8" height="320"></canvas>
+</div>
+
+<p class="avertissement">Portrait de phase (régime continu) : $\det(A)<0$ → col (selle), toujours instable. $\Delta=\mathrm{tr}(A)^2-4\det(A)>0$ et $\det(A)>0$ → nœud (stable si $\mathrm{tr}(A)<0$). $\Delta<0$ → foyer si $\mathrm{tr}(A)\neq0$ (spirale), centre si $\mathrm{tr}(A)=0$ (orbite fermée).</p>
+
+<script>
+let chart8 = null;
+
+function eig(a,b,c,d){
+  const tr=a+d, det=a*d-b*c, disc=tr*tr-4*det;
+  return {tr,det,disc};
+}
+
+function eigenvector(a,b,c,d,lambda){
+  // (A-lambda I) v = 0 ; use row (a-lambda, b)
+  if (Math.abs(b) > 1e-9) return [1, -(a-lambda)/b];
+  if (Math.abs(c) > 1e-9) return [-(d-lambda)/c, 1];
+  return [1,0];
+}
+
+function analyserSysteme() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const a = parseFloat(document.getElementById('ma').value);
+    const b = parseFloat(document.getElementById('mb').value);
+    const c = parseFloat(document.getElementById('mc').value);
+    const d = parseFloat(document.getElementById('md').value);
+    if ([a,b,c,d].some(isNaN)) throw new Error('Les quatre coefficients doivent être numériques.');
+
+    const {tr,det,disc} = eig(a,b,c,d);
+    let html = `<p><strong>tr(A) = ${tr.toFixed(4)}, det(A) = ${det.toFixed(4)}, Δ = ${disc.toFixed(4)}</strong></p>`;
+    let portrait, stable, l1=null, l2=null, v1=null, v2=null;
+
+    if (det < 0) {
+      portrait = 'col (selle)';
+      stable = false;
+      l1 = (tr+Math.sqrt(disc))/2; l2 = (tr-Math.sqrt(disc))/2;
+      v1 = eigenvector(a,b,c,d,l1); v2 = eigenvector(a,b,c,d,l2);
+      html += `<p><strong>λ₁ = ${l1.toFixed(4)}</strong> (vecteur propre ≈ (1, ${v1[1].toFixed(3)}))</p>`;
+      html += `<p><strong>λ₂ = ${l2.toFixed(4)}</strong> (vecteur propre ≈ (1, ${v2[1].toFixed(3)}))</p>`;
+    } else if (disc > 1e-9) {
+      l1 = (tr+Math.sqrt(disc))/2; l2 = (tr-Math.sqrt(disc))/2;
+      v1 = eigenvector(a,b,c,d,l1); v2 = eigenvector(a,b,c,d,l2);
+      portrait = 'nœud';
+      stable = tr < 0;
+      html += `<p><strong>λ₁ = ${l1.toFixed(4)}</strong> (vecteur propre ≈ (1, ${v1[1].toFixed(3)}))</p>`;
+      html += `<p><strong>λ₂ = ${l2.toFixed(4)}</strong> (vecteur propre ≈ (1, ${v2[1].toFixed(3)}))</p>`;
+    } else if (Math.abs(disc) <= 1e-9) {
+      const l = tr/2;
+      portrait = 'nœud dégénéré (racine double)';
+      stable = tr < 0;
+      html += `<p><strong>λ = ${l.toFixed(4)}</strong> (racine double)</p>`;
+    } else {
+      const re = tr/2, im = Math.sqrt(-disc)/2;
+      portrait = Math.abs(tr) < 1e-9 ? 'centre' : 'foyer';
+      stable = tr < 0;
+      html += `<p><strong>λ = ${re.toFixed(4)} ± ${im.toFixed(4)}i</strong></p>`;
+    }
+
+    html = `<p><span class="etiquette ${stable?'stable':'instable'}">${portrait} — ${stable?'stable':'instable'}</span></p>` + html;
+    resDiv.innerHTML = html;
+
+    // trajectory: simulate a couple of initial conditions via Euler integration
+    const pts1 = [], pts2 = [];
+    let y1a=1.5, y2a=0.3, y1b=-1, y2b=1.2;
+    const dt=0.02, steps=400;
+    for (let i=0;i<steps;i++){
+      pts1.push({x:y1a,y:y2a}); pts2.push({x:y1b,y:y2b});
+      const dy1a=a*y1a+b*y2a, dy2a=c*y1a+d*y2a;
+      const dy1b=a*y1b+b*y2b, dy2b=c*y1b+d*y2b;
+      y1a += dt*dy1a; y2a += dt*dy2a;
+      y1b += dt*dy1b; y2b += dt*dy2b;
+      if (Math.abs(y1a)>50||Math.abs(y2a)>50) break;
+    }
+
+    if (chart8) chart8.destroy();
+    const ctx = document.getElementById('graphique8').getContext('2d');
+    chart8 = new Chart(ctx, {
+      type: 'scatter',
+      data: { datasets: [
+        { label: 'trajectoire 1', data: pts1, showLine: true, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'trajectoire 2', data: pts2, showLine: true, borderColor: '#B56600', backgroundColor: 'transparent', pointRadius: 0 }
+      ]},
+      options: { responsive: true, aspectRatio: 1.3, scales: { x: { title: { display: true, text: 'Y₁' } }, y: { title: { display: true, text: 'Y₂' } } },
+        plugins: { title: { display: true, text: 'Portrait de phase (deux conditions initiales)' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = analyserSysteme;
+</script>
+</body>
+</html>

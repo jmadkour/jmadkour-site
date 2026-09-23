@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Les indicateurs de tendance centrale — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.groupes { border-left-color: var(--ceco); } .panneau.groupes h2 { color: var(--ceco); }
+  .panneau.autres { border-left-color: var(--cex); } .panneau.autres h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.groupes button { background: var(--ceco); } .panneau.groupes button:hover { background: #17578f; }
+  .panneau.autres button { background: var(--cex); } .panneau.autres button:hover { background: #206040; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Les indicateurs de tendance centrale</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique descriptive</p>
+
+<div class="panneau">
+  <h2>Mode, médiane et moyenne d'une série</h2>
+  <label for="serie">valeurs (virgules)</label>
+  <input id="serie" value="2810,4900,5100,5400,5600,5900,6200,6770,7100,19050">
+  <button onclick="calculerCentrale()">Calculer mode, médiane, moyenne et diagnostiquer l'asymétrie</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau groupes">
+  <h2>Moyenne pondérée de sous-groupes (théorème de la moyenne totale)</h2>
+  <label for="groupesInput">une ligne par groupe : effectif,moyenne</label>
+  <textarea id="groupesInput" rows="4">120,15000
+200,22000
+80,35000</textarea>
+  <button onclick="calculerGroupes()">Calculer la moyenne générale (pondérée) et comparer à la moyenne simple</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau autres">
+  <h2>Moyennes géométrique, harmonique et quadratique</h2>
+  <label for="valsAutres">valeurs strictement positives (virgules)</label>
+  <input id="valsAutres" value="1.30,0.90">
+  <button onclick="calculerAutresMoyennes()">Calculer les quatre moyennes et vérifier l'inégalité</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : mode = valeur la plus fréquente ; médiane = valeur centrale (robuste aux extrêmes) ; moyenne = point d'équilibre. Théorème de la moyenne totale : moyenne générale = Σ(n_j·x̄_j)/n, jamais la moyenne simple des moyennes de groupe. Inégalité : harmonique ≤ géométrique ≤ arithmétique ≤ quadratique, avec égalité seulement si toutes les valeurs sont identiques.</p>
+
+<script>
+function calculerCentrale(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const vals=document.getElementById('serie').value.split(',').map(s=>parseFloat(s.trim()));
+    if(vals.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(vals.length<3) throw new Error('Il faut au moins 3 valeurs.');
+    const n=vals.length;
+    const sorted=[...vals].sort((a,b)=>a-b);
+    const median = n%2===0 ? (sorted[n/2-1]+sorted[n/2])/2 : sorted[(n-1)/2];
+    const mean = vals.reduce((a,b)=>a+b,0)/n;
+    // mode : valeur la plus fréquente (peut ne pas être unique)
+    const compte={};
+    vals.forEach(v=>{ compte[v]=(compte[v]||0)+1; });
+    let maxFreq=0;
+    Object.values(compte).forEach(f=>{ if(f>maxFreq) maxFreq=f; });
+    const modes=Object.keys(compte).filter(k=>compte[k]===maxFreq).map(Number);
+    const modeTxt = maxFreq>1 ? modes.join(', ') : 'aucun mode net (toutes les valeurs distinctes)';
+    let diagnostic='distribution approximativement symétrique';
+    if(maxFreq>1 && modes.length===1){
+      if(modes[0]<median && median<mean) diagnostic='étalée à droite (mode < médiane < moyenne)';
+      else if(modes[0]>median && median>mean) diagnostic='étalée à gauche (mode > médiane > moyenne)';
+    }
+    resDiv.innerHTML=`<table><tr><th>n</th><th>mode</th><th>médiane</th><th>moyenne</th></tr>
+      <tr><td>${n}</td><td>${modeTxt}</td><td><strong>${median.toFixed(2)}</strong></td><td><strong>${mean.toFixed(2)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Diagnostic (si mode net disponible) : ${diagnostic}.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerGroupes(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('groupesInput').value.trim().split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    const groupes=lignes.map(l=>{
+      const p=l.split(',').map(s=>parseFloat(s.trim()));
+      if(p.length!==2||p.some(isNaN)) throw new Error('Chaque ligne doit contenir 2 nombres : effectif,moyenne.');
+      return {n:p[0], x:p[1]};
+    });
+    let sumNX=0, sumN=0;
+    groupes.forEach(g=>{ sumNX+=g.n*g.x; sumN+=g.n; });
+    const moyennePonderee=sumNX/sumN;
+    const moyenneSimple=groupes.reduce((a,g)=>a+g.x,0)/groupes.length;
+    resDiv.innerHTML=`<table><tr><th>n total</th><th>moyenne générale (pondérée, correcte)</th><th>moyenne simple des moyennes (fausse)</th></tr>
+      <tr><td>${sumN}</td><td><strong>${moyennePonderee.toFixed(4)}</strong></td><td>${moyenneSimple.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${Math.abs(moyennePonderee-moyenneSimple)>0.01?'Les deux diffèrent : la moyenne simple ignore les effectifs de chaque groupe.':'Les deux coïncident ici car les effectifs de groupe sont égaux.'}</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerAutresMoyennes(){
+  const erreurDiv=document.getElementById('erreur3'); const resDiv=document.getElementById('resultat3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const vals=document.getElementById('valsAutres').value.split(',').map(s=>parseFloat(s.trim()));
+    if(vals.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(vals.some(v=>v<=0)) throw new Error('Toutes les valeurs doivent être strictement positives.');
+    const n=vals.length;
+    const arith=vals.reduce((a,b)=>a+b,0)/n;
+    const geo=Math.pow(vals.reduce((a,b)=>a*b,1), 1/n);
+    const harmo=n/vals.reduce((a,b)=>a+1/b,0);
+    const quad=Math.sqrt(vals.reduce((a,b)=>a+b*b,0)/n);
+    resDiv.innerHTML=`<table><tr><th>harmonique</th><th>géométrique</th><th>arithmétique</th><th>quadratique</th></tr>
+      <tr><td>${harmo.toFixed(6)}</td><td>${geo.toFixed(6)}</td><td>${arith.toFixed(6)}</td><td>${quad.toFixed(6)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${(harmo<=geo+1e-9 && geo<=arith+1e-9 && arith<=quad+1e-9)?'Inégalité vérifiée : harmonique ≤ géométrique ≤ arithmétique ≤ quadratique.':'Attention, vérifier les valeurs saisies.'} Si le produit des valeurs représente des coefficients de croissance successifs, le taux moyen correct est (géométrique − 1)×100 = ${((geo-1)*100).toFixed(4)} %.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerCentrale(); calculerGroupes(); calculerAutresMoyennes(); };
+</script>
+</body>
+</html>

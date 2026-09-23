@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — Mise en œuvre sur R et Python — Boîte à outils diagnostique</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  textarea { resize: vertical; min-height: 4.5em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 190px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  progress { width: 100%; height: 1.2em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — Mise en œuvre sur R et Python</h1>
+<p class="sous-titre">Boîte à outils diagnostique — quatre pièges silents des logiciels de réseaux</p>
+
+<div class="panneau">
+  <h2>1. Détecteur de graphe non connexe (piège de la proximité)</h2>
+  <p class="aide">Nœuds séparés par des virgules. Arêtes : une par ligne, format <code>i,j</code> (non orientées).</p>
+  <div class="ligne">
+    <div><label for="ccNodes">Nœuds</label><input type="text" id="ccNodes" value="A,B,C,D,E"></div>
+  </div>
+  <label for="ccEdges">Arêtes</label>
+  <textarea id="ccEdges">A,B
+B,C
+D,E</textarea>
+  <button onclick="calculerCloseness()">Calculer la proximité (et détecter la déconnexion)</button>
+  <div id="resultatCloseness" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Comparateur intermédiarité brute / normalisée</h2>
+  <p class="aide">Mêmes nœuds/arêtes que ci-dessus, ou un autre réseau. Nœuds séparés par des virgules ; arêtes une par ligne <code>i,j</code>.</p>
+  <div class="ligne">
+    <div><label for="btNodes">Nœuds</label><input type="text" id="btNodes" value="1,2,3,4,5,6,7"></div>
+  </div>
+  <label for="btEdges">Arêtes</label>
+  <textarea id="btEdges">1,2
+1,3
+2,3
+3,4
+4,5
+5,6
+5,7
+6,7</textarea>
+  <button onclick="calculerBetweenness()">Calculer l'intermédiarité (brute et normalisée)</button>
+  <div id="resultatBetweenness" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Test de significativité par recâblage à degrés conservés</h2>
+  <p class="aide">Réutilise le réseau saisi dans le panneau 2. Recâble le réseau (double-swaps d'arêtes) <code>N</code> fois et compare le clustering moyen observé à la distribution nulle.</p>
+  <div class="ligne">
+    <div><label for="nmTrials">Nombre de recâblages</label><input type="number" id="nmTrials" value="1000" step="100" min="10"></div>
+    <div><label for="nmSwaps">Swaps par recâblage</label><input type="number" id="nmSwaps" value="20" step="1" min="1"></div>
+    <div><label for="nmSeed">Graine aléatoire</label><input type="number" id="nmSeed" value="42" step="1"></div>
+  </div>
+  <button onclick="calculerNullModel()">Lancer le test de significativité</button>
+  <div id="resultatNullModel" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Ces trois outils reproduisent délibérément les comportements par défaut (souvent silencieux) d'igraph et de networkx, afin d'en révéler les pièges plutôt que de les masquer : la proximité est calculée composante par composante sans avertissement de déconnexion, l'intermédiarité est affichée à la fois en valeur brute et normalisée pour éviter toute confusion entre logiciels, et le test de recâblage rend explicite ce qu'une simple valeur de clustering ne dit jamais d'elle-même.</p>
+
+<script>
+function parseGraph(nodesStr, edgesStr) {
+  const nodes = nodesStr.split(',').map(s=>s.trim()).filter(s=>s.length);
+  const idx = {}; nodes.forEach((n,i)=>idx[n]=i);
+  const n = nodes.length;
+  const adj = Array.from({length:n}, () => []);
+  const edgeSet = new Set();
+  edgesStr.trim().split('\n').filter(l=>l.trim().length).forEach(line => {
+    const parts = line.split(',').map(s=>s.trim());
+    const i = idx[parts[0]], j = idx[parts[1]];
+    if (i===undefined || j===undefined) throw new Error('nœud inconnu: '+line);
+    if (i===j) return;
+    const key = i<j ? i+'-'+j : j+'-'+i;
+    if (edgeSet.has(key)) return;
+    edgeSet.add(key);
+    adj[i].push(j); adj[j].push(i);
+  });
+  return {nodes, idx, n, adj};
+}
+
+function bfsDistances(adj, src) {
+  const n = adj.length;
+  const dist = new Array(n).fill(-1);
+  dist[src] = 0;
+  const queue = [src];
+  let head = 0;
+  while (head < queue.length) {
+    const u = queue[head++];
+    for (const v of adj[u]) if (dist[v] === -1) { dist[v] = dist[u]+1; queue.push(v); }
+  }
+  return dist;
+}
+
+function connectedComponents(adj) {
+  const n = adj.length;
+  const comp = new Array(n).fill(-1);
+  let c = 0;
+  for (let s = 0; s < n; s++) {
+    if (comp[s] !== -1) continue;
+    const dist = bfsDistances(adj, s);
+    for (let v = 0; v < n; v++) if (dist[v] !== -1) comp[v] = c;
+    c++;
+  }
+  return {comp, count: c};
+}
+
+function closenessNaive(adj) {
+  const n = adj.length;
+  const out = new Array(n).fill(0);
+  for (let s = 0; s < n; s++) {
+    const dist = bfsDistances(adj, s);
+    let sum = 0, reached = 0;
+    for (let v = 0; v < n; v++) if (v !== s && dist[v] !== -1) { sum += dist[v]; reached++; }
+    out[s] = reached > 0 ? reached/sum : 0;
+  }
+  return out;
+}
+
+function calculerCloseness() {
+  const resDiv = document.getElementById('resultatCloseness');
+  try {
+    const {nodes, n, adj} = parseGraph(document.getElementById('ccNodes').value, document.getElementById('ccEdges').value);
+    const cc = closenessNaive(adj);
+    const {comp, count} = connectedComponents(adj);
+    let out = '<table><tr><th>nœud</th><th>proximité naïve</th><th>composante</th></tr>';
+    nodes.forEach((nd,i) => { out += `<tr><td>${nd}</td><td>${cc[i].toFixed(4)}</td><td>${comp[i]}</td></tr>`; });
+    out += '</table>';
+    if (count > 1) {
+      out += `<p class="alerte">⚠ Graphe NON connexe : ${count} composantes détectées. Les valeurs de proximité ci-dessus ne sont comparables qu'à l'intérieur d'une même composante — un nœud isolé dans une petite composante peut afficher une proximité maximale (1.0000) sans être réellement central dans le réseau global.</p>`;
+      const maxVal = Math.max(...cc);
+      const maxNodes = nodes.filter((_,i)=>Math.abs(cc[i]-maxVal)<1e-9);
+      out += `<p>Nœud(s) atteignant la valeur maximale (${maxVal.toFixed(4)}) : <strong>${maxNodes.join(', ')}</strong> — vérifier leur taille de composante avant toute interprétation économique.</p>`;
+    } else {
+      out += '<p class="ok">✓ Graphe connexe : les valeurs de proximité sont directement comparables entre tous les nœuds.</p>';
+    }
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : '+e.message+'</p>';
+  }
+}
+
+function nodeBetweennessBrandes(adj) {
+  const n = adj.length;
+  const CB = new Array(n).fill(0);
+  for (let s = 0; s < n; s++) {
+    const S = [];
+    const P = Array.from({length:n}, () => []);
+    const sigma = new Array(n).fill(0); sigma[s] = 1;
+    const d = new Array(n).fill(-1); d[s] = 0;
+    const queue = [s]; let head = 0;
+    while (head < queue.length) {
+      const v = queue[head++];
+      S.push(v);
+      for (const w of adj[v]) {
+        if (d[w] < 0) { queue.push(w); d[w] = d[v]+1; }
+        if (d[w] === d[v]+1) { sigma[w] += sigma[v]; P[w].push(v); }
+      }
+    }
+    const delta = new Array(n).fill(0);
+    while (S.length) {
+      const w = S.pop();
+      for (const v of P[w]) delta[v] += (sigma[v]/sigma[w]) * (1+delta[w]);
+      if (w !== s) CB[w] += delta[w];
+    }
+  }
+  return CB.map(v => v/2);
+}
+
+function calculerBetweenness() {
+  const resDiv = document.getElementById('resultatBetweenness');
+  try {
+    const {nodes, n, adj} = parseGraph(document.getElementById('btNodes').value, document.getElementById('btEdges').value);
+    const raw = nodeBetweennessBrandes(adj);
+    const denom = (n-1)*(n-2)/2;
+    let out = `<p>Dénominateur de normalisation $(n-1)(n-2)/2$ pour $n=${n}$ : <strong>${denom}</strong></p>`;
+    out += '<table><tr><th>nœud</th><th>brute (igraph par défaut)</th><th>normalisée (networkx par défaut)</th></tr>';
+    nodes.forEach((nd,i) => { out += `<tr><td>${nd}</td><td>${raw[i].toFixed(4)}</td><td>${denom>0 ? (raw[i]/denom).toFixed(4) : 'n/a'}</td></tr>`; });
+    out += '</table>';
+    out += '<p class="aide">Les deux colonnes décrivent la même grandeur sous-jacente : diviser la colonne « brute » par le dénominateur ci-dessus redonne exactement la colonne « normalisée ». Une comparaison entre deux logiciels sans vérifier laquelle des deux conventions est active est une source fréquente de fausses « contradictions ».</p>';
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : '+e.message+'</p>';
+  }
+}
+
+function clusteringCoefficient(adj) {
+  const n = adj.length;
+  let sum = 0, count = 0;
+  for (let v = 0; v < n; v++) {
+    const neighbors = adj[v];
+    const k = neighbors.length;
+    if (k < 2) continue;
+    let links = 0;
+    for (let a = 0; a < k; a++) for (let b = a+1; b < k; b++) {
+      if (adj[neighbors[a]].includes(neighbors[b])) links++;
+    }
+    sum += (2*links)/(k*(k-1));
+    count++;
+  }
+  return count>0 ? sum/count : 0;
+}
+
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function edgesFromAdj(adj) {
+  const edges = [];
+  const n = adj.length;
+  for (let i = 0; i < n; i++) for (const j of adj[i]) if (j > i) edges.push([i,j]);
+  return edges;
+}
+
+function adjFromEdges(n, edges) {
+  const adj = Array.from({length:n}, () => []);
+  edges.forEach(([i,j]) => { adj[i].push(j); adj[j].push(i); });
+  return adj;
+}
+
+function doubleEdgeSwap(n, edges, swaps, rng) {
+  const edgeSet = new Set(edges.map(([i,j]) => (i<j?i+'-'+j:j+'-'+i)));
+  const arr = edges.map(e => e.slice());
+  let done = 0, attempts = 0;
+  while (done < swaps && attempts < swaps*20) {
+    attempts++;
+    const e1 = Math.floor(rng()*arr.length), e2 = Math.floor(rng()*arr.length);
+    if (e1 === e2) continue;
+    let [a,b] = arr[e1], [c,d] = arr[e2];
+    if (rng() < 0.5) { const tmp=c; c=d; d=tmp; }
+    if (a===c || a===d || b===c || b===d) continue;
+    const k1 = a<d ? a+'-'+d : d+'-'+a;
+    const k2 = c<b ? c+'-'+b : b+'-'+c;
+    if (edgeSet.has(k1) || edgeSet.has(k2)) continue;
+    const oldK1 = a<b?a+'-'+b:b+'-'+a, oldK2 = c<d?c+'-'+d:d+'-'+c;
+    edgeSet.delete(oldK1); edgeSet.delete(oldK2);
+    edgeSet.add(k1); edgeSet.add(k2);
+    arr[e1] = [a,d]; arr[e2] = [c,b];
+    done++;
+  }
+  return arr;
+}
+
+function calculerNullModel() {
+  const resDiv = document.getElementById('resultatNullModel');
+  try {
+    const {nodes, n, adj} = parseGraph(document.getElementById('btNodes').value, document.getElementById('btEdges').value);
+    const trials = parseInt(document.getElementById('nmTrials').value);
+    const swaps = parseInt(document.getElementById('nmSwaps').value);
+    const seed = parseInt(document.getElementById('nmSeed').value) || 42;
+    if (isNaN(trials) || trials < 1 || isNaN(swaps) || swaps < 1) {
+      resDiv.innerHTML = '<p class="erreur">Paramètres invalides.</p>'; return;
+    }
+    const observed = clusteringCoefficient(adj);
+    const baseEdges = edgesFromAdj(adj);
+    const rng = mulberry32(seed);
+    const samples = [];
+    for (let t = 0; t < trials; t++) {
+      const swapped = doubleEdgeSwap(n, baseEdges, swaps, rng);
+      const rewiredAdj = adjFromEdges(n, swapped);
+      samples.push(clusteringCoefficient(rewiredAdj));
+    }
+    samples.sort((a,b)=>a-b);
+    const mean = samples.reduce((s,x)=>s+x,0)/samples.length;
+    const median = samples[Math.floor(samples.length/2)];
+    const min = samples[0], max = samples[samples.length-1];
+    const geOrEq = samples.filter(x => x >= observed - 1e-9).length;
+    const pct = 100*geOrEq/samples.length;
+    let out = `<div class="valeur">Clustering observé : ${observed.toFixed(4)}</div>`;
+    out += `<div class="valeur">Moyenne nulle : ${mean.toFixed(4)}</div>`;
+    out += `<div class="valeur">Médiane nulle : ${median.toFixed(4)}</div>`;
+    out += `<p>Étendue nulle : [${min.toFixed(4)}, ${max.toFixed(4)}]. Part des réseaux recâblés atteignant ou dépassant la valeur observée : <strong>${pct.toFixed(1)}%</strong> (sur ${trials} essais, ${swaps} swaps chacun).</p>`;
+    out += `<p>${pct < 5 ? '<span class="ok">Résultat dans la queue supérieure (&lt;5%) : significatif au sens usuel.</span>' : pct < 15 ? 'Résultat élevé mais pas extrême (entre 5% et 15%) : suggestif, non concluant à lui seul, surtout sur un petit réseau.' : 'Résultat proche du hasard : pas de signal fort de structure en communautés.'}</p>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur : '+e.message+'</p>';
+  }
+}
+
+window.onload = () => { calculerCloseness(); calculerBetweenness(); calculerNullModel(); };
+</script>
+</body>
+</html>

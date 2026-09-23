@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Optimiser sans contrainte — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .etiquette { display: inline-block; padding: 0.25em 0.6em; border-radius: 10px; font-size: 0.85em; color: white; margin-right: 0.4em; }
+  .maxi { background: var(--ceco); } .mini { background: var(--cintu); } .selle { background: #b00020; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+  .deuxgraphs { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin-top: 0.8em; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Optimiser sans contrainte</h1>
+<p class="sous-titre">Calculatrice interactive — Mathématiques pour la gestion</p>
+
+<div class="panneau">
+  <h2>Trouver et classer un point critique (méthode complète en 5 étapes)</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir f(x,y) en JavaScript. Exemples : <code>50*x+70*y-2*x*x-3*y*y-2*x*y</code>, <code>x*x-y*y-4*x+6*y</code>. Le point critique est recherché numériquement par la méthode de Newton à partir d'un point de départ (x0,y0) : choisissez un point de départ raisonnable si le résultat semble aberrant.</p>
+  <div class="grille3">
+    <div><label for="fExpr">f(x,y) =</label><input id="fExpr" value="50*x+70*y-2*x*x-3*y*y-2*x*y"></div>
+    <div><label for="x0">point de départ $x_0$</label><input id="x0" value="0"></div>
+    <div><label for="y0">point de départ $y_0$</label><input id="y0" value="0"></div>
+  </div>
+  <button onclick="trouverEtClasser()">Trouver le point critique</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <div class="deuxgraphs">
+    <canvas id="graphiqueX" height="220"></canvas>
+    <canvas id="graphiqueY" height="220"></canvas>
+  </div>
+</div>
+
+<p class="avertissement">Étapes suivies automatiquement : (1) calcul numérique de $f'_x$ et $f'_y$ par différence centrée ; (2) résolution du système $f'_x=0$, $f'_y=0$ par la méthode de Newton (Jacobien = Hessien) ; (3) calcul de $f''_{xx}$, $f''_{yy}$, $f''_{xy}$ et de $\Delta=f''_{xx}f''_{yy}-(f''_{xy})^2$ au point trouvé ; (4) classification (maximum, minimum ou point selle) ; (5) valeur de $f$ en ce point. Les deux graphiques montrent les coupes de la surface selon $x$ (à $y$ fixé au point critique) et selon $y$ (à $x$ fixé au point critique) : une coupe qui "tourne le dos" à l'autre est la signature visuelle d'un point selle.</p>
+
+<script>
+let chartX = null, chartY = null;
+
+function grad(f, x, y) {
+  const h = 1e-4;
+  const gx = (f(x+h,y)-f(x-h,y))/(2*h);
+  const gy = (f(x,y+h)-f(x,y-h))/(2*h);
+  return [gx, gy];
+}
+
+function hessienne(f, x, y) {
+  const h = 1e-3;
+  const fxx = (f(x+h,y)-2*f(x,y)+f(x-h,y))/(h*h);
+  const fyy = (f(x,y+h)-2*f(x,y)+f(x,y-h))/(h*h);
+  const fxy = (f(x+h,y+h)-f(x+h,y-h)-f(x-h,y+h)+f(x-h,y-h))/(4*h*h);
+  return [fxx, fyy, fxy];
+}
+
+function trouverEtClasser() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const expr = document.getElementById('fExpr').value;
+    let x = parseFloat(document.getElementById('x0').value);
+    let y = parseFloat(document.getElementById('y0').value);
+    if ([x,y].some(isNaN)) throw new Error('Le point de départ doit être numérique.');
+    const f = new Function('x','y','return '+expr+';');
+
+    let iterations = 0, converge = false;
+    for (let k=0;k<100;k++){
+      iterations = k+1;
+      const [gx,gy] = grad(f,x,y);
+      const [fxx,fyy,fxy] = hessienne(f,x,y);
+      const det = fxx*fyy-fxy*fxy;
+      if (Math.abs(det) < 1e-10) throw new Error('Le système ne converge pas (Hessien singulier) : essayez un autre point de départ.');
+      const dx = -( fyy*gx - fxy*gy)/det;
+      const dy = -(-fxy*gx + fxx*gy)/det;
+      x += dx; y += dy;
+      if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) { converge = true; break; }
+    }
+    if (!converge) throw new Error('Pas de convergence en 100 itérations : essayez un autre point de départ.');
+
+    const [fxx,fyy,fxy] = hessienne(f,x,y);
+    const delta = fxx*fyy-fxy*fxy;
+    let nature, classe;
+    if (delta > 1e-6) { nature = fxx < 0 ? 'maximum' : 'minimum'; classe = fxx < 0 ? 'maxi' : 'mini'; }
+    else if (delta < -1e-6) { nature = 'point selle'; classe = 'selle'; }
+    else { nature = 'cas indéterminé (Δ≈0)'; classe = 'selle'; }
+    const val = f(x,y);
+
+    resDiv.innerHTML = `
+      <p>Convergence en ${iterations} itérations. Point critique trouvé : $x^\\star\\approx${x.toFixed(4)}$, $y^\\star\\approx${y.toFixed(4)}$.</p>
+      <table>
+        <tr><th>f''_xx</th><th>f''_yy</th><th>f''_xy</th><th>&Delta;</th></tr>
+        <tr><td>${fxx.toFixed(4)}</td><td>${fyy.toFixed(4)}</td><td>${fxy.toFixed(4)}</td><td>${delta.toFixed(4)}</td></tr>
+      </table>
+      <p><span class="etiquette ${classe}">${nature}</span> $f(x^\\star,y^\\star) \\approx ${val.toFixed(4)}$</p>
+    `;
+
+    const fenetre = Math.max(Math.abs(x),1)*1.2+2;
+    const ptsX = [];
+    for (let i=0;i<=80;i++){ const xx = x-fenetre + i*(2*fenetre)/80; try { ptsX.push({x:xx, y: f(xx,y)}); } catch(e){} }
+    const fenetreY = Math.max(Math.abs(y),1)*1.2+2;
+    const ptsY = [];
+    for (let i=0;i<=80;i++){ const yy = y-fenetreY + i*(2*fenetreY)/80; try { ptsY.push({x:yy, y: f(x,yy)}); } catch(e){} }
+
+    if (chartX) chartX.destroy();
+    chartX = new Chart(document.getElementById('graphiqueX').getContext('2d'), {
+      type: 'line',
+      data: { datasets: [
+        { label: `f(x, y*)`, data: ptsX, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'point critique', data: [{x:x,y:val}], borderColor: '#B56600', backgroundColor: '#B56600', pointRadius: 5, showLine:false }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'x' } }, y: { title: { display: true, text: 'f(x, y*)' } } },
+        plugins: { title: { display: true, text: 'Coupe selon x (y fixé à y*)' } } }
+    });
+
+    if (chartY) chartY.destroy();
+    chartY = new Chart(document.getElementById('graphiqueY').getContext('2d'), {
+      type: 'line',
+      data: { datasets: [
+        { label: `f(x*, y)`, data: ptsY, borderColor: '#1D9E75', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'point critique', data: [{x:y,y:val}], borderColor: '#B56600', backgroundColor: '#B56600', pointRadius: 5, showLine:false }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'y' } }, y: { title: { display: true, text: 'f(x*, y)' } } },
+        plugins: { title: { display: true, text: 'Coupe selon y (x fixé à x*)' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = trouverEtClasser;
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — La résolution graphique — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; border: 1px solid #eee; margin-top: 0.8em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — La résolution graphique</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>Résoudre un programme à deux variables et deux contraintes $\leq$</h2>
+  <p class="aide">Coefficients de l'objectif (à maximiser), puis coefficients et disponibilités des deux contraintes de la forme $a\,x+b\,y\leq\text{disp}$.</p>
+  <div class="ligne">
+    <div><label for="c1In">Objectif : coeff. de x</label><input type="number" id="c1In" value="40" step="0.01"></div>
+    <div><label for="c2In">Objectif : coeff. de y</label><input type="number" id="c2In" value="30" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="a1In">Contrainte A : coeff. x</label><input type="number" id="a1In" value="1" step="0.01"></div>
+    <div><label for="b1In">Contrainte A : coeff. y</label><input type="number" id="b1In" value="2" step="0.01"></div>
+    <div><label for="d1In">Contrainte A : disponible</label><input type="number" id="d1In" value="80" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="a2In">Contrainte B : coeff. x</label><input type="number" id="a2In" value="3" step="0.01"></div>
+    <div><label for="b2In">Contrainte B : coeff. y</label><input type="number" id="b2In" value="1" step="0.01"></div>
+    <div><label for="d2In">Contrainte B : disponible</label><input type="number" id="d2In" value="90" step="0.01"></div>
+  </div>
+  <button onclick="resoudreGraphique()">Résoudre</button>
+  <div id="erreurGraph" class="erreur"></div>
+  <div id="resultatGraph" class="resultat-zone"></div>
+  <svg id="svgGraph" width="440" height="360" viewBox="0 0 440 360"></svg>
+</div>
+
+<p class="avertissement">Méthode : les sommets du domaine sont $(0,0)$, les deux intersections avec les axes de la contrainte la plus restrictive sur chaque axe, et l'intersection des deux droites de contrainte (si elle appartient bien au domaine). $Z$ est ensuite évalué en chaque sommet ; le meilleur donne le plan optimal.</p>
+
+<script>
+function resoudreGraphique(){
+  const erreurDiv=document.getElementById('erreurGraph'); const resDiv=document.getElementById('resultatGraph');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const c1=parseFloat(document.getElementById('c1In').value);
+    const c2=parseFloat(document.getElementById('c2In').value);
+    const a1=parseFloat(document.getElementById('a1In').value);
+    const b1=parseFloat(document.getElementById('b1In').value);
+    const d1=parseFloat(document.getElementById('d1In').value);
+    const a2=parseFloat(document.getElementById('a2In').value);
+    const b2=parseFloat(document.getElementById('b2In').value);
+    const d2=parseFloat(document.getElementById('d2In').value);
+    if([c1,c2,a1,b1,d1,a2,b2,d2].some(isNaN)) throw new Error('Tous les coefficients doivent etre numeriques.');
+    if(a1===0&&b1===0) throw new Error('La contrainte A ne peut pas avoir deux coefficients nuls.');
+    if(a2===0&&b2===0) throw new Error('La contrainte B ne peut pas avoir deux coefficients nuls.');
+
+    // candidate x-axis vertex: min of (d1/a1) and (d2/a2), only where coeff>0
+    const xInt1 = a1>0 ? d1/a1 : Infinity;
+    const xInt2 = a2>0 ? d2/a2 : Infinity;
+    const xAxisVertex = Math.min(xInt1,xInt2);
+    // candidate y-axis vertex: min of (d1/b1) and (d2/b2)
+    const yInt1 = b1>0 ? d1/b1 : Infinity;
+    const yInt2 = b2>0 ? d2/b2 : Infinity;
+    const yAxisVertex = Math.min(yInt1,yInt2);
+
+    // intersection of the two lines a1 x + b1 y = d1 ; a2 x + b2 y = d2
+    const det = a1*b2-a2*b1;
+    let xi=null, yi=null;
+    if(Math.abs(det)>1e-9){
+      xi=(d1*b2-d2*b1)/det;
+      yi=(a1*d2-a2*d1)/det;
+    }
+
+    const candidats=[{x:0,y:0}];
+    candidats.push({x:xAxisVertex,y:0});
+    candidats.push({x:0,y:yAxisVertex});
+    if(xi!==null && xi>-1e-9 && yi>-1e-9){
+      candidats.push({x:Math.max(xi,0),y:Math.max(yi,0)});
+    }
+
+    // keep only feasible points (respect both constraints and positivity), dedupe
+    const feasibles=[];
+    const seen=new Set();
+    candidats.forEach(p=>{
+      const x=p.x, y=p.y;
+      if(x<-1e-9||y<-1e-9) return;
+      const c1ok = a1*x+b1*y <= d1+1e-6;
+      const c2ok = a2*x+b2*y <= d2+1e-6;
+      if(!c1ok||!c2ok) return;
+      const key=x.toFixed(4)+','+y.toFixed(4);
+      if(seen.has(key)) return;
+      seen.add(key);
+      feasibles.push({x,y});
+    });
+
+    let out='<table><tr><th>sommet</th><th>contr. A</th><th>contr. B</th><th>Z</th></tr>';
+    let meilleur=null;
+    feasibles.forEach(p=>{
+      const usA=a1*p.x+b1*p.y, usB=a2*p.x+b2*p.y;
+      const z=c1*p.x+c2*p.y;
+      out+=`<tr><td>(${p.x.toFixed(2)},${p.y.toFixed(2)})</td><td>${usA.toFixed(2)}</td><td>${usB.toFixed(2)}</td><td>${z.toFixed(2)}</td></tr>`;
+      if(meilleur===null||z>meilleur.z) meilleur={p,z};
+    });
+    out+='</table>';
+    if(meilleur) out+=`<p class="ok">Plan optimal : x=${meilleur.p.x.toFixed(2)}, y=${meilleur.p.y.toFixed(2)}, Z=${meilleur.z.toFixed(2)}.</p>`;
+    resDiv.innerHTML=out;
+    dessinerDomaine(feasibles, meilleur, a1,b1,d1,a2,b2,d2);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgGraph').innerHTML=''; }
+}
+
+function dessinerDomaine(feasibles, meilleur, a1,b1,d1,a2,b2,d2){
+  const svg=document.getElementById('svgGraph');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=440,H=360,padL=45,padR=20,padT=15,padB=35;
+  const maxX=Math.max(1,...feasibles.map(p=>p.x))*1.4;
+  const maxY=Math.max(1,...feasibles.map(p=>p.y))*1.4;
+  const xToPix=x=>padL+(x/maxX)*(W-padL-padR);
+  const yToPix=y=>H-padB-(y/maxY)*(H-padT-padB);
+
+  // sort feasible points by angle around centroid to form a polygon
+  const cx=feasibles.reduce((s,p)=>s+p.x,0)/feasibles.length;
+  const cy=feasibles.reduce((s,p)=>s+p.y,0)/feasibles.length;
+  const ordered=[...feasibles].sort((p,q)=>Math.atan2(p.y-cy,p.x-cx)-Math.atan2(q.y-cy,q.x-cx));
+
+  if(ordered.length>=3){
+    const poly=document.createElementNS(ns,'polygon');
+    poly.setAttribute('points', ordered.map(p=>`${xToPix(p.x)},${yToPix(p.y)}`).join(' '));
+    poly.setAttribute('fill','#1F6FB222');
+    poly.setAttribute('stroke','#1F6FB2');
+    svg.appendChild(poly);
+  }
+
+  ordered.forEach(p=>{
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',xToPix(p.x)); c.setAttribute('cy',yToPix(p.y)); c.setAttribute('r',5);
+    const isOpt = meilleur && Math.abs(p.x-meilleur.p.x)<1e-6 && Math.abs(p.y-meilleur.p.y)<1e-6;
+    c.setAttribute('fill', isOpt ? '#1D9E75' : '#1F6FB2');
+    svg.appendChild(c);
+    const txt=document.createElementNS(ns,'text');
+    txt.setAttribute('x',xToPix(p.x)+7); txt.setAttribute('y',yToPix(p.y)-7);
+    txt.setAttribute('font-size','10');
+    txt.textContent=`(${p.x.toFixed(1)},${p.y.toFixed(1)})`;
+    svg.appendChild(txt);
+  });
+
+  const axeX=document.createElementNS(ns,'line');
+  axeX.setAttribute('x1',padL); axeX.setAttribute('y1',H-padB); axeX.setAttribute('x2',W-padR); axeX.setAttribute('y2',H-padB);
+  axeX.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axeX);
+  const axeY=document.createElementNS(ns,'line');
+  axeY.setAttribute('x1',padL); axeY.setAttribute('y1',padT); axeY.setAttribute('x2',padL); axeY.setAttribute('y2',H-padB);
+  axeY.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axeY);
+  const lblX=document.createElementNS(ns,'text');
+  lblX.setAttribute('x',W/2); lblX.setAttribute('y',H-8); lblX.setAttribute('text-anchor','middle'); lblX.setAttribute('font-size','10');
+  lblX.textContent='x';
+  svg.appendChild(lblX);
+  const lblY=document.createElementNS(ns,'text');
+  lblY.setAttribute('x',12); lblY.setAttribute('y',padT+5); lblY.setAttribute('font-size','10');
+  lblY.textContent='y';
+  svg.appendChild(lblY);
+}
+
+window.onload=()=>{ resoudreGraphique(); };
+</script>
+</body>
+</html>

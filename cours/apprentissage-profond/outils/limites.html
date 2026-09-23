@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Ce que l'apprentissage profond ne résout pas — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], input[type=text], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Ce que l'apprentissage profond ne résout pas</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage profond</p>
+
+<div class="panneau">
+  <h2>1. Écart de calibration</h2>
+  <div class="ligne">
+    <div><label for="nIn1">Nombre de dossiers</label><input type="number" id="nIn1" value="500" step="1" min="1"></div>
+    <div><label for="evenementsIn1">Événements réalisés</label><input type="number" id="evenementsIn1" value="200" step="1" min="0"></div>
+    <div><label for="preditIn1">Probabilité prédite</label><input type="number" id="preditIn1" value="0.30" step="0.01" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerCalibration()">Calculer</button>
+  <div id="erreurC1" class="erreur"></div>
+  <div id="resultatC1" class="resultat-zone"></div>
+  <svg id="svgCalib1" width="350" height="180" viewBox="0 0 350 180"></svg>
+</div>
+
+<div class="panneau">
+  <h2>2. Le tableau de décision</h2>
+  <div class="ligne">
+    <div><label for="typeDonneesIn2">Type de données</label>
+      <select id="typeDonneesIn2">
+        <option value="tabulaire">Tabulaire</option>
+        <option value="image">Image, texte, son</option>
+        <option value="serie_unique">Série unique quotidienne</option>
+        <option value="series_multiples">Beaucoup de séries, haute fréquence</option>
+        <option value="decision">Décision à motiver</option>
+        <option value="causal">Question causale</option>
+      </select>
+    </div>
+    <div><label for="volumeIn2">Volume de données</label><input type="number" id="volumeIn2" value="3500" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerDecision()">Obtenir la recommandation</button>
+  <div id="erreurD2" class="erreur"></div>
+  <div id="resultatD2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Rapport paramètres / observations</h2>
+  <div class="ligne">
+    <div><label for="pIn3">Paramètres du modèle</label><input type="number" id="pIn3" value="8000" step="1" min="0"></div>
+    <div><label for="nObsIn3">Observations disponibles</label><input type="number" id="nObsIn3" value="4000" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerRatio()">Calculer</button>
+  <div id="erreurR3" class="erreur"></div>
+  <div id="resultatR3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : écart de calibration $=\text{taux réalisé}-\text{probabilité prédite}$ ; tableau de décision — tabulaire/milliers→boosting, image/texte/son→réseaux profonds, série unique quotidienne→ARMA/GARCH, beaucoup de séries à haute fréquence→réseaux, décision à motiver→modèle linéaire ou arbre, question causale→ni l'un ni l'autre ; un rapport paramètres/observations élevé signale un risque de sur-ajustement.</p>
+
+<script>
+function calculerCalibration(){
+  const erreurDiv=document.getElementById('erreurC1'); const resDiv=document.getElementById('resultatC1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('nIn1').value);
+    const evt=parseFloat(document.getElementById('evenementsIn1').value);
+    const predit=parseFloat(document.getElementById('preditIn1').value);
+    if([n,evt,predit].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if(n<=0) throw new Error('Le nombre de dossiers doit être strictement positif.');
+    if(evt<0||evt>n) throw new Error('Le nombre d\'événements doit être entre 0 et n.');
+    if(predit<0||predit>1) throw new Error('La probabilité prédite doit être entre 0 et 1.');
+    const realise=evt/n;
+    const ecart=realise-predit;
+    let out=`<p>Taux réalisé $=${evt}/${n}=\\mathbf{${realise.toFixed(4)}}$</p>`;
+    out+=`<p>Écart $=${realise.toFixed(4)}-${predit}=\\mathbf{${ecart.toFixed(4)}}$</p>`;
+    if(Math.abs(ecart)<0.02) out+='<p style="color:#1D9E75;">Modèle raisonnablement bien calibré.</p>';
+    else if(ecart>0) out+='<p style="color:#b00020;font-weight:bold;">Le modèle sous-estime le risque (sous-confiant sur le risque).</p>';
+    else out+='<p style="color:#b00020;font-weight:bold;">Le modèle surestime le risque (sur-confiant sur le risque).</p>';
+    resDiv.innerHTML=out;
+    dessinerCalib(predit,realise);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgCalib1').innerHTML=''; }
+}
+
+function dessinerCalib(predit,realise){
+  const svg=document.getElementById('svgCalib1');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=350,H=180,padL=40,padR=15,padT=15,padB=30;
+  const ymax=1;
+  const xToPix=i=>padL+i*100;
+  const yToPix=y=>H-padB-y*(H-padT-padB)/ymax;
+  [['predit',predit,'#1F6FB2'],['realise',realise,'#B56600']].forEach((item,idx)=>{
+    const x=padL+idx*100+20;
+    const h=item[1]*(H-padT-padB);
+    const rect=document.createElementNS(ns,'rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',H-padB-h);
+    rect.setAttribute('width',50); rect.setAttribute('height',h);
+    rect.setAttribute('fill',item[2]);
+    svg.appendChild(rect);
+    const txt=document.createElementNS(ns,'text');
+    txt.setAttribute('x',x+25); txt.setAttribute('y',H-padB-h-6);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','10');
+    txt.textContent=item[1].toFixed(3);
+    svg.appendChild(txt);
+    const lbl=document.createElementNS(ns,'text');
+    lbl.setAttribute('x',x+25); lbl.setAttribute('y',H-padB+14);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-size','10');
+    lbl.textContent=item[0]==='predit'?'predit':'realise';
+    svg.appendChild(lbl);
+  });
+}
+
+function calculerDecision(){
+  const erreurDiv=document.getElementById('erreurD2'); const resDiv=document.getElementById('resultatD2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const type=document.getElementById('typeDonneesIn2').value;
+    const volume=parseFloat(document.getElementById('volumeIn2').value);
+    if(isNaN(volume)||volume<1) throw new Error('Le volume doit être un nombre positif.');
+    const recommandations={
+      'tabulaire': 'Boosting de gradient (données tabulaires, quelques milliers de lignes).',
+      'image': 'Réseaux profonds (image, texte, son : données non structurées).',
+      'serie_unique': 'ARMA, GARCH (série unique, quotidienne).',
+      'series_multiples': 'Réseaux (beaucoup de séries à la fois, haute fréquence).',
+      'decision': 'Modèle linéaire ou arbre (décision à motiver).',
+      'causal': 'Ni le boosting ni les réseaux : voir Inférence causale.'
+    };
+    let out=`<p>Recommandation : <strong>${recommandations[type]}</strong></p>`;
+    if(type==='tabulaire'&&volume<1000) out+='<p class="aide">Avec un volume aussi faible, même le boosting mérite prudence et validation croisée soignée.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerRatio(){
+  const erreurDiv=document.getElementById('erreurR3'); const resDiv=document.getElementById('resultatR3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const p=parseFloat(document.getElementById('pIn3').value);
+    const nObs=parseFloat(document.getElementById('nObsIn3').value);
+    if([p,nObs].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(p<0) throw new Error('Le nombre de paramètres doit être positif.');
+    if(nObs<=0) throw new Error('Le nombre d\'observations doit être strictement positif.');
+    const ratio=p/nObs;
+    let out=`<p>Rapport $=${p}/${nObs}=\\mathbf{${ratio.toFixed(2)}}$</p>`;
+    if(ratio>1) out+='<p style="color:#b00020;font-weight:bold;">Plus de paramètres que d\'observations : risque élevé de sur-ajustement.</p>';
+    else if(ratio>0.1) out+='<p class="aide">Rapport élevé : prudence recommandée (régularisation, ou modèle plus simple).</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerCalibration(); calculerDecision(); calculerRatio(); };
+</script>
+</body>
+</html>

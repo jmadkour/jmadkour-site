@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — Ensembles et fonctions — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .etiquette { display: inline-block; padding: 0.25em 0.7em; border-radius: 12px; font-size: 0.9em; color: white; margin: 0.15em; }
+  .oui { background: var(--cex); } .non { background: #bbb; color:#333; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Ensembles de nombres et fonctions</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse mathématique</p>
+
+<div class="panneau">
+  <h2>Bornes d'un intervalle de ℝ</h2>
+  <div class="grille3">
+    <div><label for="bornA">Borne inférieure a</label><input id="bornA" value="0"></div>
+    <div><label for="typeA">Type en a</label><select id="typeA"><option value="ouvert">ouvert (a exclu)</option><option value="ferme">fermé (a inclus)</option></select></div>
+    <div><label for="bornB">Borne supérieure b</label><input id="bornB" value="3"></div>
+  </div>
+  <label for="typeB">Type en b</label>
+  <select id="typeB"><option value="ferme">fermé (b inclus)</option><option value="ouvert">ouvert (b exclu)</option></select>
+  <button onclick="analyserIntervalle()">Analyser</button>
+  <div id="erreurI" class="erreur"></div>
+  <div id="resultatI" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Une fonction quadratique est-elle injective sur un intervalle ?</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">f(x) = a·x² + b·x + c, restreinte à un intervalle [p, q].</p>
+  <div class="grille3">
+    <div><label for="qa">a</label><input id="qa" value="1"></div>
+    <div><label for="qb">b</label><input id="qb" value="0"></div>
+    <div><label for="qc">c</label><input id="qc" value="0"></div>
+  </div>
+  <div class="grille">
+    <div><label for="qp">Borne p du domaine</label><input id="qp" value="0"></div>
+    <div><label for="qq">Borne q du domaine</label><input id="qq" value="5"></div>
+  </div>
+  <button onclick="analyserQuadratique()">Analyser</button>
+  <div id="erreurQ" class="erreur"></div>
+  <div id="resultatQ" class="resultat-zone"></div>
+  <canvas id="graphique" height="240"></canvas>
+</div>
+
+<p class="avertissement">Outil pédagogique : l'analyse de l'injectivité repose sur le sommet de la parabole en $x=-b/2a$ ; si ce sommet tombe dans l'intervalle, la fonction change de sens de variation et n'est pas injective sur tout l'intervalle.</p>
+
+<script>
+let chartInstance = null;
+
+function analyserIntervalle() {
+  const erreurDiv = document.getElementById('erreurI');
+  const resDiv = document.getElementById('resultatI');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const a = parseFloat(document.getElementById('bornA').value);
+    const b = parseFloat(document.getElementById('bornB').value);
+    if (isNaN(a) || isNaN(b)) throw new Error('Les deux bornes doivent être numériques.');
+    if (a >= b) throw new Error('Il faut a < b.');
+    const ferA = document.getElementById('typeA').value === 'ferme';
+    const ferB = document.getElementById('typeB').value === 'ferme';
+    const notation = (ferA ? '[' : '(') + a + ', ' + b + (ferB ? ']' : ')');
+
+    const p = document.createElement('p');
+    p.innerHTML = `<strong>Intervalle :</strong> ${notation}`;
+    resDiv.appendChild(p);
+    const p2 = document.createElement('p');
+    p2.innerHTML = `inf = ${a} ${ferA ? '(= min, atteint)' : '(pas de minimum : borne non atteinte)'}<br>sup = ${b} ${ferB ? '(= max, atteint)' : '(pas de maximum : borne non atteinte)'}`;
+    resDiv.appendChild(p2);
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function analyserQuadratique() {
+  const erreurDiv = document.getElementById('erreurQ');
+  const resDiv = document.getElementById('resultatQ');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const a = parseFloat(document.getElementById('qa').value);
+    const b = parseFloat(document.getElementById('qb').value);
+    const c = parseFloat(document.getElementById('qc').value);
+    const p = parseFloat(document.getElementById('qp').value);
+    const q = parseFloat(document.getElementById('qq').value);
+    if ([a,b,c,p,q].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if (p >= q) throw new Error('Il faut p < q.');
+    if (a === 0) throw new Error('a doit être non nul pour une fonction quadratique.');
+
+    const f = x => a*x*x + b*x + c;
+    const sommetX = -b/(2*a);
+    const sommetDansDomaine = sommetX > p && sommetX < q;
+
+    const resDivHtml = document.createElement('div');
+    resDivHtml.innerHTML = `<p><strong>Sommet de la parabole :</strong> x = ${sommetX.toFixed(4)}, f(sommet) = ${f(sommetX).toFixed(4)}</p>`;
+    resDiv.appendChild(resDivHtml);
+
+    let injective, imageTxt;
+    if (!sommetDansDomaine) {
+      injective = true;
+      const fp = f(p), fq = f(q);
+      const imin = Math.min(fp, fq), imax = Math.max(fp, fq);
+      imageTxt = `Image = [${imin.toFixed(3)}, ${imax.toFixed(3)}] (f est monotone sur tout l'intervalle)`;
+    } else {
+      injective = false;
+      const fp = f(p), fq = f(q), fs = f(sommetX);
+      const valeurs = [fp, fq, fs];
+      const imin = Math.min(...valeurs), imax = Math.max(...valeurs);
+      imageTxt = `Image ≈ [${imin.toFixed(3)}, ${imax.toFixed(3)}] (le sommet coupe l'intervalle en deux branches monotones opposées)`;
+    }
+
+    const p2 = document.createElement('p');
+    p2.innerHTML = `<span class="etiquette ${injective ? 'oui' : 'non'}">${injective ? 'Injective sur [p,q]' : 'Non injective sur [p,q]'}</span>`;
+    resDiv.appendChild(p2);
+    const p3 = document.createElement('p');
+    p3.textContent = imageTxt;
+    resDiv.appendChild(p3);
+
+    // Graphique
+    const pts = [];
+    for (let x = p; x <= q; x += (q-p)/60) pts.push({ x, y: f(x) });
+    if (chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('graphique').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [{ label: 'f(x)', data: pts, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0, tension: 0.1 }] },
+      options: { responsive: true, scales: { x: { type: 'linear', title: { display: true, text: 'x' } }, y: { title: { display: true, text: 'f(x)' } } },
+        plugins: { title: { display: true, text: injective ? 'Fonction injective sur ce domaine' : 'Fonction non injective : deux branches' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = function() { analyserIntervalle(); analyserQuadratique(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — La régression multiple — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — La régression multiple</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse quantitative</p>
+
+<div class="panneau">
+  <h2>1. $R^2$ et $R^2$ ajusté</h2>
+  <div class="ligne">
+    <div><label for="sctIn7">$SCT$</label><input type="number" id="sctIn7" value="800" step="any" min="0"></div>
+    <div><label for="scrIn7">$SCR$</label><input type="number" id="scrIn7" value="150" step="any" min="0"></div>
+    <div><label for="nIn7">$n$</label><input type="number" id="nIn7" value="50" step="1" min="1"></div>
+    <div><label for="kIn7">$k$ (nb. variables)</label><input type="number" id="kIn7" value="3" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerR2Adj()">Calculer</button>
+  <div id="erreurRA" class="erreur"></div>
+  <div id="resultatRA" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Comparer deux modèles emboîtés (le $R^2$ ajusté départage-t-il ?)</h2>
+  <div class="ligne">
+    <div><label for="sctCmp">$SCT$ (commun)</label><input type="number" id="sctCmp" value="1000" step="any" min="0"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="scrA">$SCR_A$</label><input type="number" id="scrA" value="300" step="any" min="0"></div>
+    <div><label for="kA">$k_A$</label><input type="number" id="kA" value="2" step="1" min="0"></div>
+    <div><label for="nA">$n$</label><input type="number" id="nA" value="40" step="1" min="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="scrB">$SCR_B$</label><input type="number" id="scrB" value="280" step="any" min="0"></div>
+    <div><label for="kB">$k_B$</label><input type="number" id="kB" value="5" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerComparaison()">Calculer</button>
+  <div id="erreurCmp" class="erreur"></div>
+  <div id="resultatCmp" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Test de Fisher joint</h2>
+  <div class="ligne">
+    <div><label for="scrR">$SCR_r$ (contraint)</label><input type="number" id="scrR" value="300" step="any" min="0"></div>
+    <div><label for="scrUr">$SCR_{ur}$ (libre)</label><input type="number" id="scrUr" value="220" step="any" min="0"></div>
+    <div><label for="qF">$q$ (restrictions)</label><input type="number" id="qF" value="2" step="1" min="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="nF">$n$</label><input type="number" id="nF" value="60" step="1" min="1"></div>
+    <div><label for="kF">$k$ (modèle libre)</label><input type="number" id="kF" value="5" step="1" min="0"></div>
+    <div><label for="fcritIn">$F$ critique</label><input type="number" id="fcritIn" value="3.15" step="any" min="0"></div>
+  </div>
+  <button onclick="calculerFisher()">Calculer</button>
+  <div id="erreurF" class="erreur"></div>
+  <div id="resultatF" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\bar{R}^2=1-\dfrac{SCR/(n-k-1)}{SCT/(n-1)}\le R^2$ ; $F=\dfrac{(SCR_r-SCR_{ur})/q}{SCR_{ur}/(n-k-1)}$, comparé à une valeur critique $F_{0{,}05}$ ; le $R^2$ ordinaire ne peut que croître avec $k$, ce que corrige (partiellement) le $R^2$ ajusté.</p>
+
+<script>
+function r2adj(SCR,SCT,n,k){ return 1-(SCR/(n-k-1))/(SCT/(n-1)); }
+
+function calculerR2Adj(){
+  const erreurDiv=document.getElementById('erreurRA'); const resDiv=document.getElementById('resultatRA');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const SCT=parseFloat(document.getElementById('sctIn7').value);
+    const SCR=parseFloat(document.getElementById('scrIn7').value);
+    const n=parseInt(document.getElementById('nIn7').value);
+    const k=parseInt(document.getElementById('kIn7').value);
+    if([SCT,SCR,n,k].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(SCT<=0) throw new Error('SCT doit être strictement positif.');
+    if(SCR<0||SCR>SCT) throw new Error('SCR doit être compris entre 0 et SCT.');
+    if(n-k-1<=0) throw new Error('n doit être strictement supérieur à k+1.');
+    const R2=1-SCR/SCT;
+    const R2a=r2adj(SCR,SCT,n,k);
+    let out=`<p>$R^2=${R2.toFixed(4)}$</p>
+      <p><strong>$\\bar{R}^2=${R2a.toFixed(4)}$</strong></p>
+      <p>Écart $R^2-\\bar{R}^2=${(R2-R2a).toFixed(4)}$</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerComparaison(){
+  const erreurDiv=document.getElementById('erreurCmp'); const resDiv=document.getElementById('resultatCmp');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const SCT=parseFloat(document.getElementById('sctCmp').value);
+    const SCRA=parseFloat(document.getElementById('scrA').value);
+    const kA=parseInt(document.getElementById('kA').value);
+    const nA=parseInt(document.getElementById('nA').value);
+    const SCRB=parseFloat(document.getElementById('scrB').value);
+    const kB=parseInt(document.getElementById('kB').value);
+    if([SCT,SCRA,kA,nA,SCRB,kB].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(SCT<=0) throw new Error('SCT doit être strictement positif.');
+    if(nA-kB-1<=0) throw new Error('n doit être strictement supérieur à k+1 pour les deux modèles.');
+    const R2A=1-SCRA/SCT, R2B=1-SCRB/SCT;
+    const R2aA=r2adj(SCRA,SCT,nA,kA), R2aB=r2adj(SCRB,SCT,nA,kB);
+    let out=`<table style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:0.85em;">
+      <tr><th style="border:1px solid #ccc;padding:0.3em;"></th><th style="border:1px solid #ccc;padding:0.3em;">Modèle A</th><th style="border:1px solid #ccc;padding:0.3em;">Modèle B</th></tr>
+      <tr><td style="border:1px solid #ccc;padding:0.3em;">$R^2$</td><td style="border:1px solid #ccc;padding:0.3em;">${R2A.toFixed(4)}</td><td style="border:1px solid #ccc;padding:0.3em;">${R2B.toFixed(4)}</td></tr>
+      <tr><td style="border:1px solid #ccc;padding:0.3em;">$\\bar{R}^2$</td><td style="border:1px solid #ccc;padding:0.3em;">${R2aA.toFixed(4)}</td><td style="border:1px solid #ccc;padding:0.3em;">${R2aB.toFixed(4)}</td></tr>
+      </table>`;
+    if(R2B>R2A && R2aB<R2aA){
+      out+='<p class="alerte">Le R² augmente (B > A) mais le R² ajusté diminue : les variables ajoutées dans B n’apportent pas d’information utile.</p>';
+    } else if(R2aB>R2aA){
+      out+='<p class="ok">Le R² ajusté augmente aussi : les variables ajoutées semblent utiles.</p>';
+    }
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerFisher(){
+  const erreurDiv=document.getElementById('erreurF'); const resDiv=document.getElementById('resultatF');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const SCRr=parseFloat(document.getElementById('scrR').value);
+    const SCRur=parseFloat(document.getElementById('scrUr').value);
+    const q=parseInt(document.getElementById('qF').value);
+    const n=parseInt(document.getElementById('nF').value);
+    const k=parseInt(document.getElementById('kF').value);
+    const fcrit=parseFloat(document.getElementById('fcritIn').value);
+    if([SCRr,SCRur,q,n,k,fcrit].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(SCRur>SCRr) throw new Error('SCR du modèle libre doit être ≤ SCR du modèle contraint.');
+    if(n-k-1<=0) throw new Error('n doit être strictement supérieur à k+1.');
+    if(q<1) throw new Error('q doit être au moins 1.');
+    const F=((SCRr-SCRur)/q)/(SCRur/(n-k-1));
+    const rejet=F>fcrit;
+    let out=`<p>$F=${F.toFixed(4)}$</p>
+      <p><strong>${rejet?'<span class="alerte">On rejette H0 : les variables testées sont conjointement significatives.</span>':'<span class="ok">On ne rejette pas H0.</span>'}</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerR2Adj(); calculerComparaison(); calculerFisher(); };
+</script>
+</body>
+</html>

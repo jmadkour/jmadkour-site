@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Fonctions de perte et d'activation — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], input[type=text], select, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Fonctions de perte et d'activation</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage profond</p>
+
+<div class="panneau">
+  <h2>1. Entropie croisée</h2>
+  <p class="aide">Une ligne par observation, au format "y,p_hat". Ex. "1,0.9".</p>
+  <textarea id="ceIn1">1,0.9
+0,0.2
+1,0.6
+0,0.05</textarea>
+  <button onclick="calculerEntropie()">Calculer</button>
+  <div id="erreurCE1" class="erreur"></div>
+  <div id="resultatCE1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Sigmoïde, dérivée et atténuation du gradient</h2>
+  <div class="ligne">
+    <div><label for="zIn2">Valeur de $z$</label><input type="number" id="zIn2" value="0" step="0.1"></div>
+    <div><label for="profIn2">Profondeur (nombre de couches)</label><input type="number" id="profIn2" value="8" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerSigmoide()">Calculer</button>
+  <div id="erreurSI2" class="erreur"></div>
+  <div id="resultatSI2" class="resultat-zone"></div>
+  <svg id="svgSigmoide2" width="450" height="200" viewBox="0 0 450 200"></svg>
+</div>
+
+<div class="panneau">
+  <h2>3. EQM vs EAM face à une valeur extrême</h2>
+  <label for="errIn3">Erreurs de prévision (séparées par des virgules)</label>
+  <input type="text" id="errIn3" value="0.5, -0.3, 0.8, -0.4, 6.2">
+  <button onclick="calculerPertes()">Calculer</button>
+  <div id="erreurP3" class="erreur"></div>
+  <div id="resultatP3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : entropie croisée $=-\frac{1}{n}\sum\left[y_i\ln\hat p_i+(1-y_i)\ln(1-\hat p_i)\right]$ ; $\sigma'(z)=\sigma(z)(1-\sigma(z))$, maximale ($0{,}25$) en $z=0$ ; facteur d'atténuation au mieux après $n$ couches sigmoïdes $=0{,}25^n$, contre $1^n=1$ pour ReLU ; l'EQM amplifie les grands écarts (carré), l'EAM les traite proportionnellement (valeur absolue).</p>
+
+<script>
+function calculerEntropie(){
+  const erreurDiv=document.getElementById('erreurCE1'); const resDiv=document.getElementById('resultatCE1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('ceIn1').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length===0) throw new Error('Au moins une observation requise.');
+    const obs=lignes.map(l=>{
+      const parts=l.split(',').map(s=>parseFloat(s.trim()));
+      if(parts.length!==2||parts.some(isNaN)) throw new Error('Format attendu : "y,p_hat" par ligne.');
+      const [y,p]=parts;
+      if(y!==0&&y!==1) throw new Error('y doit valoir 0 ou 1.');
+      if(p<=0||p>=1) throw new Error('p_hat doit être strictement compris entre 0 et 1.');
+      return {y,p};
+    });
+    let out='<table><tr><th>y</th><th>p&#770;</th><th>perte</th></tr>';
+    let total=0;
+    obs.forEach(o=>{
+      const l=-(o.y*Math.log(o.p)+(1-o.y)*Math.log(1-o.p));
+      total+=l;
+      out+=`<tr><td>${o.y}</td><td>${o.p}</td><td>${l.toFixed(4)}</td></tr>`;
+    });
+    const moyenne=total/obs.length;
+    out+=`<tr><td colspan="2"><strong>Moyenne</strong></td><td><strong>${moyenne.toFixed(4)}</strong></td></tr></table>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerSigmoide(){
+  const erreurDiv=document.getElementById('erreurSI2'); const resDiv=document.getElementById('resultatSI2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const z=parseFloat(document.getElementById('zIn2').value);
+    const prof=parseInt(document.getElementById('profIn2').value);
+    if(isNaN(z)||isNaN(prof)) throw new Error('Valeurs numériques requises.');
+    if(prof<1) throw new Error('La profondeur doit être au moins 1.');
+    const sig=1/(1+Math.exp(-z));
+    const deriv=sig*(1-sig);
+    const facteurSig=Math.pow(0.25,prof);
+    const facteurRelu=1;
+    let out=`<p>$\\sigma(${z})\\approx${sig.toFixed(4)}$, $\\sigma'(${z})\\approx${deriv.toFixed(4)}$</p>`;
+    out+=`<table><tr><th>activation</th><th>facteur au mieux après ${prof} couche(s)</th></tr>`;
+    out+=`<tr><td>sigmoïde</td><td>${facteurSig.toExponential(3)}</td></tr>`;
+    out+=`<tr><td>ReLU</td><td>${facteurRelu}</td></tr></table>`;
+    if(facteurSig<1e-4) out+='<p style="color:#b00020;font-weight:bold;">Atténuation sévère : les premières couches ne recevront pratiquement plus de signal d\'apprentissage.</p>';
+    resDiv.innerHTML=out;
+    dessinerSigmoide(z,sig);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgSigmoide2').innerHTML=''; }
+}
+
+function dessinerSigmoide(z,sig){
+  const svg=document.getElementById('svgSigmoide2');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=450,H=200,padL=40,padR=15,padT=15,padB=30;
+  const xmin=-6,xmax=6;
+  const xToPix=x=>padL+((x-xmin)/(xmax-xmin))*(W-padL-padR);
+  const yToPix=y=>H-padB-y*(H-padT-padB);
+  let path='';
+  for(let i=0;i<=100;i++){
+    const x=xmin+(xmax-xmin)*i/100;
+    const y=1/(1+Math.exp(-x));
+    const px=xToPix(x), py=yToPix(y);
+    path+=(i===0?'M':'L')+px.toFixed(1)+','+py.toFixed(1)+' ';
+  }
+  const curve=document.createElementNS(ns,'path');
+  curve.setAttribute('d',path); curve.setAttribute('fill','none'); curve.setAttribute('stroke','#1F6FB2'); curve.setAttribute('stroke-width','2');
+  svg.appendChild(curve);
+  const axeX=document.createElementNS(ns,'line');
+  axeX.setAttribute('x1',padL); axeX.setAttribute('y1',yToPix(0)); axeX.setAttribute('x2',W-padR); axeX.setAttribute('y2',yToPix(0));
+  axeX.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axeX);
+  const pt=document.createElementNS(ns,'circle');
+  pt.setAttribute('cx',xToPix(z)); pt.setAttribute('cy',yToPix(sig)); pt.setAttribute('r',4); pt.setAttribute('fill','#B56600');
+  svg.appendChild(pt);
+}
+
+function calculerPertes(){
+  const erreurDiv=document.getElementById('erreurP3'); const resDiv=document.getElementById('resultatP3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const errs=document.getElementById('errIn3').value.split(',').map(s=>parseFloat(s.trim()));
+    if(errs.some(isNaN)) throw new Error('Toutes les erreurs doivent être numériques.');
+    if(errs.length<2) throw new Error('Au moins deux erreurs requises.');
+    const eqm=errs.reduce((a,b)=>a+b*b,0)/errs.length;
+    const eam=errs.reduce((a,b)=>a+Math.abs(b),0)/errs.length;
+    let out=`<p>EQM $=\\mathbf{${eqm.toFixed(4)}}$, EAM $=\\mathbf{${eam.toFixed(4)}}$</p>`;
+    const maxAbs=Math.max(...errs.map(Math.abs));
+    const idxMax=errs.findIndex(e=>Math.abs(e)===maxAbs);
+    const sansOutlier=errs.filter((e,i)=>i!==idxMax);
+    if(sansOutlier.length>0){
+      const eqmSans=sansOutlier.reduce((a,b)=>a+b*b,0)/sansOutlier.length;
+      const eamSans=sansOutlier.reduce((a,b)=>a+Math.abs(b),0)/sansOutlier.length;
+      out+=`<p>Sans la plus grande erreur en valeur absolue ($${errs[idxMax]}$) : EQM $=${eqmSans.toFixed(4)}$, EAM $=${eamSans.toFixed(4)}$</p>`;
+      if(eqmSans>0&&eamSans>0){
+        out+=`<p>Rapport EQM (avec/sans) $=${(eqm/eqmSans).toFixed(2)}$ ; rapport EAM (avec/sans) $=${(eam/eamSans).toFixed(2)}$</p>`;
+      }
+    }
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerEntropie(); calculerSigmoide(); calculerPertes(); };
+</script>
+</body>
+</html>

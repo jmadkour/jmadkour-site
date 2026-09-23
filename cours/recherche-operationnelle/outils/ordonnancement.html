@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — L'ordonnancement de projet — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1100px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 6.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-end; }
+  .ligne > div { flex: 1; min-width: 180px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .critique { background: #fdeedb; color: var(--cintu); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  svg { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.6em; }
+  .valeur { font-size: 1.1em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — L'ordonnancement de projet</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>Décrire le projet et calculer</h2>
+  <p class="aide">Une ligne par tâche : <code>Nom,Durée,Antériorités</code> (antériorités séparées par des points-virgules, vide si aucune).</p>
+  <textarea id="tachesIn">A,3,
+B,5,
+C,2,A
+D,4,A;B
+E,6,C
+F,3,D
+G,2,E;F</textarea>
+  <button onclick="calculer()">Calculer le planning</button>
+  <div id="erreur" class="erreur"></div>
+  <div id="resultat" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>PERT probabiliste (optionnel)</h2>
+  <p class="aide">Pour estimer une probabilité de délai : indiquer les tâches du chemin critique avec leurs trois estimations (optimiste, probable, pessimiste), une par ligne : <code>Nom,a,m,b</code>. Laisser vide pour ignorer cette section.</p>
+  <textarea id="pertIn">K1,2,3,4
+K2,4,6,8
+K3,3,5,7</textarea>
+  <div class="ligne">
+    <div><label for="delaiIn">Délai à tester (jours)</label><input type="number" id="delaiIn" value="16"></div>
+  </div>
+  <button onclick="calculerPert()">Calculer la probabilité</button>
+  <div id="erreurPert" class="erreur"></div>
+  <div id="resultatPert" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $t_{\text{tot}}(j)=\max_{i\to j}(t_{\text{tot}}(i)+d(i))$ (calcul avant) ; $t_{\text{tard}}(i)=\min_{i\to j}(t_{\text{tard}}(j))-d(i)$ (calcul arrière) ; marge totale $=t_{\text{tard}}-t_{\text{tot}}$ (retard admissible sans retarder le projet) ; marge libre $=$ début tôt de la tâche suivante $-$ fin tôt de la tâche (retard admissible sans retarder la tâche suivante) ; les tâches de marge totale nulle forment le chemin critique. En PERT probabiliste, $\mathbb{E}(d)=(a+4m+b)/6$ et $\sigma(d)=(b-a)/6$ pour chaque tâche, et les variances des tâches critiques s'additionnent (indépendance supposée).</p>
+
+<script>
+function parseTaches(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const tasks = {};
+  const order = [];
+  lines.forEach(line=>{
+    const parts = line.split(',').map(s=>s.trim());
+    if(parts.length < 2) throw new Error('Ligne invalide (attendu Nom,Durée,Antériorités) : "'+line+'"');
+    const name = parts[0];
+    const dur = parseFloat(parts[1]);
+    if(name==='') throw new Error('Nom de tâche manquant sur la ligne : "'+line+'"');
+    if(isNaN(dur) || dur<0) throw new Error('Durée invalide pour la tâche '+name);
+    const predsRaw = parts.length>=3 ? parts[2] : '';
+    const preds = predsRaw==='' ? [] : predsRaw.split(';').map(s=>s.trim()).filter(s=>s.length>0);
+    tasks[name] = {dur, preds};
+    order.push(name);
+  });
+  order.forEach(n=>tasks[n].preds.forEach(p=>{
+    if(!(p in tasks)) throw new Error('La tâche "'+n+'" référence une antériorité inconnue : "'+p+'"');
+  }));
+  return {tasks, order};
+}
+
+function pert(tasks, order){
+  const earlyStart = {}, earlyFinish = {};
+  const visiting = new Set();
+  function computeEarly(name){
+    if(earlyStart[name] !== undefined) return earlyStart[name];
+    if(visiting.has(name)) throw new Error('Circuit détecté impliquant la tâche "'+name+'" : un graphe de tâches doit être sans circuit.');
+    visiting.add(name);
+    const preds = tasks[name].preds;
+    let es = 0;
+    preds.forEach(p=>{ es = Math.max(es, computeEarly(p) + tasks[p].dur); });
+    earlyStart[name] = es;
+    earlyFinish[name] = es + tasks[name].dur;
+    visiting.delete(name);
+    return es;
+  }
+  order.forEach(computeEarly);
+  const projectEnd = Math.max(0, ...order.map(n=>earlyFinish[n]));
+
+  const succ = {}; order.forEach(n=>succ[n]=[]);
+  order.forEach(n=>tasks[n].preds.forEach(p=>succ[p].push(n)));
+
+  const lateFinish = {}, lateStart = {};
+  function computeLate(name){
+    if(lateStart[name] !== undefined) return lateFinish[name];
+    const sc = succ[name];
+    let lf;
+    if(sc.length===0) lf = projectEnd;
+    else lf = Math.min(...sc.map(s=>{ computeLate(s); return lateStart[s]; }));
+    lateFinish[name] = lf;
+    lateStart[name] = lf - tasks[name].dur;
+    return lf;
+  }
+  order.forEach(computeLate);
+
+  const margeTotale = {}, margeLibre = {};
+  order.forEach(n=>{
+    margeTotale[n] = lateStart[n] - earlyStart[n];
+    const sc = succ[n];
+    const nextEarly = sc.length ? Math.min(...sc.map(s=>earlyStart[s])) : projectEnd;
+    margeLibre[n] = nextEarly - earlyFinish[n];
+  });
+
+  const critical = order.filter(n=>Math.abs(margeTotale[n]) < 1e-9);
+  return {projectEnd, earlyStart, earlyFinish, lateStart, lateFinish, margeTotale, margeLibre, critical, succ};
+}
+
+function dessinerReseau(order, tasks, critical){
+  const criticalSet = new Set(critical);
+  const n = order.length;
+  const cols = Math.ceil(Math.sqrt(n*1.6));
+  const spacingX = 130, spacingY = 90;
+  const pos = {};
+  order.forEach((name,i)=>{
+    const col = i % cols, row = Math.floor(i/cols);
+    pos[name] = [60 + col*spacingX, 60 + row*spacingY];
+  });
+  const width = 60 + cols*spacingX + 40;
+  const height = 60 + (Math.floor((n-1)/cols)+1)*spacingY;
+  let svg = `<svg viewBox="0 0 ${width} ${height}" width="${Math.min(width,700)}" height="${Math.min(height,500)}">`;
+  svg += `<defs><marker id="ahp" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5A5A5A"/></marker>
+  <marker id="ahp2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#B56600"/></marker></defs>`;
+  order.forEach(name=>{
+    tasks[name].preds.forEach(p=>{
+      const [x1,y1] = pos[p], [x2,y2] = pos[name];
+      const dx=x2-x1, dy=y2-y1, dist=Math.sqrt(dx*dx+dy*dy)||1;
+      const ux=dx/dist, uy=dy/dist;
+      const sx=x1+ux*26, sy=y1+uy*26, ex=x2-ux*30, ey=y2-uy*30;
+      const surCritique = criticalSet.has(p) && criticalSet.has(name);
+      svg += `<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="${surCritique?'#B56600':'#5A5A5A'}" stroke-width="${surCritique?2.6:1.2}" marker-end="url(#${surCritique?'ahp2':'ahp'})" />`;
+    });
+  });
+  order.forEach(name=>{
+    const [x,y] = pos[name];
+    const crit = criticalSet.has(name);
+    svg += `<rect x="${(x-26).toFixed(1)}" y="${(y-18).toFixed(1)}" width="52" height="36" rx="5" fill="${crit?'#B566001a':'#1F6FB21a'}" stroke="${crit?'#B56600':'#1F6FB2'}" stroke-width="1.8"/>`;
+    svg += `<text x="${x.toFixed(1)}" y="${(y-2).toFixed(1)}" font-size="12" text-anchor="middle" fill="${crit?'#B56600':'#1F6FB2'}" font-family="Helvetica" font-weight="bold">${name}</text>`;
+    svg += `<text x="${x.toFixed(1)}" y="${(y+12).toFixed(1)}" font-size="9" text-anchor="middle" fill="#5A5A5A" font-family="Helvetica">${tasks[name].dur}j</text>`;
+  });
+  svg += `</svg>`;
+  return svg;
+}
+
+function calculer(){
+  const erreurDiv = document.getElementById('erreur');
+  const resDiv = document.getElementById('resultat');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const {tasks, order} = parseTaches(document.getElementById('tachesIn').value);
+    const r = pert(tasks, order);
+
+    let out = '';
+    out += `<h3>Réseau du projet</h3>`;
+    out += dessinerReseau(order, tasks, r.critical);
+    out += `<p class="aide">En orange : le chemin critique.</p>`;
+
+    out += `<div class="valeur">Durée minimale du projet = ${r.projectEnd}</div>`;
+
+    out += '<h3>Dates, marges</h3>';
+    out += '<table><tr><th>Tâche</th><th>Durée</th><th>Début tôt</th><th>Fin tôt</th><th>Début tard</th><th>Fin tard</th><th>Marge totale</th><th>Marge libre</th></tr>';
+    order.forEach(n=>{
+      const crit = r.critical.includes(n);
+      out += `<tr class="${crit?'critique':''}"><td>${n}</td><td>${tasks[n].dur}</td><td>${r.earlyStart[n]}</td><td>${r.earlyFinish[n]}</td><td>${r.lateStart[n]}</td><td>${r.lateFinish[n]}</td><td>${r.margeTotale[n]}</td><td>${r.margeLibre[n]}</td></tr>`;
+    });
+    out += '</table>';
+
+    out += `<p>Chemin critique (marge totale nulle) : <strong>${r.critical.join(' → ')}</strong></p>`;
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerPert(){
+  const erreurDiv = document.getElementById('erreurPert');
+  const resDiv = document.getElementById('resultatPert');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const lines = document.getElementById('pertIn').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lines.length===0){ resDiv.innerHTML = '<p class="aide">Aucune tâche PERT saisie.</p>'; return; }
+    const deadline = parseFloat(document.getElementById('delaiIn').value);
+    if(isNaN(deadline)) throw new Error('Délai invalide.');
+
+    let sumE = 0, sumVar = 0;
+    let out = '<h3>Détail par tâche</h3><table><tr><th>Tâche</th><th>a</th><th>m</th><th>b</th><th>E(d)</th><th>σ(d)</th></tr>';
+    lines.forEach(line=>{
+      const parts = line.split(',').map(s=>s.trim());
+      if(parts.length < 4) throw new Error('Ligne invalide (attendu Nom,a,m,b) : "'+line+'"');
+      const [name, aS, mS, bS] = parts;
+      const a = parseFloat(aS), m = parseFloat(mS), b = parseFloat(bS);
+      if([a,m,b].some(isNaN)) throw new Error('Valeurs non numériques sur la ligne : "'+line+'"');
+      if(!(a <= m && m <= b)) throw new Error('Il faut a ≤ m ≤ b pour la tâche '+name+'.');
+      const E = (a + 4*m + b) / 6;
+      const sigma = (b - a) / 6;
+      sumE += E; sumVar += sigma*sigma;
+      out += `<tr><td>${name}</td><td>${a}</td><td>${m}</td><td>${b}</td><td>${E.toFixed(3)}</td><td>${sigma.toFixed(3)}</td></tr>`;
+    });
+    out += '</table>';
+
+    const sigmaTotal = Math.sqrt(sumVar);
+    out += `<h3>Projet</h3>`;
+    out += `<p>Durée espérée $\\mathbb{E}(\\text{projet})$ = <strong>${sumE.toFixed(3)}</strong> ; écart-type = <strong>${sigmaTotal.toFixed(3)}</strong></p>`;
+
+    if(sigmaTotal > 0){
+      const z = (deadline - sumE) / sigmaTotal;
+      const Phi = normalCDF(z);
+      out += `<p>Pour un délai de ${deadline} : $z=(${deadline}-${sumE.toFixed(3)})/${sigmaTotal.toFixed(3)}=${z.toFixed(3)}$</p>`;
+      out += `<div class="valeur">P(durée ≤ ${deadline}) ≈ ${(Phi*100).toFixed(2)} %</div>`;
+      out += `<p class="aide">Approximation numérique de Φ(z) (fonction de répartition de la loi normale centrée réduite) — comparer aux valeurs de table usuelles (ex. Φ(2)≈0,9772, Φ(-1)≈0,1587).</p>`;
+    } else {
+      out += '<p class="aide">Écart-type nul (durées certaines) : le délai est atteint avec certitude si et seulement si le délai testé est ≥ la durée espérée.</p>';
+    }
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+// Approximation numerique de la fonction de repartition normale centree reduite
+// (approximation d'Abramowitz-Stegun, precision suffisante pour ce contexte pedagogique)
+function normalCDF(z){
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989422804014327 * Math.exp(-z*z/2);
+  const p = d * t * (0.3193815 + t*(-0.3565638 + t*(1.781478 + t*(-1.821256 + t*1.330274))));
+  return z >= 0 ? 1 - p : p;
+}
+
+window.onload = () => { calculer(); calculerPert(); };
+</script>
+</body>
+</html>

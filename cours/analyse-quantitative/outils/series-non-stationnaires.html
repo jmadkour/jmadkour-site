@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Les séries temporelles non stationnaires — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Les séries temporelles non stationnaires</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse quantitative</p>
+
+<div class="panneau">
+  <h2>1. Tendance log-linéaire : taux de croissance implicite</h2>
+  <div class="ligne">
+    <div><label for="delta1In">$\hat{\delta}_1$ (par période)</label><input type="number" id="delta1In" value="0.0065" step="any"></div>
+    <div><label for="freqIn">Nombre de périodes par an</label><input type="number" id="freqIn" value="4" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerTendance()">Calculer</button>
+  <div id="erreurT10" class="erreur"></div>
+  <div id="resultatT10" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Marche aléatoire vs AR(1) stationnaire : variance à l'horizon $t$</h2>
+  <div class="ligne">
+    <div><label for="sigmaEpsIn">$\sigma_\varepsilon$</label><input type="number" id="sigmaEpsIn" value="1.5" step="any" min="0"></div>
+    <div><label for="phiIn10">$\phi_1$ (1 = marche aléatoire)</label><input type="number" id="phiIn10" value="1" step="any" min="-1" max="1"></div>
+    <div><label for="tIn10">horizon $t$</label><input type="number" id="tIn10" value="10" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerVariance()">Calculer</button>
+  <div id="erreurV10" class="erreur"></div>
+  <div id="resultatV10" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Différenciation saisonnière (annuelle)</h2>
+  <p class="aide">Quatre valeurs de l'année N-1 puis quatre valeurs de l'année N (T1 à T4), séparées par des espaces ou virgules.</p>
+  <div class="ligne">
+    <div><label for="anneeN1">Année N-1 (T1,T2,T3,T4)</label><input type="text" id="anneeN1" value="100, 140, 120, 160"></div>
+    <div><label for="anneeN">Année N (T1,T2,T3,T4)</label><input type="text" id="anneeN" value="108, 151, 129, 172"></div>
+  </div>
+  <button onclick="calculerDiffSaisonniere()">Calculer</button>
+  <div id="erreurS10" class="erreur"></div>
+  <div id="resultatS10" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : tendance log-linéaire — taux implicite $=e^{\delta_1}-1$ par période ; marche aléatoire ($\phi_1=1$) — $V[Y_t]=t\sigma_\varepsilon^2$, variance non bornée ; AR(1) stationnaire ($|\phi_1|<1$) — $V[Y_t]=\sigma_\varepsilon^2/(1-\phi_1^2)$, variance constante ; différenciation saisonnière $\Delta_4Y_t=Y_t-Y_{t-4}$ élimine la composante saisonnière déterministe.</p>
+
+<script>
+function calculerTendance(){
+  const erreurDiv=document.getElementById('erreurT10'); const resDiv=document.getElementById('resultatT10');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const delta1=parseFloat(document.getElementById('delta1In').value);
+    const freq=parseInt(document.getElementById('freqIn').value);
+    if(isNaN(delta1)||isNaN(freq)) throw new Error('Valeurs numériques requises.');
+    if(freq<1) throw new Error('La fréquence doit être au moins 1.');
+    const growthPeriod=(Math.exp(delta1)-1)*100;
+    const growthAnnual=(Math.exp(freq*delta1)-1)*100;
+    let out=`<p>Taux de croissance par période $=${growthPeriod.toFixed(4)}\\%$</p>
+      <p><strong>Taux de croissance annualisé $=${growthAnnual.toFixed(4)}\\%$</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerVariance(){
+  const erreurDiv=document.getElementById('erreurV10'); const resDiv=document.getElementById('resultatV10');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const sigmaEps=parseFloat(document.getElementById('sigmaEpsIn').value);
+    const phi=parseFloat(document.getElementById('phiIn10').value);
+    const t=parseInt(document.getElementById('tIn10').value);
+    if([sigmaEps,phi,t].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(sigmaEps<0) throw new Error("L'écart-type des chocs doit être positif.");
+    if(t<1) throw new Error('t doit être au moins 1.');
+    if(Math.abs(phi)>=1){
+      const V=t*sigmaEps*sigmaEps;
+      let out=`<p class="alerte">|φ1|≥1 : processus non stationnaire (marche aléatoire si φ1=1).</p>
+        <p><strong>$V[Y_t]=t\\sigma_\\varepsilon^2=${V.toFixed(4)}$</strong> (croît avec $t$, sans limite)</p>
+        <p>$\\sigma_{Y_t}=${Math.sqrt(V).toFixed(4)}$</p>`;
+      resDiv.innerHTML=out;
+    } else {
+      const V=sigmaEps*sigmaEps/(1-phi*phi);
+      let out=`<p class="ok">|φ1|<1 : processus stationnaire.</p>
+        <p><strong>$V[Y_t]=\\sigma_\\varepsilon^2/(1-\\phi_1^2)=${V.toFixed(4)}$</strong> (constante, indépendante de $t$)</p>
+        <p>$\\sigma_{Y_t}=${Math.sqrt(V).toFixed(4)}$</p>`;
+      resDiv.innerHTML=out;
+    }
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerDiffSaisonniere(){
+  const erreurDiv=document.getElementById('erreurS10'); const resDiv=document.getElementById('resultatS10');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const anneeN1=document.getElementById('anneeN1').value.split(/[\s,]+/).map(s=>s.trim()).filter(s=>s.length>0).map(Number);
+    const anneeN=document.getElementById('anneeN').value.split(/[\s,]+/).map(s=>s.trim()).filter(s=>s.length>0).map(Number);
+    if(anneeN1.length!==4||anneeN.length!==4) throw new Error('4 valeurs (T1 à T4) requises pour chaque année.');
+    if(anneeN1.some(isNaN)||anneeN.some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    const diffs=anneeN.map((v,i)=>v-anneeN1[i]);
+    const labels=['T1','T2','T3','T4'];
+    let out='<table style="width:100%;border-collapse:collapse;font-family:\'Courier New\',monospace;font-size:0.85em;"><tr>'+labels.map(l=>`<th style="border:1px solid #ccc;padding:0.3em;">${l}</th>`).join('')+'</tr><tr>'+diffs.map(d=>`<td style="border:1px solid #ccc;padding:0.3em;">${d.toFixed(2)}</td>`).join('')+'</tr></table>';
+    const maxRaw=Math.max(...anneeN1)-Math.min(...anneeN1);
+    const maxDiffRange=Math.max(...diffs)-Math.min(...diffs);
+    out+=`<p style="font-size:0.85em;color:var(--cgris);">Étendue des différences Δ₄ : ${maxDiffRange.toFixed(2)} — bien plus faible que l'étendue brute intra-annuelle (${maxRaw.toFixed(2)}), signe que la saisonnalité a été largement éliminée.</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerTendance(); calculerVariance(); calculerDiffSaisonniere(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Les méthodes d'apprentissage automatique — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 160px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — Les méthodes d'apprentissage automatique</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse quantitative</p>
+
+<div class="panneau">
+  <h2>1. Standardiser / normaliser une valeur</h2>
+  <div class="ligne">
+    <div><label for="xVal13">$x$</label><input type="number" id="xVal13" value="80000" step="any"></div>
+    <div><label for="meanVal13">$\hat{\mu}$</label><input type="number" id="meanVal13" value="52000" step="any"></div>
+    <div><label for="sigmaVal13">$\hat{\sigma}$</label><input type="number" id="sigmaVal13" value="15000" step="any" min="0"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="minVal13">min</label><input type="number" id="minVal13" value="20000" step="any"></div>
+    <div><label for="maxVal13">max</label><input type="number" id="maxVal13" value="120000" step="any"></div>
+  </div>
+  <button onclick="calculerEchelle()">Calculer</button>
+  <div id="erreurE13" class="erreur"></div>
+  <div id="resultatE13" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Part de variance expliquée par l'ACP</h2>
+  <label for="lambdasIn">Valeurs propres (séparées par des virgules)</label>
+  <input type="text" id="lambdasIn" value="2.4, 0.5, 0.1">
+  <button onclick="calculerACP()">Calculer</button>
+  <div id="erreurACP" class="erreur"></div>
+  <div id="resultatACP" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Une itération des K-moyennes (1D ou 2D)</h2>
+  <p class="aide">Points : une paire "x y" par ligne (ou juste "x" pour du 1D).</p>
+  <textarea id="pointsIn13" rows="5">0 0
+1 2
+4 5
+6 4</textarea>
+  <div class="ligne">
+    <div><label for="c1In13">centre initial 1 (x y)</label><input type="text" id="c1In13" value="1 1"></div>
+    <div><label for="c2In13">centre initial 2 (x y)</label><input type="text" id="c2In13" value="5 5"></div>
+  </div>
+  <button onclick="calculerKMeans()">Calculer</button>
+  <div id="erreurKM" class="erreur"></div>
+  <div id="resultatKM" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : standardisation $x^{\text{std}}=(x-\hat{\mu})/\hat{\sigma}$ ; normalisation min-max $x^{\text{norm}}=(x-x_{\min})/(x_{\max}-x_{\min})$ ; ACP — part de variance de PC$_k$ $=\lambda_k/\sum_j\lambda_j$ ; K-moyennes — affecter au centre le plus proche, puis recalculer chaque centre comme la moyenne de son groupe, jusqu'à stabilisation.</p>
+
+<script>
+function calculerEchelle(){
+  const erreurDiv=document.getElementById('erreurE13'); const resDiv=document.getElementById('resultatE13');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const x=parseFloat(document.getElementById('xVal13').value);
+    const mean=parseFloat(document.getElementById('meanVal13').value);
+    const sigma=parseFloat(document.getElementById('sigmaVal13').value);
+    const mn=parseFloat(document.getElementById('minVal13').value);
+    const mx=parseFloat(document.getElementById('maxVal13').value);
+    if([x,mean,sigma,mn,mx].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(sigma<=0) throw new Error('Sigma doit être strictement positif.');
+    if(mx<=mn) throw new Error('max doit être strictement supérieur à min.');
+    const std=(x-mean)/sigma;
+    const norm=(x-mn)/(mx-mn);
+    let out=`<p><strong>$x^{\\text{std}}=${std.toFixed(4)}$</strong> &nbsp;&nbsp; <strong>$x^{\\text{norm}}=${norm.toFixed(4)}$</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerACP(){
+  const erreurDiv=document.getElementById('erreurACP'); const resDiv=document.getElementById('resultatACP');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lambdas=document.getElementById('lambdasIn').value.split(',').map(s=>parseFloat(s.trim()));
+    if(lambdas.some(isNaN)) throw new Error('Toutes les valeurs propres doivent être numériques.');
+    if(lambdas.some(l=>l<0)) throw new Error('Les valeurs propres doivent être positives.');
+    const total=lambdas.reduce((a,b)=>a+b,0);
+    if(total<=0) throw new Error('La somme des valeurs propres doit être strictement positive.');
+    let cum=0;
+    let out=`<p>Somme des valeurs propres $=${total.toFixed(4)}$</p><table><tr><th>composante</th>`+lambdas.map((_,i)=>`<th>PC${i+1}</th>`).join('')+'</tr><tr><th>% variance</th>'+lambdas.map(l=>`<td>${(l/total*100).toFixed(2)}%</td>`).join('')+'</tr><tr><th>% cumulé</th>'+lambdas.map(l=>{ cum+=l; return `<td>${(cum/total*100).toFixed(2)}%</td>`; }).join('')+'</tr></table>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function parsePoint(str){
+  const parts=str.trim().split(/\s+/).map(Number);
+  if(parts.length===1) return [parts[0],0];
+  if(parts.length===2) return parts;
+  throw new Error('Format de point invalide : "'+str+'".');
+}
+
+function calculerKMeans(){
+  const erreurDiv=document.getElementById('erreurKM'); const resDiv=document.getElementById('resultatKM');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('pointsIn13').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<2) throw new Error('Au moins 2 points requis.');
+    const points=lignes.map(parsePoint);
+    if(points.some(p=>p.some(isNaN))) throw new Error('Coordonnées invalides.');
+    let c1=parsePoint(document.getElementById('c1In13').value);
+    let c2=parsePoint(document.getElementById('c2In13').value);
+    if([...c1,...c2].some(isNaN)) throw new Error('Centres initiaux invalides.');
+    function dist(a,b){ return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2); }
+    const assign=points.map(p=> dist(p,c1)<=dist(p,c2) ? 1 : 2 );
+    const g1=points.filter((p,i)=>assign[i]===1);
+    const g2=points.filter((p,i)=>assign[i]===2);
+    function centroid(g){ if(g.length===0) return null; return [g.reduce((s,p)=>s+p[0],0)/g.length, g.reduce((s,p)=>s+p[1],0)/g.length]; }
+    const nc1=centroid(g1), nc2=centroid(g2);
+    let out=`<p>Affectations : ${assign.map((a,i)=>'P'+(i+1)+'→G'+a).join(', ')}</p>`;
+    out+=`<p><strong>Nouveau centre 1 = (${nc1?nc1.map(v=>v.toFixed(4)).join(', '):'—'})</strong></p>`;
+    out+=`<p><strong>Nouveau centre 2 = (${nc2?nc2.map(v=>v.toFixed(4)).join(', '):'—'})</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerEchelle(); calculerACP(); calculerKMeans(); };
+</script>
+</body>
+</html>

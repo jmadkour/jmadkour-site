@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Les jeux en réseau — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  textarea { resize: vertical; min-height: 3.2em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 200px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Les jeux en réseau</h1>
+<p class="sous-titre">Calculatrice interactive — Théorie des réseaux</p>
+
+<div class="panneau">
+  <h2>Équilibre de Nash (compléments) : effort et joueur clé</h2>
+  <p class="aide">Arêtes : une par ligne, format <code>a,b</code>. La condition d'existence |&phi;| &lt; 1/&lambda;&#8321; est vérifiée automatiquement.</p>
+  <div class="ligne">
+    <div><label for="gtE">Arêtes</label><textarea id="gtE">1,2
+1,3
+2,3
+3,4
+4,5
+5,6
+5,7
+6,7</textarea></div>
+    <div><label for="gtPhi">&phi; (compléments si &gt; 0)</label><input type="number" id="gtPhi" value="0.15" step="0.01"></div>
+  </div>
+  <button onclick="calculerNash()">Calculer x et l'intercentralité</button>
+  <div id="resultatNash" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Substituts stratégiques : vérifier un équilibre</h2>
+  <p class="aide">Réutilise les arêtes saisies ci-dessus.</p>
+  <div class="ligne">
+    <div><label for="setIn">Nœuds actifs proposés (séparés par des virgules)</label><input type="text" id="setIn" value="3,6"></div>
+  </div>
+  <button onclick="calculerSubstituts()">Vérifier l'équilibre</button>
+  <div id="resultatSub" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Le joueur clé (plus forte intercentralité) n'est pas toujours le nœud du plus fort effort : sur des réseaux asymétriques, retirer un nœud peut faire perdre plus d'activité indirecte que ne le suggère son propre niveau d'effort.</p>
+
+<script>
+function parseEdges(text) {
+  return text.trim().split('\n').map(l => l.trim()).filter(l => l.length).map(l => l.split(',').map(s => s.trim()));
+}
+function nodesFromEdges(E) {
+  const s = new Set();
+  E.forEach(([a,b]) => { s.add(a); s.add(b); });
+  return Array.from(s);
+}
+function buildAdj(V, E) {
+  const adj = {};
+  V.forEach(v => adj[v] = new Set());
+  E.forEach(([a,b]) => { adj[a].add(b); adj[b].add(a); });
+  return adj;
+}
+function buildAdjMatrix(V, adj) {
+  const n = V.length;
+  const idx = {}; V.forEach((v,i) => idx[v] = i);
+  const A = Array.from({length:n}, () => new Array(n).fill(0));
+  V.forEach(v => adj[v].forEach(u => { A[idx[v]][idx[u]] = 1; }));
+  return A;
+}
+function matVec(A, x) { return A.map(row => row.reduce((s,a,j) => s + a*x[j], 0)); }
+function norm(x) { return Math.sqrt(x.reduce((s,v)=>s+v*v,0)); }
+function spectralRadius(A, iters=1000, tol=1e-14) {
+  const n = A.length;
+  let x = new Array(n).fill(1/Math.sqrt(n));
+  let lambda = 0;
+  for (let it=0; it<iters; it++) {
+    const y = matVec(A, x);
+    const ny = norm(y);
+    const xNew = y.map(v => v/ny);
+    if (Math.abs(ny - lambda) < tol) { lambda = ny; x = xNew; break; }
+    lambda = ny; x = xNew;
+  }
+  return lambda;
+}
+function identity(n) { return Array.from({length:n}, (_,i) => Array.from({length:n}, (_,j) => i===j?1:0)); }
+function matSub(A, B) { return A.map((row,i) => row.map((v,j) => v - B[i][j])); }
+function scalarMat(s, A) { return A.map(row => row.map(v => v*s)); }
+function solveLinear(M, b) {
+  const n = M.length;
+  const A = M.map(row => row.slice());
+  const rhs = b.slice();
+  for (let col = 0; col < n; col++) {
+    let piv = col;
+    for (let r = col+1; r < n; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
+    [A[col], A[piv]] = [A[piv], A[col]];
+    [rhs[col], rhs[piv]] = [rhs[piv], rhs[col]];
+    for (let r = col+1; r < n; r++) {
+      const factor = A[r][col] / A[col][col];
+      for (let c = col; c < n; c++) A[r][c] -= factor * A[col][c];
+      rhs[r] -= factor * rhs[col];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let r = n-1; r >= 0; r--) {
+    let sum = rhs[r];
+    for (let c = r+1; c < n; c++) sum -= A[r][c]*x[c];
+    x[r] = sum / A[r][r];
+  }
+  return x;
+}
+function matInverse(M) {
+  const n = M.length;
+  const A = M.map(row => row.slice());
+  const I = identity(n);
+  for (let col = 0; col < n; col++) {
+    let piv = col;
+    for (let r = col+1; r < n; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
+    [A[col], A[piv]] = [A[piv], A[col]];
+    [I[col], I[piv]] = [I[piv], I[col]];
+    const pivVal = A[col][col];
+    for (let c = 0; c < n; c++) { A[col][c] /= pivVal; I[col][c] /= pivVal; }
+    for (let r = 0; r < n; r++) {
+      if (r === col) continue;
+      const factor = A[r][col];
+      for (let c = 0; c < n; c++) { A[r][c] -= factor*A[col][c]; I[r][c] -= factor*I[col][c]; }
+    }
+  }
+  return I;
+}
+function isMaximalIndependentSet(V, adj, S) {
+  const Sset = new Set(S);
+  for (const v of S) for (const u of adj[v]) if (Sset.has(u)) return { valid:false, reason: `${v} et ${u} sont voisins et tous deux actifs` };
+  for (const v of V) {
+    if (Sset.has(v)) continue;
+    const hasActiveNeighbor = Array.from(adj[v]).some(u => Sset.has(u));
+    if (!hasActiveNeighbor) return { valid:false, reason: `${v} n'est actif ni voisin d'aucun actif` };
+  }
+  return { valid:true };
+}
+
+function calculerNash() {
+  const resDiv = document.getElementById('resultatNash');
+  try {
+    const E = parseEdges(document.getElementById('gtE').value);
+    const V = nodesFromEdges(E);
+    const adj = buildAdj(V, E);
+    const Amat = buildAdjMatrix(V, adj);
+    const lambda1 = spectralRadius(Amat);
+    const phi = parseFloat(document.getElementById('gtPhi').value);
+    if (isNaN(phi)) { resDiv.innerHTML = '<p class="erreur">&phi; invalide.</p>'; return; }
+    if (Math.abs(phi) >= 1/lambda1) {
+      resDiv.innerHTML = `<p class="erreur">Condition d'existence violée : |&phi;|=${Math.abs(phi).toFixed(4)} &ge; 1/&lambda;&#8321;=${(1/lambda1).toFixed(4)}. L'équilibre n'existe pas (ou diverge).</p>`;
+      return;
+    }
+    const n = V.length;
+    const M = matSub(identity(n), scalarMat(phi, Amat));
+    const ones = new Array(n).fill(1);
+    const x = solveLinear(M, ones);
+    const Minv = matInverse(M);
+    const c = V.map((v,i) => x[i]**2 / Minv[i][i]);
+    let out = `<div class="valeur">&lambda;&#8321; = ${lambda1.toFixed(4)}</div><div class="valeur">1/&lambda;&#8321; = ${(1/lambda1).toFixed(4)}</div>`;
+    out += '<table><tr><th>nœud</th><th>effort x_i</th><th>intercentralité c_i</th></tr>';
+    V.forEach((v,i) => { out += `<tr><td>${v}</td><td>${x[i].toFixed(4)}</td><td>${c[i].toFixed(4)}</td></tr>`; });
+    out += '</table>';
+    const maxX = V[x.indexOf(Math.max(...x))];
+    const maxC = V[c.indexOf(Math.max(...c))];
+    out += `<p style="margin-top:0.6em;">Effort maximal : <strong>${maxX}</strong>. Joueur clé (intercentralité maximale) : <strong>${maxC}</strong>. ${maxX===maxC ? 'Les deux coïncident ici.' : 'Ils diffèrent : le joueur clé n\'est pas le nœud du plus fort effort !'}</p>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format des arêtes.</p>';
+  }
+}
+
+function calculerSubstituts() {
+  const resDiv = document.getElementById('resultatSub');
+  try {
+    const E = parseEdges(document.getElementById('gtE').value);
+    const V = nodesFromEdges(E);
+    const adj = buildAdj(V, E);
+    const S = document.getElementById('setIn').value.split(',').map(s => s.trim()).filter(s => s.length);
+    if (S.some(s => !V.includes(s))) { resDiv.innerHTML = '<p class="erreur">Un des nœuds proposés n\'existe pas dans le réseau.</p>'; return; }
+    const result = isMaximalIndependentSet(V, adj, S);
+    let out = `<div class="valeur">${S.length} nœud(s) actif(s)</div>`;
+    out += result.valid
+      ? `<p style="color:var(--cex);"><strong>Équilibre valide.</strong> L'ensemble ${S.join(', ')} est indépendant (aucun voisin actif d'un autre actif) et maximal (tout nœud inactif a un voisin actif).</p>`
+      : `<p class="erreur"><strong>Ce n'est pas un équilibre :</strong> ${result.reason}.</p>`;
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie.</p>';
+  }
+}
+
+window.onload = () => { calculerNash(); calculerSubstituts(); };
+</script>
+</body>
+</html>

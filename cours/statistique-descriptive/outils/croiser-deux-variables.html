@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Croiser deux variables — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.nuage { border-left-color: var(--ceco); } .panneau.nuage h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.nuage button { background: var(--ceco); } .panneau.nuage button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  svg { margin-top: 0.8em; width: 100%; max-width: 460px; height: auto; display:block; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Croiser deux variables</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique descriptive</p>
+
+<div class="panneau">
+  <h2>Tableau de contingence : marges, profils et effectifs théoriques</h2>
+  <label for="tableInput">une ligne par ligne du tableau, effectifs séparés par des virgules</label>
+  <textarea id="tableInput" rows="4">40,20
+50,15
+60,15</textarea>
+  <div class="grille2">
+    <div><label for="ligneCase">numéro de ligne de la case (1, 2, ...)</label><input id="ligneCase" value="3"></div>
+    <div><label for="colCase">numéro de colonne de la case (1, 2, ...)</label><input id="colCase" value="1"></div>
+  </div>
+  <button onclick="calculerContingence()">Calculer marges, profils et effectif théorique</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau nuage">
+  <h2>Nuage de points et point moyen</h2>
+  <label for="nuageInput">une ligne par individu : x,y</label>
+  <textarea id="nuageInput" rows="6">2,4200
+5,5100
+8,5800
+3,4500
+10,6200
+6,5400</textarea>
+  <button onclick="calculerNuage()">Calculer le point moyen et tracer le nuage</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <div id="svgZone"></div>
+</div>
+
+<p class="avertissement">Rappels : fréquence conjointe $=n_{ij}/n$ ; profil-ligne $=n_{ij}/n_{i\bullet}$ ; profil-colonne $=n_{ij}/n_{\bullet j}$ ; effectif théorique sous indépendance $n^{\text{th}}_{ij}=n_{i\bullet}n_{\bullet j}/n$. Le point moyen $G=(\bar x,\bar y)$ est toujours sur la future droite d'ajustement (chapitre 13). Toujours regarder le nuage avant de calculer un coefficient de liaison.</p>
+
+<script>
+function calculerContingence(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('tableInput').value.trim().split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    const table=lignes.map(l=>l.split(',').map(s=>parseFloat(s.trim())));
+    if(table.some(row=>row.some(isNaN))) throw new Error('Toutes les cases doivent être des nombres.');
+    const nCols=table[0].length;
+    if(table.some(row=>row.length!==nCols)) throw new Error('Toutes les lignes doivent avoir le même nombre de colonnes.');
+    const rowTot=table.map(row=>row.reduce((a,b)=>a+b,0));
+    const colTot=Array(nCols).fill(0);
+    table.forEach(row=>row.forEach((v,j)=>{ colTot[j]+=v; }));
+    const total=rowTot.reduce((a,b)=>a+b,0);
+    const li=parseInt(document.getElementById('ligneCase').value)-1;
+    const ci=parseInt(document.getElementById('colCase').value)-1;
+    if(isNaN(li)||isNaN(ci)||li<0||li>=table.length||ci<0||ci>=nCols) throw new Error('Numéro de ligne ou de colonne hors du tableau.');
+    const nij=table[li][ci], ni=rowTot[li], nj=colTot[ci];
+    const fij=nij/total, profilLigne=nij/ni, profilColonne=nij/nj, th=ni*nj/total;
+    let tableHtml='<table><tr><th></th>';
+    for(let j=0;j<nCols;j++) tableHtml+=`<th>col ${j+1}</th>`;
+    tableHtml+='<th>total ligne</th></tr>';
+    table.forEach((row,i)=>{
+      tableHtml+=`<tr><td>ligne ${i+1}</td>`;
+      row.forEach(v=>{ tableHtml+=`<td>${v}</td>`; });
+      tableHtml+=`<td>${rowTot[i]}</td></tr>`;
+    });
+    tableHtml+='<tr><td>total col.</td>';
+    colTot.forEach(v=>{ tableHtml+=`<td>${v}</td>`; });
+    tableHtml+=`<td>${total}</td></tr></table>`;
+    resDiv.innerHTML=`${tableHtml}
+      <table><tr><th>n_ij</th><th>n_i.</th><th>n.j</th><th>fréq. conjointe</th><th>profil-ligne</th><th>profil-colonne</th><th>effectif théorique</th></tr>
+      <tr><td>${nij}</td><td>${ni}</td><td>${nj}</td><td>${fij.toFixed(4)}</td><td>${profilLigne.toFixed(4)}</td><td>${profilColonne.toFixed(4)}</td><td>${th.toFixed(2)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${Math.abs(nij-th)/th>0.1 ? `Écart notable entre observé (${nij}) et théorique (${th.toFixed(1)}) : signe d'une possible liaison entre les deux variables (à confirmer par un test statistique).` : `Observé (${nij}) proche du théorique (${th.toFixed(1)}) : compatible avec une indépendance entre les deux variables sur cette case.`}</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerNuage(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2'); const svgZone=document.getElementById('svgZone');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; svgZone.innerHTML='';
+  try{
+    const lignes=document.getElementById('nuageInput').value.trim().split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    const points=lignes.map(l=>{
+      const p=l.split(',').map(s=>parseFloat(s.trim()));
+      if(p.length!==2||p.some(isNaN)) throw new Error('Chaque ligne doit contenir 2 nombres : x,y.');
+      return {x:p[0],y:p[1]};
+    });
+    if(points.length<3) throw new Error('Il faut au moins 3 points.');
+    const n=points.length;
+    const mx=points.reduce((a,p)=>a+p.x,0)/n, my=points.reduce((a,p)=>a+p.y,0)/n;
+    resDiv.innerHTML=`<table><tr><th>n</th><th>x̄</th><th>ȳ</th></tr><tr><td>${n}</td><td>${mx.toFixed(3)}</td><td>${my.toFixed(3)}</td></tr></table>`;
+    const size=380, margin=36;
+    const xs=points.map(p=>p.x), ys=points.map(p=>p.y);
+    const xMin=Math.min(...xs,mx), xMax=Math.max(...xs,mx), yMin=Math.min(...ys,my), yMax=Math.max(...ys,my);
+    const padX=(xMax-xMin)*0.1||1, padY=(yMax-yMin)*0.1||1;
+    const dxMin=xMin-padX, dxMax=xMax+padX, dyMin=yMin-padY, dyMax=yMax+padY;
+    const sx=v=>margin+(v-dxMin)/(dxMax-dxMin)*(size-2*margin);
+    const sy=v=>size-margin-(v-dyMin)/(dyMax-dyMin)*(size-2*margin);
+    let svg=`<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="9">`;
+    svg+=`<line x1="${margin}" y1="${size-margin}" x2="${size-margin}" y2="${size-margin}" stroke="#999"/>`;
+    svg+=`<line x1="${margin}" y1="${size-margin}" x2="${margin}" y2="${margin}" stroke="#999"/>`;
+    points.forEach(p=>{ svg+=`<circle cx="${sx(p.x)}" cy="${sy(p.y)}" r="3" fill="#1F6FB2"/>`; });
+    svg+=`<circle cx="${sx(mx)}" cy="${sy(my)}" r="4" fill="#B56600"/><text x="${sx(mx)+6}" y="${sy(my)-6}" fill="#B56600">G</text>`;
+    svg+=`</svg>`;
+    svgZone.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerContingence(); calculerNuage(); };
+</script>
+</body>
+</html>

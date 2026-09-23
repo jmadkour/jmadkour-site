@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Estimateur et biais — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.jensen { border-left-color: var(--cex); } .panneau.jensen h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.jensen button { background: var(--cex); } .panneau.jensen button:hover { background: #226b43; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .non-ok { color: #b00020; font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Estimateur et biais</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Biais de la variance non corrigée (÷n)</h2>
+  <div class="grille2">
+    <div><label for="sigma2">variance de la population σ²</label><input id="sigma2" value="800"></div>
+    <div><label for="n1">taille de l'échantillon n</label><input id="n1" value="15"></div>
+  </div>
+  <button onclick="calculerBiais()">Calculer E(s_n²) et le biais</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau jensen">
+  <h2>Pourquoi s est biaisé pour σ (inégalité de Jensen)</h2>
+  <div class="grille3">
+    <div><label for="v1">valeur possible 1 de s² (proba 0,5)</label><input id="v1" value="100"></div>
+    <div><label for="v2">valeur possible 2 de s² (proba 0,5)</label><input id="v2" value="400"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerJensen()">Comparer E(s) et √(E(s²))</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <div id="graphe2"></div>
+</div>
+
+<p class="avertissement">Rappels : $E(s_n^2)=\frac{n-1}{n}\sigma^2$, biais toujours négatif (sous-estimation). $s^2$ est sans biais pour $\sigma^2$, mais la concavité de la racine carrée implique, par l'inégalité de Jensen, $E(\sqrt{s^2})\leq\sqrt{E(s^2)}$ dès que $s^2$ est aléatoire : $s$ est donc légèrement biaisé pour $\sigma$, même si ce biais est en général faible et négligé en pratique.</p>
+
+<script>
+function calculerBiais(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const sigma2=parseFloat(document.getElementById('sigma2').value);
+    const n=parseFloat(document.getElementById('n1').value);
+    if(isNaN(sigma2)||sigma2<=0) throw new Error('σ² doit être strictement positif.');
+    if(isNaN(n)||n<2) throw new Error('n doit être ≥2.');
+    const Esn2=(n-1)/n*sigma2;
+    const biais=Esn2-sigma2;
+    const biaisRel=(biais/sigma2)*100;
+    resDiv.innerHTML=`<table><tr><th>σ²</th><th>E(s_n²)=(n−1)/n × σ²</th><th>biais</th><th>biais relatif</th></tr>
+      <tr><td>${sigma2}</td><td>${Esn2.toFixed(3)}</td><td class="non-ok">${biais.toFixed(3)}</td><td class="non-ok">${biaisRel.toFixed(2)}%</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Le biais relatif vaut exactement −1/n × 100 = ${(-100/n).toFixed(2)}%. Il tend vers 0 quand n grandit, mais reste toujours négatif : la variance non corrigée sous-estime systématiquement la dispersion réelle.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerJensen(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  const grapheDiv=document.getElementById('graphe2');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const v1=parseFloat(document.getElementById('v1').value);
+    const v2=parseFloat(document.getElementById('v2').value);
+    if(isNaN(v1)||v1<=0||isNaN(v2)||v2<=0) throw new Error('Les deux valeurs doivent être des nombres strictement positifs.');
+    const Es2=0.5*v1+0.5*v2;
+    const Es=0.5*Math.sqrt(v1)+0.5*Math.sqrt(v2);
+    const sqrtEs2=Math.sqrt(Es2);
+    const biaisS=Es-sqrtEs2;
+    resDiv.innerHTML=`<table><tr><th>E(s²)=0,5×${v1}+0,5×${v2}</th><th>E(s)=0,5×√${v1}+0,5×√${v2}</th><th>√(E(s²))</th><th>biais de s pour σ</th></tr>
+      <tr><td>${Es2.toFixed(3)}</td><td>${Es.toFixed(3)}</td><td>${sqrtEs2.toFixed(3)}</td><td class="non-ok">${biaisS.toFixed(3)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">s² est sans biais pour σ²=${Es2.toFixed(2)} par construction. Mais E(s)=${Es.toFixed(3)} < √(E(s²))=${sqrtEs2.toFixed(3)} : la racine carrée étant concave, la moyenne des racines est toujours inférieure ou égale à la racine de la moyenne (Jensen).</p>`;
+    // svg: concave curve, chord below curve
+    const w=520,h=260,pad=40;
+    const xmax=Math.max(v1,v2)*1.15;
+    const ymax=Math.sqrt(xmax)*1.1;
+    const X=(x)=>pad+(x/xmax)*(w-pad-20);
+    const Y=(y)=>(h-pad)-(y/ymax)*(h-pad-20);
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${w-10}" y2="${h-pad}" stroke="#5A5A5A"/>`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${pad}" y2="10" stroke="#5A5A5A"/>`;
+    let path='';
+    for(let i=0;i<=100;i++){
+      const x=i/100*xmax;
+      const y=Math.sqrt(x);
+      const px=X(x), py=Y(y);
+      path+=(i===0?'M':'L')+px.toFixed(1)+','+py.toFixed(1)+' ';
+    }
+    svg+=`<path d="${path}" fill="none" stroke="#1F6FB2" stroke-width="2"/>`;
+    const xA=X(v1), yA=Y(Math.sqrt(v1));
+    const xB=X(v2), yB=Y(Math.sqrt(v2));
+    svg+=`<line x1="${xA}" y1="${yA}" x2="${xB}" y2="${yB}" stroke="#5A5A5A" stroke-dasharray="4,3"/>`;
+    svg+=`<circle cx="${xA}" cy="${yA}" r="4" fill="#B56600"/><circle cx="${xB}" cy="${yB}" r="4" fill="#B56600"/>`;
+    const xM=(xA+xB)/2, yM=(yA+yB)/2;
+    svg+=`<circle cx="${xM}" cy="${yM}" r="4" fill="#1F6FB2"/>`;
+    svg+=`<text x="${xM+6}" y="${yM+4}" font-size="11" fill="#1F6FB2">E(s)=${Es.toFixed(2)} (sur la corde)</text>`;
+    const xEs2=X(Es2), yEs2=Y(sqrtEs2);
+    svg+=`<circle cx="${xEs2}" cy="${yEs2}" r="4" fill="#1D9E75"/>`;
+    svg+=`<text x="${xEs2+6}" y="${yEs2-8}" font-size="11" fill="#1D9E75">√(E(s²))=${sqrtEs2.toFixed(2)} (sur la courbe)</text>`;
+    svg+=`<text x="${w-30}" y="${h-10}" font-size="10" fill="#5A5A5A">s²</text>`;
+    svg+=`<text x="${pad-25}" y="20" font-size="10" fill="#5A5A5A">√(s²)</text>`;
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerBiais(); calculerJensen(); };
+</script>
+</body>
+</html>

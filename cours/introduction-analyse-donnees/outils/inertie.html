@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — L'inertie, ou l'information d'un nuage — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; resize: vertical; }
+  textarea { min-height: 4.5em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 160px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .barre-fond { background:#eee; border-radius:4px; overflow:hidden; height:1.4em; margin-top:0.3em; }
+  .barre-remplie { background: var(--cex); height:100%; color:white; font-size:0.82em; display:flex; align-items:center; justify-content:flex-end; padding-right:0.4em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight:bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — L'inertie, ou l'information d'un nuage</h1>
+<p class="sous-titre">Calculatrice interactive — Introduction à l'analyse des données</p>
+
+<div class="panneau">
+  <h2>1. Inertie d'un nuage : les deux méthodes, côte à côte</h2>
+  <p style="font-size:0.85em;color:var(--cgris);margin-top:0;">Une ligne par individu : nom, puis ses valeurs sur chaque variable (mêmes variables pour tous). La calculatrice vérifie que $I=\dfrac{1}{n}\sum_id^2(i,G)$ et $I=\sum_jV(x_j)$ donnent bien le même nombre.</p>
+  <textarea id="individusInput" rows="5">Produit 1, 7, 6, 8
+Produit 2, 5, 8, 6
+Produit 3, 8, 5, 9
+Produit 4, 6, 7, 7
+Produit 5, 9, 4, 8</textarea>
+  <button onclick="calculerInertie()">Calculer l'inertie</button>
+  <div id="erreurI" class="erreur"></div>
+  <div id="resultatI" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Décomposition inertie projetée / résiduelle</h2>
+  <div class="ligne">
+    <div><label for="Itot">Inertie totale $I$</label><input type="number" id="Itot" value="5" step="any"></div>
+    <div><label for="Iproj">Inertie projetée sur le 1er axe</label><input type="number" id="Iproj" value="4.3" step="any"></div>
+  </div>
+  <button onclick="calculerDecomposition()">Calculer la décomposition</button>
+  <div id="erreurD" class="erreur"></div>
+  <div id="resultatD" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $d^2(i,G)=\sum_j(x_{ij}-\overline x_j)^2$, $I=\dfrac{1}{n}\sum_id^2(i,G)=\sum_jV(x_j)$. Sur données réduites, toujours $I=p$ (nombre de variables) — c'est l'étalon qui rend les pourcentages d'inertie interprétables.</p>
+
+<script>
+function calculerInertie(){
+  const erreurDiv=document.getElementById('erreurI'); const resDiv=document.getElementById('resultatI');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('individusInput').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length<2) throw new Error('Il faut au moins 2 individus.');
+    const noms=[]; const data=[];
+    lignes.forEach(l=>{
+      const parts=l.split(',').map(s=>s.trim());
+      const nom=parts[0];
+      const vals=parts.slice(1).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+      if(vals.length<1) throw new Error(`Individu "${nom}" : au moins 1 valeur numérique requise.`);
+      noms.push(nom); data.push(vals);
+    });
+    const n=data.length, p=data[0].length;
+    if(data.some(d=>d.length!==p)) throw new Error('Tous les individus doivent avoir le même nombre de variables.');
+    const G=[];
+    for(let j=0;j<p;j++){ G.push(data.reduce((s,d)=>s+d[j],0)/n); }
+    const V=[];
+    for(let j=0;j<p;j++){ V.push(data.reduce((sm,d)=>sm+(d[j]-G[j])**2,0)/n); }
+    const ISomme=V.reduce((a,b)=>a+b,0);
+    const d2=data.map(d=>d.reduce((sm,v,j)=>sm+(v-G[j])**2,0));
+    const IDistances=d2.reduce((a,b)=>a+b,0)/n;
+
+    let out=`<table><tr><th>individu</th><th>$d^2(i,G)$</th></tr>`;
+    noms.forEach((nm,i)=>{ out+=`<tr><td>${nm}</td><td>${d2[i].toFixed(3)}</td></tr>`; });
+    out+=`</table>`;
+    out+=`<table style="margin-top:0.8em;"><tr><th>variable</th>${G.map((g,j)=>`<th>var ${j+1}</th>`).join('')}</tr>
+      <tr><td>moyenne</td>${G.map(g=>`<td>${g.toFixed(3)}</td>`).join('')}</tr>
+      <tr><td>variance $V(x_j)$</td>${V.map(v=>`<td>${v.toFixed(3)}</td>`).join('')}</tr></table>`;
+    const ecart=Math.abs(IDistances-ISomme);
+    out+=`<p style="margin-top:0.8em;">Méthode 1 (moyenne des $d^2(i,G)$) : $I=${IDistances.toFixed(4)}$<br>
+      Méthode 2 (somme des variances) : $I=${ISomme.toFixed(4)}$<br>
+      ${ecart<1e-6 ? '<span class="ok">Les deux méthodes coïncident exactement — c\'est le théorème du cours.</span>' : '<span class="erreur">Écart inattendu : '+ecart.toFixed(6)+'</span>'}</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerDecomposition(){
+  const erreurDiv=document.getElementById('erreurD'); const resDiv=document.getElementById('resultatD');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const Itot=parseFloat(document.getElementById('Itot').value);
+    const Iproj=parseFloat(document.getElementById('Iproj').value);
+    if(isNaN(Itot)||isNaN(Iproj)) throw new Error('Valeurs numériques requises.');
+    if(Itot<=0) throw new Error('L\'inertie totale doit être positive.');
+    if(Iproj>Itot) throw new Error('L\'inertie projetée ne peut pas dépasser l\'inertie totale.');
+    const Ires=Itot-Iproj;
+    const pct=100*Iproj/Itot;
+    let out=`<p>$I_{\\text{résiduelle}}=I-I_{\\text{projetée}}=${Itot.toFixed(3)}-${Iproj.toFixed(3)}=${Ires.toFixed(3)}$</p>
+      <p>Pourcentage d'inertie totale conservé par le premier axe : <strong>${pct.toFixed(1)} %</strong></p>
+      <div class="barre-fond"><div class="barre-remplie" style="width:${pct.toFixed(1)}%;">${pct.toFixed(1)} %</div></div>
+      <p style="font-size:0.85em;color:var(--cgris);margin-top:0.5em;">Les ${(100-pct).toFixed(1)} % restants ne sont pas « perdus » : ils restent portés par les axes suivants, calculables à partir des mêmes données.</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerInertie(); calculerDecomposition(); };
+</script>
+</body>
+</html>

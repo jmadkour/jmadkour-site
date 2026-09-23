@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Les tests d'hypothèses — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 160px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .barre-normale { position: relative; height: 90px; margin-top: 1em; background: linear-gradient(to right, #eee 0%, #eee 100%); border-bottom: 1px solid #999; }
+  .marker { position: absolute; bottom: 0; width: 2px; height: 70px; background: var(--cdef); }
+  .marker span { position: absolute; top: -1.4em; left: 50%; transform: translateX(-50%); font-size: 0.7em; white-space: nowrap; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Les tests d'hypothèses</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse quantitative</p>
+
+<div class="panneau">
+  <h2>1. Test sur une moyenne ou une proportion (z-test)</h2>
+  <div class="ligne">
+    <div><label for="theta0">$\theta_0$ (valeur sous $H_0$)</label><input type="number" id="theta0" value="500" step="any"></div>
+    <div><label for="thetaHat">$\hat{\theta}$ (estimation)</label><input type="number" id="thetaHat" value="530" step="any"></div>
+    <div><label for="erreurTypeT">erreur type$(\hat{\theta})$</label><input type="number" id="erreurTypeT" value="10" step="any" min="0"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="typeTest">Type de test</label>
+      <select id="typeTest">
+        <option value="bilateral">Bilatéral ($H_1:\theta\neq\theta_0$), critique $=1{,}96$</option>
+        <option value="unilateral">Unilatéral ($H_1:\theta>\theta_0$), critique $=1{,}645$</option>
+      </select>
+    </div>
+    <div><label for="alphaT">$\alpha$ (indicatif)</label><input type="number" id="alphaT" value="0.05" step="any" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerTest()">Calculer</button>
+  <div id="erreurTe" class="erreur"></div>
+  <div id="resultatTe" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Probabilité d'au moins un faux positif (tests multiples)</h2>
+  <div class="ligne">
+    <div><label for="alphaM">$\alpha$ par test</label><input type="number" id="alphaM" value="0.05" step="any" min="0" max="1"></div>
+    <div><label for="mTests">$m$ (nombre de tests)</label><input type="number" id="mTests" value="30" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerMultiple()">Calculer</button>
+  <div id="erreurMu" class="erreur"></div>
+  <div id="resultatMu" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Backtesting VaR : test du nombre d'exceptions</h2>
+  <div class="ligne">
+    <div><label for="nJours">$n$ (jours)</label><input type="number" id="nJours" value="250" step="1" min="1"></div>
+    <div><label for="pAttendu">$p_0$ (taux attendu)</label><input type="number" id="pAttendu" value="0.01" step="any" min="0" max="1"></div>
+    <div><label for="excObs">exceptions observées</label><input type="number" id="excObs" value="4" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerBacktest()">Calculer</button>
+  <div id="erreurB" class="erreur"></div>
+  <div id="resultatB" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $T=(\hat{\theta}-\theta_0)/\text{erreur type}(\hat{\theta})$, comparé à la valeur critique selon le type de test ; probabilité d'au moins un faux positif sur $m$ tests indépendants $=1-(1-\alpha)^m$ ; sous $H_0$, le nombre d'exceptions suit approximativement une loi normale de moyenne $np_0$ et d'écart-type $\sqrt{np_0(1-p_0)}$.</p>
+
+<script>
+function calculerTest(){
+  const erreurDiv=document.getElementById('erreurTe'); const resDiv=document.getElementById('resultatTe');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const theta0=parseFloat(document.getElementById('theta0').value);
+    const thetaHat=parseFloat(document.getElementById('thetaHat').value);
+    const ET=parseFloat(document.getElementById('erreurTypeT').value);
+    const typeTest=document.getElementById('typeTest').value;
+    if([theta0,thetaHat,ET].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(ET<=0) throw new Error("L'erreur type doit être strictement positive.");
+    const T=(thetaHat-theta0)/ET;
+    const critique = typeTest==='bilateral' ? 1.96 : 1.645;
+    const rejet = typeTest==='bilateral' ? Math.abs(T)>critique : T>critique;
+    let out=`<p>$T=(\\hat{\\theta}-\\theta_0)/\\text{erreur type}=(${thetaHat}-${theta0})/${ET}=${T.toFixed(4)}$</p>
+      <p>Valeur critique (${typeTest==='bilateral'?'bilatérale':'unilatérale'}) $=${critique}$</p>
+      <p><strong>${rejet?'<span class="alerte">On rejette H0.</span>':'<span class="ok">On ne rejette pas H0.</span>'}</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerMultiple(){
+  const erreurDiv=document.getElementById('erreurMu'); const resDiv=document.getElementById('resultatMu');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const alpha=parseFloat(document.getElementById('alphaM').value);
+    const m=parseInt(document.getElementById('mTests').value);
+    if(isNaN(alpha)||isNaN(m)) throw new Error('Valeurs numériques requises.');
+    if(alpha<=0||alpha>=1) throw new Error('Alpha doit être compris entre 0 et 1.');
+    if(m<1) throw new Error('m doit être au moins 1.');
+    const pAtLeastOne=1-Math.pow(1-alpha,m);
+    const bonferroni=alpha/m;
+    let out=`<p>$\\Pr(\\text{au moins un faux positif})=1-(1-${alpha})^{${m}}=${(pAtLeastOne*100).toFixed(2)}\\%$</p>
+      <p><strong>Seuil de Bonferroni $=\\alpha/m=${bonferroni.toFixed(6)}$</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerBacktest(){
+  const erreurDiv=document.getElementById('erreurB'); const resDiv=document.getElementById('resultatB');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseInt(document.getElementById('nJours').value);
+    const p0=parseFloat(document.getElementById('pAttendu').value);
+    const exc=parseFloat(document.getElementById('excObs').value);
+    if([n,p0,exc].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(n<1) throw new Error('n doit être au moins 1.');
+    if(p0<=0||p0>=1) throw new Error('p0 doit être compris entre 0 et 1.');
+    if(exc<0) throw new Error('Le nombre d\u2019exceptions doit être positif.');
+    const attendu=n*p0;
+    const sigma=Math.sqrt(n*p0*(1-p0));
+    const T=(exc-attendu)/sigma;
+    const rejet=Math.abs(T)>1.96;
+    let out=`<p>Exceptions attendues $=np_0=${attendu.toFixed(4)}$ &nbsp;&nbsp; écart-type $=\\sqrt{np_0(1-p_0)}=${sigma.toFixed(4)}$</p>
+      <p><strong>$T=${T.toFixed(4)}$</strong></p>
+      <p><strong>${rejet?'<span class="alerte">Modèle rejeté (mal calibré) à 5%.</span>':'<span class="ok">Modèle non rejeté à 5%.</span>'}</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerTest(); calculerMultiple(); calculerBacktest(); };
+</script>
+</body>
+</html>

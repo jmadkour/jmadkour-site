@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — Le simplexe, les cas particuliers — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .diag { padding: 0.6em 0.8em; border-radius: 5px; margin-top: 0.6em; font-weight: bold; }
+  .diag-normal { background: #1D9E7522; color: #1e5f3a; }
+  .diag-multiple { background: #B5660022; color: #995700; }
+  .diag-degenere { background: #1F6FB222; color: #1F6FB2; }
+  .diag-nonborne { background: #b0002022; color: #b00020; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Le simplexe, les cas particuliers</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>Dérouler le simplexe et diagnostiquer les cas particuliers</h2>
+  <p class="aide">$\max Z=c_1x+c_2y$ sous $a_1x+b_1y\leq d_1$, $a_2x+b_2y\leq d_2$, $x,y\geq0$. L'outil signale un optimum multiple (coût réduit nul hors base), une dégénérescence (variable de base nulle) ou une solution non bornée (colonne entièrement négative).</p>
+  <div class="ligne">
+    <div><label for="c1In">Objectif : coeff. de x</label><input type="number" id="c1In" value="40" step="0.01"></div>
+    <div><label for="c2In">Objectif : coeff. de y</label><input type="number" id="c2In" value="20" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="a1In">Contrainte 1 : coeff. x</label><input type="number" id="a1In" value="2" step="0.01"></div>
+    <div><label for="b1In">Contrainte 1 : coeff. y</label><input type="number" id="b1In" value="1" step="0.01"></div>
+    <div><label for="d1In">Contrainte 1 : disponible</label><input type="number" id="d1In" value="80" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="a2In">Contrainte 2 : coeff. x</label><input type="number" id="a2In" value="1" step="0.01"></div>
+    <div><label for="b2In">Contrainte 2 : coeff. y</label><input type="number" id="b2In" value="1" step="0.01"></div>
+    <div><label for="d2In">Contrainte 2 : disponible</label><input type="number" id="d2In" value="60" step="0.01"></div>
+  </div>
+  <button onclick="resoudreDiagnostic()">Résoudre et diagnostiquer</button>
+  <div id="erreurDiag" class="erreur"></div>
+  <div id="resultatDiag" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : un coût réduit nul sur une variable hors base à l'optimum signale un optimum multiple (une face entière du polyèdre est optimale) ; une variable de base à zéro signale une dégénérescence ; une variable de coût réduit positif dont toute la colonne est $\leq0$ signale une solution non bornée --- presque toujours une contrainte oubliée.</p>
+
+<script>
+function fmt(v){
+  if(Math.abs(v)<1e-9) return '0';
+  const r=Math.round(v*10000)/10000;
+  return Number.isInteger(r) ? String(r) : r.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+}
+
+function simplexeDiag(c1,c2,a1,b1,d1,a2,b2,d2){
+  const names=['x','y','e1','e2'];
+  let T=[[a1,b1,1,0,d1],[a2,b2,0,1,d2]];
+  let basis=[2,3];
+  let cj=[c1,c2,0,0];
+  const iterations=[];
+  let iter=0, unbounded=null;
+  while(true){
+    let zj=[0,0,0,0];
+    for(let j=0;j<4;j++){ let s=0; for(let i=0;i<2;i++) s+=cj[basis[i]]*T[i][j]; zj[j]=s; }
+    let reduced=cj.map((c,j)=>c-zj[j]);
+    let Z=0; for(let i=0;i<2;i++) Z+=cj[basis[i]]*T[i][4];
+    iterations.push({basis:basis.slice(),tableau:T.map(r=>r.slice()),reduced:reduced.slice(),Z});
+    let enter=-1,best=1e-9;
+    for(let j=0;j<4;j++){ if(reduced[j]>best){ best=reduced[j]; enter=j; } }
+    if(enter===-1) break;
+    let hasPositiveCoeff=false;
+    for(let i=0;i<2;i++){ if(T[i][enter]>1e-9) hasPositiveCoeff=true; }
+    if(!hasPositiveCoeff){ unbounded=names[enter]; break; }
+    let leave=-1,bestRatio=Infinity;
+    for(let i=0;i<2;i++){ if(T[i][enter]>1e-9){ const ratio=T[i][4]/T[i][enter]; if(ratio<bestRatio-1e-9){ bestRatio=ratio; leave=i; } } }
+    const piv=T[leave][enter];
+    T[leave]=T[leave].map(v=>v/piv);
+    for(let i=0;i<2;i++){ if(i!==leave){ const f=T[i][enter]; T[i]=T[i].map((v,j)=>v-f*T[leave][j]); } }
+    basis[leave]=enter;
+    iter++;
+    if(iter>20){ break; }
+  }
+  return {iterations,names,unbounded};
+}
+
+function resoudreDiagnostic(){
+  const erreurDiv=document.getElementById('erreurDiag'); const resDiv=document.getElementById('resultatDiag');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const c1=parseFloat(document.getElementById('c1In').value);
+    const c2=parseFloat(document.getElementById('c2In').value);
+    const a1=parseFloat(document.getElementById('a1In').value);
+    const b1=parseFloat(document.getElementById('b1In').value);
+    const d1=parseFloat(document.getElementById('d1In').value);
+    const a2=parseFloat(document.getElementById('a2In').value);
+    const b2=parseFloat(document.getElementById('b2In').value);
+    const d2=parseFloat(document.getElementById('d2In').value);
+    if([c1,c2,a1,b1,d1,a2,b2,d2].some(isNaN)) throw new Error('Tous les coefficients doivent etre numeriques.');
+
+    const {iterations,names,unbounded}=simplexeDiag(c1,c2,a1,b1,d1,a2,b2,d2);
+    let out='';
+    iterations.forEach((it,idx)=>{
+      out+=`<h3>${idx===0?'Tableau initial':'Après itération '+idx}</h3>`;
+      out+='<table><tr><th>Base</th>'+names.map(n=>`<th>${n}</th>`).join('')+'<th>b</th></tr>';
+      it.tableau.forEach((row,i)=>{
+        out+=`<tr><td>${names[it.basis[i]]}</td>`+row.map(v=>`<td>${fmt(v)}</td>`).join('')+'</tr>';
+      });
+      out+=`<tr><td>c_j-z_j</td>`+it.reduced.map(v=>`<td>${fmt(v)}</td>`).join('')+`<td>Z=${fmt(it.Z)}</td></tr>`;
+      out+='</table>';
+    });
+
+    if(unbounded){
+      out+=`<div class="diag diag-nonborne">Solution NON BORNÉE : ${unbounded} a un coût réduit positif mais aucun coefficient positif dans sa colonne. Vérifier qu'aucune contrainte n'a été oubliée.</div>`;
+    } else {
+      const last=iterations[iterations.length-1];
+      const sol={x:0,y:0,e1:0,e2:0};
+      last.basis.forEach((b,i)=>{ sol[names[b]]=last.tableau[i][4]; });
+      out+=`<p>Optimal après ${iterations.length-1} itération(s) : x=${fmt(sol.x)}, y=${fmt(sol.y)}, Z=${fmt(last.Z)}.</p>`;
+
+      // multiple optima: nonbasic variable with reduced cost exactly 0
+      const nBasic=new Set(last.basis);
+      let multipleVar=null;
+      for(let j=0;j<4;j++){ if(!nBasic.has(j) && Math.abs(last.reduced[j])<1e-9) multipleVar=names[j]; }
+      // degeneracy: basic variable value 0
+      let degenVar=null;
+      last.basis.forEach((b,i)=>{ if(Math.abs(last.tableau[i][4])<1e-9) degenVar=names[b]; });
+
+      if(multipleVar){
+        out+=`<div class="diag diag-multiple">OPTIMUM MULTIPLE : le coût réduit de ${multipleVar} est nul hors base. Toute une face du polyèdre partage cette valeur de Z — un second critère peut départager les plans.</div>`;
+      }
+      if(degenVar){
+        out+=`<div class="diag diag-degenere">SOLUTION DÉGÉNÉRÉE : la variable de base ${degenVar} vaut 0. Plus de deux contraintes se coupent en ce sommet.</div>`;
+      }
+      if(!multipleVar && !degenVar){
+        out+=`<div class="diag diag-normal">Cas normal : solution optimale unique, non dégénérée.</div>`;
+      }
+    }
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ resoudreDiagnostic(); };
+</script>
+</body>
+</html>

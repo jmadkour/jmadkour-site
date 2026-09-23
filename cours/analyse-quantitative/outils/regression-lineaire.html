@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — La régression linéaire — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 160px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  svg { background: white; border: 1px solid #eee; border-radius: 4px; margin-top: 0.6em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — La régression linéaire</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse quantitative</p>
+
+<div class="panneau">
+  <h2>1. Régression simple à partir de données $(X,Y)$</h2>
+  <p class="aide">Une paire $x,y$ par ligne.</p>
+  <textarea id="xyInput" rows="6">14 48
+17 53
+20 60
+23 66
+26 72
+20 58</textarea>
+  <button onclick="calculerRegression()">Calculer</button>
+  <div id="erreurR" class="erreur"></div>
+  <div id="resultatR" class="resultat-zone"></div>
+  <svg id="scatterSvg" width="420" height="300" viewBox="0 0 420 300"></svg>
+</div>
+
+<div class="panneau">
+  <h2>2. Décomposition de la variance et $R^2$</h2>
+  <div class="ligne">
+    <div><label for="sctIn">$SCT$</label><input type="number" id="sctIn" value="800" step="any" min="0"></div>
+    <div><label for="scrIn">$SCR$</label><input type="number" id="scrIn" value="180" step="any" min="0"></div>
+  </div>
+  <button onclick="calculerR2()">Calculer</button>
+  <div id="erreurR2" class="erreur"></div>
+  <div id="resultatR2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Tester une pente ou un bêta</h2>
+  <div class="ligne">
+    <div><label for="betaHatIn">$\hat{\beta}$ (ou $\hat{\beta}_1$)</label><input type="number" id="betaHatIn" value="1.28" step="any"></div>
+    <div><label for="beta0RefIn">valeur testée $\beta_0$</label><input type="number" id="beta0RefIn" value="1" step="any"></div>
+    <div><label for="etBetaIn">erreur type</label><input type="number" id="etBetaIn" value="0.35" step="any" min="0"></div>
+  </div>
+  <button onclick="calculerTestBeta()">Calculer</button>
+  <div id="erreurTb" class="erreur"></div>
+  <div id="resultatTb" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\hat{\beta}_1=\widehat{\mathrm{Cov}}(X,Y)/\hat{\sigma}_X^2$, $\hat{\beta}_0=\bar{Y}-\hat{\beta}_1\bar{X}$ ; $R^2=SCE/SCT=1-SCR/SCT=\rho_{X,Y}^2$ en régression simple ; $t=(\hat{\beta}-\beta_0)/\text{erreur type}$, $|t|>2$ signale une significativité à $5\,\%$ environ. Un $R^2$ élevé ne prouve ni la validité du modèle ni la causalité.</p>
+
+<script>
+function calculerRegression(){
+  const erreurDiv=document.getElementById('erreurR'); const resDiv=document.getElementById('resultatR');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('xyInput').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<2) throw new Error('Au moins 2 points requis.');
+    const pts=lignes.map(l=>{
+      const parts=l.split(/\s+/).map(Number);
+      if(parts.length!==2||parts.some(isNaN)) throw new Error('Ligne invalide : "'+l+'" (attendu "x y").');
+      return {x:parts[0], y:parts[1]};
+    });
+    const n=pts.length;
+    const meanX=pts.reduce((s,p)=>s+p.x,0)/n;
+    const meanY=pts.reduce((s,p)=>s+p.y,0)/n;
+    const covXY=pts.reduce((s,p)=>s+(p.x-meanX)*(p.y-meanY),0)/n;
+    const varX=pts.reduce((s,p)=>s+(p.x-meanX)**2,0)/n;
+    const varY=pts.reduce((s,p)=>s+(p.y-meanY)**2,0)/n;
+    if(varX===0) throw new Error('X doit varier (variance nulle interdite).');
+    const beta1=covXY/varX;
+    const beta0=meanY-beta1*meanX;
+    const corr=covXY/Math.sqrt(varX*varY);
+    const R2=corr*corr;
+    let out=`<p>$n=${n}$ &nbsp;&nbsp; $\\bar{X}=${meanX.toFixed(4)}$ &nbsp;&nbsp; $\\bar{Y}=${meanY.toFixed(4)}$</p>
+      <p><strong>$\\hat{\\beta}_1=${beta1.toFixed(4)}$</strong> &nbsp;&nbsp; <strong>$\\hat{\\beta}_0=${beta0.toFixed(4)}$</strong></p>
+      <p>$\\hat{Y}=${beta0.toFixed(3)}+${beta1.toFixed(3)}\\,X$</p>
+      <p><strong>$R^2=\\rho^2=${R2.toFixed(4)}$</strong></p>`;
+    resDiv.innerHTML=out;
+    dessinerNuage(pts,beta0,beta1);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function dessinerNuage(pts,beta0,beta1){
+  const svg=document.getElementById('scatterSvg');
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  const W=420,H=300,pad=40;
+  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+  const xmin=Math.min(...xs), xmax=Math.max(...xs);
+  const ymin=Math.min(...ys,beta0+beta1*xmin), ymax=Math.max(...ys,beta0+beta1*xmax);
+  const xr = xmax-xmin || 1, yr = ymax-ymin || 1;
+  const sx = x => pad + (x-xmin)/xr*(W-2*pad);
+  const sy = y => H-pad - (y-ymin)/yr*(H-2*pad);
+  const ns='http://www.w3.org/2000/svg';
+  const line=document.createElementNS(ns,'line');
+  line.setAttribute('x1',sx(xmin)); line.setAttribute('y1',sy(beta0+beta1*xmin));
+  line.setAttribute('x2',sx(xmax)); line.setAttribute('y2',sy(beta0+beta1*xmax));
+  line.setAttribute('stroke','#1F6FB2'); line.setAttribute('stroke-width','2');
+  svg.appendChild(line);
+  pts.forEach(p=>{
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',sx(p.x)); c.setAttribute('cy',sy(p.y)); c.setAttribute('r','4');
+    c.setAttribute('fill','#1D9E75');
+    svg.appendChild(c);
+  });
+}
+
+function calculerR2(){
+  const erreurDiv=document.getElementById('erreurR2'); const resDiv=document.getElementById('resultatR2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const SCT=parseFloat(document.getElementById('sctIn').value);
+    const SCR=parseFloat(document.getElementById('scrIn').value);
+    if(isNaN(SCT)||isNaN(SCR)) throw new Error('Valeurs numériques requises.');
+    if(SCT<=0) throw new Error('SCT doit être strictement positif.');
+    if(SCR<0||SCR>SCT) throw new Error('SCR doit être compris entre 0 et SCT.');
+    const SCE=SCT-SCR;
+    const R2=SCE/SCT;
+    let out=`<p>$SCE=SCT-SCR=${SCE.toFixed(4)}$</p>
+      <p><strong>$R^2=SCE/SCT=${R2.toFixed(4)}$</strong> (soit $1-SCR/SCT=${(1-SCR/SCT).toFixed(4)}$)</p>
+      <p>Part non expliquée $=${(1-R2).toFixed(4)}$</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerTestBeta(){
+  const erreurDiv=document.getElementById('erreurTb'); const resDiv=document.getElementById('resultatTb');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const betaHat=parseFloat(document.getElementById('betaHatIn').value);
+    const beta0Ref=parseFloat(document.getElementById('beta0RefIn').value);
+    const ET=parseFloat(document.getElementById('etBetaIn').value);
+    if([betaHat,beta0Ref,ET].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(ET<=0) throw new Error("L'erreur type doit être strictement positive.");
+    const t=(betaHat-beta0Ref)/ET;
+    const sig=Math.abs(t)>2;
+    let out=`<p>$t=(\\hat{\\beta}-\\beta_0)/\\text{erreur type}=${t.toFixed(4)}$</p>
+      <p><strong>${sig?'<span class="ok">Effet statistiquement significatif (|t|>2).</span>':'<span class="alerte">Effet non significatif (|t|≤2).</span>'}</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerRegression(); calculerR2(); calculerTestBeta(); };
+</script>
+</body>
+</html>

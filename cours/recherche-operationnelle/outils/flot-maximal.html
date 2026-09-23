@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — Le flot maximal — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1100px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 6.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-end; }
+  .ligne > div { flex: 1; min-width: 180px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  svg { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.6em; }
+  .valeur { font-size: 1.1em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — Le flot maximal</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>Décrire le réseau et lancer Ford-Fulkerson</h2>
+  <div class="ligne">
+    <div>
+      <label for="sourceIn">Source</label>
+      <input type="text" id="sourceIn" value="A">
+    </div>
+    <div>
+      <label for="puitsIn">Puits</label>
+      <input type="text" id="puitsIn" value="F">
+    </div>
+  </div>
+  <p class="aide">Une ligne par arc : <code>Origine,Destination,capacité</code> (capacité ≥ 0).</p>
+  <textarea id="arcsIn">A,B,10
+A,C,8
+B,C,2
+B,D,5
+C,E,10
+E,D,6
+E,F,4
+D,F,7</textarea>
+  <button onclick="calculer()">Calculer</button>
+  <div id="erreur" class="erreur"></div>
+  <div id="resultat" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappel : à chaque itération, l'algorithme cherche une chaîne améliorante de la source au puits dans le graphe résiduel (arcs directs à capacité résiduelle positive, et arcs retour créés par tout flot déjà poussé), y pousse le minimum des capacités résiduelles rencontrées, jusqu'à ce qu'aucune chaîne n'existe plus. La coupe minimale se lit alors sur l'ensemble des sommets encore atteignables depuis la source dans le graphe résiduel final : flot maximal = capacité de cette coupe (Ford-Fulkerson, 1956).</p>
+
+<script>
+function parseArcs(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const labelsSet = [];
+  const arcs = [];
+  function addLabel(l){ if(!labelsSet.includes(l)) labelsSet.push(l); }
+  lines.forEach(line=>{
+    const parts = line.split(',').map(s=>s.trim());
+    if(parts.length < 3) throw new Error('Ligne invalide (attendu Origine,Destination,capacité) : "'+line+'"');
+    const a = parts[0], b = parts[1];
+    const c = parseFloat(parts[2]);
+    if(a==='' || b==='') throw new Error('Sommet manquant sur la ligne : "'+line+'"');
+    if(isNaN(c) || c<0) throw new Error('Capacité invalide sur la ligne : "'+line+'"');
+    addLabel(a); addLabel(b);
+    arcs.push([a,b,c]);
+  });
+  if(labelsSet.length===0) throw new Error('Aucun sommet détecté.');
+  return {labels: labelsSet, arcs};
+}
+
+function fordFulkerson(labels, arcs, s, t){
+  if(!labels.includes(s)) throw new Error('La source "'+s+'" n\'apparaît dans aucun arc.');
+  if(!labels.includes(t)) throw new Error('Le puits "'+t+'" n\'apparaît dans aucun arc.');
+  const cap = {};
+  labels.forEach(u=>{ cap[u]={}; labels.forEach(v=>cap[u][v]=0); });
+  arcs.forEach(([u,v,c])=>{ cap[u][v]+=c; });
+
+  let flowVal = 0;
+  const steps = [];
+
+  function bfsPath(){
+    const parent = {}; labels.forEach(n=>parent[n]=null);
+    parent[s] = s;
+    const queue = [s];
+    while(queue.length){
+      const u = queue.shift();
+      for(const v of labels){
+        if(parent[v]===null && cap[u][v] > 0){
+          parent[v] = u;
+          if(v===t) return parent;
+          queue.push(v);
+        }
+      }
+    }
+    return parent[t]!==null ? parent : null;
+  }
+
+  while(true){
+    const parent = bfsPath();
+    if(!parent) break;
+    let v = t, bottleneck = Infinity, path = [t];
+    while(v !== s){ const u = parent[v]; bottleneck = Math.min(bottleneck, cap[u][v]); path.unshift(u); v = u; }
+    v = t;
+    while(v !== s){ const u = parent[v]; cap[u][v] -= bottleneck; cap[v][u] += bottleneck; v = u; }
+    flowVal += bottleneck;
+    steps.push({path: path.join(' → '), bottleneck});
+  }
+
+  // coupe minimale : sommets atteignables depuis s dans le graphe residuel final
+  const reach = {}; labels.forEach(n=>reach[n]=false);
+  reach[s] = true;
+  const queue = [s];
+  while(queue.length){
+    const u = queue.shift();
+    for(const v of labels){ if(!reach[v] && cap[u][v] > 0){ reach[v]=true; queue.push(v); } }
+  }
+  const sSide = labels.filter(n=>reach[n]);
+  const tSide = labels.filter(n=>!reach[n]);
+  const cutArcs = arcs.filter(([u,v])=> reach[u] && !reach[v]);
+  const cutCap = cutArcs.reduce((acc,[u,v,c])=>acc+c, 0);
+
+  return {flowVal, steps, sSide, tSide, cutArcs, cutCap};
+}
+
+function dessinerGraphe(labels, arcs, cutSet){
+  const n = labels.length;
+  const cx = 260, cy = 220, r = 170;
+  const pos = labels.map((l,i)=>{
+    const angle = -Math.PI/2 + 2*Math.PI*i/n;
+    return [cx + r*Math.cos(angle), cy + r*Math.sin(angle)];
+  });
+  let svg = `<svg viewBox="0 0 520 440" width="520" height="440">`;
+  svg += `<defs>
+    <marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5A5A5A"/></marker>
+    <marker id="ah2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#B56600"/></marker>
+  </defs>`;
+  arcs.forEach(([a,b,val])=>{
+    const i = labels.indexOf(a), j = labels.indexOf(b);
+    if(i===j) return;
+    const [x1,y1] = pos[i], [x2,y2] = pos[j];
+    const dx = x2-x1, dy = y2-y1, dist = Math.sqrt(dx*dx+dy*dy);
+    const ux = dx/dist, uy = dy/dist;
+    const nodeR = 22;
+    const sx = x1+ux*nodeR, sy = y1+uy*nodeR;
+    const ex = x2-ux*(nodeR+9), ey = y2-uy*(nodeR+9);
+    const dansCoupe = cutSet.has(a+'|'+b);
+    svg += `<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="${dansCoupe?'#B56600':'#5A5A5A'}" stroke-width="${dansCoupe?3.2:1.4}" marker-end="url(#${dansCoupe?'ah2':'ah'})" />`;
+    const mx = (sx+ex)/2, my = (sy+ey)/2;
+    svg += `<rect x="${(mx-12).toFixed(1)}" y="${(my-9).toFixed(1)}" width="24" height="14" fill="#fafafa" opacity="0.88"/>`;
+    svg += `<text x="${mx.toFixed(1)}" y="${(my+2).toFixed(1)}" font-size="10" text-anchor="middle" fill="#1F6FB2" font-family="Helvetica">${val}</text>`;
+  });
+  labels.forEach((l,i)=>{
+    const [x,y] = pos[i];
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="22" fill="#1F6FB21a" stroke="#1F6FB2" stroke-width="1.6"/>`;
+    svg += `<text x="${x.toFixed(1)}" y="${(y+4).toFixed(1)}" font-size="12" text-anchor="middle" fill="#1F6FB2" font-family="Helvetica" font-weight="bold">${l}</text>`;
+  });
+  svg += `</svg>`;
+  return svg;
+}
+
+function calculer(){
+  const erreurDiv = document.getElementById('erreur');
+  const resDiv = document.getElementById('resultat');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const source = document.getElementById('sourceIn').value.trim();
+    const puits = document.getElementById('puitsIn').value.trim();
+    const {labels, arcs} = parseArcs(document.getElementById('arcsIn').value);
+
+    const {flowVal, steps, sSide, tSide, cutArcs, cutCap} = fordFulkerson(labels, arcs, source, puits);
+
+    let out = '';
+    const cutSet = new Set(cutArcs.map(([a,b])=>a+'|'+b));
+    out += `<h3>Le réseau (capacités) et la coupe minimale</h3>`;
+    out += dessinerGraphe(labels, arcs, cutSet);
+    out += `<p class="aide">En orange épais : les arcs de la coupe minimale trouvée.</p>`;
+
+    out += `<div class="valeur">Flot maximal = ${flowVal}</div>`;
+
+    out += '<h3>Chaînes améliorantes utilisées</h3>';
+    if(steps.length===0){
+      out += '<p>Aucune chaîne : la source et le puits ne sont pas reliés.</p>';
+    } else {
+      out += '<table><tr><th>Chaîne</th><th>Goulot (flot poussé)</th></tr>';
+      steps.forEach(st=>{
+        out += `<tr><td>${st.path}</td><td>${st.bottleneck}</td></tr>`;
+      });
+      out += '</table>';
+    }
+
+    out += '<h3>Coupe minimale (théorème de Ford-Fulkerson)</h3>';
+    out += `<p>Sommets côté source : {${sSide.join(', ')}} — Sommets côté puits : {${tSide.join(', ')}}</p>`;
+    out += '<table><tr><th>Arc traversant</th><th>Capacité</th></tr>';
+    cutArcs.forEach(([a,b,c])=>{
+      out += `<tr><td>${a} → ${b}</td><td>${c}</td></tr>`;
+    });
+    out += `<tr><th>Total (capacité de la coupe)</th><th>${cutCap}</th></tr>`;
+    out += '</table>';
+    out += `<p>${cutCap===flowVal ? '<span class="ok">Flot maximal = capacité de la coupe minimale ('+flowVal+') : optimalité certifiée.</span>' : 'Anomalie : flot ('+flowVal+') ≠ capacité de la coupe ('+cutCap+') — vérifier les données.'}</p>`;
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculer(); };
+</script>
+</body>
+</html>

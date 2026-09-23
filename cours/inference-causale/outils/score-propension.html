@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Score de propension — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 6em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Score de propension</h1>
+<p class="sous-titre">Calculatrice interactive — Inférence causale</p>
+
+<div class="panneau">
+  <h2>1. Estimateur IPW à partir de données individuelles</h2>
+  <p class="aide">Une ligne par individu, au format "T,e(X),Y" (T = 0 ou 1).</p>
+  <textarea id="donneesIn1">1,0.6,80
+1,0.6,90
+1,0.3,60
+0,0.6,70
+0,0.3,50
+0,0.3,40</textarea>
+  <button onclick="calculerIPW()">Calculer</button>
+  <div id="erreurIPW" class="erreur"></div>
+  <div id="resultatIPW" class="resultat-zone"></div>
+  <svg id="svgIPW" width="360" height="200" viewBox="0 0 360 200"></svg>
+</div>
+
+<div class="panneau">
+  <h2>2. Poids IPW et alerte de poids extrême</h2>
+  <div class="ligne">
+    <div><label for="eXIn">Score de propension e(X)</label><input type="number" id="eXIn" value="0.9" min="0.001" max="0.999" step="0.001"></div>
+    <div><label for="seuilIn">Seuil d'alerte (poids maximal acceptable)</label><input type="number" id="seuilIn" value="10" min="1" step="0.5"></div>
+  </div>
+  <button onclick="calculerPoids()">Calculer les poids</button>
+  <div id="resultatPoids" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Différence standardisée (équilibre d'une covariable)</h2>
+  <div class="ligne">
+    <div><label for="meanTIn">Moyenne, traités</label><input type="number" id="meanTIn" value="12.5" step="0.1"></div>
+    <div><label for="sdTIn">Écart-type, traités</label><input type="number" id="sdTIn" value="4.0" step="0.1" min="0"></div>
+    <div><label for="meanCIn">Moyenne, témoins</label><input type="number" id="meanCIn" value="9.0" step="0.1"></div>
+    <div><label for="sdCIn">Écart-type, témoins</label><input type="number" id="sdCIn" value="3.5" step="0.1" min="0"></div>
+  </div>
+  <button onclick="calculerDiffStd()">Calculer</button>
+  <div id="erreurStd" class="erreur"></div>
+  <div id="resultatStd" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $e(X)=P(T{=}1\mid X)$ ; poids IPW $=1/e(X)$ si traité, $1/(1-e(X))$ si non traité ; estimateur IPW de l'ATE $=\frac1n\sum_i\left[\frac{T_iY_i}{e(X_i)}-\frac{(1-T_i)Y_i}{1-e(X_i)}\right]$ ; différence standardisée $d=(\bar X_T-\bar X_C)/\sqrt{(s_T^2+s_C^2)/2}$, souhaitée $<0{,}1$ en valeur absolue.</p>
+
+<script>
+function calculerIPW(){
+  const erreurDiv=document.getElementById('erreurIPW'); const resDiv=document.getElementById('resultatIPW');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('donneesIn1').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length<2) throw new Error('Au moins deux individus requis.');
+    const data=lignes.map(l=>{
+      const parts=l.split(',').map(s=>parseFloat(s.trim()));
+      if(parts.length!==3||parts.some(isNaN)) throw new Error('Format attendu : "T,e(X),Y" par ligne.');
+      const [T,e,Y]=parts;
+      if(T!==0&&T!==1) throw new Error('T doit valoir 0 ou 1.');
+      if(e<=0||e>=1) throw new Error('e(X) doit etre strictement compris entre 0 et 1.');
+      return {T,e,Y};
+    });
+    const n=data.length;
+    const treated=data.filter(d=>d.T===1), control=data.filter(d=>d.T===0);
+    if(treated.length===0||control.length===0) throw new Error('Il faut au moins un traite et un temoin.');
+    const meanT=treated.reduce((a,d)=>a+d.Y,0)/treated.length;
+    const meanC=control.reduce((a,d)=>a+d.Y,0)/control.length;
+    const diffBrute=meanT-meanC;
+    let somme=0;
+    data.forEach(d=>{ if(d.T===1) somme+=d.Y/d.e; else somme-=d.Y/(1-d.e); });
+    const ipw=somme/n;
+    let out='<table><tr><th>quantite</th><th>valeur</th></tr>';
+    out+=`<tr><td>Moyenne traites</td><td>${meanT.toFixed(3)}</td></tr>`;
+    out+=`<tr><td>Moyenne temoins</td><td>${meanC.toFixed(3)}</td></tr>`;
+    out+=`<tr><td>Difference brute</td><td>${diffBrute.toFixed(3)}</td></tr>`;
+    out+=`<tr><td>Estimateur IPW</td><td>${ipw.toFixed(3)}</td></tr></table>`;
+    resDiv.innerHTML=out;
+    dessinerIPW(diffBrute,ipw);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgIPW').innerHTML=''; }
+}
+
+function dessinerIPW(diffBrute,ipw){
+  const svg=document.getElementById('svgIPW');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=360,H=200,padL=45,padR=15,padT=15,padB=40;
+  const vals=[diffBrute,ipw]; const labels=['diff. brute','IPW'];
+  const maxAbs=Math.max(1,...vals.map(Math.abs))*1.2;
+  const yZero=H-padB;
+  const step=(W-padL-padR)/2;
+  vals.forEach((v,i)=>{
+    const x=padL+i*step+step*0.25;
+    const h=(Math.abs(v)/maxAbs)*(H-padT-padB);
+    const rect=document.createElementNS(ns,'rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',yZero-h);
+    rect.setAttribute('width',step*0.5); rect.setAttribute('height',h);
+    rect.setAttribute('fill', i===0 ? '#B56600' : '#1F6FB2');
+    svg.appendChild(rect);
+    const txt=document.createElementNS(ns,'text');
+    txt.setAttribute('x',x+step*0.25); txt.setAttribute('y',yZero-h-6);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','11');
+    txt.textContent=v.toFixed(2);
+    svg.appendChild(txt);
+    const lbl=document.createElementNS(ns,'text');
+    lbl.setAttribute('x',x+step*0.25); lbl.setAttribute('y',H-padB+18);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-size','10');
+    lbl.textContent=labels[i];
+    svg.appendChild(lbl);
+  });
+  const axe=document.createElementNS(ns,'line');
+  axe.setAttribute('x1',padL); axe.setAttribute('y1',yZero); axe.setAttribute('x2',W-padR); axe.setAttribute('y2',yZero);
+  axe.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axe);
+}
+
+function calculerPoids(){
+  const resDiv=document.getElementById('resultatPoids');
+  const e=parseFloat(document.getElementById('eXIn').value);
+  const seuil=parseFloat(document.getElementById('seuilIn').value);
+  if(isNaN(e)||e<=0||e>=1||isNaN(seuil)){ resDiv.innerHTML='<p class="erreur">Valeurs invalides : e(X) doit etre strictement entre 0 et 1.</p>'; return; }
+  const poidsTraite=1/e, poidsTemoin=1/(1-e);
+  let out='<table><tr><th>statut</th><th>poids IPW</th><th>alerte</th></tr>';
+  out+=`<tr><td>Traite</td><td>${poidsTraite.toFixed(3)}</td><td class="${poidsTraite>seuil?'alerte':'ok'}">${poidsTraite>seuil?'EXTREME':'ok'}</td></tr>`;
+  out+=`<tr><td>Temoin</td><td>${poidsTemoin.toFixed(3)}</td><td class="${poidsTemoin>seuil?'alerte':'ok'}">${poidsTemoin>seuil?'EXTREME':'ok'}</td></tr></table>`;
+  if(poidsTraite>seuil||poidsTemoin>seuil) out+='<p class="alerte">Au moins un poids depasse le seuil : envisager un ecretage ou une restriction au support commun.</p>';
+  resDiv.innerHTML=out;
+}
+
+function calculerDiffStd(){
+  const erreurDiv=document.getElementById('erreurStd'); const resDiv=document.getElementById('resultatStd');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const meanT=parseFloat(document.getElementById('meanTIn').value);
+    const sdT=parseFloat(document.getElementById('sdTIn').value);
+    const meanC=parseFloat(document.getElementById('meanCIn').value);
+    const sdC=parseFloat(document.getElementById('sdCIn').value);
+    if([meanT,sdT,meanC,sdC].some(isNaN)) throw new Error('Toutes les valeurs doivent etre numeriques.');
+    if(sdT<0||sdC<0) throw new Error('Les ecarts-types doivent etre positifs.');
+    const d=(meanT-meanC)/Math.sqrt((sdT*sdT+sdC*sdC)/2);
+    let out=`<table><tr><th>quantite</th><th>valeur</th></tr><tr><td>Difference standardisee d</td><td>${d.toFixed(4)}</td></tr></table>`;
+    if(Math.abs(d)<0.1) out+='<p class="ok">Equilibre satisfaisant (|d| &lt; 0,1).</p>';
+    else out+='<p class="alerte">Equilibre insuffisant (|d| &gt;= 0,1) : cette covariable reste desequilibree entre les groupes.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerIPW(); calculerPoids(); calculerDiffStd(); };
+</script>
+</body>
+</html>

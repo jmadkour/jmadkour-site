@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Sélection de variables et grande dimension — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Sélection de variables et grande dimension</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage statistique</p>
+
+<div class="panneau">
+  <h2>1. Coût d'une sélection exhaustive et pas à pas</h2>
+  <div class="ligne">
+    <div><label for="pIn4">Nombre de variables $p$</label><input type="number" id="pIn4" value="60" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerCout()">Calculer</button>
+  <div id="erreurC4" class="erreur"></div>
+  <div id="resultatC4" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Comparer AIC et BIC de deux modèles</h2>
+  <div class="ligne">
+    <div><label for="nIn4">$n$</label><input type="number" id="nIn4" value="200" step="1" min="2"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="scrAIn4">SCR modèle A</label><input type="number" id="scrAIn4" value="150" step="any" min="0"></div>
+    <div><label for="kAIn4">$k$ modèle A</label><input type="number" id="kAIn4" value="5" step="1" min="0"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="scrBIn4">SCR modèle B</label><input type="number" id="scrBIn4" value="120" step="any" min="0"></div>
+    <div><label for="kBIn4">$k$ modèle B</label><input type="number" id="kBIn4" value="12" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerAICBIC()">Calculer</button>
+  <div id="erreurA4" class="erreur"></div>
+  <div id="resultatA4" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Reconnaître un régime de grande dimension</h2>
+  <div class="ligne">
+    <div><label for="nDimIn4">$n$ (observations)</label><input type="number" id="nDimIn4" value="300" step="1" min="1"></div>
+    <div><label for="pDimIn4">$p$ (variables)</label><input type="number" id="pDimIn4" value="15000" step="1" min="1"></div>
+    <div><label for="retenuesIn4">variables retenues</label><input type="number" id="retenuesIn4" value="45" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerDimension4()">Calculer</button>
+  <div id="erreurD4" class="erreur"></div>
+  <div id="resultatD4" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : sélection exhaustive $=2^p$ modèles, ascendante/descendante $\approx p^2/2$ ; $\text{AIC}=n\ln(\text{SCR}/n)+2k$, $\text{BIC}=n\ln(\text{SCR}/n)+k\ln(n)$, le plus faible étant préféré ; le régime $p>n$ rend l'ajustement parfait automatique et sans valeur informative.</p>
+
+<script>
+function calculerCout(){
+  const erreurDiv=document.getElementById('erreurC4'); const resDiv=document.getElementById('resultatC4');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const p=parseFloat(document.getElementById('pIn4').value);
+    if(isNaN(p)) throw new Error('Valeur numérique requise.');
+    if(p<1||!Number.isInteger(p)) throw new Error('p doit être un entier positif.');
+    let exhaustif;
+    if(p<=60){ exhaustif=Math.pow(2,p); } else { exhaustif=null; }
+    const stepwise=p*p/2;
+    let out='';
+    if(exhaustif!==null && isFinite(exhaustif)){
+      out+=`<p>Sélection exhaustive $=2^{${p}}=${exhaustif.toLocaleString('fr-FR',{maximumFractionDigits:0})}$ modèles</p>`;
+    } else {
+      out+=`<p>Sélection exhaustive $=2^{${p}}\\approx${Math.pow(2,p).toExponential(3)}$ modèles (hors de portée)</p>`;
+    }
+    out+=`<p>Sélection ascendante/descendante $\\approx${p}^2/2=\\mathbf{${stepwise.toFixed(1)}}$ modèles</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerAICBIC(){
+  const erreurDiv=document.getElementById('erreurA4'); const resDiv=document.getElementById('resultatA4');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('nIn4').value);
+    const scrA=parseFloat(document.getElementById('scrAIn4').value);
+    const kA=parseFloat(document.getElementById('kAIn4').value);
+    const scrB=parseFloat(document.getElementById('scrBIn4').value);
+    const kB=parseFloat(document.getElementById('kBIn4').value);
+    if([n,scrA,kA,scrB,kB].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(n<2) throw new Error('n doit être au moins 2.');
+    if(scrA<=0||scrB<=0) throw new Error('Les sommes des carrés des résidus doivent être strictement positives.');
+    if(kA<0||kB<0) throw new Error('Les nombres de paramètres doivent être positifs.');
+    function aic(scr,k){ return n*Math.log(scr/n)+2*k; }
+    function bic(scr,k){ return n*Math.log(scr/n)+k*Math.log(n); }
+    const aicA=aic(scrA,kA), aicB=aic(scrB,kB);
+    const bicA=bic(scrA,kA), bicB=bic(scrB,kB);
+    const meilleurAIC=aicA<aicB?'A':(aicB<aicA?'B':'A et B équivalents');
+    const meilleurBIC=bicA<bicB?'A':(bicB<bicA?'B':'A et B équivalents');
+    let out=`<p>AIC $A=${aicA.toFixed(3)}$ &nbsp;&nbsp; AIC $B=${aicB.toFixed(3)}$ &nbsp;&nbsp; préféré par AIC : <strong>${meilleurAIC}</strong></p>
+      <p>BIC $A=${bicA.toFixed(3)}$ &nbsp;&nbsp; BIC $B=${bicB.toFixed(3)}$ &nbsp;&nbsp; préféré par BIC : <strong>${meilleurBIC}</strong></p>
+      <p>Pénalité par paramètre : AIC $=2$, BIC $=\\ln(${n})=${Math.log(n).toFixed(4)}$</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerDimension4(){
+  const erreurDiv=document.getElementById('erreurD4'); const resDiv=document.getElementById('resultatD4');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('nDimIn4').value);
+    const p=parseFloat(document.getElementById('pDimIn4').value);
+    const retenues=parseFloat(document.getElementById('retenuesIn4').value);
+    if([n,p,retenues].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(n<1||p<1) throw new Error('n et p doivent être strictement positifs.');
+    if(retenues<0||retenues>p) throw new Error('Le nombre de variables retenues doit être compris entre 0 et p.');
+    const regime=p>n?'régime p > n (grande dimension)':'régime classique (p ≤ n)';
+    const proportion=retenues/p*100;
+    let out=`<p>Diagnostic : <strong>${regime}</strong> ($p=${p}$, $n=${n}$)</p>
+      <p>Proportion de variables retenues $=${retenues}/${p}=\\mathbf{${proportion.toFixed(3)}\\%}$</p>`;
+    if(p>n) out+='<p class="aide">Rappel : dans ce régime, les MCO ne sont pas uniques et l\'ajustement parfait est automatique — seule une hypothèse de parcimonie (lasso, sélection) rend le problème estimable.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerCout(); calculerAICBIC(); calculerDimension4(); };
+</script>
+</body>
+</html>
