@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — La gestion intégrée des risques — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 5.2em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Application : la gestion intégrée des risques</h1>
+<p class="sous-titre">Calculatrice interactive — agrégation du capital économique par corrélation, allocation d'Euler et procyclicité (exercice 5), RAROC par ligne de métier et capital économique calibré sur la notation cible (exercice 6)</p>
+
+<div class="panneau">
+  <h2>L'agrégation du capital économique par corrélation, l'allocation d'Euler et la procyclicité</h2>
+  <p class="aide">Capital agrege : Cagg = racine( somme_i somme_j rho_ij Ci Cj ), avec rho_ii = 1. Allocation d'Euler a la categorie i : CAi = Ci x (somme_j rho_ij Cj) / Cagg ; elle somme exactement a Cagg. Le benefice de diversification est l'ecart entre la somme stand-alone et Cagg. En periode de crise, seule la correlation credit-marche change ; les correlations impliquant l'operationnel restent inchangees.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Capitaux stand-alone (M€)</h3>
+      <label for="c6_Ccred">Crédit</label><input type="number" id="c6_Ccred" value="520" step="1" min="0">
+      <label for="c6_Cmarch">Marché</label><input type="number" id="c6_Cmarch" value="210" step="1" min="0">
+      <label for="c6_Cop">Opérationnel</label><input type="number" id="c6_Cop" value="90" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Corrélations hors crise</h3>
+      <label for="c6_rhoCM">rho crédit-marché</label><input type="number" id="c6_rhoCM" value="0.50" step="0.01" min="-1" max="1">
+      <label for="c6_rhoCO">rho crédit-opérationnel</label><input type="number" id="c6_rhoCO" value="0.10" step="0.01" min="-1" max="1">
+      <label for="c6_rhoMO">rho marché-opérationnel</label><input type="number" id="c6_rhoMO" value="0.05" step="0.01" min="-1" max="1">
+    </div>
+    <div class="bloc">
+      <h3>Choc de corrélation en crise</h3>
+      <label for="c6_rhoCMcrise">rho crédit-marché en crise</label><input type="number" id="c6_rhoCMcrise" value="0.90" step="0.01" min="-1" max="1">
+      <p class="aide">Les rho crédit-opérationnel et marché-opérationnel restent inchangés en crise.</p>
+    </div>
+    <div class="bloc">
+      <h3>Fourchette de référence du cours</h3>
+      <label for="c6_fourBasse">Réduction op. citée, borne basse (%)</label><input type="number" id="c6_fourBasse" value="30" step="1" min="0">
+      <label for="c6_fourHaute">Réduction op. citée, borne haute (%)</label><input type="number" id="c6_fourHaute" value="40" step="1" min="0">
+    </div>
+  </div>
+  <button onclick="calculerAgregation()">Calculer</button>
+  <div id="resultatAgregation" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>RAROC par ligne de métier et capital économique calibré sur la notation cible</h2>
+  <p class="aide">Capital economique EC = z x sigma, ou z est le quantile de la loi normale centree reduite au niveau de confiance cible. RAROC = revenu net ajuste du risque apres impot / EC, avec revenu net ajuste = (Revenu - EL - Couts) x (1 - taux d'imposition). Une ligne est jugee rentable si son RAROC atteint le taux de rendement minimal (hurdle rate).</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c6_tableLignes">
+    <tr><th>Ligne de métier</th><td>Crédit corporate</td><td>Marché (trading)</td><td>Opérationnel</td></tr>
+    <tr><th>Revenu brut (M€)</th>
+      <td><input type="number" class="c6-rev" value="180" step="1"></td>
+      <td><input type="number" class="c6-rev" value="95" step="1"></td>
+      <td><input type="number" class="c6-rev" value="60" step="1"></td>
+    </tr>
+    <tr><th>Perte attendue EL (M€)</th>
+      <td><input type="number" class="c6-el" value="45" step="1"></td>
+      <td><input type="number" class="c6-el" value="5" step="1"></td>
+      <td><input type="number" class="c6-el" value="8" step="1"></td>
+    </tr>
+    <tr><th>Coûts (M€)</th>
+      <td><input type="number" class="c6-cout" value="40" step="1"></td>
+      <td><input type="number" class="c6-cout" value="30" step="1"></td>
+      <td><input type="number" class="c6-cout" value="20" step="1"></td>
+    </tr>
+    <tr><th>sigma, volatilité de perte (M€)</th>
+      <td><input type="number" class="c6-sigma" value="150" step="1"></td>
+      <td><input type="number" class="c6-sigma" value="55" step="1"></td>
+      <td><input type="number" class="c6-sigma" value="30" step="1"></td>
+    </tr>
+  </table>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Paramètres communs</h3>
+      <label for="c6_tax">Taux d'imposition (%)</label><input type="number" id="c6_tax" value="25" step="0.1" min="0" max="100">
+      <label for="c6_hurdle">Hurdle rate RAROC (%)</label><input type="number" id="c6_hurdle" value="13.5" step="0.1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Cibles de notation (niveau de confiance)</h3>
+      <label for="c6_confAA">Confiance cible AA (%)</label><input type="number" id="c6_confAA" value="99.97" step="0.001" min="50" max="99.9999">
+      <label for="c6_confAAA">Confiance cible AAA (%)</label><input type="number" id="c6_confAAA" value="99.99" step="0.001" min="50" max="99.9999">
+    </div>
+  </div>
+  <button onclick="calculerRAROC()">Calculer</button>
+  <div id="resultatRAROC" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+/* ===================== Exercice 5 : agregation du capital economique ===================== */
+
+function calculerAgregation() {
+  var resDiv = document.getElementById('resultatAgregation');
+  var Ccred = parseFloat(document.getElementById('c6_Ccred').value);
+  var Cmarch = parseFloat(document.getElementById('c6_Cmarch').value);
+  var Cop = parseFloat(document.getElementById('c6_Cop').value);
+  var rhoCM = parseFloat(document.getElementById('c6_rhoCM').value);
+  var rhoCO = parseFloat(document.getElementById('c6_rhoCO').value);
+  var rhoMO = parseFloat(document.getElementById('c6_rhoMO').value);
+  var rhoCMcrise = parseFloat(document.getElementById('c6_rhoCMcrise').value);
+  var fourBasse = parseFloat(document.getElementById('c6_fourBasse').value);
+  var fourHaute = parseFloat(document.getElementById('c6_fourHaute').value);
+
+  var champs = [Ccred,Cmarch,Cop,rhoCM,rhoCO,rhoMO,rhoCMcrise,fourBasse,fourHaute];
+  var tousValides = champs.every(function(v){ return !isNaN(v); });
+  if (!tousValides || Ccred<=0 || Cmarch<=0 || Cop<=0 || rhoCM<-1 || rhoCM>1 || rhoCO<-1 || rhoCO>1 || rhoMO<-1 || rhoMO>1 || rhoCMcrise<-1 || rhoCMcrise>1) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les capitaux stand-alone doivent etre strictement positifs, et toutes les correlations doivent etre comprises entre -1 et 1.</p>';
+    return;
+  }
+
+  var C = {cred: Ccred, march: Cmarch, op: Cop};
+  var noms = {cred:'Crédit', march:'Marché', op:'Opérationnel'};
+  var standaloneSum = Ccred + Cmarch + Cop;
+
+  function cagg(rho) {
+    var keys = ['cred','march','op'];
+    var total = 0;
+    keys.forEach(function(i){
+      keys.forEach(function(j){
+        var r = (i===j) ? 1 : (rho[i+'_'+j] !== undefined ? rho[i+'_'+j] : rho[j+'_'+i]);
+        total += r * C[i] * C[j];
+      });
+    });
+    return Math.sqrt(total);
+  }
+  function euler(rho, Cagg) {
+    var keys = ['cred','march','op'];
+    var out = {};
+    keys.forEach(function(i){
+      var s = 0;
+      keys.forEach(function(j){
+        var r = (i===j) ? 1 : (rho[i+'_'+j] !== undefined ? rho[i+'_'+j] : rho[j+'_'+i]);
+        s += r * C[j];
+      });
+      out[i] = C[i] * s / Cagg;
+    });
+    return out;
+  }
+
+  var rhoHC = {cred_march: rhoCM, cred_op: rhoCO, march_op: rhoMO};
+  var CaggHC = cagg(rhoHC);
+  var divHC = standaloneSum - CaggHC;
+  var divHCp = divHC / standaloneSum * 100;
+  var CAhc = euler(rhoHC, CaggHC);
+  var sumCAhc = CAhc.cred + CAhc.march + CAhc.op;
+  var reduc = {
+    cred: (Ccred - CAhc.cred) / Ccred * 100,
+    march: (Cmarch - CAhc.march) / Cmarch * 100,
+    op: (Cop - CAhc.op) / Cop * 100
+  };
+
+  var rhoCr = {cred_march: rhoCMcrise, cred_op: rhoCO, march_op: rhoMO};
+  var CaggCr = cagg(rhoCr);
+  var divCr = standaloneSum - CaggCr;
+  var divCrp = divCr / standaloneSum * 100;
+  var lossDiv = divHC - divCr;
+  var lossDivp = divHC > 0 ? lossDiv / divHC * 100 : 0;
+  var CAcr = euler(rhoCr, CaggCr);
+  var sumCAcr = CAcr.cred + CAcr.march + CAcr.op;
+  var diffOp = CAcr.op - CAhc.op;
+  var diffOpPct = CAhc.op > 0 ? diffOp / CAhc.op * 100 : 0;
+
+  var dansFourchette = (reduc.op >= fourBasse && reduc.op <= fourHaute);
+
+  var html = '<table class="tabres"><tr><th>Hors crise</th><th>Crédit</th><th>Marché</th><th>Opérationnel</th><th>Total / Cagg</th></tr>';
+  html += '<tr><td>Capital stand-alone (M€)</td><td>' + fmt(Ccred,2) + '</td><td>' + fmt(Cmarch,2) + '</td><td>' + fmt(Cop,2) + '</td><td>' + fmt(standaloneSum,2) + '</td></tr>';
+  html += '<tr><td>Allocation d\'Euler CAi (M€)</td><td>' + fmt(CAhc.cred,2) + '</td><td>' + fmt(CAhc.march,2) + '</td><td>' + fmt(CAhc.op,2) + '</td><td>' + fmt(sumCAhc,2) + ' (Cagg = ' + fmt(CaggHC,2) + ')</td></tr>';
+  html += '<tr><td>Réduction relative (Ci - CAi)/Ci</td><td>' + fmt(reduc.cred,2) + ' %</td><td>' + fmt(reduc.march,2) + ' %</td><td>' + fmt(reduc.op,2) + ' %</td><td>—</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Capital agrégé hors crise Cagg</th><td>' + fmt(CaggHC,2) + ' M€</td></tr>';
+  html += '<tr><th>Bénéfice de diversification hors crise</th><td>' + fmt(divHC,2) + ' M€ (' + fmt(divHCp,2) + ' % de la somme stand-alone)</td></tr>';
+  html += '<tr><th>Capital agrégé en crise Cagg</th><td>' + fmt(CaggCr,2) + ' M€</td></tr>';
+  html += '<tr><th>Bénéfice de diversification en crise</th><td>' + fmt(divCr,2) + ' M€ (' + fmt(divCrp,2) + ' % de la somme stand-alone)</td></tr>';
+  html += '<tr><th>Perte de bénéfice de diversification (HC - crise)</th><td>' + fmt(lossDiv,2) + ' M€ (' + fmt(lossDivp,2) + ' % du bénéfice hors crise)</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>En crise</th><th>Crédit</th><th>Marché</th><th>Opérationnel</th><th>Total / Cagg</th></tr>';
+  html += '<tr><td>Allocation d\'Euler CAi crise (M€)</td><td>' + fmt(CAcr.cred,2) + '</td><td>' + fmt(CAcr.march,2) + '</td><td>' + fmt(CAcr.op,2) + '</td><td>' + fmt(sumCAcr,2) + ' (Cagg = ' + fmt(CaggCr,2) + ')</td></tr>';
+  html += '<tr><td>Variation vs hors crise (M€)</td><td>' + fmt(CAcr.cred-CAhc.cred,2) + '</td><td>' + fmt(CAcr.march-CAhc.march,2) + '</td><td>' + fmt(diffOp,2) + '</td><td>—</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (dansFourchette?'ok':'mid') + '">Réduction relative du capital opérationnel hors crise : ' + fmt(reduc.op,2) + ' % — ' + (dansFourchette ? 'a l\'interieur' : 'en dehors') + ' de la fourchette de reference du cours [' + fmt(fourBasse,0) + ' %, ' + fmt(fourHaute,0) + ' %].</div>';
+  html += '<div class="valeur ' + (diffOp<0?'ko':(diffOp>0?'ok':'mid')) + '">Effet de dilution : l\'allocation operationnelle ' + (diffOp<0?'DIMINUE':(diffOp>0?'AUGMENTE':'reste inchangee')) + ' de ' + fmt(Math.abs(diffOp),2) + ' M€ (' + fmt(Math.abs(diffOpPct),2) + ' %) en crise alors qu\'aucune de ses propres correlations n\'a change.</div>';
+
+  html += dessinerAgregation(noms, C, CAhc, CAcr);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerAgregation(noms, C, CAhc, CAcr) {
+  var cats = ['cred','march','op'];
+  var series = [
+    {label:'Stand-alone', coul: 'var(--cgris,#5A5A5A)', vals: cats.map(function(k){return C[k];})},
+    {label:'Euler hors crise', coul: 'var(--ceco,#1F6FB2)', vals: cats.map(function(k){return CAhc[k];})},
+    {label:'Euler en crise', coul: 'var(--cintu,#E08000)', vals: cats.map(function(k){return CAcr[k];})}
+  ];
+  var largeur = 560, hauteur = 280, margeG = 50, margeD = 15, margeH = 30, margeB = 60;
+  var vMax = Math.max.apply(null, series.reduce(function(a,s){return a.concat(s.vals);},[])) * 1.18 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var nCat = cats.length, nSer = series.length;
+  var slotCat = (largeur-margeG-margeD)/nCat;
+  var largeurBarre = slotCat*0.24;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  cats.forEach(function(cat,ci){
+    var xCatCenter = margeG + ci*slotCat + slotCat*0.5;
+    series.forEach(function(s,si){
+      var x = xCatCenter - (nSer*largeurBarre)/2 + si*largeurBarre;
+      var v = s.vals[ci];
+      var yTop = yPix(v);
+      var h = yZero - yTop;
+      svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + (largeurBarre*0.9).toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + s.coul + '"/>';
+      svg += '<text x="' + (x+largeurBarre*0.45).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + v.toFixed(1) + '</text>';
+    });
+    svg += '<text x="' + xCatCenter.toFixed(1) + '" y="' + (yZero + 16).toFixed(1) + '" font-size="8.5" text-anchor="middle" fill="currentColor">' + noms[cat] + '</text>';
+  });
+  var lx = margeG, ly = 12;
+  series.forEach(function(s,si){
+    var lxi = lx + si*150;
+    svg += '<rect x="' + lxi + '" y="' + (ly-7) + '" width="9" height="9" fill="' + s.coul + '"/>';
+    svg += '<text x="' + (lxi+12) + '" y="' + ly + '" font-size="7.5" text-anchor="start" fill="currentColor">' + s.label + '</text>';
+  });
+  svg += '<text x="12" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-15) + ')">Capital (M€)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+/* ===================== Exercice 6 : RAROC par ligne de metier ===================== */
+
+function erfc(x) {
+  var z = Math.abs(x);
+  var t = 1 / (1 + z / 2);
+  var ans = t * Math.exp(-z*z - 1.26551223 + t*(1.00002368 + t*(0.37409196 + t*(0.09678418 +
+    t*(-0.18628806 + t*(0.27886807 + t*(-1.13520398 + t*(1.48851587 +
+    t*(-0.82215223 + t*0.17087277)))))))));
+  return x >= 0 ? ans : 2 - ans;
+}
+
+function normSInv(p) {
+  var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
+             1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
+             6.680131188771972e+01, -1.328068155288572e+01];
+  var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
+            -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00,
+            3.754408661907416e+00];
+  var pLow = 0.02425, pHigh = 1 - pLow;
+  var q, r, x;
+  if (p < pLow) {
+    q = Math.sqrt(-2*Math.log(p));
+    x = (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+        ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  } else if (p <= pHigh) {
+    q = p - 0.5; r = q*q;
+    x = (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q /
+        (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  } else {
+    q = Math.sqrt(-2*Math.log(1-p));
+    x = -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+         ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  }
+  // deux etapes de raffinement de Halley pour une precision proche de la double precision
+  for (var i=0;i<2;i++){
+    var e = 0.5 * erfc(-x/Math.SQRT2) - p;
+    var u = e * Math.sqrt(2*Math.PI) * Math.exp(x*x/2);
+    x = x - u/(1 + x*u/2);
+  }
+  return x;
+}
+
+function calculerRAROC() {
+  var resDiv = document.getElementById('resultatRAROC');
+  var noms = ['Crédit corporate','Marché (trading)','Opérationnel'];
+  var revs = Array.prototype.map.call(document.querySelectorAll('.c6-rev'), function(el){ return parseFloat(el.value); });
+  var els = Array.prototype.map.call(document.querySelectorAll('.c6-el'), function(el){ return parseFloat(el.value); });
+  var couts = Array.prototype.map.call(document.querySelectorAll('.c6-cout'), function(el){ return parseFloat(el.value); });
+  var sigmas = Array.prototype.map.call(document.querySelectorAll('.c6-sigma'), function(el){ return parseFloat(el.value); });
+  var tax = parseFloat(document.getElementById('c6_tax').value);
+  var hurdle = parseFloat(document.getElementById('c6_hurdle').value);
+  var confAA = parseFloat(document.getElementById('c6_confAA').value);
+  var confAAA = parseFloat(document.getElementById('c6_confAAA').value);
+
+  var champs = revs.concat(els).concat(couts).concat(sigmas).concat([tax,hurdle,confAA,confAAA]);
+  var tousValides = champs.every(function(v){ return !isNaN(v); });
+  if (!tousValides || sigmas.some(function(v){return v<=0;}) || tax<0 || tax>=100 || confAA<=50 || confAA>=100 || confAAA<=50 || confAAA>=100) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes, les sigma doivent etre strictement positifs, et les niveaux de confiance doivent etre strictement compris entre 50 % et 100 %.</p>';
+    return;
+  }
+
+  var zAA = normSInv(confAA/100);
+  var zAAA = normSInv(confAAA/100);
+
+  var lignes = noms.map(function(nom,i){
+    var ecAA = zAA*sigmas[i];
+    var ecAAA = zAAA*sigmas[i];
+    var net = (revs[i]-els[i]-couts[i])*(1-tax/100);
+    var rarocAA = net/ecAA*100;
+    var rarocAAA = net/ecAAA*100;
+    var hausse = (ecAAA/ecAA - 1)*100;
+    return {nom:nom, rev:revs[i], el:els[i], cout:couts[i], sigma:sigmas[i], ecAA:ecAA, ecAAA:ecAAA, net:net, rarocAA:rarocAA, rarocAAA:rarocAAA, hausse:hausse};
+  });
+
+  var classementAA = lignes.slice().sort(function(a,b){ return b.rarocAA-a.rarocAA; });
+
+  var html = '<table class="tabres"><tr><th>Ligne</th><th>z_AA x sigma = EC_AA (M€)</th><th>Revenu net ajusté (M€)</th><th>RAROC cible AA</th><th>z_AAA x sigma = EC_AAA (M€)</th><th>Hausse EC (%)</th><th>RAROC cible AAA</th></tr>';
+  lignes.forEach(function(l){
+    html += '<tr><td>' + l.nom + '</td><td>' + fmt(l.ecAA,2) + '</td><td>' + fmt(l.net,2) + '</td><td>' + fmt(l.rarocAA,2) + ' %</td><td>' + fmt(l.ecAAA,2) + '</td><td>' + fmt(l.hausse,2) + ' %</td><td>' + fmt(l.rarocAAA,2) + ' %</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Quantile z, cible AA (confiance ' + fmt(confAA,2) + ' %)</th><td>' + fmt(zAA,4) + '</td></tr>';
+  html += '<tr><th>Quantile z, cible AAA (confiance ' + fmt(confAAA,2) + ' %)</th><td>' + fmt(zAAA,4) + '</td></tr>';
+  html += '<tr><th>Classement RAROC décroissant, cible AA</th><td>' + classementAA.map(function(l,i){ return (i+1)+'. '+l.nom+' ('+fmt(l.rarocAA,2)+' %)'; }).join(' &gt; ') + '</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>Ligne</th><th>Franchit le hurdle rate ' + fmt(hurdle,1) + ' % à AA ?</th><th>Franchit le hurdle rate à AAA ?</th></tr>';
+  lignes.forEach(function(l){
+    var okAA = l.rarocAA >= hurdle;
+    var okAAA = l.rarocAAA >= hurdle;
+    html += '<tr><td>' + l.nom + '</td><td><span class="valeur ' + (okAA?'ok':'ko') + '" style="margin:0;">' + (okAA?'OUI':'NON') + '</span></td><td><span class="valeur ' + (okAAA?'ok':'ko') + '" style="margin:0;">' + (okAAA?'OUI':'NON') + '</span></td></tr>';
+  });
+  html += '</table>';
+
+  var bascule = lignes.filter(function(l){ return l.rarocAA >= hurdle && l.rarocAAA < hurdle; });
+  if (bascule.length > 0) {
+    html += '<div class="valeur ko">Bascule sous le hurdle rate en resserrant AA -> AAA : ' + bascule.map(function(l){return l.nom;}).join(', ') + '.</div>';
+  } else {
+    html += '<div class="valeur mid">Aucune ligne ne bascule sous le hurdle rate en resserrant la cible de AA a AAA (avec les valeurs actuelles).</div>';
+  }
+  html += '<div class="valeur mid">La hausse relative du capital economique entre AA et AAA (' + fmt(lignes[0].hausse,2) + ' %) est identique pour les trois lignes : EC = z x sigma est lineaire en z, independamment de sigma.</div>';
+
+  html += dessinerRAROC(lignes, hurdle);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerRAROC(lignes, hurdle) {
+  var n = lignes.length;
+  var largeur = 520, hauteur = 270, margeG = 50, margeD = 15, margeH = 25, margeB = 45;
+  var vMax = Math.max.apply(null, lignes.reduce(function(a,l){return a.concat([l.rarocAA,l.rarocAAA]);},[]).concat([hurdle])) * 1.18 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var yHurdle = yPix(hurdle);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.30;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yHurdle.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yHurdle.toFixed(1) + '" stroke="var(--cgris,#5A5A5A)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (margeG-4) + '" y="' + (yHurdle+3).toFixed(1) + '" font-size="7" text-anchor="end" fill="currentColor">' + hurdle.toFixed(1) + ' %</text>';
+  lignes.forEach(function(l,i){
+    var xCenter = margeG + i*slot + slot*0.5;
+    var xAA = xCenter - largeurBarre*1.05;
+    var xAAA = xCenter + largeurBarre*0.05;
+    var yTopAA = yPix(l.rarocAA), hAA = yZero - yTopAA;
+    var yTopAAA = yPix(l.rarocAAA), hAAA = yZero - yTopAAA;
+    svg += '<rect x="' + xAA.toFixed(1) + '" y="' + yTopAA.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hAA.toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<text x="' + (xAA+largeurBarre/2).toFixed(1) + '" y="' + (yTopAA-4).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + l.rarocAA.toFixed(1) + '</text>';
+    svg += '<rect x="' + xAAA.toFixed(1) + '" y="' + yTopAAA.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hAAA.toFixed(1) + '" fill="var(--cintu,#E08000)"/>';
+    svg += '<text x="' + (xAAA+largeurBarre/2).toFixed(1) + '" y="' + (yTopAAA-4).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + l.rarocAAA.toFixed(1) + '</text>';
+    svg += '<text x="' + xCenter.toFixed(1) + '" y="' + (yZero + 16).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + l.nom + '</text>';
+  });
+  var lx = margeG, ly = 12;
+  svg += '<rect x="' + lx + '" y="' + (ly-7) + '" width="9" height="9" fill="var(--ceco,#1F6FB2)"/>';
+  svg += '<text x="' + (lx+12) + '" y="' + ly + '" font-size="7.5" text-anchor="start" fill="currentColor">RAROC cible AA</text>';
+  svg += '<rect x="' + (lx+130) + '" y="' + (ly-7) + '" width="9" height="9" fill="var(--cintu,#E08000)"/>';
+  svg += '<text x="' + (lx+142) + '" y="' + ly + '" font-size="7.5" text-anchor="start" fill="currentColor">RAROC cible AAA</text>';
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">RAROC (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerAgregation(); calculerRAROC(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — La gestion du risque tiers — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — Application : la gestion du risque tiers</h1>
+<p class="sous-titre">Calculatrice interactive — la chaîne tiers, quatrième partie, cinquième partie : exposition en cascade (exercice 5), diligence préalable et effacement sécurisé : le coût attendu de sauter une étape du cycle (exercice 6)</p>
+
+<div class="panneau">
+  <h2>La chaîne tiers, quatrième partie, cinquième partie : exposition en cascade</h2>
+  <p class="aide">Pour chaque activite, le tiers sous-traite une part de son montant a une quatrieme partie, qui sous-traite a son tour une part de ce montant a une cinquieme partie. La banque n'a de lien contractuel qu'avec le tiers direct, mais reste exposee a une defaillance a chacun des trois niveaux. La perte attendue a chaque niveau = probabilite d'incident x severite x montant expose a ce niveau.</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c12_tableActivites">
+    <tr><th>Activité</th><td>Hébergement cloud</td><td>Support informatique</td><td>Traitement données</td><td>Sécurité physique</td></tr>
+    <tr><th>Tiers</th><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+    <tr><th>Montant confié (k€)</th>
+      <td><input type="number" class="c12-montant" value="2400" step="10" min="0"></td>
+      <td><input type="number" class="c12-montant" value="1600" step="10" min="0"></td>
+      <td><input type="number" class="c12-montant" value="1000" step="10" min="0"></td>
+      <td><input type="number" class="c12-montant" value="500" step="10" min="0"></td>
+    </tr>
+    <tr><th>% sous-traité au 4e</th>
+      <td><input type="number" class="c12-pct4" value="45" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c12-pct4" value="65" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c12-pct4" value="25" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c12-pct4" value="0" step="1" min="0" max="100"></td>
+    </tr>
+    <tr><th>% du 4e sous-traité au 5e</th>
+      <td><input type="number" class="c12-pct5" value="30" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c12-pct5" value="40" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c12-pct5" value="20" step="1" min="0" max="100"></td>
+      <td><input type="number" class="c12-pct5" value="0" step="1" min="0" max="100"></td>
+    </tr>
+  </table>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Probabilités annuelles d'incident</h3>
+      <label for="c12_p3">Probabilité — portion tiers direct (%)</label><input type="number" id="c12_p3" value="2" step="0.5" min="0" max="100">
+      <label for="c12_p4">Probabilité — portion 4e partie (%)</label><input type="number" id="c12_p4" value="5" step="0.5" min="0" max="100">
+      <label for="c12_p5">Probabilité — portion 5e partie (%)</label><input type="number" id="c12_p5" value="9" step="0.5" min="0" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Sévérité</h3>
+      <label for="c12_severite">Valeur détruite si incident (% du montant exposé)</label><input type="number" id="c12_severite" value="20" step="1" min="0" max="100">
+      <p class="aide" style="margin-top:0.6em;">La perte attendue et la probabilité cumulée sont calculées automatiquement pour l'activité dont l'exposition à la cinquième partie est la plus élevée en valeur absolue.</p>
+    </div>
+  </div>
+  <button onclick="calculerCascade()">Calculer</button>
+  <div id="resultatCascade" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Diligence préalable et effacement sécurisé : le coût attendu de sauter une étape du cycle</h2>
+  <p class="aide">Cout attendu = probabilite d'incident x cout (amende + remediation) en cas de survenance. Le premier bloc (inspire de Capital One) compare une migration cloud avec et sans evaluation prealable approfondie des risques. Le second bloc (inspire de Morgan Stanley) compare un decommissionnement avec et sans effacement securise, puis, un premier incident etant survenu, une remediation de la procedure avec et sans correction.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Migration cloud (cas Capital One)</h3>
+      <label for="c12_pSansEval">Probabilité de violation SANS évaluation (%)</label><input type="number" id="c12_pSansEval" value="12" step="0.5" min="0" max="100">
+      <label for="c12_fineEval">Coût en cas de survenance (amende + remédiation, $)</label><input type="number" id="c12_fineEval" value="45000000" step="1000000" min="0">
+      <label for="c12_coutEval">Coût de l'évaluation préalable ($)</label><input type="number" id="c12_coutEval" value="1800000" step="100000" min="0">
+      <label for="c12_pAvecEval">Probabilité de violation AVEC évaluation (%)</label><input type="number" id="c12_pAvecEval" value="2" step="0.5" min="0" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Décommissionnement — premier incident (cas Morgan Stanley)</h3>
+      <label for="c12_nServeurs">Nombre de serveurs</label><input type="number" id="c12_nServeurs" value="4000" step="100" min="0">
+      <label for="c12_coutUnitaire">Coût d'effacement sécurisé par serveur ($)</label><input type="number" id="c12_coutUnitaire" value="120" step="10" min="0">
+      <label for="c12_pIncident1">Probabilité d'un 1er incident sans effacement (%)</label><input type="number" id="c12_pIncident1" value="18" step="0.5" min="0" max="100">
+      <label for="c12_fine1">Amende moyenne du 1er incident ($)</label><input type="number" id="c12_fine1" value="8000000" step="500000" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Décommissionnement — second incident et remédiation</h3>
+      <label for="c12_pSecondSansRem">Probabilité d'un 2e incident SANS remédiation (%)</label><input type="number" id="c12_pSecondSansRem" value="50" step="1" min="0" max="100">
+      <label for="c12_fine2">Amende majorée du 2e incident ($)</label><input type="number" id="c12_fine2" value="12000000" step="500000" min="0">
+      <label for="c12_coutRemediation">Coût de la remédiation de la procédure ($)</label><input type="number" id="c12_coutRemediation" value="400000" step="10000" min="0">
+      <label for="c12_pSecondAvecRem">Probabilité d'un 2e incident AVEC remédiation (%)</label><input type="number" id="c12_pSecondAvecRem" value="4" step="0.5" min="0" max="100">
+    </div>
+  </div>
+  <button onclick="calculerCycle()">Calculer</button>
+  <div id="resultatCycle" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+function fmtMoney(x) {
+  var s = Math.round(x).toString();
+  var neg = s.charAt(0) === '-';
+  if (neg) { s = s.slice(1); }
+  var out = '';
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 === 0) { out += ' '; }
+    out += s.charAt(i);
+  }
+  return (neg ? '-' : '') + out;
+}
+
+function calculerCascade() {
+  var resDiv = document.getElementById('resultatCascade');
+  var noms = ['Hébergement cloud','Support informatique','Traitement données','Sécurité physique'];
+  var montants = Array.prototype.map.call(document.querySelectorAll('.c12-montant'), function(el){ return parseFloat(el.value); });
+  var pct4s = Array.prototype.map.call(document.querySelectorAll('.c12-pct4'), function(el){ return parseFloat(el.value); });
+  var pct5s = Array.prototype.map.call(document.querySelectorAll('.c12-pct5'), function(el){ return parseFloat(el.value); });
+  var p3 = parseFloat(document.getElementById('c12_p3').value);
+  var p4 = parseFloat(document.getElementById('c12_p4').value);
+  var p5 = parseFloat(document.getElementById('c12_p5').value);
+  var severite = parseFloat(document.getElementById('c12_severite').value);
+
+  var champs = montants.concat(pct4s).concat(pct5s).concat([p3,p4,p5,severite]);
+  var tousValides = champs.every(function(v){ return !isNaN(v); });
+  if (!tousValides || montants.some(function(v){return v<0;}) || pct4s.some(function(v){return v<0||v>100;}) || pct5s.some(function(v){return v<0||v>100;})) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les montants doivent etre renseignes et positifs, et tous les pourcentages doivent etre compris entre 0 et 100.</p>';
+    return;
+  }
+
+  var n = montants.length;
+  var m4 = [], mTiersDirect = [], m5 = [], m4Direct = [];
+  for (var i=0;i<n;i++) {
+    m4[i] = montants[i]*pct4s[i]/100;
+    mTiersDirect[i] = montants[i]-m4[i];
+    m5[i] = m4[i]*pct5s[i]/100;
+    m4Direct[i] = m4[i]-m5[i];
+  }
+  var totalMontant = montants.reduce(function(a,b){return a+b;},0);
+  var totalTiersDirect = mTiersDirect.reduce(function(a,b){return a+b;},0);
+  var total4Direct = m4Direct.reduce(function(a,b){return a+b;},0);
+  var total5 = m5.reduce(function(a,b){return a+b;},0);
+  var partAuDela = totalMontant>0 ? (total4Direct+total5)/totalMontant*100 : 0;
+
+  var idxMax5 = 0;
+  for (var i=1;i<n;i++) { if (m5[i] > m5[idxMax5]) { idxMax5 = i; } }
+
+  var html = '<table class="tabres"><tr><th>Activité</th><th>Montant</th><th>Tiers (direct)</th><th>4e (direct)</th><th>5e partie</th></tr>';
+  noms.forEach(function(nom,i){
+    html += '<tr><td>' + nom + '</td><td>' + fmt(montants[i],0) + '</td><td>' + fmt(mTiersDirect[i],2) + '</td><td>' + fmt(m4Direct[i],2) + '</td><td>' + fmt(m5[i],2) + '</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Montant total confié</th><td>' + fmt(totalMontant,0) + ' k€</td></tr>';
+  html += '<tr><th>Total conservé directement par les tiers</th><td>' + fmt(totalTiersDirect,2) + ' k€</td></tr>';
+  html += '<tr><th>Total conservé directement par les 4e parties</th><td>' + fmt(total4Direct,2) + ' k€</td></tr>';
+  html += '<tr><th>Total atteignant la 5e partie</th><td>' + fmt(total5,2) + ' k€</td></tr>';
+  html += '<tr><th>Part du total dépassant le seul tiers direct</th><td>' + fmt(partAuDela,2) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">Exposition à la 5e partie la plus élevée : ' + noms[idxMax5] + ' (' + fmt(m5[idxMax5],2) + ' k€)</div>';
+
+  var elTiers = p3/100 * severite/100 * mTiersDirect[idxMax5];
+  var el4 = p4/100 * severite/100 * m4Direct[idxMax5];
+  var el5 = p5/100 * severite/100 * m5[idxMax5];
+  var elTotal = elTiers + el4 + el5;
+  var pAuMoinsUn = (1 - (1-p3/100)*(1-p4/100)*(1-p5/100)) * 100;
+  var ecart = pAuMoinsUn - p3;
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Perte attendue — niveau tiers direct</th><td>' + fmt(elTiers,4) + ' k€</td></tr>';
+  html += '<tr><th>Perte attendue — niveau 4e partie</th><td>' + fmt(el4,4) + ' k€</td></tr>';
+  html += '<tr><th>Perte attendue — niveau 5e partie</th><td>' + fmt(el5,4) + ' k€</td></tr>';
+  html += '<tr><th>Perte attendue totale (' + noms[idxMax5] + ')</th><td>' + fmt(elTotal,4) + ' k€</td></tr>';
+  html += '<tr><th>P(au moins un incident dans la chaîne)</th><td>' + fmt(pAuMoinsUn,3) + ' %</td></tr>';
+  html += '<tr><th>Écart vs probabilité chez le tiers direct seul</th><td>' + fmt(ecart,3) + ' points</td></tr>';
+  html += '</table>';
+
+  html += dessinerCascade(noms, mTiersDirect, m4Direct, m5);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCascade(noms, tiers, quatre, cinq) {
+  var n = noms.length;
+  var largeur = 520, hauteur = 270, margeG = 50, margeD = 15, margeH = 30, margeB = 60;
+  var totaux = noms.map(function(nom,i){ return tiers[i]+quatre[i]+cinq[i]; });
+  var vMax = Math.max.apply(null, totaux) * 1.15 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.5;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<text x="' + (margeG) + '" y="12" font-size="7.5" fill="var(--cdef,#4A3B8C)">&#9632; Tiers (direct)</text>';
+  svg += '<text x="' + (margeG+130) + '" y="12" font-size="7.5" fill="var(--cintu,#E08000)">&#9632; 4e partie (direct)</text>';
+  svg += '<text x="' + (margeG+270) + '" y="12" font-size="7.5" fill="var(--ceco,#1F6FB2)">&#9632; 5e partie</text>';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i=0;i<n;i++) {
+    var x = margeG + i*slot + slot*0.25;
+    var yT = yZero;
+    var hT = (tiers[i]/vMax) * (hauteur - margeH - margeB);
+    var yTop1 = yT - hT;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop1.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hT.toFixed(1) + '" fill="var(--cdef,#4A3B8C)"/>';
+    var hQ = (quatre[i]/vMax) * (hauteur - margeH - margeB);
+    var yTop2 = yTop1 - hQ;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop2.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hQ.toFixed(1) + '" fill="var(--cintu,#E08000)"/>';
+    var hC = (cinq[i]/vMax) * (hauteur - margeH - margeB);
+    var yTop3 = yTop2 - hC;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop3.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hC.toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor" transform="rotate(15 ' + (x+largeurBarre/2).toFixed(1) + ',' + (yZero + 14).toFixed(1) + ')">' + noms[i] + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-10) + ')">Montant (k€)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerCycle() {
+  var resDiv = document.getElementById('resultatCycle');
+  var pSansEval = parseFloat(document.getElementById('c12_pSansEval').value);
+  var fineEval = parseFloat(document.getElementById('c12_fineEval').value);
+  var coutEval = parseFloat(document.getElementById('c12_coutEval').value);
+  var pAvecEval = parseFloat(document.getElementById('c12_pAvecEval').value);
+  var nServeurs = parseFloat(document.getElementById('c12_nServeurs').value);
+  var coutUnitaire = parseFloat(document.getElementById('c12_coutUnitaire').value);
+  var pIncident1 = parseFloat(document.getElementById('c12_pIncident1').value);
+  var fine1 = parseFloat(document.getElementById('c12_fine1').value);
+  var pSecondSansRem = parseFloat(document.getElementById('c12_pSecondSansRem').value);
+  var fine2 = parseFloat(document.getElementById('c12_fine2').value);
+  var coutRemediation = parseFloat(document.getElementById('c12_coutRemediation').value);
+  var pSecondAvecRem = parseFloat(document.getElementById('c12_pSecondAvecRem').value);
+
+  var champs = [pSansEval,fineEval,coutEval,pAvecEval,nServeurs,coutUnitaire,pIncident1,fine1,pSecondSansRem,fine2,coutRemediation,pSecondAvecRem];
+  var tousValides = champs.every(function(v){ return !isNaN(v); });
+  if (!tousValides || pSansEval<0 || pSansEval>100 || pAvecEval<0 || pAvecEval>100 || nServeurs<0 || coutUnitaire<0 || pIncident1<0 || pIncident1>100 || pSecondSansRem<0 || pSecondSansRem>100 || pSecondAvecRem<0 || pSecondAvecRem>100) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : toutes les probabilites doivent etre comprises entre 0 et 100, et les montants et effectifs doivent etre positifs.</p>';
+    return;
+  }
+
+  var ecNo = pSansEval/100 * fineEval;
+  var ecAvec = pAvecEval/100 * fineEval;
+  var reductionBrute = ecNo - ecAvec;
+  var gainNet = reductionBrute - coutEval;
+  var ratioBC = coutEval>0 ? reductionBrute/coutEval : NaN;
+
+  var coutTotalEffacement = nServeurs * coutUnitaire;
+  var ecIncident1 = pIncident1/100 * fine1;
+  var ecartAB = ecIncident1 - coutTotalEffacement;
+
+  var ecSansRem = pSecondSansRem/100 * fine2;
+  var ecAvecRem = coutRemediation + pSecondAvecRem/100 * fine2;
+  var economieRem = ecSansRem - ecAvecRem;
+  var ratioRem = ecAvecRem>0 ? ecSansRem/ecAvecRem : NaN;
+
+  var html = '<table class="tabres"><tr><th colspan="2">Migration cloud — cas inspiré de Capital One</th></tr>';
+  html += '<tr><th>Coût attendu SANS évaluation préalable</th><td>' + fmtMoney(ecNo) + ' $</td></tr>';
+  html += '<tr><th>Coût attendu AVEC évaluation préalable</th><td>' + fmtMoney(ecAvec) + ' $</td></tr>';
+  html += '<tr><th>Réduction brute du coût attendu</th><td>' + fmtMoney(reductionBrute) + ' $</td></tr>';
+  html += '<tr><th>Gain net (réduction − coût de l\'évaluation)</th><td>' + fmtMoney(gainNet) + ' $</td></tr>';
+  html += '<tr><th>Ratio bénéfice/coût de l\'évaluation</th><td>' + (isNaN(ratioBC)?'indéfini':fmt(ratioBC,4)) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (gainNet>=0?'ok':'ko') + '">L\'évaluation préalable est ' + (gainNet>=0?'RENTABLE':'NON rentable') + ' (gain net ' + fmtMoney(gainNet) + ' $)</div>';
+
+  html += '<table class="tabres"><tr><th colspan="2">Décommissionnement — premier incident, cas inspiré de Morgan Stanley</th></tr>';
+  html += '<tr><th>Coût total de l\'effacement sécurisé (' + fmt(nServeurs,0) + ' serveurs)</th><td>' + fmtMoney(coutTotalEffacement) + ' $</td></tr>';
+  html += '<tr><th>Coût attendu d\'un 1er incident SANS effacement sécurisé</th><td>' + fmtMoney(ecIncident1) + ' $</td></tr>';
+  html += '<tr><th>Écart (coût attendu incident − coût effacement)</th><td>' + fmtMoney(ecartAB) + ' $</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (ecartAB>=0?'ok':'ko') + '">L\'effacement sécurisé préalable est ' + (ecartAB>=0?'JUSTIFIÉ':'NON justifié') + ' au regard de ce seul écart</div>';
+
+  html += '<table class="tabres"><tr><th colspan="2">Second incident : remédiation ou répétition</th></tr>';
+  html += '<tr><th>Coût attendu — voie SANS remédiation</th><td>' + fmtMoney(ecSansRem) + ' $</td></tr>';
+  html += '<tr><th>Coût attendu — voie AVEC remédiation (coût inclus)</th><td>' + fmtMoney(ecAvecRem) + ' $</td></tr>';
+  html += '<tr><th>Économie nette de la remédiation</th><td>' + fmtMoney(economieRem) + ' $</td></tr>';
+  html += '<tr><th>Ratio coût sans remédiation / coût avec remédiation</th><td>' + (isNaN(ratioRem)?'indéfini':fmt(ratioRem,4)) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (economieRem>=0?'ok':'ko') + '">La remédiation après le premier incident est ' + (economieRem>=0?'ÉCONOMIQUEMENT PRÉFÉRABLE':'NON préférable') + ' (économie ' + fmtMoney(economieRem) + ' $)</div>';
+
+  html += dessinerCycle(ecNo, ecAvec, ecSansRem, ecAvecRem);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCycle(ecNo, ecAvec, ecSansRem, ecAvecRem) {
+  var barres = [
+    {label:'Cloud : sans éval.', v: ecNo, coul: 'var(--cintu,#E08000)'},
+    {label:'Cloud : avec éval.', v: ecAvec, coul: 'var(--ceco,#1F6FB2)'},
+    {label:'Décomm. : sans rem.', v: ecSansRem, coul: 'var(--cintu,#E08000)'},
+    {label:'Décomm. : avec rem.', v: ecAvecRem, coul: 'var(--ceco,#1F6FB2)'}
+  ];
+  var n = barres.length;
+  var largeur = 480, hauteur = 260, margeG = 60, margeD = 15, margeH = 20, margeB = 55;
+  var vMax = Math.max.apply(null, barres.map(function(b){return b.v;})) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.5;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  barres.forEach(function(b,i){
+    var x = margeG + i*slot + slot*0.25;
+    var yTop = yPix(b.v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + b.coul + '"/>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor">' + fmtMoney(b.v) + '</text>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor" transform="rotate(15 ' + (x+largeurBarre/2).toFixed(1) + ',' + (yZero + 14).toFixed(1) + ')">' + b.label + '</text>';
+  });
+  svg += '<text x="16" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 16,' + (hauteur/2-10) + ')">Coût attendu ($)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerCascade(); calculerCycle(); };
+</script>
+</body>
+</html>

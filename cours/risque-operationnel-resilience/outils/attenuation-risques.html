@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — L'atténuation des risques — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.8em; padding: 0.2em; text-align: right; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Application : l'atténuation des risques</h1>
+<p class="sous-titre">Calculatrice interactive — assurance externe et auto-assurance d'un risque opérationnel (exercice 5), contrôles automatisés et coût d'un incident majeur (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Assurance externe et auto-assurance d'un risque opérationnel</h2>
+  <p class="aide">Severite moyenne = somme(valeur de bande x probabilite). Perte annuelle attendue (EL) sans assurance = lambda x severite moyenne. Pour un evenement de perte S, retenu par la banque = min(S, franchise) + max(S - franchise - plafond, 0) ; cede a l'assureur = S - retenu. Chargement assureur = prime / sinistres annuels attendus - 1.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Frequence et contrat d'assurance</h3>
+      <label for="c4_lambda">lambda (evenements / an)</label><input type="number" id="c4_lambda" value="4" step="0.1" min="0">
+      <label for="c4_D">Franchise D (k€ par evenement)</label><input type="number" id="c4_D" value="300" step="10" min="0">
+      <label for="c4_L">Plafond de garantie L (k€ par evenement)</label><input type="number" id="c4_L" value="8000" step="100" min="0">
+      <label for="c4_P">Prime annuelle P (k€)</label><input type="number" id="c4_P" value="6200" step="50" min="0">
+    </div>
+    <div class="bloc" style="flex:1.6; min-width:300px;">
+      <h3>Bandes de severite</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c4_tableBandes">
+        <tr><th>Bande</th><td>1 (courante)</td><td>2 (intermediaire)</td><td>3 (extreme, queue)</td></tr>
+        <tr><th>Valeur (k€)</th>
+          <td><input type="number" class="c4-bv" value="200" step="10" min="0"></td>
+          <td><input type="number" class="c4-bv" value="2000" step="10" min="0"></td>
+          <td><input type="number" class="c4-bv" value="15000" step="100" min="0"></td>
+        </tr>
+        <tr><th>Probabilite (%)</th>
+          <td><input type="number" class="c4-bp" value="60" step="1" min="0" max="100"></td>
+          <td><input type="number" class="c4-bp" value="32" step="1" min="0" max="100"></td>
+          <td><input type="number" class="c4-bp" value="8" step="1" min="0" max="100"></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Evenement realise cette annee (question d)</h3>
+      <label for="c4_bandeRealisee">Bande dont l'evenement se materialise</label>
+      <select id="c4_bandeRealisee">
+        <option value="0">Bande 1 (courante)</option>
+        <option value="1">Bande 2 (intermediaire)</option>
+        <option value="2" selected>Bande 3 (extreme, queue)</option>
+      </select>
+      <p class="aide" style="margin-top:0.6em;">Compare le decaissement de cette seule annee avec et sans assurance pour la bande choisie.</p>
+    </div>
+  </div>
+  <button onclick="calculerAssurance()">Calculer</button>
+  <div id="resultatAssurance" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Contrôles automatisés et coût d'un incident majeur</h2>
+  <p class="aide">Perte totale = rythme de perte x duree totale (identification + arret). Perte annuelle attendue = probabilite d'occurrence x perte totale. Benefice net d'un investissement = reduction de perte annuelle attendue - cout annuel de l'investissement. Les controles reduisent la duree (et donc la perte) en cas de survenue, pas la probabilite de survenue elle-meme.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Rythme de perte et probabilite</h3>
+      <label for="c4_r">Rythme de perte r (k€ / minute)</label><input type="number" id="c4_r" value="650" step="10" min="0">
+      <label for="c4_p">Probabilite annuelle de l'incident p (%)</label><input type="number" id="c4_p" value="5" step="0.1" min="0" max="100">
+    </div>
+    <div class="bloc">
+      <h3>Delais — sans controle automatise</h3>
+      <label for="c4_tIdentManuel">Identification manuelle (min)</label><input type="number" id="c4_tIdentManuel" value="38" step="1" min="0">
+      <label for="c4_tArretManuel">Arret manuel (min)</label><input type="number" id="c4_tArretManuel" value="4" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Delais — controles automatises</h3>
+      <label for="c4_tDetectAuto">Detection automatisee (min)</label><input type="number" id="c4_tDetectAuto" value="3" step="1" min="0">
+      <label for="c4_tArretAuto">Coupe-circuit automatique (min)</label><input type="number" id="c4_tArretAuto" value="1" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Cout annuel des investissements</h3>
+      <label for="c4_cDetect">Detection automatisee (k€/an)</label><input type="number" id="c4_cDetect" value="850" step="10" min="0">
+      <label for="c4_cKill">Coupe-circuit, en supplement (k€/an)</label><input type="number" id="c4_cKill" value="620" step="10" min="0">
+    </div>
+  </div>
+  <button onclick="calculerControles()">Calculer</button>
+  <div id="resultatControles" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function calculerAssurance() {
+  var resDiv = document.getElementById('resultatAssurance');
+  var lambda = parseFloat(document.getElementById('c4_lambda').value);
+  var D = parseFloat(document.getElementById('c4_D').value);
+  var L = parseFloat(document.getElementById('c4_L').value);
+  var P = parseFloat(document.getElementById('c4_P').value);
+  var bv = Array.prototype.map.call(document.querySelectorAll('.c4-bv'), function(el){ return parseFloat(el.value); });
+  var bp = Array.prototype.map.call(document.querySelectorAll('.c4-bp'), function(el){ return parseFloat(el.value); });
+  var idxRealise = parseInt(document.getElementById('c4_bandeRealisee').value, 10);
+
+  var champs = [lambda,D,L,P].concat(bv).concat(bp);
+  var tousValides = champs.every(function(v){ return !isNaN(v); });
+  var sommeProbas = bp.reduce(function(a,b){return a+b;},0);
+  var probasOk = Math.abs(sommeProbas-100) < 0.001;
+  if (!tousValides || lambda<0 || D<0 || L<0 || !probasOk) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes, lambda/franchise/plafond doivent etre positifs ou nuls, et les trois probabilites de bande doivent sommer exactement a 100&nbsp;% (somme actuelle : ' + (isNaN(sommeProbas)?'N/A':fmt(sommeProbas,2)) + '&nbsp;%).</p>';
+    return;
+  }
+
+  var noms = ['Bande 1 (courante)','Bande 2 (intermediaire)','Bande 3 (extreme, queue)'];
+  function retenu(S) { return Math.min(S,D) + Math.max(S-D-L,0); }
+  function cede(S) { return S - retenu(S); }
+
+  var contribsSev = bv.map(function(v,i){ return v*bp[i]/100; });
+  var sevMoy = contribsSev.reduce(function(a,b){return a+b;},0);
+  var ELsansAss = lambda*sevMoy;
+
+  var retenus = bv.map(function(v){ return retenu(v); });
+  var cedes = bv.map(function(v){ return cede(v); });
+  var retenuMoy = retenus.reduce(function(s,r,i){ return s + r*bp[i]/100; },0);
+  var cedeMoy = cedes.reduce(function(s,c,i){ return s + c*bp[i]/100; },0);
+
+  var ELretenu = lambda*retenuMoy;
+  var ELcede = lambda*cedeMoy;
+  var chargement = ELcede>0 ? (P/ELcede-1)*100 : NaN;
+  var coutAvecAss = P + ELretenu;
+  var coutSansAss = ELsansAss;
+  var surcout = coutAvecAss - coutSansAss;
+
+  var Sreal = bv[idxRealise];
+  var retReal = retenu(Sreal);
+  var cedReal = cede(Sreal);
+  var cashAvecAss = P + retReal;
+  var cashSansAss = Sreal;
+
+  var html = '<table class="tabres"><tr><th>Bande</th><th>Valeur (k€)</th><th>Probabilite</th><th>Retenu (k€)</th><th>Cede (k€)</th></tr>';
+  noms.forEach(function(nom,i){
+    html += '<tr><td>' + nom + '</td><td>' + fmt(bv[i],2) + '</td><td>' + fmt(bp[i],2) + ' %</td><td>' + fmt(retenus[i],2) + '</td><td>' + fmt(cedes[i],2) + '</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Severite moyenne par evenement</th><td>' + fmt(sevMoy,2) + ' k€</td></tr>';
+  html += '<tr><th>Perte annuelle attendue SANS assurance (EL)</th><td>' + fmt(ELsansAss,2) + ' k€</td></tr>';
+  html += '<tr><th>Retenu moyen / cede moyen par evenement</th><td>' + fmt(retenuMoy,2) + ' / ' + fmt(cedeMoy,2) + ' k€</td></tr>';
+  html += '<tr><th>Perte annuelle attendue retenue (avec assurance)</th><td>' + fmt(ELretenu,2) + ' k€</td></tr>';
+  html += '<tr><th>Sinistres annuels attendus par l\'assureur (cede)</th><td>' + fmt(ELcede,2) + ' k€</td></tr>';
+  html += '<tr><th>Chargement implicite de l\'assureur</th><td>' + (isNaN(chargement)?'indefini':fmt(chargement,2)+' %') + '</td></tr>';
+  html += '<tr><th>Cout total annuel attendu AVEC assurance</th><td>' + fmt(coutAvecAss,2) + ' k€</td></tr>';
+  html += '<tr><th>Cout total annuel attendu SANS assurance</th><td>' + fmt(coutSansAss,2) + ' k€</td></tr>';
+  html += '<tr><th>Surcout attendu de l\'assurance</th><td>' + fmt(surcout,2) + ' k€</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (surcout>=0?'mid':'ok') + '">L\'assurance ' + (surcout>=0?'coute':'economise') + ' en esperance ' + fmt(Math.abs(surcout),2) + ' k€ par an de plus que l\'auto-assurance totale — elle reduit la volatilite, pas necessairement le cout attendu.</div>';
+
+  html += '<table class="tabres"><tr><th colspan="2">Evenement realise cette annee : ' + noms[idxRealise] + ' (' + fmt(Sreal,0) + ' k€)</th></tr>';
+  html += '<tr><th>Retenu / cede pour cet evenement</th><td>' + fmt(retReal,2) + ' / ' + fmt(cedReal,2) + ' k€</td></tr>';
+  html += '<tr><th>Decaissement total AVEC assurance (prime + retenu)</th><td>' + fmt(cashAvecAss,2) + ' k€</td></tr>';
+  html += '<tr><th>Decaissement total SANS assurance</th><td>' + fmt(cashSansAss,2) + ' k€</td></tr>';
+  html += '</table>';
+  var diffCash = cashSansAss - cashAvecAss;
+  html += '<div class="valeur ' + (diffCash>0?'ok':(diffCash<0?'ko':'mid')) + '">Pour cet evenement, l\'assurance ' + (diffCash>0?'reduit':(diffCash<0?'augmente':'ne change pas')) + ' le decaissement de la banque de ' + fmt(Math.abs(diffCash),2) + ' k€ cette annee-la.</div>';
+
+  html += dessinerAssurance(retenus, cedes, bv, ELsansAss, coutAvecAss);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerAssurance(retenus, cedes, bv, ELsansAss, coutAvecAss) {
+  var noms = ['Bande 1','Bande 2','Bande 3','EL sans ass.','Cout avec ass.'];
+  var vals = [
+    {r: retenus[0], c: cedes[0]},
+    {r: retenus[1], c: cedes[1]},
+    {r: retenus[2], c: cedes[2]}
+  ];
+  var totaux = [ELsansAss, coutAvecAss];
+  var n = 5;
+  var largeur = 480, hauteur = 270, margeG = 50, margeD = 15, margeH = 25, margeB = 60;
+  var vMax = Math.max(bv[0],bv[1],bv[2],ELsansAss,coutAvecAss) * 1.15 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.55;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+
+  for (var i=0;i<3;i++) {
+    var x = margeG + i*slot + slot*0.225;
+    var yTopR = yPix(vals[i].r);
+    var hR = yZero - yTopR;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTopR.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hR.toFixed(1) + '" fill="var(--cdef,#4A3B8C)"/>';
+    var yTopC = yPix(vals[i].r+vals[i].c);
+    var hC = yTopR - yTopC;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTopC.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hC.toFixed(1) + '" fill="var(--cintu,#E08000)"/>';
+    if (vals[i].r>0) svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTopR+11).toFixed(1) + '" font-size="7" text-anchor="middle" fill="white">' + vals[i].r.toFixed(0) + '</text>';
+    if (vals[i].c>0) svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTopC+11).toFixed(1) + '" font-size="7" text-anchor="middle" fill="white">' + vals[i].c.toFixed(0) + '</text>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor" transform="rotate(18 ' + (x+largeurBarre/2).toFixed(1) + ',' + (yZero + 14).toFixed(1) + ')">' + noms[i] + '</text>';
+  }
+  for (var j=0;j<2;j++) {
+    var i2 = 3+j;
+    var x2 = margeG + i2*slot + slot*0.225;
+    var v2 = totaux[j];
+    var yTop2 = yPix(v2);
+    var h2 = yZero - yTop2;
+    svg += '<rect x="' + x2.toFixed(1) + '" y="' + yTop2.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h2.toFixed(1) + '" fill="var(--ceco,#1F6FB2)"/>';
+    svg += '<text x="' + (x2+largeurBarre/2).toFixed(1) + '" y="' + (yTop2-4).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + v2.toFixed(0) + '</text>';
+    svg += '<text x="' + (x2+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor" transform="rotate(18 ' + (x2+largeurBarre/2).toFixed(1) + ',' + (yZero + 14).toFixed(1) + ')">' + noms[i2] + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-10) + ')">Montant (k€)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerControles() {
+  var resDiv = document.getElementById('resultatControles');
+  var r = parseFloat(document.getElementById('c4_r').value);
+  var p = parseFloat(document.getElementById('c4_p').value);
+  var tIdentManuel = parseFloat(document.getElementById('c4_tIdentManuel').value);
+  var tArretManuel = parseFloat(document.getElementById('c4_tArretManuel').value);
+  var tDetectAuto = parseFloat(document.getElementById('c4_tDetectAuto').value);
+  var tArretAuto = parseFloat(document.getElementById('c4_tArretAuto').value);
+  var cDetect = parseFloat(document.getElementById('c4_cDetect').value);
+  var cKill = parseFloat(document.getElementById('c4_cKill').value);
+
+  var champs = [r,p,tIdentManuel,tArretManuel,tDetectAuto,tArretAuto,cDetect,cKill];
+  var tousValides = champs.every(function(v){ return !isNaN(v); });
+  if (!tousValides || r<0 || p<0 || p>100 || tIdentManuel<0 || tArretManuel<0 || tDetectAuto<0 || tArretAuto<0 || cDetect<0 || cKill<0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes et positifs ou nuls, et la probabilite p doit etre comprise entre 0 et 100&nbsp;%.</p>';
+    return;
+  }
+
+  var t0 = tIdentManuel + tArretManuel;
+  var t1 = tDetectAuto + tArretManuel;
+  var t2 = tDetectAuto + tArretAuto;
+
+  var L0 = r*t0, L1 = r*t1, L2 = r*t2;
+  var avoided1 = L0-L1;
+  var avoided2 = L1-L2;
+
+  var pf = p/100;
+  var E0 = pf*L0, E1 = pf*L1, E2 = pf*L2;
+  var reductionDetect = E0-E1;
+  var reductionKill = E1-E2;
+  var netDetect = reductionDetect - cDetect;
+  var netKill = reductionKill - cKill;
+
+  var html = '<table class="tabres"><tr><th>Scenario</th><th>Duree totale (min)</th><th>Perte totale (k€)</th></tr>';
+  html += '<tr><td>Aucun controle automatise</td><td>' + fmt(t0,1) + '</td><td>' + fmt(L0,2) + '</td></tr>';
+  html += '<tr><td>Detection automatisee seule</td><td>' + fmt(t1,1) + '</td><td>' + fmt(L1,2) + '</td></tr>';
+  html += '<tr><td>Detection + coupe-circuit automatique</td><td>' + fmt(t2,1) + '</td><td>' + fmt(L2,2) + '</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Perte evitee par la detection seule (vs aucun controle)</th><td>' + fmt(avoided1,2) + ' k€</td></tr>';
+  html += '<tr><th>Perte supplementaire evitee par le coupe-circuit (vs detection seule)</th><td>' + fmt(avoided2,2) + ' k€</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>Scenario</th><th>Perte annuelle attendue (p=' + fmt(p,2) + ' %)</th></tr>';
+  html += '<tr><td>Aucun controle automatise</td><td>' + fmt(E0,2) + ' k€</td></tr>';
+  html += '<tr><td>Detection automatisee seule</td><td>' + fmt(E1,2) + ' k€</td></tr>';
+  html += '<tr><td>Detection + coupe-circuit automatique</td><td>' + fmt(E2,2) + ' k€</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Reduction EL grace a la detection (cout ' + fmt(cDetect,0) + ' k€/an)</th><td>' + fmt(reductionDetect,2) + ' k€</td></tr>';
+  html += '<tr><th>Benefice net de la detection (reduction - cout)</th><td>' + fmt(netDetect,2) + ' k€</td></tr>';
+  html += '<tr><th>Reduction EL supplementaire grace au coupe-circuit (cout ' + fmt(cKill,0) + ' k€/an)</th><td>' + fmt(reductionKill,2) + ' k€</td></tr>';
+  html += '<tr><th>Benefice net du coupe-circuit, en supplement (reduction - cout)</th><td>' + fmt(netKill,2) + ' k€</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (netDetect>=0?'ok':'ko') + '">Detection automatisee : investissement ' + (netDetect>=0?'JUSTIFIE':'NON justifie') + ' sur le seul critere de la perte attendue (benefice net ' + fmt(netDetect,2) + ' k€).</div>';
+  html += '<div class="valeur ' + (netKill>=0?'ok':'ko') + '">Coupe-circuit automatique (en supplement) : investissement ' + (netKill>=0?'JUSTIFIE':'NON justifie') + ' sur le seul critere de la perte attendue (benefice net ' + fmt(netKill,2) + ' k€) — le cours rappelle neanmoins que l\'automatisation transforme un risque frequent et limite en un risque rare mais potentiellement systemique, un argument qui va au-dela du seul calcul de perte attendue.</div>';
+
+  html += dessinerControles(L0, L1, L2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerControles(L0, L1, L2) {
+  var barres = [
+    {label:'Aucun controle', v: L0, coul: 'var(--cdef,#4A3B8C)'},
+    {label:'Detection seule', v: L1, coul: 'var(--ceco,#1F6FB2)'},
+    {label:'Detection + coupe-circuit', v: L2, coul: 'var(--cex,#2E8B57)'}
+  ];
+  var n = barres.length;
+  var largeur = 440, hauteur = 260, margeG = 55, margeD = 15, margeH = 20, margeB = 55;
+  var vMax = Math.max.apply(null, barres.map(function(b){return b.v;})) * 1.15 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.5;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  barres.forEach(function(b,i){
+    var x = margeG + i*slot + slot*0.25;
+    var yTop = yPix(b.v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + b.coul + '"/>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + b.v.toFixed(0) + '</text>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor" transform="rotate(15 ' + (x+largeurBarre/2).toFixed(1) + ',' + (yZero + 14).toFixed(1) + ')">' + b.label + '</text>';
+  });
+  svg += '<text x="14" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-10) + ')">Perte totale (k€)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerAssurance(); calculerControles(); };
+</script>
+</body>
+</html>

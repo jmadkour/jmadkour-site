@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — L'identification des risques — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+  table.tabmat select { width: 6.4em; padding: 0.2em; font-size: 0.82em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Application : l'identification des risques</h1>
+<p class="sous-titre">Calculatrice interactive — génération et sélection de scénarios (exercice 5), registre des risques, top-cinq et couverture par les contrôles (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Génération et sélection de scénarios</h2>
+  <p class="aide">La liste brute de scénarios est nourrie par quatre intrants (pertes internes, pertes externes, RCSA, indicateurs de risque et audit). La phase de selection retient une liste finale, a comparer aux reperes du cours (15 a 20 scenarios pour un etablissement de taille moyenne, jusqu'a 50 pour une banque internationale). La classification par cause (externe / interne) peut evoluer apres correction du biais de focalisation excessive sur les causes externes. Le biais de myopie se lit dans l'evolution de la part d'un theme de risque entre deux annees.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Génération : liste brute par intrant</h3>
+      <label for="c2_gInt">Pertes internes</label><input type="number" id="c2_gInt" value="34" step="1" min="0">
+      <label for="c2_gExt">Pertes externes (consortiales)</label><input type="number" id="c2_gExt" value="28" step="1" min="0">
+      <label for="c2_gRcsa">Résultats de RCSA</label><input type="number" id="c2_gRcsa" value="22" step="1" min="0">
+      <label for="c2_gAudit">Indicateurs de risque et audit</label><input type="number" id="c2_gAudit" value="16" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Sélection</h3>
+      <label for="c2_finale">Liste finale retenue (n)</label><input type="number" id="c2_finale" value="19" step="1" min="1">
+      <label for="c2_repereBas">Repère bas (établissement moyen)</label><input type="number" id="c2_repereBas" value="15" step="1" min="0">
+      <label for="c2_repereHaut">Repère haut (établissement moyen)</label><input type="number" id="c2_repereHaut" value="20" step="1" min="0">
+      <label for="c2_repereInter">Plafond banque internationale</label><input type="number" id="c2_repereInter" value="50" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Classification par cause (sur la liste finale)</h3>
+      <label for="c2_extInit">Cause externe — classification initiale</label><input type="number" id="c2_extInit" value="14" step="1" min="0">
+      <label for="c2_intInit">Cause interne — classification initiale</label><input type="number" id="c2_intInit" value="5" step="1" min="0">
+      <label for="c2_extCorr">Cause externe — après correction</label><input type="number" id="c2_extCorr" value="10" step="1" min="0">
+      <label for="c2_intCorr">Cause interne — après correction</label><input type="number" id="c2_intCorr" value="9" step="1" min="0">
+    </div>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Biais de myopie — année antérieure</h3>
+      <label for="c2_myoN1">Scénarios liés au thème (n)</label><input type="number" id="c2_myoN1" value="2" step="1" min="0">
+      <label for="c2_myoTot1">Liste brute totale de l'année</label><input type="number" id="c2_myoTot1" value="95" step="1" min="1">
+    </div>
+    <div class="bloc">
+      <h3>Biais de myopie — année postérieure</h3>
+      <label for="c2_myoN2">Scénarios liés au thème (n)</label><input type="number" id="c2_myoN2" value="9" step="1" min="0">
+      <label for="c2_myoTot2">Liste brute totale de l'année</label><input type="number" id="c2_myoTot2" value="105" step="1" min="1">
+    </div>
+  </div>
+  <button onclick="calculerScenarios()">Calculer</button>
+  <div id="resultatScenarios" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Registre des risques, top-cinq et couverture par les contrôles</h2>
+  <p class="aide">Chaque risque du registre est rattache a l'une des quatre causes PPSE (personnes, processus, systemes, evenements externes), recoit un score de probabilite P et un score d'impact I (echelle 1 a 5), dont le produit constitue le score de risque P x I. Le top-cinq regroupe les risques au score le plus eleve. La repartition des types de controle principal (preventif, detectif, correctif, directif) est comparee entre l'ensemble du registre et le seul top-cinq.</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c2_tableRegistre">
+    <tr><th>Risque</th><th>Cause PPSE</th><th>P</th><th>I</th><th>Contrôle principal</th></tr>
+    <tr>
+      <td>1</td>
+      <td><select class="c2-cause"><option value="Personnes" selected>Personnes</option><option value="Processus">Processus</option><option value="Systèmes">Systèmes</option><option value="Externes">Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="3" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="4" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif">Préventif</option><option value="Détectif">Détectif</option><option value="Correctif" selected>Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><select class="c2-cause"><option value="Personnes">Personnes</option><option value="Processus" selected>Processus</option><option value="Systèmes">Systèmes</option><option value="Externes">Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="4" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="3" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif">Préventif</option><option value="Détectif" selected>Détectif</option><option value="Correctif">Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><select class="c2-cause"><option value="Personnes">Personnes</option><option value="Processus">Processus</option><option value="Systèmes" selected>Systèmes</option><option value="Externes">Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="2" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="5" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif">Préventif</option><option value="Détectif" selected>Détectif</option><option value="Correctif">Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><select class="c2-cause"><option value="Personnes">Personnes</option><option value="Processus">Processus</option><option value="Systèmes">Systèmes</option><option value="Externes" selected>Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="1" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="5" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif">Préventif</option><option value="Détectif">Détectif</option><option value="Correctif">Correctif</option><option value="Directif" selected>Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><select class="c2-cause"><option value="Personnes" selected>Personnes</option><option value="Processus">Processus</option><option value="Systèmes">Systèmes</option><option value="Externes">Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="2" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="2" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif" selected>Préventif</option><option value="Détectif">Détectif</option><option value="Correctif">Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><select class="c2-cause"><option value="Personnes">Personnes</option><option value="Processus" selected>Processus</option><option value="Systèmes">Systèmes</option><option value="Externes">Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="5" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="4" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif">Préventif</option><option value="Détectif">Détectif</option><option value="Correctif">Correctif</option><option value="Directif" selected>Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><select class="c2-cause"><option value="Personnes">Personnes</option><option value="Processus">Processus</option><option value="Systèmes" selected>Systèmes</option><option value="Externes">Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="3" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="3" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif" selected>Préventif</option><option value="Détectif">Détectif</option><option value="Correctif">Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><select class="c2-cause"><option value="Personnes">Personnes</option><option value="Processus">Processus</option><option value="Systèmes">Systèmes</option><option value="Externes" selected>Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="4" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="4" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif">Préventif</option><option value="Détectif" selected>Détectif</option><option value="Correctif">Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td><select class="c2-cause"><option value="Personnes" selected>Personnes</option><option value="Processus">Processus</option><option value="Systèmes">Systèmes</option><option value="Externes">Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="1" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="1" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif" selected>Préventif</option><option value="Détectif">Détectif</option><option value="Correctif">Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td><select class="c2-cause"><option value="Personnes">Personnes</option><option value="Processus" selected>Processus</option><option value="Systèmes">Systèmes</option><option value="Externes">Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="3" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="2" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif" selected>Préventif</option><option value="Détectif">Détectif</option><option value="Correctif">Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td><select class="c2-cause"><option value="Personnes">Personnes</option><option value="Processus">Processus</option><option value="Systèmes" selected>Systèmes</option><option value="Externes">Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="4" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="5" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif">Préventif</option><option value="Détectif">Détectif</option><option value="Correctif" selected>Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td><select class="c2-cause"><option value="Personnes">Personnes</option><option value="Processus">Processus</option><option value="Systèmes">Systèmes</option><option value="Externes" selected>Externes</option></select></td>
+      <td><input type="number" class="c2-p" value="2" step="1" min="1" max="5"></td>
+      <td><input type="number" class="c2-i" value="3" step="1" min="1" max="5"></td>
+      <td><select class="c2-ctrl"><option value="Préventif" selected>Préventif</option><option value="Détectif">Détectif</option><option value="Correctif">Correctif</option><option value="Directif">Directif</option></select></td>
+    </tr>
+  </table>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Taille du top</h3>
+      <label for="c2_topN">Nombre de risques dans le "top"</label><input type="number" id="c2_topN" value="5" step="1" min="1" max="12">
+    </div>
+  </div>
+  <button onclick="calculerRegistre()">Calculer</button>
+  <div id="resultatRegistre" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function calculerScenarios() {
+  var resDiv = document.getElementById('resultatScenarios');
+  var gInt = parseFloat(document.getElementById('c2_gInt').value);
+  var gExt = parseFloat(document.getElementById('c2_gExt').value);
+  var gRcsa = parseFloat(document.getElementById('c2_gRcsa').value);
+  var gAudit = parseFloat(document.getElementById('c2_gAudit').value);
+  var finale = parseFloat(document.getElementById('c2_finale').value);
+  var repereBas = parseFloat(document.getElementById('c2_repereBas').value);
+  var repereHaut = parseFloat(document.getElementById('c2_repereHaut').value);
+  var repereInter = parseFloat(document.getElementById('c2_repereInter').value);
+  var extInit = parseFloat(document.getElementById('c2_extInit').value);
+  var intInit = parseFloat(document.getElementById('c2_intInit').value);
+  var extCorr = parseFloat(document.getElementById('c2_extCorr').value);
+  var intCorr = parseFloat(document.getElementById('c2_intCorr').value);
+  var myoN1 = parseFloat(document.getElementById('c2_myoN1').value);
+  var myoTot1 = parseFloat(document.getElementById('c2_myoTot1').value);
+  var myoN2 = parseFloat(document.getElementById('c2_myoN2').value);
+  var myoTot2 = parseFloat(document.getElementById('c2_myoTot2').value);
+
+  var champs = [gInt,gExt,gRcsa,gAudit,finale,repereBas,repereHaut,repereInter,extInit,intInit,extCorr,intCorr,myoN1,myoTot1,myoN2,myoTot2];
+  var tousValides = champs.every(function(v){ return !isNaN(v); });
+  if (!tousValides || finale<=0 || myoTot1<=0 || myoTot2<=0 || myoN1>myoTot1 || myoN2>myoTot2) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes, la liste finale et les totaux annuels doivent etre strictement positifs, et le nombre de scenarios lies au theme ne peut exceder le total de sa propre annee.</p>';
+    return;
+  }
+
+  var brut = gInt + gExt + gRcsa + gAudit;
+  var partInt = brut>0 ? gInt/brut*100 : 0;
+  var partExt = brut>0 ? gExt/brut*100 : 0;
+  var partRcsa = brut>0 ? gRcsa/brut*100 : 0;
+  var partAudit = brut>0 ? gAudit/brut*100 : 0;
+
+  var elimines = brut - finale;
+  var tauxReduction = brut>0 ? elimines/brut*100 : 0;
+  var partFinaleBrut = brut>0 ? finale/brut*100 : 0;
+  var compatibleMoyen = finale>=repereBas && finale<=repereHaut;
+  var compatibleInter = finale<=repereInter;
+
+  var totalInit = extInit + intInit;
+  var partExtInit = totalInit>0 ? extInit/totalInit*100 : 0;
+  var partIntInit = totalInit>0 ? intInit/totalInit*100 : 0;
+  var totalCorr = extCorr + intCorr;
+  var partExtCorr = totalCorr>0 ? extCorr/totalCorr*100 : 0;
+  var partIntCorr = totalCorr>0 ? intCorr/totalCorr*100 : 0;
+  var deltaExt = partExtInit - partExtCorr;
+
+  var partMyo1 = myoN1/myoTot1*100;
+  var partMyo2 = myoN2/myoTot2*100;
+  var ecartMyo = partMyo2 - partMyo1;
+  var facteurMyo = partMyo1>0 ? partMyo2/partMyo1 : NaN;
+
+  var html = '<table class="tabres"><tr><th>Intrant</th><th>n</th><th>Part du brut</th></tr>';
+  html += '<tr><td>Pertes internes</td><td>' + fmt(gInt,0) + '</td><td>' + fmt(partInt,4) + ' %</td></tr>';
+  html += '<tr><td>Pertes externes</td><td>' + fmt(gExt,0) + '</td><td>' + fmt(partExt,4) + ' %</td></tr>';
+  html += '<tr><td>RCSA</td><td>' + fmt(gRcsa,0) + '</td><td>' + fmt(partRcsa,4) + ' %</td></tr>';
+  html += '<tr><td>Indicateurs / audit</td><td>' + fmt(gAudit,0) + '</td><td>' + fmt(partAudit,4) + ' %</td></tr>';
+  html += '<tr><th>Total liste brute</th><td>' + fmt(brut,0) + '</td><td>100,0000 %</td></tr>';
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Scénarios éliminés en sélection</th><td>' + fmt(elimines,0) + '</td></tr>';
+  html += '<tr><th>Taux de réduction</th><td>' + fmt(tauxReduction,4) + ' %</td></tr>';
+  html += '<tr><th>Part de la liste finale dans le brut</th><td>' + fmt(partFinaleBrut,4) + ' %</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (compatibleMoyen?'ok':'mid') + '">Liste finale (' + fmt(finale,0) + ') ' + (compatibleMoyen?'DANS':'HORS DE') + ' la fourchette [' + fmt(repereBas,0) + ', ' + fmt(repereHaut,0) + '] d\'un établissement de taille moyenne.</div>';
+  html += '<div class="valeur ' + (compatibleInter?'ok':'ko') + '">Liste finale (' + fmt(finale,0) + ') ' + (compatibleInter?'respecte':'dépasse') + ' le plafond de ' + fmt(repereInter,0) + ' scénarios d\'une banque internationale.</div>';
+
+  html += '<table class="tabres"><tr><th>Classification</th><th>Externe</th><th>Interne</th></tr>';
+  html += '<tr><td>Initiale</td><td>' + fmt(extInit,0) + ' (' + fmt(partExtInit,4) + ' %)</td><td>' + fmt(intInit,0) + ' (' + fmt(partIntInit,4) + ' %)</td></tr>';
+  html += '<tr><td>Après correction</td><td>' + fmt(extCorr,0) + ' (' + fmt(partExtCorr,4) + ' %)</td><td>' + fmt(intCorr,0) + ' (' + fmt(partIntCorr,4) + ' %)</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">Variation de la part externe : ' + fmt(deltaExt,4) + ' points de pourcentage (' + (deltaExt>=0?'diminution':'augmentation') + ' après correction du biais).</div>';
+
+  html += '<table class="tabres"><tr><th>Biais de myopie</th><th>Part du thème</th></tr>';
+  html += '<tr><td>Année antérieure (' + fmt(myoN1,0) + ' / ' + fmt(myoTot1,0) + ')</td><td>' + fmt(partMyo1,4) + ' %</td></tr>';
+  html += '<tr><td>Année postérieure (' + fmt(myoN2,0) + ' / ' + fmt(myoTot2,0) + ')</td><td>' + fmt(partMyo2,4) + ' %</td></tr>';
+  html += '<tr><th>Écart (points de %)</th><td>' + fmt(ecartMyo,4) + '</td></tr>';
+  html += '<tr><th>Facteur multiplicatif</th><td>' + (isNaN(facteurMyo)?'indéfini (part initiale nulle)':fmt(facteurMyo,4)) + '</td></tr>';
+  html += '</table>';
+
+  html += dessinerScenarios(partExtInit, partIntInit, partExtCorr, partIntCorr, partMyo1, partMyo2, tauxReduction, partFinaleBrut);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerScenarios(extInit, intInit, extCorr, intCorr, myo1, myo2, reduc, partFinale) {
+  var barres = [
+    {label:'Ext. init.', v: extInit, coul: 'var(--ceco,#1F6FB2)'},
+    {label:'Int. init.', v: intInit, coul: 'var(--ceco,#1F6FB2)'},
+    {label:'Ext. corr.', v: extCorr, coul: 'var(--ceco,#1F6FB2)'},
+    {label:'Int. corr.', v: intCorr, coul: 'var(--ceco,#1F6FB2)'},
+    {label:'Pandém. an1', v: myo1, coul: 'var(--cintu,#E08000)'},
+    {label:'Pandém. an2', v: myo2, coul: 'var(--cintu,#E08000)'},
+    {label:'Réduction', v: reduc, coul: 'var(--cdef,#4A3B8C)'},
+    {label:'Finale/brute', v: partFinale, coul: 'var(--cdef,#4A3B8C)'}
+  ];
+  var n = barres.length;
+  var largeur = 560, hauteur = 260, margeG = 40, margeD = 15, margeH = 20, margeB = 55;
+  var vMax = Math.max.apply(null, barres.map(function(b){return b.v;})) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.55;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  barres.forEach(function(b,i){
+    var x = margeG + i*slot + slot*0.225;
+    var yTop = yPix(b.v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + b.coul + '"/>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + b.v.toFixed(2) + '</text>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor" transform="rotate(20 ' + (x+largeurBarre/2).toFixed(1) + ',' + (yZero + 14).toFixed(1) + ')">' + b.label + '</text>';
+  });
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">%</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerRegistre() {
+  var resDiv = document.getElementById('resultatRegistre');
+  var causes = Array.prototype.map.call(document.querySelectorAll('.c2-cause'), function(el){ return el.value; });
+  var ps = Array.prototype.map.call(document.querySelectorAll('.c2-p'), function(el){ return parseFloat(el.value); });
+  var is = Array.prototype.map.call(document.querySelectorAll('.c2-i'), function(el){ return parseFloat(el.value); });
+  var ctrls = Array.prototype.map.call(document.querySelectorAll('.c2-ctrl'), function(el){ return el.value; });
+  var topN = parseInt(document.getElementById('c2_topN').value, 10);
+
+  var n = ps.length;
+  var tousValides = ps.concat(is).every(function(v){ return !isNaN(v) && v>=1 && v<=5; }) && !isNaN(topN) && topN>=1 && topN<=n;
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les scores P et I doivent être renseignés entre 1 et 5, et la taille du top doit être comprise entre 1 et ' + n + '.</p>';
+    return;
+  }
+
+  var scores = ps.map(function(p,i){ return p*is[i]; });
+  var totalScore = scores.reduce(function(a,b){return a+b;},0);
+
+  var indices = scores.map(function(s,i){ return i; });
+  indices.sort(function(a,b){ return scores[b]-scores[a]; });
+  var topIdx = indices.slice(0, topN);
+  var topSum = topIdx.reduce(function(acc,i){ return acc + scores[i]; }, 0);
+  var partTop = totalScore>0 ? topSum/totalScore*100 : 0;
+
+  var causesUniques = ['Personnes','Processus','Systèmes','Externes'];
+  var countParCause = {}, scoreParCause = {};
+  causesUniques.forEach(function(c){ countParCause[c]=0; scoreParCause[c]=0; });
+  causes.forEach(function(c,i){ countParCause[c]++; scoreParCause[c]+=scores[i]; });
+
+  var partCountCause = {}, partScoreCause = {};
+  causesUniques.forEach(function(c){
+    partCountCause[c] = n>0 ? countParCause[c]/n*100 : 0;
+    partScoreCause[c] = totalScore>0 ? scoreParCause[c]/totalScore*100 : 0;
+  });
+
+  var hhiCount = causesUniques.reduce(function(acc,c){ var f=countParCause[c]/n; return acc+f*f; }, 0);
+  var hhiScore = causesUniques.reduce(function(acc,c){ var f=totalScore>0?scoreParCause[c]/totalScore:0; return acc+f*f; }, 0);
+
+  var ctrlsUniques = ['Préventif','Détectif','Correctif','Directif'];
+  var countCtrlTous = {}, countCtrlTop = {};
+  ctrlsUniques.forEach(function(c){ countCtrlTous[c]=0; countCtrlTop[c]=0; });
+  ctrls.forEach(function(c,i){
+    countCtrlTous[c]++;
+    if (topIdx.indexOf(i) !== -1) { countCtrlTop[c]++; }
+  });
+  var partCtrlTous = {}, partCtrlTop = {};
+  ctrlsUniques.forEach(function(c){
+    partCtrlTous[c] = n>0 ? countCtrlTous[c]/n*100 : 0;
+    partCtrlTop[c] = topN>0 ? countCtrlTop[c]/topN*100 : 0;
+  });
+
+  var html = '<table class="tabres"><tr><th>Risque</th><th>Cause</th><th>Score P×I</th><th>Contrôle</th><th>Dans le top-' + topN + '</th></tr>';
+  for (var i=0;i<n;i++) {
+    html += '<tr><td>' + (i+1) + '</td><td>' + causes[i] + '</td><td>' + fmt(scores[i],0) + '</td><td>' + ctrls[i] + '</td><td>' + (topIdx.indexOf(i)!==-1 ? 'OUI' : 'non') + '</td></tr>';
+  }
+  html += '<tr><th colspan="2">Total registre</th><td>' + fmt(totalScore,0) + '</td><td colspan="2"></td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">Le top-' + topN + ' concentre ' + fmt(topSum,0) + ' / ' + fmt(totalScore,0) + ' = ' + fmt(partTop,4) + ' % du score total du registre.</div>';
+
+  html += '<table class="tabres"><tr><th>Cause PPSE</th><th>Part du nombre</th><th>Part du score</th></tr>';
+  causesUniques.forEach(function(c){
+    html += '<tr><td>' + c + '</td><td>' + fmt(partCountCause[c],4) + ' %</td><td>' + fmt(partScoreCause[c],4) + ' %</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Indice de concentration (nombre)</th><td>' + fmt(hhiCount,4) + '</td></tr>';
+  html += '<tr><th>Indice de concentration (score)</th><td>' + fmt(hhiScore,4) + '</td></tr>';
+  html += '<tr><th>Minimum théorique (4 catégories égales)</th><td>0,2500</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (hhiScore>hhiCount+0.001 ? 'mid':'ok') + '">' + (hhiScore>hhiCount+0.001 ? 'La diversification par le NOMBRE masque une concentration plus forte par le SCORE.' : 'La diversification par le nombre et par le score sont proches.') + '</div>';
+
+  html += '<table class="tabres"><tr><th>Contrôle principal</th><th>Part — tout le registre</th><th>Part — top-' + topN + '</th></tr>';
+  ctrlsUniques.forEach(function(c){
+    html += '<tr><td>' + c + '</td><td>' + fmt(partCtrlTous[c],4) + ' %</td><td>' + fmt(partCtrlTop[c],4) + ' %</td></tr>';
+  });
+  html += '</table>';
+
+  var ecartPreventif = partCtrlTous['Préventif'] - partCtrlTop['Préventif'];
+  html += '<div class="valeur ' + (ecartPreventif>10 ? 'ko' : (ecartPreventif>0 ? 'mid':'ok')) + '">Écart de couverture préventive : ' + fmt(partCtrlTous['Préventif'],2) + ' % sur l\'ensemble du registre contre ' + fmt(partCtrlTop['Préventif'],2) + ' % parmi le top-' + topN + '.</div>';
+
+  html += dessinerRegistre(partCtrlTous, partCtrlTop, ctrlsUniques);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerRegistre(partCtrlTous, partCtrlTop, ctrlsUniques) {
+  var barres = [];
+  ctrlsUniques.forEach(function(c){ barres.push({label:c+' tous', v: partCtrlTous[c], coul:'var(--cdef,#4A3B8C)'}); });
+  ctrlsUniques.forEach(function(c){ barres.push({label:c+' top', v: partCtrlTop[c], coul:'var(--cintu,#E08000)'}); });
+
+  var n = barres.length;
+  var largeur = 560, hauteur = 260, margeG = 40, margeD = 15, margeH = 20, margeB = 55;
+  var vMax = Math.max.apply(null, barres.map(function(b){return b.v;})) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.6;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  barres.forEach(function(b,i){
+    var x = margeG + i*slot + slot*0.2;
+    var yTop = yPix(b.v);
+    var h = yZero - yTop;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + b.coul + '"/>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor">' + b.v.toFixed(1) + '</text>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7" text-anchor="middle" fill="currentColor" transform="rotate(20 ' + (x+largeurBarre/2).toFixed(1) + ',' + (yZero + 14).toFixed(1) + ')">' + b.label + '</text>';
+  });
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Part (%)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerScenarios(); calculerRegistre(); };
+</script>
+</body>
+</html>

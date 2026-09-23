@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 5 — La communication des risques — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.8em; padding: 0.2em; text-align: right; }
+  table.tabmat select { width: 5.4em; padding: 0.2em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 5 — Application : la communication des risques</h1>
+<p class="sous-titre">Calculatrice interactive — tableau de bord de KRI trimestriel, seuils d'alerte et effet de la queue épaisse des pertes (exercice 5), cartographie thermique agrégée : équivalent monétaire et pire cas plausible (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Un tableau de bord de KRI trimestriel, ses seuils d'alerte, et l'effet de la queue épaisse des pertes</h2>
+  <p class="aide">Zone d'un KRI : VERT si valeur &lt;= seuil vert ; ORANGE si valeur &lt;= seuil orange ; ROUGE au-dela. Un KRI orange declenche une investigation du second niveau de controle ; un KRI rouge declenche une escalade automatique au comite des risques, independamment du calendrier normal. La part et la severite des evenements extremes se comparent aux chiffres de l'industrie (base ORX) cites par le cours (0,4 % des occurrences, 66,6 % de la severite).</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c5_tableKRI">
+    <tr><th>KRI</th><td>1. Transactions attente</td><td>2. Rotation personnel (%)</td><td>3. Fraude interne (nb)</td><td>4. Indisponibilite (h)</td><td>5. Plaintes non resolues</td><td>6. Plans action retard</td></tr>
+    <tr><th>Valeur trimestrielle</th>
+      <td><input type="number" class="c5-krival" value="145" step="1"></td>
+      <td><input type="number" class="c5-krival" value="18" step="0.1"></td>
+      <td><input type="number" class="c5-krival" value="7" step="1"></td>
+      <td><input type="number" class="c5-krival" value="1.5" step="0.1"></td>
+      <td><input type="number" class="c5-krival" value="12" step="1"></td>
+      <td><input type="number" class="c5-krival" value="5" step="1"></td>
+    </tr>
+    <tr><th>Seuil vert (&lt;=)</th>
+      <td><input type="number" class="c5-krivert" value="100" step="1"></td>
+      <td><input type="number" class="c5-krivert" value="10" step="0.1"></td>
+      <td><input type="number" class="c5-krivert" value="3" step="1"></td>
+      <td><input type="number" class="c5-krivert" value="2" step="0.1"></td>
+      <td><input type="number" class="c5-krivert" value="15" step="1"></td>
+      <td><input type="number" class="c5-krivert" value="0" step="1"></td>
+    </tr>
+    <tr><th>Seuil orange (&lt;=)</th>
+      <td><input type="number" class="c5-kriorange" value="180" step="1"></td>
+      <td><input type="number" class="c5-kriorange" value="20" step="0.1"></td>
+      <td><input type="number" class="c5-kriorange" value="6" step="1"></td>
+      <td><input type="number" class="c5-kriorange" value="6" step="0.1"></td>
+      <td><input type="number" class="c5-kriorange" value="25" step="1"></td>
+      <td><input type="number" class="c5-kriorange" value="2" step="1"></td>
+    </tr>
+  </table>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Pertes annuelles (evenements)</h3>
+      <label for="c5_nTot">Nombre total d'evenements</label><input type="number" id="c5_nTot" value="2500" step="1" min="1">
+      <label for="c5_sTot">Severite agregee totale (M€)</label><input type="number" id="c5_sTot" value="340" step="1" min="0">
+      <label for="c5_nBig">... dont evenements &gt; 10 M€ (nb)</label><input type="number" id="c5_nBig" value="9" step="1" min="0">
+      <label for="c5_sBig">... severite cumulee de ces evenements (M€)</label><input type="number" id="c5_sBig" value="225" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Reference industrie (base ORX)</h3>
+      <label for="c5_orxN">Part ORX du nombre d'occurrences (%)</label><input type="number" id="c5_orxN" value="0.4" step="0.1" min="0">
+      <label for="c5_orxS">Part ORX de la severite (%)</label><input type="number" id="c5_orxS" value="66.6" step="0.1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Centiles simules (Monte-Carlo, M€)</h3>
+      <label for="c5_p50">Mediane (50e centile)</label><input type="number" id="c5_p50" value="300" step="1" min="0">
+      <label for="c5_p999">99,9e centile (capital economique)</label><input type="number" id="c5_p999" value="890" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>Escalade evenementielle</h3>
+      <label for="c5_rougeParTrim">KRI rouges par trimestre (moyenne)</label><input type="number" id="c5_rougeParTrim" value="2" step="1" min="0">
+      <label for="c5_cyclesAn">Cycles de reporting trimestriels / an</label><input type="number" id="c5_cyclesAn" value="4" step="1" min="1">
+    </div>
+  </div>
+  <button onclick="calculerKRI()">Calculer</button>
+  <div id="resultatKRI" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Cartographie thermique agrégée : équivalent monétaire et pire cas plausible</h2>
+  <p class="aide">Equivalent monetaire d'un risque qualitatif = frequence annuelle (%) x severite (M€), a partir du bareme interne ci-dessous. Les trois premiers risques (R1-R3) sont mesures quantitativement (perte historique ou VaR) et saisis directement en M€.</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c5_tableBareme">
+    <tr><th>Niveau du bareme</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+    <tr><th>Frequence annuelle (%)</th>
+      <td><input type="number" class="c5-bfreq" value="2" step="0.1" min="0" max="100"></td>
+      <td><input type="number" class="c5-bfreq" value="8" step="0.1" min="0" max="100"></td>
+      <td><input type="number" class="c5-bfreq" value="20" step="0.1" min="0" max="100"></td>
+      <td><input type="number" class="c5-bfreq" value="45" step="0.1" min="0" max="100"></td>
+      <td><input type="number" class="c5-bfreq" value="75" step="0.1" min="0" max="100"></td>
+    </tr>
+    <tr><th>Severite (M€)</th>
+      <td><input type="number" class="c5-bsev" value="0.4" step="0.1" min="0"></td>
+      <td><input type="number" class="c5-bsev" value="1.2" step="0.1" min="0"></td>
+      <td><input type="number" class="c5-bsev" value="2.5" step="0.1" min="0"></td>
+      <td><input type="number" class="c5-bsev" value="5.0" step="0.1" min="0"></td>
+      <td><input type="number" class="c5-bsev" value="10.0" step="0.1" min="0"></td>
+    </tr>
+  </table>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Risques quantitatifs (M€, saisis directement)</h3>
+      <label for="c5_r1">R1 Fraude externe</label><input type="number" id="c5_r1" value="4.2" step="0.1" min="0">
+      <label for="c5_r2">R2 Interruption informatique</label><input type="number" id="c5_r2" value="2.8" step="0.1" min="0">
+      <label for="c5_r3">R3 Erreurs d'execution</label><input type="number" id="c5_r3" value="1.5" step="0.1" min="0">
+    </div>
+    <div class="bloc" style="flex:1.5; min-width:260px;">
+      <h3>Risques qualitatifs RCSA (niveaux du bareme)</h3>
+      <div style="overflow-x:auto;">
+      <table class="tabmat" id="c5_tableQuali">
+        <tr><th>Risque</th><td>R4 Conduite comm.</td><td>R5 Cyberattaque</td><td>R6 Non-conformite</td></tr>
+        <tr><th>Niveau frequence</th>
+          <td><select class="c5-nfreq" id="c5_r4nf"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option></select></td>
+          <td><select class="c5-nfreq" id="c5_r5nf"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select></td>
+          <td><select class="c5-nfreq" id="c5_r6nf"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></td>
+        </tr>
+        <tr><th>Niveau severite</th>
+          <td><select class="c5-nsev" id="c5_r4ns"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></td>
+          <td><select class="c5-nsev" id="c5_r5ns"><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select></td>
+          <td><select class="c5-nsev" id="c5_r6ns"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option></select></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+    <div class="bloc">
+      <h3>Pire cas plausible (R5)</h3>
+      <label for="c5_r5worst">Scenario severe unique (M€)</label><input type="number" id="c5_r5worst" value="18.0" step="0.1" min="0">
+    </div>
+  </div>
+  <div class="bloc" style="margin-top:0.8em;">
+    <h3>Dispersion des jugements RCSA pour R4 (8 participants, niveau de severite)</h3>
+    <div style="overflow-x:auto;">
+    <table class="tabmat" id="c5_tableScores">
+      <tr><th>Participant</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td></tr>
+      <tr><th>Score</th>
+        <td><input type="number" class="c5-score" value="2" step="1" min="1" max="5"></td>
+        <td><input type="number" class="c5-score" value="3" step="1" min="1" max="5"></td>
+        <td><input type="number" class="c5-score" value="3" step="1" min="1" max="5"></td>
+        <td><input type="number" class="c5-score" value="4" step="1" min="1" max="5"></td>
+        <td><input type="number" class="c5-score" value="3" step="1" min="1" max="5"></td>
+        <td><input type="number" class="c5-score" value="2" step="1" min="1" max="5"></td>
+        <td><input type="number" class="c5-score" value="4" step="1" min="1" max="5"></td>
+        <td><input type="number" class="c5-score" value="3" step="1" min="1" max="5"></td>
+      </tr>
+    </table>
+    </div>
+  </div>
+  <button onclick="calculerCarto()">Calculer</button>
+  <div id="resultatCarto" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+function zoneKRI(val, sv, so) {
+  if (val <= sv) return 'vert';
+  if (val <= so) return 'orange';
+  return 'rouge';
+}
+
+function calculerKRI() {
+  var resDiv = document.getElementById('resultatKRI');
+  var noms = ['KRI1 Transactions attente','KRI2 Rotation personnel','KRI3 Fraude interne','KRI4 Indisponibilite','KRI5 Plaintes non resolues','KRI6 Plans action retard'];
+  var vals = Array.prototype.map.call(document.querySelectorAll('.c5-krival'), function(el){ return parseFloat(el.value); });
+  var verts = Array.prototype.map.call(document.querySelectorAll('.c5-krivert'), function(el){ return parseFloat(el.value); });
+  var oranges = Array.prototype.map.call(document.querySelectorAll('.c5-kriorange'), function(el){ return parseFloat(el.value); });
+
+  var nTot = parseFloat(document.getElementById('c5_nTot').value);
+  var sTot = parseFloat(document.getElementById('c5_sTot').value);
+  var nBig = parseFloat(document.getElementById('c5_nBig').value);
+  var sBig = parseFloat(document.getElementById('c5_sBig').value);
+  var orxN = parseFloat(document.getElementById('c5_orxN').value);
+  var orxS = parseFloat(document.getElementById('c5_orxS').value);
+  var p50 = parseFloat(document.getElementById('c5_p50').value);
+  var p999 = parseFloat(document.getElementById('c5_p999').value);
+  var rougeParTrim = parseFloat(document.getElementById('c5_rougeParTrim').value);
+  var cyclesAn = parseFloat(document.getElementById('c5_cyclesAn').value);
+
+  var champs = vals.concat(verts).concat(oranges).concat([nTot,sTot,nBig,sBig,orxN,orxS,p50,p999,rougeParTrim,cyclesAn]);
+  var tousValides = champs.every(function(v){ return !isNaN(v); });
+  if (!tousValides || nTot<=0 || nBig>nTot || sBig>sTot || cyclesAn<=0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes, et les sous-totaux (evenements extremes, severite associee) ne peuvent exceder leurs totaux.</p>';
+    return;
+  }
+
+  var zones = vals.map(function(v,i){ return zoneKRI(v, verts[i], oranges[i]); });
+  var compte = {vert:0, orange:0, rouge:0};
+  zones.forEach(function(z){ compte[z]++; });
+
+  var shareEvents = nBig/nTot*100;
+  var shareSev = sBig/sTot*100;
+  var avgAll = sTot/nTot*1000000;
+  var nSub = nTot-nBig, sSub = sTot-sBig;
+  var avgSub = nSub>0 ? sSub/nSub*1000000 : NaN;
+  var ratioAvg = avgSub>0 ? avgAll/avgSub : NaN;
+
+  var ratioP999Median = p999/p50;
+  var ratioP999Obs = p999/sTot;
+
+  var escalAn = rougeParTrim*cyclesAn;
+  var ratioEsc = escalAn/cyclesAn;
+
+  var html = '<table class="tabres"><tr><th>KRI</th><th>Valeur</th><th>Zone</th></tr>';
+  noms.forEach(function(nom,i){
+    var cls = zones[i]==='vert' ? 'ok' : (zones[i]==='orange' ? 'mid' : 'ko');
+    html += '<tr><td>' + nom + '</td><td>' + fmt(vals[i],2) + '</td><td><span class="valeur ' + cls + '" style="margin:0;">' + zones[i].toUpperCase() + '</span></td></tr>';
+  });
+  html += '</table>';
+
+  html += '<div class="valeur ok">' + compte.vert + ' KRI en zone VERTE</div>';
+  html += '<div class="valeur mid">' + compte.orange + ' KRI en zone ORANGE -> investigation du second niveau de controle</div>';
+  html += '<div class="valeur ko">' + compte.rouge + ' KRI en zone ROUGE -> escalade automatique au comite des risques</div>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Part des evenements &gt; 10 M€ (nombre)</th><td>' + fmt(shareEvents,2) + ' % (reference ORX : ' + fmt(orxN,2) + ' %)</td></tr>';
+  html += '<tr><th>Part des evenements &gt; 10 M€ (severite)</th><td>' + fmt(shareSev,2) + ' % (reference ORX : ' + fmt(orxS,2) + ' %)</td></tr>';
+  html += '<tr><th>Perte moyenne par evenement (ensemble)</th><td>' + fmt(avgAll,0) + ' €</td></tr>';
+  html += '<tr><th>Perte moyenne par evenement (hors evenements extremes)</th><td>' + fmt(avgSub,0) + ' €</td></tr>';
+  html += '<tr><th>Rapport moyenne ensemble / moyenne hors extremes</th><td>' + fmt(ratioAvg,2) + '</td></tr>';
+  html += '<tr><th>Capital economique (99,9e) / mediane</th><td>' + fmt(ratioP999Median,2) + '</td></tr>';
+  html += '<tr><th>Capital economique (99,9e) / severite observee</th><td>' + fmt(ratioP999Obs,2) + '</td></tr>';
+  html += '<tr><th>Escalades automatiques par an (KRI rouges)</th><td>' + fmt(escalAn,0) + '</td></tr>';
+  html += '<tr><th>Rapport escalades / cycles de reporting reguliers</th><td>' + fmt(ratioEsc,2) + '</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur ' + (ratioAvg>1.5 ? 'ko':'ok') + '">"Pas de moyennes pertinentes" : la moyenne globale est ' + fmt(ratioAvg,2) + ' fois la perte typique hors evenements extremes.</div>';
+
+  resDiv.innerHTML = html;
+}
+
+function calculerCarto() {
+  var resDiv = document.getElementById('resultatCarto');
+  var bfreq = Array.prototype.map.call(document.querySelectorAll('.c5-bfreq'), function(el){ return parseFloat(el.value); });
+  var bsev = Array.prototype.map.call(document.querySelectorAll('.c5-bsev'), function(el){ return parseFloat(el.value); });
+
+  var r1 = parseFloat(document.getElementById('c5_r1').value);
+  var r2 = parseFloat(document.getElementById('c5_r2').value);
+  var r3 = parseFloat(document.getElementById('c5_r3').value);
+
+  var r4nf = parseInt(document.getElementById('c5_r4nf').value,10);
+  var r4ns = parseInt(document.getElementById('c5_r4ns').value,10);
+  var r5nf = parseInt(document.getElementById('c5_r5nf').value,10);
+  var r5ns = parseInt(document.getElementById('c5_r5ns').value,10);
+  var r6nf = parseInt(document.getElementById('c5_r6nf').value,10);
+  var r6ns = parseInt(document.getElementById('c5_r6ns').value,10);
+
+  var r5worst = parseFloat(document.getElementById('c5_r5worst').value);
+  var scores = Array.prototype.map.call(document.querySelectorAll('.c5-score'), function(el){ return parseFloat(el.value); });
+
+  var champs = bfreq.concat(bsev).concat([r1,r2,r3,r5worst]).concat(scores);
+  var tousValides = champs.every(function(v){ return !isNaN(v); }) && bfreq.length===5 && bsev.length===5 && scores.length===8;
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes (5 niveaux de bareme, 3 risques quantitatifs, 8 scores RCSA).</p>';
+    return;
+  }
+
+  function equiv(nf, ns) { return (bfreq[nf-1]/100) * bsev[ns-1]; }
+  var r4 = equiv(r4nf, r4ns);
+  var r5 = equiv(r5nf, r5ns);
+  var r6 = equiv(r6nf, r6ns);
+
+  var risques = [
+    {nom:'R1 Fraude externe', v:r1, type:'quanti'},
+    {nom:'R2 Interruption informatique', v:r2, type:'quanti'},
+    {nom:'R3 Erreurs d\'execution', v:r3, type:'quanti'},
+    {nom:'R4 Conduite commerciale', v:r4, type:'quali'},
+    {nom:'R5 Cyberattaque', v:r5, type:'quali'},
+    {nom:'R6 Non-conformite', v:r6, type:'quali'}
+  ];
+  var classement = risques.slice().sort(function(a,b){ return b.v-a.v; });
+
+  var total = risques.reduce(function(a,r){ return a+r.v; }, 0);
+  var shareTop = classement[0].v/total*100;
+  var totalQuanti = r1+r2+r3;
+  var totalQuali = r4+r5+r6;
+  var shareQuanti = totalQuanti/total*100;
+  var shareQuali = totalQuali/total*100;
+
+  var ratioWorst = r5>0 ? r5worst/r5 : NaN;
+
+  var n = scores.length;
+  var meanScore = scores.reduce(function(a,b){return a+b;},0)/n;
+  var variance = scores.reduce(function(a,b){ return a + Math.pow(b-meanScore,2); }, 0)/n;
+  var stdevScore = Math.sqrt(variance);
+  var minScore = Math.min.apply(null, scores), maxScore = Math.max.apply(null, scores);
+
+  var html = '<table class="tabres"><tr><th>Risque</th><th>Type</th><th>Equivalent (M€)</th></tr>';
+  risques.forEach(function(r){
+    html += '<tr><td>' + r.nom + '</td><td>' + (r.type==='quanti' ? 'quantitatif (saisi)' : 'qualitatif (RCSA)') + '</td><td>' + fmt(r.v,3) + '</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres"><tr><th>Classement decroissant</th><th>Equivalent (M€)</th></tr>';
+  classement.forEach(function(r,i){
+    html += '<tr><td>' + (i+1) + '. ' + r.nom + '</td><td>' + fmt(r.v,3) + '</td></tr>';
+  });
+  html += '</table>';
+
+  html += '<table class="tabres">';
+  html += '<tr><th>Total agrege des 6 risques</th><td>' + fmt(total,3) + ' M€</td></tr>';
+  html += '<tr><th>Part du risque le plus eleve (' + classement[0].nom + ')</th><td>' + fmt(shareTop,2) + ' %</td></tr>';
+  html += '<tr><th>Part cumulee R1+R2+R3 (quantitatifs)</th><td>' + fmt(totalQuanti,3) + ' M€ (' + fmt(shareQuanti,2) + ' %)</td></tr>';
+  html += '<tr><th>Part cumulee R4+R5+R6 (qualitatifs convertis)</th><td>' + fmt(totalQuali,3) + ' M€ (' + fmt(shareQuali,2) + ' %)</td></tr>';
+  html += '<tr><th>Pire cas plausible R5 / equivalent monetaire R5</th><td>' + fmt(r5worst,2) + ' / ' + fmt(r5,3) + ' = ' + fmt(ratioWorst,2) + '</td></tr>';
+  html += '<tr><th>Scores RCSA R4 : moyenne / min / max / ecart-type</th><td>' + fmt(meanScore,2) + ' / ' + fmt(minScore,0) + ' / ' + fmt(maxScore,0) + ' / ' + fmt(stdevScore,2) + '</td></tr>';
+  html += '</table>';
+
+  html += '<div class="valeur mid">Le pire cas plausible de R5 represente ' + fmt(ratioWorst,1) + ' fois son equivalent monetaire pondere par la frequence.</div>';
+  html += '<div class="valeur ' + (stdevScore>0.3 ? 'ko':'ok') + '">Dispersion des jugements RCSA pour R4 : ecart-type de ' + fmt(stdevScore,2) + ' autour d\'une moyenne de ' + fmt(meanScore,2) + ', invisible dans le chiffre unique de la cartographie.</div>';
+
+  html += dessinerCarto(classement);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCarto(classement) {
+  var n = classement.length;
+  var largeur = 480, hauteur = 260, margeG = 45, margeD = 15, margeH = 20, margeB = 60;
+  var vMax = Math.max.apply(null, classement.map(function(r){return r.v;})) * 1.2 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slot = (largeur-margeG-margeD)/n;
+  var largeurBarre = slot*0.55;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  classement.forEach(function(r,i){
+    var x = margeG + i*slot + slot*0.225;
+    var yTop = yPix(r.v);
+    var h = yZero - yTop;
+    var coul = r.type==='quanti' ? 'var(--ceco,#1F6FB2)' : 'var(--cintu,#E08000)';
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + coul + '"/>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTop-4).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + r.v.toFixed(2) + '</text>';
+    svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="7.5" text-anchor="middle" fill="currentColor" transform="rotate(20 ' + (x+largeurBarre/2).toFixed(1) + ',' + (yZero + 14).toFixed(1) + ')">' + r.nom.replace(/^R[0-9] /,'') + '</text>';
+  });
+  svg += '<text x="12" y="' + (hauteur/2-15) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-15) + ')">Equivalent (M€)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerKRI(); calculerCarto(); };
+</script>
+</body>
+</html>

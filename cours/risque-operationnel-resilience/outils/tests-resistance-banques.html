@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 16 — Les tests de résistance bancaires — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+  table.tabmat { border-collapse: collapse; width: 100%; font-size: 0.82em; font-family: "Courier New", monospace; }
+  table.tabmat th, table.tabmat td { border: 1px solid #ccc; padding: 0.25em 0.4em; text-align: center; }
+  table.tabmat th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabmat input[type=number] { width: 4.6em; padding: 0.2em; text-align: right; }
+  table.tabres td.echec { color: #b00020; font-weight: bold; }
+  table.tabres td.reussite { color: #1d9e75; font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+table.tabmat th, table.tabmat td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabmat th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+table.tabres td.reussite { color: var(--cex) !important; }
+table.tabres td.echec { color: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 16 — Application : les tests de résistance bancaires</h1>
+<p class="sous-titre">Calculatrice interactive — shortfall de capital sous scénario adverse : bilan statique, bilan dynamique, incertitude sur les revenus (exercice 5) ; divulgation granulaire ou agrégée : coût de financement et subvention croisée (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Shortfall de capital sous scénario adverse : bilan statique, bilan dynamique, incertitude sur les revenus</h2>
+  <p class="aide">CET1 stresse = CET1 initial - Pertes L + PPNR R. Shortfall = max(0, (hurdle rate - ratio stresse) x RWA stresse). Bilan dynamique : le RWA croit du taux indique sur l'horizon du test, L et R inchanges. Incertitude sur les revenus : seul le PPNR realise (en % du PPNR projete) est retenu, L inchange.</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c16_tableBanques">
+    <tr><th>Banque</th><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td></tr>
+    <tr><th>CET1 initial (Md€)</th>
+      <td><input type="number" class="c16-cet1" value="15" step="1"></td>
+      <td><input type="number" class="c16-cet1" value="20" step="1"></td>
+      <td><input type="number" class="c16-cet1" value="10" step="1"></td>
+      <td><input type="number" class="c16-cet1" value="25" step="1"></td>
+      <td><input type="number" class="c16-cet1" value="8" step="1"></td>
+    </tr>
+    <tr><th>RWA initial (Md€)</th>
+      <td><input type="number" class="c16-rwa" value="200" step="1"></td>
+      <td><input type="number" class="c16-rwa" value="250" step="1"></td>
+      <td><input type="number" class="c16-rwa" value="150" step="1"></td>
+      <td><input type="number" class="c16-rwa" value="300" step="1"></td>
+      <td><input type="number" class="c16-rwa" value="100" step="1"></td>
+    </tr>
+    <tr><th>Pertes L (Md€)</th>
+      <td><input type="number" class="c16-L" value="18" step="1"></td>
+      <td><input type="number" class="c16-L" value="15" step="1"></td>
+      <td><input type="number" class="c16-L" value="12" step="1"></td>
+      <td><input type="number" class="c16-L" value="20" step="1"></td>
+      <td><input type="number" class="c16-L" value="9" step="1"></td>
+    </tr>
+    <tr><th>PPNR R (Md€)</th>
+      <td><input type="number" class="c16-R" value="6" step="1"></td>
+      <td><input type="number" class="c16-R" value="10" step="1"></td>
+      <td><input type="number" class="c16-R" value="4" step="1"></td>
+      <td><input type="number" class="c16-R" value="14" step="1"></td>
+      <td><input type="number" class="c16-R" value="2" step="1"></td>
+    </tr>
+  </table>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Seuil de reussite</h3>
+      <label for="c16_hurdle">Hurdle rate (% du RWA)</label><input type="number" id="c16_hurdle" value="5.5" step="0.1" min="0">
+      <label for="c16_scapPct">Reference SCAP 2009 (banques en besoin / total, %)</label><input type="number" id="c16_scapPct" value="52.63" step="0.01" readonly style="background:#f0f0f0;">
+    </div>
+    <div class="bloc">
+      <h3>Hypothese de bilan dynamique (c)</h3>
+      <label for="c16_croissanceRwa">Croissance du RWA sur l'horizon (%)</label><input type="number" id="c16_croissanceRwa" value="10" step="1">
+    </div>
+    <div class="bloc">
+      <h3>Incertitude sur les revenus (d)</h3>
+      <label for="c16_ppnrRealise">PPNR realise (% du PPNR projete R)</label><input type="number" id="c16_ppnrRealise" value="70" step="1" min="0">
+    </div>
+  </div>
+  <button onclick="calculerStress()">Calculer</button>
+  <div id="resultatStress" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Divulgation granulaire ou agrégée : quantifier le coût de financement et la subvention croisée</h2>
+  <p class="aide">Besoin de capital d'une banque = shortfall (% du RWA) x RWA. Sous divulgation granulaire, chaque banque paie un spread proportionnel a son propre shortfall : spread_i = coefficient x shortfall_i(%). Sous divulgation agregee, toutes les banques paient le meme spread, calcule a partir du seul shortfall global du systeme. Surcout annuel (M€) = spread (pb) / 10000 x financement (Md€) x 1000.</p>
+  <div style="overflow-x:auto;">
+  <table class="tabmat" id="c16_tableDivulgation">
+    <tr><th>Banque</th><td>B1</td><td>B2</td><td>B3</td><td>B4</td><td>B5</td><td>B6</td></tr>
+    <tr><th>RWA (Md€)</th>
+      <td><input type="number" class="c16-d-rwa" value="180" step="1"></td>
+      <td><input type="number" class="c16-d-rwa" value="220" step="1"></td>
+      <td><input type="number" class="c16-d-rwa" value="150" step="1"></td>
+      <td><input type="number" class="c16-d-rwa" value="300" step="1"></td>
+      <td><input type="number" class="c16-d-rwa" value="90" step="1"></td>
+      <td><input type="number" class="c16-d-rwa" value="260" step="1"></td>
+    </tr>
+    <tr><th>Shortfall (% du RWA)</th>
+      <td><input type="number" class="c16-d-sf" value="0.0" step="0.1"></td>
+      <td><input type="number" class="c16-d-sf" value="0.8" step="0.1"></td>
+      <td><input type="number" class="c16-d-sf" value="2.5" step="0.1"></td>
+      <td><input type="number" class="c16-d-sf" value="0.0" step="0.1"></td>
+      <td><input type="number" class="c16-d-sf" value="4.0" step="0.1"></td>
+      <td><input type="number" class="c16-d-sf" value="1.2" step="0.1"></td>
+    </tr>
+    <tr><th>Financement de marche (Md€)</th>
+      <td><input type="number" class="c16-d-fin" value="60" step="1"></td>
+      <td><input type="number" class="c16-d-fin" value="90" step="1"></td>
+      <td><input type="number" class="c16-d-fin" value="70" step="1"></td>
+      <td><input type="number" class="c16-d-fin" value="110" step="1"></td>
+      <td><input type="number" class="c16-d-fin" value="40" step="1"></td>
+      <td><input type="number" class="c16-d-fin" value="95" step="1"></td>
+    </tr>
+  </table>
+  </div>
+  <div class="ligne3" style="margin-top:0.8em;">
+    <div class="bloc">
+      <h3>Coefficient de prime</h3>
+      <label for="c16_coeffBp">Points de base par point de shortfall</label><input type="number" id="c16_coeffBp" value="30" step="1" min="0">
+    </div>
+    <div class="bloc">
+      <h3>References historiques (% de banques en echec)</h3>
+      <label for="c16_cebsPct">CEBS 2010 (7 sur 91, %)</label><input type="number" id="c16_cebsPct" value="7.69" step="0.01" readonly style="background:#f0f0f0;">
+      <label for="c16_scapPct2">SCAP 2009 (10 sur 19, %)</label><input type="number" id="c16_scapPct2" value="52.63" step="0.01" readonly style="background:#f0f0f0;">
+    </div>
+  </div>
+  <button onclick="calculerDivulgation()">Calculer</button>
+  <div id="resultatDivulgation" class="resultat-zone"></div>
+</div>
+
+<script>
+function fmt(x, n) { return x.toFixed(n===undefined?2:n); }
+
+// ===================== Exercice 5 : stress test =====================
+function calculerStress() {
+  var resDiv = document.getElementById('resultatStress');
+  var noms = ['A','B','C','D','E'];
+  var cet1s = Array.prototype.map.call(document.querySelectorAll('.c16-cet1'), function(el){ return parseFloat(el.value); });
+  var rwas  = Array.prototype.map.call(document.querySelectorAll('.c16-rwa'),  function(el){ return parseFloat(el.value); });
+  var Ls    = Array.prototype.map.call(document.querySelectorAll('.c16-L'),    function(el){ return parseFloat(el.value); });
+  var Rs    = Array.prototype.map.call(document.querySelectorAll('.c16-R'),    function(el){ return parseFloat(el.value); });
+  var hurdlePct = parseFloat(document.getElementById('c16_hurdle').value);
+  var croissanceRwaPct = parseFloat(document.getElementById('c16_croissanceRwa').value);
+  var ppnrReaslisePct = parseFloat(document.getElementById('c16_ppnrRealise').value);
+  var scapPct = parseFloat(document.getElementById('c16_scapPct').value);
+
+  var tousValides = cet1s.concat(rwas).concat(Ls).concat(Rs).every(function(v){ return !isNaN(v); })
+    && !isNaN(hurdlePct) && !isNaN(croissanceRwaPct) && !isNaN(ppnrReaslisePct)
+    && rwas.every(function(v){ return v>0; });
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes et le RWA initial doit etre strictement positif pour chaque banque.</p>';
+    return;
+  }
+
+  var hurdle = hurdlePct/100;
+  var croissance = croissanceRwaPct/100;
+  var ppnrFrac = ppnrReaslisePct/100;
+
+  function shortfall(ratio, rwaStresse) {
+    if (ratio >= hurdle) return 0;
+    return (hurdle - ratio) * rwaStresse;
+  }
+
+  var a = [], c = [], d = [];
+  for (var i=0;i<5;i++) {
+    // (a) bilan statique
+    var cet1sA = cet1s[i] - Ls[i] + Rs[i];
+    var rwaA = rwas[i];
+    var ratioA = cet1sA / rwaA;
+    var sfA = shortfall(ratioA, rwaA);
+    a.push({nom:noms[i], cet1s:cet1sA, rwas:rwaA, ratio:ratioA*100, sf:sfA, echec: sfA>0});
+
+    // (c) bilan dynamique
+    var rwaC = rwas[i] * (1+croissance);
+    var ratioC = cet1sA / rwaC;
+    var sfC = shortfall(ratioC, rwaC);
+    c.push({nom:noms[i], cet1s:cet1sA, rwas:rwaC, ratio:ratioC*100, sf:sfC, echec: sfC>0});
+
+    // (d) statique, PPNR realise
+    var Rp = Rs[i] * ppnrFrac;
+    var cet1sD = cet1s[i] - Ls[i] + Rp;
+    var rwaD = rwas[i];
+    var ratioD = cet1sD / rwaD;
+    var sfD = shortfall(ratioD, rwaD);
+    d.push({nom:noms[i], Rp:Rp, cet1s:cet1sD, rwas:rwaD, ratio:ratioD*100, sf:sfD, echec: sfD>0});
+  }
+
+  var totalA = a.reduce(function(s,r){return s+r.sf;},0);
+  var totalC = c.reduce(function(s,r){return s+r.sf;},0);
+  var totalD = d.reduce(function(s,r){return s+r.sf;},0);
+  var nFailA = a.filter(function(r){return r.echec;}).length;
+  var nFailC = c.filter(function(r){return r.echec;}).length;
+  var nFailD = d.filter(function(r){return r.echec;}).length;
+  var pctFailA = nFailA/5*100;
+  var pctFailC = nFailC/5*100;
+  var pctFailD = nFailD/5*100;
+
+  var html = '';
+
+  html += '<h3 style="margin-bottom:0.2em;">(a)-(b) Bilan statique</h3>';
+  html += '<table class="tabres"><tr><th>Banque</th><th>CET1 stresse</th><th>RWA stresse</th><th>Ratio stresse</th><th>Shortfall</th><th>Statut</th></tr>';
+  a.forEach(function(r){
+    html += '<tr><td>' + r.nom + '</td><td>' + fmt(r.cet1s,2) + '</td><td>' + fmt(r.rwas,2) + '</td><td>' + fmt(r.ratio,2) + ' %</td><td>' + fmt(r.sf,2) + '</td><td class="' + (r.echec?'echec':'reussite') + '">' + (r.echec?'ECHEC':'REUSSITE') + '</td></tr>';
+  });
+  html += '</table>';
+  html += '<div class="valeur">Besoin de capital total (a) : ' + fmt(totalA,2) + ' Md€ &mdash; ' + nFailA + ' banque(s) en echec sur 5 (' + fmt(pctFailA,2) + ' %)</div>';
+  html += '<div class="valeur mid">Comparaison au SCAP 2009 (' + fmt(scapPct,2) + ' %) : ecart de ' + fmt(Math.abs(pctFailA-scapPct),2) + ' point(s) de pourcentage &mdash; ' + (Math.abs(pctFailA-scapPct)<15 ? 'ordre de grandeur comparable' : 'ordre de grandeur tres different') + '.</div>';
+
+  html += '<h3 style="margin-bottom:0.2em;">(c) Bilan dynamique (RWA +' + fmt(croissanceRwaPct,1) + ' %)</h3>';
+  html += '<table class="tabres"><tr><th>Banque</th><th>RWA stresse</th><th>Ratio stresse</th><th>Shortfall</th><th>Statut</th></tr>';
+  c.forEach(function(r){
+    html += '<tr><td>' + r.nom + '</td><td>' + fmt(r.rwas,2) + '</td><td>' + fmt(r.ratio,4) + ' %</td><td>' + fmt(r.sf,3) + '</td><td class="' + (r.echec?'echec':'reussite') + '">' + (r.echec?'ECHEC':'REUSSITE') + '</td></tr>';
+  });
+  html += '</table>';
+  html += '<div class="valeur">Besoin de capital total (c) : ' + fmt(totalC,2) + ' Md€ &mdash; ' + nFailC + ' banque(s) en echec sur 5 (' + fmt(pctFailC,2) + ' %)</div>';
+
+  var basculeC = [];
+  for (var i=0;i<5;i++) { if (!a[i].echec && c[i].echec) basculeC.push(c[i].nom + ' (marge de ' + fmt(hurdlePct - c[i].ratio,4) + ' pt, shortfall ' + fmt(c[i].sf,3) + ' Md€)'); }
+  html += '<div class="valeur ' + (basculeC.length>0?'ko':'ok') + '">' + (basculeC.length>0 ? 'Bascule(nt) de la reussite vers l\'echec sous bilan dynamique : ' + basculeC.join(', ') : 'Aucune banque ne bascule de la reussite vers l\'echec sous bilan dynamique.') + '</div>';
+
+  html += '<h3 style="margin-bottom:0.2em;">(d) PPNR realise a ' + fmt(ppnrReaslisePct,0) + ' % du PPNR projete</h3>';
+  html += '<table class="tabres"><tr><th>Banque</th><th>PPNR realise R\'</th><th>CET1 stresse</th><th>Ratio stresse</th><th>Shortfall</th><th>Statut</th></tr>';
+  d.forEach(function(r){
+    html += '<tr><td>' + r.nom + '</td><td>' + fmt(r.Rp,2) + '</td><td>' + fmt(r.cet1s,2) + '</td><td>' + fmt(r.ratio,2) + ' %</td><td>' + fmt(r.sf,2) + '</td><td class="' + (r.echec?'echec':'reussite') + '">' + (r.echec?'ECHEC':'REUSSITE') + '</td></tr>';
+  });
+  html += '</table>';
+  html += '<div class="valeur">Besoin de capital total (d) : ' + fmt(totalD,2) + ' Md€ &mdash; ' + nFailD + ' banque(s) en echec sur 5 (' + fmt(pctFailD,2) + ' %)</div>';
+
+  var deltaD = totalD - totalA, deltaDPct = totalA>0 ? deltaD/totalA*100 : 0;
+  var deltaC = totalC - totalA, deltaCPct = totalA>0 ? deltaC/totalA*100 : 0;
+  html += '<div class="valeur mid">Hausse du besoin de capital total par rapport au scenario de base (a) : +' + fmt(deltaD,2) + ' Md€ (' + fmt(deltaDPct,2) + ' %) pour la revision des revenus (d), contre +' + fmt(deltaC,2) + ' Md€ (' + fmt(deltaCPct,2) + ' %) pour le bilan dynamique (c).</div>';
+  var ratioPoids = deltaC!==0 ? deltaD/deltaC : NaN;
+  html += '<div class="valeur ' + (deltaD>deltaC?'ko':'ok') + '">' + (deltaD>deltaC ? 'L\'incertitude sur les revenus (d) pese plus lourdement sur le resultat global que l\'hypothese de bilan dynamique (c)' + (isNaN(ratioPoids)?'':' &mdash; facteur ' + fmt(ratioPoids,2)) + ', ce qui est coherent avec la mise en garde du cours sur la « boite noire » des revenus.' : 'L\'hypothese de bilan dynamique (c) pese ici plus lourdement que l\'incertitude sur les revenus (d).') + '</div>';
+
+  html += dessinerStress(a, c, d, hurdlePct);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerStress(a, c, d, hurdlePct) {
+  var noms = a.map(function(r){ return r.nom; });
+  var series = [
+    {label:'Bilan statique (a)', vals: a.map(function(r){return r.ratio;}), coul:'var(--cdef,#4A3B8C)'},
+    {label:'Bilan dynamique (c)', vals: c.map(function(r){return r.ratio;}), coul:'var(--ceco,#1F6FB2)'},
+    {label:'PPNR realise (d)', vals: d.map(function(r){return r.ratio;}), coul:'var(--cintu,#E08000)'}
+  ];
+  var n = noms.length, nS = series.length;
+  var largeur = 560, hauteur = 270, margeG = 45, margeD = 15, margeH = 20, margeB = 55;
+  var tousVals = series.reduce(function(acc,s){ return acc.concat(s.vals); }, []).concat([hurdlePct]);
+  var vMax = Math.max.apply(null, tousVals) * 1.15 || 1;
+  var vMin = Math.min(0, Math.min.apply(null, tousVals));
+  function yPix(v) { return margeH + (vMax - v) / (vMax - vMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var yHurdle = yPix(hurdlePct);
+  var slotGroupe = (largeur-margeG-margeD)/n;
+  var largeurBarre = slotGroupe/(nS+1);
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + margeG + '" y1="' + yHurdle.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yHurdle.toFixed(1) + '" stroke="var(--danger,#b00020)" stroke-width="1" stroke-dasharray="4,3"/>';
+  svg += '<text x="' + (largeur-margeD-4) + '" y="' + (yHurdle-4).toFixed(1) + '" font-size="7.5" text-anchor="end" fill="currentColor">hurdle ' + fmt(hurdlePct,1) + ' %</text>';
+  for (var i=0;i<n;i++) {
+    for (var s=0;s<nS;s++) {
+      var v = series[s].vals[i];
+      var x = margeG + i*slotGroupe + (s+0.2)*largeurBarre;
+      var yTop = yPix(v);
+      var h = yZero - yTop;
+      var yRect = h>=0 ? yTop : yZero;
+      var hRect = Math.abs(h);
+      svg += '<rect x="' + x.toFixed(1) + '" y="' + yRect.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + hRect.toFixed(1) + '" fill="' + series[s].coul + '"/>';
+      svg += '<text x="' + (x+largeurBarre/2).toFixed(1) + '" y="' + (yTop - (h>=0?4:-8)).toFixed(1) + '" font-size="6.5" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + '</text>';
+    }
+    var xLabel = margeG + i*slotGroupe + slotGroupe/2;
+    svg += '<text x="' + xLabel.toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">Banque ' + noms[i] + '</text>';
+  }
+  svg += '<text x="12" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 12,' + (hauteur/2-10) + ')">Ratio de capital stresse (%)</text>';
+  var lx = margeG, ly = hauteur - 8;
+  series.forEach(function(s,i){
+    var lxi = lx + i*160;
+    svg += '<rect x="' + lxi + '" y="' + (ly-7) + '" width="9" height="9" fill="' + s.coul + '"/>';
+    svg += '<text x="' + (lxi+12) + '" y="' + ly + '" font-size="7.5" fill="currentColor">' + s.label + '</text>';
+  });
+  svg += '</svg>';
+  return svg;
+}
+
+// ===================== Exercice 6 : divulgation =====================
+function calculerDivulgation() {
+  var resDiv = document.getElementById('resultatDivulgation');
+  var noms = ['B1','B2','B3','B4','B5','B6'];
+  var rwas = Array.prototype.map.call(document.querySelectorAll('.c16-d-rwa'), function(el){ return parseFloat(el.value); });
+  var sfPcts = Array.prototype.map.call(document.querySelectorAll('.c16-d-sf'), function(el){ return parseFloat(el.value); });
+  var fins = Array.prototype.map.call(document.querySelectorAll('.c16-d-fin'), function(el){ return parseFloat(el.value); });
+  var coeffBp = parseFloat(document.getElementById('c16_coeffBp').value);
+  var cebsPct = parseFloat(document.getElementById('c16_cebsPct').value);
+  var scapPct = parseFloat(document.getElementById('c16_scapPct2').value);
+
+  var tousValides = rwas.concat(sfPcts).concat(fins).every(function(v){ return !isNaN(v); }) && !isNaN(coeffBp)
+    && rwas.every(function(v){ return v>0; }) && sfPcts.every(function(v){ return v>=0; });
+  if (!tousValides) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : tous les champs doivent etre renseignes, le RWA doit etre strictement positif et le shortfall (%) ne peut etre negatif.</p>';
+    return;
+  }
+
+  var n = noms.length;
+  var sfMd = [], totalSf = 0, totalRwa = 0, nFail = 0;
+  for (var i=0;i<n;i++) {
+    var sf = sfPcts[i]/100 * rwas[i];
+    sfMd.push(sf);
+    totalSf += sf;
+    totalRwa += rwas[i];
+    if (sfPcts[i] > 0) nFail++;
+  }
+  var globalSfPct = totalSf/totalRwa*100;
+  var pctFail = nFail/n*100;
+
+  var spreadsGran = [], costsGran = [], totalB = 0;
+  for (var i=0;i<n;i++) {
+    var sp = coeffBp * sfPcts[i];
+    var cost = sp/10000 * fins[i] * 1000;
+    spreadsGran.push(sp); costsGran.push(cost); totalB += cost;
+  }
+
+  var spreadAvg = coeffBp * globalSfPct;
+  var costsAgg = [], totalC = 0;
+  for (var i=0;i<n;i++) {
+    var cost = spreadAvg/10000 * fins[i] * 1000;
+    costsAgg.push(cost); totalC += cost;
+  }
+
+  var diffs = [];
+  for (var i=0;i<n;i++) { diffs.push(costsAgg[i] - costsGran[i]); }
+
+  var html = '';
+
+  html += '<h3 style="margin-bottom:0.2em;">(a) Besoin de capital et proportion de banques en shortfall</h3>';
+  html += '<table class="tabres"><tr><th>Banque</th><th>RWA</th><th>Shortfall (%)</th><th>Besoin de capital</th></tr>';
+  for (var i=0;i<n;i++) {
+    html += '<tr><td>' + noms[i] + '</td><td>' + fmt(rwas[i],0) + '</td><td>' + fmt(sfPcts[i],1) + ' %</td><td>' + fmt(sfMd[i],2) + ' Md€</td></tr>';
+  }
+  html += '</table>';
+  html += '<div class="valeur">Besoin de capital total : ' + fmt(totalSf,2) + ' Md€ sur un RWA total de ' + fmt(totalRwa,0) + ' Md€ &mdash; shortfall global : ' + fmt(globalSfPct,4) + ' % du RWA total</div>';
+  html += '<div class="valeur mid">' + nFail + ' banque(s) sur ' + n + ' en shortfall (' + fmt(pctFail,2) + ' %) &mdash; CEBS 2010 : ' + fmt(cebsPct,2) + ' % ; SCAP 2009 : ' + fmt(scapPct,2) + ' %</div>';
+
+  html += '<h3 style="margin-bottom:0.2em;">(b) Divulgation granulaire</h3>';
+  html += '<table class="tabres"><tr><th>Banque</th><th>Spread</th><th>Surcout annuel</th></tr>';
+  for (var i=0;i<n;i++) {
+    html += '<tr><td>' + noms[i] + '</td><td>' + fmt(spreadsGran[i],1) + ' pb</td><td>' + fmt(costsGran[i],3) + ' M€</td></tr>';
+  }
+  html += '</table>';
+  html += '<div class="valeur">Surcout total sous divulgation granulaire : ' + fmt(totalB,3) + ' M€</div>';
+
+  html += '<h3 style="margin-bottom:0.2em;">(c) Divulgation agregee</h3>';
+  html += '<table class="tabres"><tr><th>Banque</th><th>Spread moyen unique</th><th>Surcout annuel</th></tr>';
+  for (var i=0;i<n;i++) {
+    html += '<tr><td>' + noms[i] + '</td><td>' + fmt(spreadAvg,3) + ' pb</td><td>' + fmt(costsAgg[i],4) + ' M€</td></tr>';
+  }
+  html += '</table>';
+  html += '<div class="valeur">Surcout total sous divulgation agregee : ' + fmt(totalC,4) + ' M€</div>';
+  html += '<div class="valeur ' + (totalC<totalB?'ok':'ko') + '">Le total agrege est ' + (totalC<totalB?'INFERIEUR':'SUPERIEUR') + ' au total granulaire (ecart de ' + fmt(Math.abs(totalB-totalC),4) + ' M€).</div>';
+
+  html += '<h3 style="margin-bottom:0.2em;">(d) Ecart agrege moins granulaire, par banque</h3>';
+  html += '<table class="tabres"><tr><th>Banque</th><th>Surcout granulaire (b)</th><th>Surcout agrege (c)</th><th>Ecart (c) - (b)</th></tr>';
+  for (var i=0;i<n;i++) {
+    html += '<tr><td>' + noms[i] + '</td><td>' + fmt(costsGran[i],3) + ' M€</td><td>' + fmt(costsAgg[i],4) + ' M€</td><td class="' + (diffs[i]>0?'echec':'reussite') + '">' + (diffs[i]>=0?'+':'') + fmt(diffs[i],4) + ' M€</td></tr>';
+  }
+  html += '</table>';
+
+  var paientPlus = [], paientMoins = [];
+  for (var i=0;i<n;i++) { if (diffs[i] > 0.001) paientPlus.push(noms[i]); else if (diffs[i] < -0.001) paientMoins.push(noms[i]); }
+  html += '<div class="valeur mid">Paient plus sous agregation qu\'au vu de leur propre risque (subventionnent) : ' + (paientPlus.length?paientPlus.join(', '):'aucune') + '. Paient moins (sont subventionnees) : ' + (paientMoins.length?paientMoins.join(', '):'aucune') + '.</div>';
+
+  html += dessinerDivulgation(noms, costsGran, costsAgg);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerDivulgation(noms, costsGran, costsAgg) {
+  var n = noms.length;
+  var largeur = 560, hauteur = 270, margeG = 50, margeD = 15, margeH = 20, margeB = 55;
+  var vMax = Math.max.apply(null, costsGran.concat(costsAgg)) * 1.15 || 1;
+  function yPix(v) { return margeH + (vMax - v) / vMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var slotGroupe = (largeur-margeG-margeD)/n;
+  var largeurBarre = slotGroupe*0.32;
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="' + (hauteur+10) + '">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur-margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i=0;i<n;i++) {
+    var x1 = margeG + i*slotGroupe + slotGroupe*0.14;
+    var x2 = x1 + largeurBarre + 4;
+    var yTop1 = yPix(costsGran[i]);
+    var yTop2 = yPix(costsAgg[i]);
+    svg += '<rect x="' + x1.toFixed(1) + '" y="' + yTop1.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + (yZero-yTop1).toFixed(1) + '" fill="var(--cdef,#4A3B8C)"/>';
+    svg += '<text x="' + (x1+largeurBarre/2).toFixed(1) + '" y="' + (yTop1-4).toFixed(1) + '" font-size="6.5" text-anchor="middle" fill="currentColor">' + costsGran[i].toFixed(0) + '</text>';
+    svg += '<rect x="' + x2.toFixed(1) + '" y="' + yTop2.toFixed(1) + '" width="' + largeurBarre.toFixed(1) + '" height="' + (yZero-yTop2).toFixed(1) + '" fill="var(--cintu,#E08000)"/>';
+    svg += '<text x="' + (x2+largeurBarre/2).toFixed(1) + '" y="' + (yTop2-4).toFixed(1) + '" font-size="6.5" text-anchor="middle" fill="currentColor">' + costsAgg[i].toFixed(0) + '</text>';
+    var xLabel = margeG + i*slotGroupe + slotGroupe/2;
+    svg += '<text x="' + xLabel.toFixed(1) + '" y="' + (yZero + 14).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '<text x="14" y="' + (hauteur/2-10) + '" font-size="8.5" text-anchor="middle" fill="currentColor" transform="rotate(-90 14,' + (hauteur/2-10) + ')">Surcout de financement (M€)</text>';
+  var lx = margeG, ly = hauteur - 8;
+  svg += '<rect x="' + lx + '" y="' + (ly-7) + '" width="9" height="9" fill="var(--cdef,#4A3B8C)"/>';
+  svg += '<text x="' + (lx+12) + '" y="' + ly + '" font-size="7.5" fill="currentColor">Granulaire (b)</text>';
+  svg += '<rect x="' + (lx+140) + '" y="' + (ly-7) + '" width="9" height="9" fill="var(--cintu,#E08000)"/>';
+  svg += '<text x="' + (lx+152) + '" y="' + ly + '" font-size="7.5" fill="currentColor">Agregee (c)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerStress(); calculerDivulgation(); };
+</script>
+</body>
+</html>
