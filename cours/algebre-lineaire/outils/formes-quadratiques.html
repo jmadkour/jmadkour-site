@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Formes quadratiques — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; resize: vertical; height: 3.5em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .etiquette { display: inline-block; padding: 0.3em 0.9em; border-radius: 12px; font-size: 0.95em; color: white; font-weight: bold; }
+  .dp { background: var(--cex); } .dn { background: #7a3d9e; } .sp { background: var(--ceco); } .sn { background: #6a5acd; } .ind { background: var(--cintu); }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Formes quadratiques</h1>
+<p class="sous-titre">Calculatrice interactive — Algèbre linéaire (matrices symétriques 2×2)</p>
+
+<div class="panneau">
+  <h2>Signe d'une forme quadratique $Q(x,y)=X^\top\alpha X$</h2>
+  <label for="matAlpha">Matrice symétrique α = [[a,b],[b,c]] (saisir a, b, c)</label>
+  <textarea id="matAlpha">2,1,3</textarea>
+  <button onclick="analyser()">Analyser</button>
+  <div id="erreur" class="erreur"></div>
+  <div id="resultat" class="resultat-zone"></div>
+  <canvas id="graphique" height="260"></canvas>
+</div>
+
+<p class="avertissement">Outil limité aux matrices symétriques 2×2 (cas particulier explicite du chapitre 6). Le graphique trace le signe de Q(x,y) sur une grille : bleu = positif, orange = négatif.</p>
+
+<script>
+let chartInstance = null;
+
+function analyser() {
+  const erreurDiv = document.getElementById('erreur');
+  const resDiv = document.getElementById('resultat');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const vals = document.getElementById('matAlpha').value.trim().split(',').map(v => {
+      const n = parseFloat(v.trim());
+      if (isNaN(n)) throw new Error('valeur non numérique : "' + v.trim() + '"');
+      return n;
+    });
+    if (vals.length !== 3) throw new Error('Saisir exactement 3 valeurs a, b, c pour α=[[a,b],[b,c]].');
+    const [a, b, c] = vals;
+    const m1 = a, m2 = a*c - b*b;
+
+    const p1 = document.createElement('p');
+    p1.innerHTML = `<strong>Mineurs principaux :</strong> det α⁽¹⁾ = ${m1}, det α⁽²⁾ = ${m2.toFixed(4)}`;
+    resDiv.appendChild(p1);
+
+    let statut, classe, texte;
+    if (m1 > 0 && m2 > 0) { statut = 'Définie positive'; classe = 'dp'; }
+    else if (m1 < 0 && m2 > 0) { statut = 'Définie négative'; classe = 'dn'; }
+    else if (m2 < 0) { statut = 'Indéfinie'; classe = 'ind'; }
+    else if (Math.abs(m2) < 1e-9 && m1 >= 0) { statut = 'Semi-définie positive (cas limite, det=0)'; classe = 'sp'; }
+    else if (Math.abs(m2) < 1e-9 && m1 <= 0) { statut = 'Semi-définie négative (cas limite, det=0)'; classe = 'sn'; }
+    else { statut = 'Cas limite non tranché par les seuls mineurs stricts'; classe = 'ind'; }
+
+    const p2 = document.createElement('p');
+    p2.innerHTML = `<span class="etiquette ${classe}">${statut}</span>`;
+    resDiv.appendChild(p2);
+
+    // Valeurs propres pour vérification croisée
+    const trace = a + c, det = m2;
+    const disc = trace*trace - 4*det;
+    if (disc >= -1e-9) {
+      const racine = Math.sqrt(Math.max(disc,0));
+      const l1 = (trace+racine)/2, l2 = (trace-racine)/2;
+      const p3 = document.createElement('p');
+      p3.innerHTML = `Vérification par les valeurs propres : λ₁ = ${l1.toFixed(3)}, λ₂ = ${l2.toFixed(3)}.`;
+      resDiv.appendChild(p3);
+    }
+
+    // Graphique : signe de Q sur une grille
+    if (chartInstance) chartInstance.destroy();
+    const pts = [];
+    for (let x = -2; x <= 2; x += 0.25) {
+      for (let y = -2; y <= 2; y += 0.25) {
+        const q = a*x*x + 2*b*x*y + c*y*y;
+        pts.push({ x, y, q });
+      }
+    }
+    const ctx = document.getElementById('graphique').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'scatter',
+      data: { datasets: [
+        { label: 'Q > 0', data: pts.filter(p=>p.q>1e-9).map(p=>({x:p.x,y:p.y})), backgroundColor: '#1F6FB2', pointRadius: 3 },
+        { label: 'Q < 0', data: pts.filter(p=>p.q<-1e-9).map(p=>({x:p.x,y:p.y})), backgroundColor: '#B56600', pointRadius: 3 },
+        { label: 'Q ≈ 0', data: pts.filter(p=>Math.abs(p.q)<=1e-9).map(p=>({x:p.x,y:p.y})), backgroundColor: '#5A5A5A', pointRadius: 4 }
+      ]},
+      options: { responsive: true, aspectRatio: 1.3, scales: { x: { title: { display: true, text: 'x' } }, y: { title: { display: true, text: 'y' } } },
+        plugins: { title: { display: true, text: 'Signe de Q(x,y) sur le plan' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = analyser;
+</script>
+</body>
+</html>

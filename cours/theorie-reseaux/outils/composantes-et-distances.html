@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Composantes, distances et petit monde — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 200px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .top { background: #fdeedb; color: var(--cintu); font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .exemples { font-size: 0.82em; color: var(--cgris); margin-top: 0.4em; }
+  .exemples button { font-size: 0.78em; padding: 0.3em 0.7em; margin: 0.2em 0.3em 0 0; background: #eee; color: #333; }
+  .exemples button:hover { background: #ddd; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Composantes, distances et petit monde</h1>
+<p class="sous-titre">Calculatrice interactive — Théorie des réseaux</p>
+
+<div class="panneau">
+  <h2>Composantes, BFS, excentricité, diamètre, rayon, centre</h2>
+  <p class="aide">Saisir un graphe (éventuellement non connexe). L'outil identifie les composantes connexes, calcule le BFS depuis un sommet choisi, et donne excentricité, diamètre, rayon et centre de la composante contenant ce sommet.</p>
+  <div class="ligne">
+    <div><label for="sommetsIn">Sommets (séparés par des virgules)</label><input type="text" id="sommetsIn" value="1,2,3,4,5,6,7"></div>
+    <div><label for="sourceIn">Sommet source pour le BFS</label><input type="text" id="sourceIn" value="1"></div>
+  </div>
+  <label for="aretesIn">Arêtes (une par ligne, format A-B)</label>
+  <textarea id="aretesIn">1-2
+1-3
+2-3
+3-4
+4-5
+5-6
+5-7
+6-7</textarea>
+  <div class="exemples">
+    Exemples rapides :
+    <button onclick="chargerExemple('filrouge')">Réseau du cours</button>
+    <button onclick="chargerExemple('chaine')">Chaîne logistique (Exercice 1)</button>
+    <button onclick="chargerExemple('deuxmaillons')">Deux triangles, 2 maillons (Exercice 2)</button>
+    <button onclick="chargerExemple('composantes')">Réseau à 3 composantes (Exercice 3)</button>
+  </div>
+  <button onclick="analyserGraphe()">Calculer</button>
+  <div id="erreurG" class="erreur"></div>
+  <div id="resultatG" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Formule du petit monde &#8467; &#8776; ln(n)/ln(k&#772;)</h2>
+  <div class="ligne">
+    <div><label for="nIn">Taille de population n</label><input type="number" id="nIn" value="8000000000"></div>
+    <div><label for="kIn">Nombre moyen de contacts k&#772;</label><input type="number" id="kIn" value="100"></div>
+  </div>
+  <button onclick="calculerPetitMonde()">Calculer &#8467;</button>
+  <div id="resultatPM" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappel du cours : cette formule suppose que les contacts ne se recoupent pas. Un clustering élevé (chapitre 5) fait que la distance réelle est souvent supérieure à cette estimation.</p>
+
+<script>
+function chargerExemple(nom){
+  const sommets = document.getElementById('sommetsIn');
+  const aretes = document.getElementById('aretesIn');
+  const source = document.getElementById('sourceIn');
+  if(nom === 'filrouge'){
+    sommets.value = '1,2,3,4,5,6,7';
+    aretes.value = '1-2\n1-3\n2-3\n3-4\n4-5\n5-6\n5-7\n6-7';
+    source.value = '1';
+  } else if(nom === 'chaine'){
+    sommets.value = 'Usine,D1,D2,M1,M2,M3,M4,C1';
+    aretes.value = 'Usine-D1\nUsine-D2\nD1-M1\nD1-M2\nD2-M3\nD2-M4\nM1-C1';
+    source.value = 'Usine';
+  } else if(nom === 'deuxmaillons'){
+    sommets.value = 'T1,T2,T3,M1,M2,T4,T5,T6';
+    aretes.value = 'T1-T2\nT1-T3\nT2-T3\nT3-M1\nM1-M2\nM2-T4\nT4-T5\nT4-T6\nT5-T6';
+    source.value = 'T1';
+  } else if(nom === 'composantes'){
+    sommets.value = 'A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,B1,B2,B3,C1';
+    aretes.value = 'A1-A2\nA2-A3\nA3-A4\nA4-A5\nA5-A6\nA6-A7\nA7-A8\nA8-A9\nA9-A10\nA1-A5\nA3-A9\nB1-B2\nB2-B3\nB3-B1';
+    source.value = 'A1';
+  }
+  analyserGraphe();
+}
+
+function parserGraphe(){
+  const sommetsTxt = document.getElementById('sommetsIn').value.trim();
+  const aretesTxt = document.getElementById('aretesIn').value.trim();
+  if(!sommetsTxt) throw new Error('La liste des sommets ne peut pas être vide.');
+  const V = sommetsTxt.split(',').map(s => s.trim()).filter(s => s.length > 0);
+  if(V.length < 1) throw new Error('Il faut au moins un sommet.');
+  const setV = new Set(V);
+  if(setV.size !== V.length) throw new Error('Les sommets doivent avoir des noms distincts.');
+  const E = [];
+  if(aretesTxt){
+    const lignes = aretesTxt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    for(const ligne of lignes){
+      const parts = ligne.split('-').map(s => s.trim());
+      if(parts.length !== 2) throw new Error(`Ligne d'arête invalide : "${ligne}".`);
+      const [a, b] = parts;
+      if(!setV.has(a)) throw new Error(`Le sommet "${a}" n'est pas dans la liste des sommets.`);
+      if(!setV.has(b)) throw new Error(`Le sommet "${b}" n'est pas dans la liste des sommets.`);
+      if(a === b) throw new Error(`Boucle non autorisée : "${ligne}".`);
+      E.push([a, b]);
+    }
+  }
+  return { V, E };
+}
+
+function buildAdj(V, E){
+  const adj = {};
+  for(const v of V) adj[v] = [];
+  for(const [a,b] of E){ adj[a].push(b); adj[b].push(a); }
+  return adj;
+}
+
+function bfsDist(V, adj, src){
+  const dist = {};
+  for(const v of V) dist[v] = Infinity;
+  dist[src] = 0;
+  const queue = [src]; let qi = 0;
+  while(qi < queue.length){
+    const u = queue[qi++];
+    for(const w of adj[u]) if(dist[w] === Infinity){ dist[w] = dist[u] + 1; queue.push(w); }
+  }
+  return dist;
+}
+
+function connectedComponents(V, adj){
+  const visited = new Set(); const components = [];
+  for(const v of V){
+    if(visited.has(v)) continue;
+    const comp = []; const queue=[v]; visited.add(v); let qi=0;
+    while(qi<queue.length){
+      const u = queue[qi++]; comp.push(u);
+      for(const w of adj[u]) if(!visited.has(w)){ visited.add(w); queue.push(w); }
+    }
+    components.push(comp);
+  }
+  return components;
+}
+
+function eccentricities(V, adj, subset){
+  const ecc = {};
+  for(const v of subset){
+    const dist = bfsDist(V, adj, v);
+    let maxD = 0;
+    for(const u of subset){ if(u===v) continue; maxD = Math.max(maxD, dist[u]); }
+    ecc[v] = maxD;
+  }
+  return ecc;
+}
+
+function analyserGraphe(){
+  const erreurDiv = document.getElementById('erreurG');
+  const resDiv = document.getElementById('resultatG');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const { V, E } = parserGraphe();
+    const source = document.getElementById('sourceIn').value.trim();
+    if(!V.includes(source)) throw new Error(`Le sommet source "${source}" n'existe pas dans la liste des sommets.`);
+    const adj = buildAdj(V, E);
+    const comps = connectedComponents(V, adj);
+
+    let out = '<h3>Composantes connexes</h3>';
+    out += `<p>${comps.length} composante(s) : ${comps.map(c=>`{${c.join(', ')}} (${c.length} sommets)`).join(' &nbsp;|&nbsp; ')}</p>`;
+    const giant = comps.reduce((a,b)=>a.length>=b.length?a:b);
+    out += `<div class="valeur">composante géante = ${giant.length}/${V.length} = ${(100*giant.length/V.length).toFixed(2)}%</div>`;
+
+    const dist = bfsDist(V, adj, source);
+    const compOfSource = comps.find(c=>c.includes(source));
+    out += `<h3>BFS depuis ${source}</h3>`;
+    const maxDist = Math.max(...compOfSource.map(v=>dist[v]));
+    out += '<table><tr><th>Couche</th><th>Sommets</th></tr>';
+    for(let d=0; d<=maxDist; d++){
+      const layer = compOfSource.filter(v=>dist[v]===d);
+      if(layer.length) out += `<tr><td>${d}</td><td>${layer.join(', ')}</td></tr>`;
+    }
+    out += '</table>';
+    out += `<div class="valeur">e(${source}) = ${maxDist}</div>`;
+
+    const ecc = eccentricities(V, adj, compOfSource);
+    out += '<h3>Excentricités (composante de la source)</h3>';
+    out += '<table><tr>' + compOfSource.map(v=>`<th>${v}</th>`).join('') + '</tr><tr>' + compOfSource.map(v=>`<td>${ecc[v]}</td>`).join('') + '</tr></table>';
+    const diameter = Math.max(...compOfSource.map(v=>ecc[v]));
+    const radius = Math.min(...compOfSource.map(v=>ecc[v]));
+    const center = compOfSource.filter(v=>ecc[v]===radius);
+    out += `<div class="valeur">diamètre = ${diameter}</div><div class="valeur">rayon = ${radius}</div><div class="valeur">centre = {${center.join(', ')}}</div>`;
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerPetitMonde(){
+  const n = parseFloat(document.getElementById('nIn').value);
+  const kbar = parseFloat(document.getElementById('kIn').value);
+  const resDiv = document.getElementById('resultatPM');
+  if(isNaN(n) || isNaN(kbar) || n<=1 || kbar<=1){
+    resDiv.innerHTML = '<p style="color:#b00020;">n et k&#772; doivent être des nombres supérieurs à 1.</p>';
+    return;
+  }
+  const ell = Math.log(n)/Math.log(kbar);
+  resDiv.innerHTML = `<div class="valeur">&#8467; &#8776; ${ell.toFixed(4)}</div><p class="aide">ln(${n})/ln(${kbar})</p>`;
+}
+
+window.onload = () => { analyserGraphe(); calculerPetitMonde(); };
+</script>
+</body>
+</html>

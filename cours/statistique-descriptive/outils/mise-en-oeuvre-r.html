@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 14 — Mise en œuvre sur R — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.cut { border-left-color: var(--ceco); } .panneau.cut h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.cut button { background: var(--ceco); } .panneau.cut button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 14 — Mise en œuvre sur R</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique descriptive</p>
+
+<div class="panneau">
+  <h2>Convertisseur variance / écart-type : descriptif (÷n) ↔ style R (÷n-1)</h2>
+  <label for="serie1">valeurs (virgules)</label>
+  <input id="serie1" value="15,22,18,30,25,20,28,24">
+  <button onclick="calculerConversion()">Calculer les deux versions</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau cut">
+  <h2>Simulateur de découpage en classes : <code>right = TRUE</code> vs <code>right = FALSE</code></h2>
+  <label for="bornesInput">bornes des classes (virgules, croissantes)</label>
+  <input id="bornesInput" value="0,10,20,40,80">
+  <label for="valTest">valeur à classer</label>
+  <input id="valTest" value="10">
+  <button onclick="calculerCut()">Classer selon les deux conventions</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : R divise <code>var()</code> et <code>sd()</code> par $n-1$, la statistique descriptive du cours divise par $n$ ; le rapport (et donc $\hat b$, $r$, $r^2$) est inchangé par cette convention. La convention française des classes est $[a\,;\,b[$ (borne basse incluse, haute exclue) ; le défaut de R, <code>right = TRUE</code>, donne $]a\,;\,b]$ — d'où la nécessité de <code>right = FALSE</code>.</p>
+
+<script>
+function calculerConversion(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const vals=document.getElementById('serie1').value.split(',').map(s=>parseFloat(s.trim()));
+    if(vals.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(vals.length<2) throw new Error('Il faut au moins 2 valeurs.');
+    const n=vals.length;
+    const mean=vals.reduce((a,b)=>a+b,0)/n;
+    const sumSq=vals.reduce((a,b)=>a+Math.pow(b-mean,2),0);
+    const Vn=sumSq/n, Vn1=sumSq/(n-1);
+    const sdN=Math.sqrt(Vn), sdN1=Math.sqrt(Vn1);
+    resDiv.innerHTML=`<table><tr><th>n</th><th>moyenne</th><th>V (÷n, descriptive)</th><th>V (÷n-1, style R var())</th><th>σ (÷n)</th><th>sd (÷n-1, style R sd())</th></tr>
+      <tr><td>${n}</td><td>${mean.toFixed(3)}</td><td>${Vn.toFixed(4)}</td><td>${Vn1.toFixed(4)}</td><td>${sdN.toFixed(4)}</td><td>${sdN1.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Pour retrouver l'écart-type descriptif à partir de <code>sd(x)</code> : multiplier par $\\sqrt{(n-1)/n}=${Math.sqrt((n-1)/n).toFixed(4)}$, ce qui redonne bien ${(sdN1*Math.sqrt((n-1)/n)).toFixed(4)} $\\approx$ ${sdN.toFixed(4)}.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerCut(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const bornes=document.getElementById('bornesInput').value.split(',').map(s=>parseFloat(s.trim()));
+    if(bornes.some(isNaN)) throw new Error('Toutes les bornes doivent être des nombres.');
+    for(let i=1;i<bornes.length;i++){ if(bornes[i]<=bornes[i-1]) throw new Error('Les bornes doivent être strictement croissantes.'); }
+    const v=parseFloat(document.getElementById('valTest').value);
+    if(isNaN(v)) throw new Error('La valeur à classer doit être un nombre.');
+    if(v<bornes[0]||v>bornes[bornes.length-1]) throw new Error('La valeur doit être comprise dans l\'intervalle couvert par les bornes.');
+    let classeFrancaise=null, classeRDefaut=null;
+    for(let i=0;i<bornes.length-1;i++){
+      const lo=bornes[i], hi=bornes[i+1];
+      if(classeFrancaise===null && v>=lo && v<hi) classeFrancaise=`[${lo},${hi}[`;
+      if(v===bornes[bornes.length-1] && classeFrancaise===null) classeFrancaise=`[${bornes[bornes.length-2]},${bornes[bornes.length-1]}[ (borne haute, cas limite)`;
+      if(classeRDefaut===null && v>lo && v<=hi) classeRDefaut=`]${lo},${hi}]`;
+      if(v===bornes[0] && classeRDefaut===null) classeRDefaut=`]${bornes[0]},${bornes[1]}] (borne basse, cas limite)`;
+    }
+    const diff = classeFrancaise!==classeRDefaut;
+    resDiv.innerHTML=`<table><tr><th>convention</th><th>classe attribuée</th></tr>
+      <tr><td>française $[a,b[$ (<code>right=FALSE</code>)</td><td>${classeFrancaise}</td></tr>
+      <tr><td>défaut R $]a,b]$ (<code>right=TRUE</code>)</td><td>${classeRDefaut}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${diff ? `Attention : les deux conventions classent cette valeur différemment ! Sans right = FALSE, cette valeur (et toute valeur tombant exactement sur une borne) migrerait vers la classe inférieure.` : `Ici les deux conventions coïncident pour cette valeur particulière (elle ne tombe pas exactement sur une borne).`}</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerConversion(); calculerCut(); };
+</script>
+</body>
+</html>

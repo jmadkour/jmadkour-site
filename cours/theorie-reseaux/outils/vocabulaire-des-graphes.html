@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Le vocabulaire des graphes — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1100px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 220px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  button.secondaire { background: var(--cgris); margin-left: 0.5em; }
+  button.secondaire:hover { background: #444; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .pont { background: #fdeedb; color: var(--cintu); font-weight: bold; }
+  .artic { background: #fdeedb; color: var(--cintu); font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .non { color: #b00020; font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  svg { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.6em; }
+  .valeur { font-size: 1.1em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .exemples { font-size: 0.82em; color: var(--cgris); margin-top: 0.4em; }
+  .exemples button { font-size: 0.78em; padding: 0.3em 0.7em; margin: 0.2em 0.3em 0 0; background: #eee; color: #333; }
+  .exemples button:hover { background: #ddd; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Le vocabulaire des graphes</h1>
+<p class="sous-titre">Calculatrice interactive — Théorie des réseaux</p>
+
+<div class="panneau">
+  <h2>Analyser un graphe</h2>
+  <p class="aide">Saisir la liste des sommets (séparés par des virgules) et la liste des arêtes (une par ligne, sous la forme <code>A-B</code>). Le graphe est traité comme <strong>non orienté</strong>.</p>
+  <div class="ligne">
+    <div>
+      <label for="sommetsIn">Sommets (séparés par des virgules)</label>
+      <input type="text" id="sommetsIn" value="1,2,3,4,5,6,7">
+    </div>
+  </div>
+  <label for="aretesIn">Arêtes (une par ligne, format A-B)</label>
+  <textarea id="aretesIn">1-2
+1-3
+2-3
+3-4
+4-5
+5-6
+5-7
+6-7</textarea>
+  <div class="exemples">
+    Exemples rapides :
+    <button onclick="chargerExemple('filrouge')">Réseau du cours (fil-rouge)</button>
+    <button onclick="chargerExemple('papillon')">Nœud papillon (Exercice 3)</button>
+    <button onclick="chargerExemple('chaine')">Chaîne de banques (A-B-C-D)</button>
+  </div>
+  <button onclick="analyserGraphe()">Analyser le graphe</button>
+  <div id="erreurG" class="erreur"></div>
+  <div id="resultatG" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Cet outil recalcule, pour n'importe quel graphe saisi, exactement les quantités définies dans ce chapitre : degrés, lemme des poignées de main, distances, diamètre, distance moyenne, ponts et points d'articulation (obtenus par suppression-et-retest de chaque arête, puis de chaque sommet). Utilisez les exemples rapides pour retrouver les valeurs du réseau du cours ou des exercices.</p>
+
+<script>
+function chargerExemple(nom){
+  const sommets = document.getElementById('sommetsIn');
+  const aretes = document.getElementById('aretesIn');
+  if(nom === 'filrouge'){
+    sommets.value = '1,2,3,4,5,6,7';
+    aretes.value = '1-2\n1-3\n2-3\n3-4\n4-5\n5-6\n5-7\n6-7';
+  } else if(nom === 'papillon'){
+    sommets.value = 'T1,T2,H,T3,T4';
+    aretes.value = 'T1-T2\nT1-H\nT2-H\nH-T3\nH-T4\nT3-T4';
+  } else if(nom === 'chaine'){
+    sommets.value = 'A,B,C,D';
+    aretes.value = 'A-B\nB-C\nC-D';
+  }
+  analyserGraphe();
+}
+
+function parserGraphe(){
+  const sommetsTxt = document.getElementById('sommetsIn').value.trim();
+  const aretesTxt = document.getElementById('aretesIn').value.trim();
+  if(!sommetsTxt) throw new Error('La liste des sommets ne peut pas être vide.');
+  const V = sommetsTxt.split(',').map(s => s.trim()).filter(s => s.length > 0);
+  if(V.length < 1) throw new Error('Il faut au moins un sommet.');
+  const setV = new Set(V);
+  if(setV.size !== V.length) throw new Error('Les sommets doivent avoir des noms distincts.');
+  const E = [];
+  if(aretesTxt){
+    const lignes = aretesTxt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    for(const ligne of lignes){
+      const parts = ligne.split('-').map(s => s.trim());
+      if(parts.length !== 2) throw new Error(`Ligne d'arête invalide : "${ligne}" (attendu format A-B).`);
+      const [a, b] = parts;
+      if(!setV.has(a)) throw new Error(`Le sommet "${a}" (arête "${ligne}") n'est pas dans la liste des sommets.`);
+      if(!setV.has(b)) throw new Error(`Le sommet "${b}" (arête "${ligne}") n'est pas dans la liste des sommets.`);
+      if(a === b) throw new Error(`Boucle non autorisée : "${ligne}".`);
+      E.push([a, b]);
+    }
+  }
+  return { V, E };
+}
+
+function buildAdj(V, E){
+  const adj = {};
+  for(const v of V) adj[v] = [];
+  for(const [a,b] of E){ adj[a].push(b); adj[b].push(a); }
+  return adj;
+}
+
+function bfsDist(V, adj, src){
+  const dist = {};
+  for(const v of V) dist[v] = Infinity;
+  dist[src] = 0;
+  const queue = [src];
+  let qi = 0;
+  while(qi < queue.length){
+    const u = queue[qi++];
+    for(const w of adj[u]){
+      if(dist[w] === Infinity){ dist[w] = dist[u] + 1; queue.push(w); }
+    }
+  }
+  return dist;
+}
+
+function isConnected(V, E){
+  if(V.length === 0) return true;
+  const adj = buildAdj(V, E);
+  const dist = bfsDist(V, adj, V[0]);
+  return V.every(v => dist[v] < Infinity);
+}
+
+function degrees(V, E){
+  const deg = {};
+  for(const v of V) deg[v] = 0;
+  for(const [a,b] of E){ deg[a]++; deg[b]++; }
+  return deg;
+}
+
+function allPairsDist(V, E){
+  const adj = buildAdj(V, E);
+  const D = {};
+  for(const v of V) D[v] = bfsDist(V, adj, v);
+  return D;
+}
+
+function findBridges(V, E){
+  const bridges = [];
+  for(let i = 0; i < E.length; i++){
+    const Erest = E.filter((_, j) => j !== i);
+    const [a, b] = E[i];
+    const adj = buildAdj(V, Erest);
+    const dist = bfsDist(V, adj, a);
+    if(dist[b] === Infinity) bridges.push(E[i]);
+  }
+  return bridges;
+}
+
+function findArticulation(V, E){
+  const points = [];
+  if(!isConnected(V, E)) return points;
+  for(const v of V){
+    const Vrest = V.filter(x => x !== v);
+    const Erest = E.filter(([a,b]) => a !== v && b !== v);
+    if(Vrest.length === 0) continue;
+    const adj = buildAdj(Vrest, Erest);
+    const dist = bfsDist(Vrest, adj, Vrest[0]);
+    if(Vrest.some(x => dist[x] === Infinity)) points.push(v);
+  }
+  return points;
+}
+
+function dessinerSVG(V, E, ponts, articulation){
+  const n = V.length;
+  const cx = 260, cy = 200, R = Math.min(160, 40 + n*10);
+  const pos = {};
+  V.forEach((v,i) => {
+    const angle = (2*Math.PI*i/n) - Math.PI/2;
+    pos[v] = [cx + R*Math.cos(angle), cy + R*Math.sin(angle)];
+  });
+  const pontsSet = new Set(ponts.map(([a,b]) => [a,b].sort().join('|')));
+  const articSet = new Set(articulation);
+  let svg = `<svg width="520" height="420" viewBox="0 0 520 420">`;
+  for(const [a,b] of E){
+    const key = [a,b].sort().join('|');
+    const estPont = pontsSet.has(key);
+    const [x1,y1] = pos[a], [x2,y2] = pos[b];
+    svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${estPont ? '#B56600' : '#5A5A5A'}" stroke-width="${estPont ? 3.5 : 2}" />`;
+  }
+  for(const v of V){
+    const [x,y] = pos[v];
+    const estArtic = articSet.has(v);
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="16" fill="${estArtic ? '#B56600' : '#1F6FB2'}" stroke="white" stroke-width="2" />`;
+    svg += `<text x="${x.toFixed(1)}" y="${(y+4.5).toFixed(1)}" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif" font-size="12" fill="white" font-weight="bold">${v}</text>`;
+  }
+  svg += `</svg>`;
+  return svg;
+}
+
+function analyserGraphe(){
+  const erreurDiv = document.getElementById('erreurG');
+  const resDiv = document.getElementById('resultatG');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const { V, E } = parserGraphe();
+    const n = V.length, m = E.length;
+    const deg = degrees(V, E);
+    const sumDeg = V.reduce((s,v) => s + deg[v], 0);
+    const kMoyen = n > 0 ? sumDeg / n : 0;
+    const connexe = isConnected(V, E);
+
+    let out = '';
+    out += `<h3>Ordre et taille</h3>`;
+    out += `<div class="valeur">n = ${n} sommets</div><div class="valeur">m = ${m} arêtes</div>`;
+
+    out += `<h3>Degrés</h3>`;
+    out += '<table><tr>' + V.map(v => `<th>${v}</th>`).join('') + '</tr><tr>' + V.map(v => `<td>${deg[v]}</td>`).join('') + '</tr></table>';
+    out += `<p>Somme des degrés = ${sumDeg} ${sumDeg === 2*m ? '<span class="ok">= 2m &#10003; (lemme des poignées de main vérifié)</span>' : '<span class="non">&ne; 2m — erreur de saisie possible</span>'}</p>`;
+    out += `<div class="valeur">Degré moyen k&#772; = ${kMoyen.toFixed(4)}</div>`;
+
+    out += `<h3>Connexité</h3>`;
+    out += `<p>${connexe ? '<span class="ok">Le graphe est connexe.</span>' : '<span class="non">Le graphe n\'est PAS connexe (plusieurs composantes).</span>'}</p>`;
+
+    if(connexe){
+      const D = allPairsDist(V, E);
+      let diam = 0, sumD = 0, cnt = 0;
+      out += `<h3>Distances (matrice des distances)</h3>`;
+      out += '<table><tr><th></th>' + V.map(v=>`<th>${v}</th>`).join('') + '</tr>';
+      for(const a of V){
+        out += `<tr><th>${a}</th>` + V.map(b => `<td>${D[a][b]}</td>`).join('') + '</tr>';
+        for(const b of V){
+          if(a < b && D[a][b] < Infinity){ diam = Math.max(diam, D[a][b]); sumD += D[a][b]; cnt++; }
+        }
+      }
+      out += '</table>';
+      const dMoy = cnt > 0 ? sumD/cnt : 0;
+      out += `<div class="valeur">Diamètre = ${diam}</div><div class="valeur">Distance moyenne = ${dMoy.toFixed(4)} (sur ${cnt} paires, somme=${sumD})</div>`;
+    } else {
+      out += '<p class="aide">Diamètre et distance moyenne ne sont pas calculés : certaines paires sont à distance infinie dans un graphe non connexe.</p>';
+    }
+
+    const ponts = findBridges(V, E);
+    out += `<h3>Ponts</h3>`;
+    if(ponts.length === 0){
+      out += '<p>Aucun pont : chaque arête appartient à un cycle offrant une voie alternative.</p>';
+    } else {
+      out += '<p>' + ponts.map(([a,b]) => `<span class="pont">${a}–${b}</span>`).join(' ') + `</p><p class="aide">${ponts.length} pont(s) sur ${m} arête(s) (${(100*ponts.length/Math.max(m,1)).toFixed(1)} %).</p>`;
+    }
+
+    const artic = findArticulation(V, E);
+    out += `<h3>Points d'articulation</h3>`;
+    if(artic.length === 0){
+      out += '<p>Aucun point d\'articulation (ou graphe non connexe / trop petit).</p>';
+    } else {
+      out += '<p>' + artic.map(v => `<span class="artic">${v}</span>`).join(' ') + '</p>';
+    }
+
+    out += `<h3>Visualisation</h3>`;
+    out += dessinerSVG(V, E, ponts, artic);
+    out += '<p class="aide">En orange : les arêtes-ponts et les sommets d\'articulation.</p>';
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { analyserGraphe(); };
+</script>
+</body>
+</html>

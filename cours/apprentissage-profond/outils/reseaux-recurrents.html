@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Les réseaux récurrents — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Les réseaux récurrents</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage profond</p>
+
+<div class="panneau">
+  <h2>1. Dérouler un RNN scalaire</h2>
+  <div class="ligne">
+    <div><label for="WhIn1">$W_h$</label><input type="number" id="WhIn1" value="0.8" step="0.01"></div>
+    <div><label for="WxIn1">$W_x$</label><input type="number" id="WxIn1" value="0.5" step="0.01"></div>
+    <div><label for="bIn1">Biais $b$</label><input type="number" id="bIn1" value="0.1" step="0.01"></div>
+    <div><label for="h0In1">$h_0$</label><input type="number" id="h0In1" value="0" step="0.1"></div>
+  </div>
+  <label for="xIn1">Séquence $x$ (séparée par des virgules)</label>
+  <input type="text" id="xIn1" value="1, 2, -1">
+  <button onclick="calculerRNN()">Calculer</button>
+  <div id="erreurR1" class="erreur"></div>
+  <div id="resultatR1" class="resultat-zone"></div>
+  <svg id="svgRNN1" width="450" height="180" viewBox="0 0 450 180"></svg>
+</div>
+
+<div class="panneau">
+  <h2>2. Atténuation cumulée sur $T$ pas</h2>
+  <div class="ligne">
+    <div><label for="facteurIn2">Facteur local au mieux</label><input type="number" id="facteurIn2" value="0.9" step="0.01" min="0" max="1"></div>
+    <div><label for="TIn2">Nombre de pas $T$</label><input type="number" id="TIn2" value="50" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerAttenuation()">Calculer</button>
+  <div id="erreurA2" class="erreur"></div>
+  <div id="resultatA2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Les trois portes d'un LSTM</h2>
+  <div class="ligne">
+    <div><label for="zfIn3">$z_f$ (oubli)</label><input type="number" id="zfIn3" value="1.5" step="0.1"></div>
+    <div><label for="ziIn3">$z_i$ (entrée)</label><input type="number" id="ziIn3" value="-0.5" step="0.1"></div>
+    <div><label for="zgIn3">$z_g$ (candidat)</label><input type="number" id="zgIn3" value="0.8" step="0.1"></div>
+    <div><label for="zoIn3">$z_o$ (sortie)</label><input type="number" id="zoIn3" value="1.0" step="0.1"></div>
+  </div>
+  <label for="CprevIn3">$C_{t-1}$</label>
+  <input type="number" id="CprevIn3" value="2.0" step="0.1">
+  <button onclick="calculerLSTM()">Calculer</button>
+  <div id="erreurL3" class="erreur"></div>
+  <div id="resultatL3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : RNN $h_t=\tanh(W_hh_{t-1}+W_xx_t+b)$ ; atténuation cumulée après $T$ pas $=\text{facteur}^T$ ; LSTM : $f_t=\sigma(z_f)$, $i_t=\sigma(z_i)$, $g_t=\tanh(z_g)$, $o_t=\sigma(z_o)$, $C_t=f_t C_{t-1}+i_tg_t$, $h_t=o_t\tanh(C_t)$.</p>
+
+<script>
+function tanh(x){ return Math.tanh(x); }
+function sig(x){ return 1/(1+Math.exp(-x)); }
+
+function calculerRNN(){
+  const erreurDiv=document.getElementById('erreurR1'); const resDiv=document.getElementById('resultatR1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const Wh=parseFloat(document.getElementById('WhIn1').value);
+    const Wx=parseFloat(document.getElementById('WxIn1').value);
+    const b=parseFloat(document.getElementById('bIn1').value);
+    const h0=parseFloat(document.getElementById('h0In1').value);
+    const xs=document.getElementById('xIn1').value.split(',').map(s=>parseFloat(s.trim()));
+    if([Wh,Wx,b,h0].some(isNaN)) throw new Error('Les paramètres doivent être numériques.');
+    if(xs.some(isNaN)) throw new Error('La séquence doit être entièrement numérique.');
+    if(xs.length<1) throw new Error('Au moins une valeur requise.');
+    let h=h0;
+    const path=[h0];
+    let out='<table><tr><th>t</th><th>z_t</th><th>h_t</th></tr>';
+    xs.forEach((x,i)=>{
+      const z=Wh*h+Wx*x+b;
+      h=tanh(z);
+      path.push(h);
+      out+=`<tr><td>${i+1}</td><td>${z.toFixed(4)}</td><td>${h.toFixed(4)}</td></tr>`;
+    });
+    out+='</table>';
+    resDiv.innerHTML=out;
+    dessinerRNN(path);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgRNN1').innerHTML=''; }
+}
+
+function dessinerRNN(path){
+  const svg=document.getElementById('svgRNN1');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=450,H=180,padL=40,padR=15,padT=15,padB=30;
+  const n=path.length;
+  const ymin=Math.min(-1,...path), ymax=Math.max(1,...path);
+  const xToPix=i=>padL+(i/(n-1))*(W-padL-padR);
+  const yToPix=y=>H-padB-((y-ymin)/(ymax-ymin))*(H-padT-padB);
+  let pts='';
+  path.forEach((v,i)=>{ pts += xToPix(i).toFixed(1)+','+yToPix(v).toFixed(1)+' '; });
+  const poly=document.createElementNS(ns,'polyline');
+  poly.setAttribute('points',pts); poly.setAttribute('fill','none'); poly.setAttribute('stroke','#1F6FB2'); poly.setAttribute('stroke-width','2');
+  svg.appendChild(poly);
+  path.forEach((v,i)=>{
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',xToPix(i)); c.setAttribute('cy',yToPix(v)); c.setAttribute('r',3); c.setAttribute('fill','#B56600');
+    svg.appendChild(c);
+  });
+}
+
+function calculerAttenuation(){
+  const erreurDiv=document.getElementById('erreurA2'); const resDiv=document.getElementById('resultatA2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const facteur=parseFloat(document.getElementById('facteurIn2').value);
+    const T=parseInt(document.getElementById('TIn2').value);
+    if(isNaN(facteur)||isNaN(T)) throw new Error('Valeurs numériques requises.');
+    if(facteur<=0||facteur>1) throw new Error('Le facteur doit être compris entre 0 (exclu) et 1.');
+    if(T<1) throw new Error('T doit être au moins 1.');
+    const result=Math.pow(facteur,T);
+    let out=`<p>Facteur cumulé après ${T} pas $=${facteur}^{${T}}=\\mathbf{${result.toExponential(4)}}$</p>`;
+    if(result<1e-4) out+='<p style="color:#b00020;font-weight:bold;">Gradient pratiquement évanoui à cette portée.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerLSTM(){
+  const erreurDiv=document.getElementById('erreurL3'); const resDiv=document.getElementById('resultatL3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const zf=parseFloat(document.getElementById('zfIn3').value);
+    const zi=parseFloat(document.getElementById('ziIn3').value);
+    const zg=parseFloat(document.getElementById('zgIn3').value);
+    const zo=parseFloat(document.getElementById('zoIn3').value);
+    const Cprev=parseFloat(document.getElementById('CprevIn3').value);
+    if([zf,zi,zg,zo,Cprev].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    const ft=sig(zf), it=sig(zi), gt=tanh(zg), ot=sig(zo);
+    const Ct=ft*Cprev+it*gt;
+    const ht=ot*tanh(Ct);
+    let out='<table><tr><th>porte</th><th>valeur</th></tr>';
+    out+=`<tr><td>oubli $f_t$</td><td>${ft.toFixed(4)}</td></tr>`;
+    out+=`<tr><td>entrée $i_t$</td><td>${it.toFixed(4)}</td></tr>`;
+    out+=`<tr><td>candidat $g_t$</td><td>${gt.toFixed(4)}</td></tr>`;
+    out+=`<tr><td>sortie $o_t$</td><td>${ot.toFixed(4)}</td></tr></table>`;
+    out+=`<p>$C_t=\\mathbf{${Ct.toFixed(4)}}$, $h_t=\\mathbf{${ht.toFixed(4)}}$</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerRNN(); calculerAttenuation(); calculerLSTM(); };
+</script>
+</body>
+</html>

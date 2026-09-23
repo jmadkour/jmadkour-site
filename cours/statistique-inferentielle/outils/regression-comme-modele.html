@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 19 — La régression devient un modèle — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.precision { border-left-color: var(--ceco); } .panneau.precision h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.precision button { background: var(--ceco); } .panneau.precision button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 19 — La régression devient un modèle</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Estimer la droite (moindres carrés)</h2>
+  <div class="grille4">
+    <div><label for="covxy">cov(x,y)</label><input id="covxy" value="9859.9"></div>
+    <div><label for="vx">V(x)</label><input id="vx" value="35.574"></div>
+    <div><label for="xbar">x̄</label><input id="xbar" value="10.142"></div>
+    <div><label for="ybar">ȳ</label><input id="ybar" value="7158.26"></div>
+  </div>
+  <button onclick="calculerDroite()">Calculer β̂₀ et β̂₁</button>
+  <div id="erreurD" class="erreur"></div>
+  <div id="resultatD" class="resultat-zone"></div>
+</div>
+
+<div class="panneau precision">
+  <h2>Précision de la pente β̂₁</h2>
+  <div class="grille3">
+    <div><label for="n2">taille n</label><input id="n2" value="500"></div>
+    <div><label for="vx2">V(x)</label><input id="vx2" value="35.574"></div>
+    <div><label for="sigma2">variance résiduelle σ̂ε²</label><input id="sigma2" value="4850000"></div>
+  </div>
+  <button onclick="calculerPrecision()">Calculer V(β̂₁) et se(β̂₁)</button>
+  <div id="erreurP" class="erreur"></div>
+  <div id="resultatP" class="resultat-zone"></div>
+  <div id="grapheP"></div>
+</div>
+
+<p class="avertissement">Rappels : $\widehat\beta_1=\mathrm{cov}(x,y)/V(x)$, $\widehat\beta_0=\overline y-\widehat\beta_1\overline x$ (formules inchangées depuis la statistique descriptive). $V(\widehat\beta_1)=\widehat\sigma_\varepsilon^2/\sum_i(x_i-\overline x)^2$ avec $\sum_i(x_i-\overline x)^2=n\times V(x)$ : plus les $x$ sont étalés (V(x) grand) ou l'échantillon grand (n grand), plus la pente est estimée précisément, à bruit égal.</p>
+
+<script>
+function calculerDroite(){
+  const erreurDiv=document.getElementById('erreurD'); const resDiv=document.getElementById('resultatD');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const cov=parseFloat(document.getElementById('covxy').value);
+    const vx=parseFloat(document.getElementById('vx').value);
+    const xbar=parseFloat(document.getElementById('xbar').value);
+    const ybar=parseFloat(document.getElementById('ybar').value);
+    if([cov,vx,xbar,ybar].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(vx<=0) throw new Error('V(x) doit être strictement positif.');
+    const b1=cov/vx;
+    const b0=ybar-b1*xbar;
+    resDiv.innerHTML=`<table><tr><th>β̂₁ (pente)</th><th>β̂₀ (ordonnée à l'origine)</th></tr>
+      <tr><td>${b1.toFixed(4)}</td><td>${b0.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Modèle estimé : $\\widehat y = ${b0.toFixed(2)} + ${b1.toFixed(4)}\\,x$</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerPrecision(){
+  const erreurDiv=document.getElementById('erreurP'); const resDiv=document.getElementById('resultatP');
+  const grapheDiv=document.getElementById('grapheP');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('n2').value);
+    const vx=parseFloat(document.getElementById('vx2').value);
+    const sigma2=parseFloat(document.getElementById('sigma2').value);
+    if([n,vx,sigma2].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(n<3) throw new Error('n doit être ≥3.');
+    if(vx<=0) throw new Error('V(x) doit être strictement positif.');
+    if(sigma2<=0) throw new Error('La variance résiduelle doit être strictement positive.');
+    const Sxx=n*vx;
+    const Vb1=sigma2/Sxx;
+    const seb1=Math.sqrt(Vb1);
+    resDiv.innerHTML=`<table><tr><th>Σ(xᵢ-x̄)²=n·V(x)</th><th>V(β̂₁)</th><th>se(β̂₁)</th></tr>
+      <tr><td>${Sxx.toFixed(2)}</td><td>${Vb1.toFixed(4)}</td><td>${seb1.toFixed(4)}</td></tr></table>`;
+    // graphe : se(beta1) en fonction de Sxx, pour situer le cas courant
+    const w=520,h=200,pad=36;
+    const SxxMax=Sxx*2.2, SxxMin=Sxx*0.15;
+    const X=(s)=>pad+((s-SxxMin)/(SxxMax-SxxMin))*(w-pad-20);
+    const seVals=[];
+    for(let i=0;i<=100;i++){
+      const s=SxxMin+i*(SxxMax-SxxMin)/100;
+      seVals.push(Math.sqrt(sigma2/s));
+    }
+    const seMax=Math.max(...seVals);
+    const Y=(v)=>(h-pad)-(v/seMax)*(h-pad-20);
+    let path='';
+    for(let i=0;i<=100;i++){
+      const s=SxxMin+i*(SxxMax-SxxMin)/100;
+      const se=Math.sqrt(sigma2/s);
+      path+=(i===0?'M':'L')+X(s).toFixed(1)+','+Y(se).toFixed(1)+' ';
+    }
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    svg+=`<path d="${path}" fill="none" stroke="#5A5A5A" stroke-width="1.5"/>`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${w-10}" y2="${h-pad}" stroke="#5A5A5A"/>`;
+    svg+=`<circle cx="${X(Sxx).toFixed(1)}" cy="${Y(seb1).toFixed(1)}" r="3.5" fill="#1F6FB2"/>`;
+    svg+=`<text x="${X(Sxx).toFixed(1)}" y="${(Y(seb1)-8).toFixed(1)}" font-size="9" fill="#1F6FB2" text-anchor="middle">votre cas : se=${seb1.toFixed(3)}</text>`;
+    svg+=`<text x="${w/2}" y="${h-6}" font-size="9" fill="#5A5A5A" text-anchor="middle">Σ(xᵢ-x̄)² croissant →</text>`;
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerDroite(); calculerPrecision(); };
+</script>
+</body>
+</html>

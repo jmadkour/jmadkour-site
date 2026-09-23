@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Le lemme d'Itô — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.compar { border-left-color: var(--cex); }
+  .panneau.compar h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: 1.4fr 1.4fr 1.4fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.compar button { background: var(--cex); }
+  .panneau.compar button:hover { background: #226b43; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+  .formule { background: #f4f2fa; border-radius: 5px; padding: 0.6em 0.9em; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Le lemme d'Itô</h1>
+<p class="sous-titre">Calculatrice interactive — Calcul stochastique pour la finance</p>
+
+<div class="panneau">
+  <h2>Appliquer le lemme d'Itô à $f(X_t)$</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">
+    On part de $dX_t=a(X_t)\,dt+b(X_t)\,dW_t$. Saisir $f(x)$, $a(x)$ et $b(x)$ en JavaScript (variable <code>x</code>).
+    Les dérivées $f_x$ et $f_{xx}$ sont calculées numériquement (différences finies centrées). Le lemme donne
+    $df=\big(a(x)f_x+\tfrac12b(x)^2f_{xx}\big)dt+b(x)f_x\,dW_t$.
+  </p>
+  <div class="grille4">
+    <div><label for="fExpr">f(x) =</label><input id="fExpr" value="x*x"></div>
+    <div><label for="aExpr">a(x) =</label><input id="aExpr" value="0.1*x"></div>
+    <div><label for="bExpr">b(x) =</label><input id="bExpr" value="0.25*x"></div>
+    <div><label for="xVal">au point $x=$</label><input id="xVal" value="100"></div>
+  </div>
+  <button onclick="calculerLemme()">Appliquer le lemme d'Itô</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Exemples à essayer : <code>f=x*x, a=0.1*x, b=0.25*x</code> (indice au carré, cf. exercice 5) ;
+<code>f=Math.log(x), a=0.08*x, b=0.3*x</code> (log d'un GBM, apparaît au chapitre 7) ;
+<code>f=1/x, a=0.06*x, b=0.15*x</code> (taux inverse, cf. exercice 6) ; <code>f=Math.sqrt(x), a=0.5, b=0.8</code> (racine, cf. exercice 3).</p>
+
+<div class="panneau compar">
+  <h2>Visualiser l'effet de convexité</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">
+    On trace $f(x)$ autour du point choisi, avec sa tangente (approximation linéaire) : l'écart entre la courbe et la
+    tangente est directement lié au terme $\tfrac12b^2f_{xx}$ du lemme d'Itô (Jensen).
+  </p>
+  <button onclick="tracerConvexite()">Tracer le graphique</button>
+  <div id="erreur2" class="erreur"></div>
+  <canvas id="graphiqueConvexite" height="260"></canvas>
+</div>
+
+<script>
+let chartConv = null;
+
+function deriveesNumeriques(f, x) {
+  const h = Math.max(Math.abs(x)*1e-4, 1e-4);
+  const fp = f(x+h), fm = f(x-h), f0 = f(x);
+  const fx = (fp - fm) / (2*h);
+  const fxx = (fp - 2*f0 + fm) / (h*h);
+  return { fx, fxx, f0 };
+}
+
+function calculerLemme() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const fExpr = document.getElementById('fExpr').value;
+    const aExpr = document.getElementById('aExpr').value;
+    const bExpr = document.getElementById('bExpr').value;
+    const x0 = parseFloat(document.getElementById('xVal').value);
+    if (isNaN(x0)) throw new Error('Le point x doit être un nombre.');
+
+    const f = new Function('x', 'return ' + fExpr + ';');
+    const a = new Function('x', 'return ' + aExpr + ';');
+    const b = new Function('x', 'return ' + bExpr + ';');
+
+    const { fx, fxx, f0 } = deriveesNumeriques(f, x0);
+    const aVal = a(x0), bVal = b(x0);
+    if ([fx,fxx,f0,aVal,bVal].some(v=>!isFinite(v))) throw new Error('Valeur non définie en ce point (division par zéro, racine négative, etc.).');
+
+    const derive = aVal*fx + 0.5*bVal*bVal*fxx;
+    const diffusion = bVal*fx;
+    const termeConvexite = 0.5*bVal*bVal*fxx;
+    const deriveNaive = aVal*fx;
+
+    resDiv.innerHTML = `
+      <div class="formule">f(x₀) = ${f0.toFixed(6)} &nbsp;|&nbsp; f'(x₀) ≈ ${fx.toFixed(6)} &nbsp;|&nbsp; f''(x₀) ≈ ${fxx.toFixed(6)}</div>
+      <table>
+        <tr><th></th><th>valeur</th></tr>
+        <tr><td>a(x₀)</td><td>${aVal.toFixed(6)}</td></tr>
+        <tr><td>b(x₀)</td><td>${bVal.toFixed(6)}</td></tr>
+        <tr><td>dérive naïve : a(x₀)·f'(x₀)</td><td>${deriveNaive.toFixed(6)}</td></tr>
+        <tr><td>terme de convexité : ½·b(x₀)²·f''(x₀)</td><td>${termeConvexite.toFixed(6)}</td></tr>
+        <tr><td><strong>dérive d'Itô de df</strong></td><td><strong>${derive.toFixed(6)}</strong></td></tr>
+        <tr><td><strong>diffusion de df : b(x₀)·f'(x₀)</strong></td><td><strong>${diffusion.toFixed(6)}</strong></td></tr>
+      </table>
+      <p style="font-size:0.85em;color:var(--cgris);">Si $f''(x_0)=0$ (fonction affine), le terme de convexité s'annule et l'on retrouve la dérive naïve : le lemme d'Itô ne fait alors que ré-exprimer l'équation de $X_t$ en fonction de $f(X_t)$, sans effet supplémentaire.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function tracerConvexite() {
+  const erreurDiv = document.getElementById('erreur2');
+  erreurDiv.textContent = '';
+  try {
+    const fExpr = document.getElementById('fExpr').value;
+    const x0 = parseFloat(document.getElementById('xVal').value);
+    if (isNaN(x0)) throw new Error('Le point x doit être un nombre.');
+    const f = new Function('x', 'return ' + fExpr + ';');
+    const { fx, f0 } = deriveesNumeriques(f, x0);
+
+    const demiLargeur = Math.max(Math.abs(x0)*0.3, 1);
+    const nPts = 60;
+    const labels = [], courbe = [], tangente = [];
+    for (let i=0;i<=nPts;i++) {
+      const xi = x0 - demiLargeur + i*(2*demiLargeur/nPts);
+      labels.push(xi.toFixed(2));
+      let yi;
+      try { yi = f(xi); } catch(e) { yi = null; }
+      courbe.push(isFinite(yi) ? yi : null);
+      tangente.push(f0 + fx*(xi-x0));
+    }
+
+    if (chartConv) chartConv.destroy();
+    chartConv = new Chart(document.getElementById('graphiqueConvexite').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'f(x)', data: courbe, borderColor: '#1F6FB2', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0 },
+        { label: 'tangente en x₀', data: tangente, borderColor: '#B56600', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [6,3], pointRadius: 0 }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'x' } }, y: { title: { display: true, text: 'f(x)' } } },
+        plugins: { title: { display: true, text: 'Écart courbe / tangente = effet de convexité (terme en f\'\')' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerLemme(); tracerConvexite(); };
+</script>
+</body>
+</html>

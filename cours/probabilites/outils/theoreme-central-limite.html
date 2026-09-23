@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 20 — Le théorème central limite — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.sondage { border-left-color: var(--cex); }
+  .panneau.sondage h2 { color: var(--cex); }
+  .panneau.var { border-left-color: var(--cintu); }
+  .panneau.var h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.sondage button { background: var(--cex); }
+  .panneau.sondage button:hover { background: #206040; }
+  .panneau.var button { background: var(--cintu); }
+  .panneau.var button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 20 — Le théorème central limite</h1>
+<p class="sous-titre">Calculatrice interactive — Probabilités</p>
+
+<div class="panneau">
+  <h2>Distribution approchée de X̄ₙ, quelle que soit la loi de départ</h2>
+  <div class="grille4">
+    <div><label for="mVal">m (espérance)</label><input id="mVal" value="50"></div>
+    <div><label for="sigVal">σ (écart-type individuel)</label><input id="sigVal" value="12"></div>
+    <div><label for="nVal">n</label><input id="nVal" value="36"></div>
+    <div><label for="seuilVal">seuil pour P(X̄ₙ&gt;seuil)</label><input id="seuilVal" value="53"></div>
+  </div>
+  <button onclick="calculerTCL()">Calculer σ(X̄ₙ), z et P(X̄ₙ&gt;seuil)</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueTCL" height="220"></canvas>
+</div>
+
+<div class="panneau sondage">
+  <h2>Intervalle de confiance pour une proportion (sondage)</h2>
+  <div class="grille3">
+    <div><label for="phatVal">p̂ (proportion observée)</label><input id="phatVal" value="0.52"></div>
+    <div><label for="nSondage">n (taille de l'échantillon)</label><input id="nSondage" value="1500"></div>
+    <div><label for="confSondage">niveau de confiance</label><input id="confSondage" value="0.95"></div>
+  </div>
+  <button onclick="calculerSondage()">Calculer la marge d'erreur et l'intervalle de confiance</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau var">
+  <h2>Value at Risk paramétrique</h2>
+  <div class="grille3">
+    <div><label for="meanR">E(R) (rendement moyen)</label><input id="meanR" value="0.07"></div>
+    <div><label for="sigR">σ(R)</label><input id="sigR" value="0.18"></div>
+    <div><label for="confVaR">niveau de confiance</label><input id="confVaR" value="0.99"></div>
+  </div>
+  <button onclick="calculerVaR()">Calculer VaR = E(R) − z·σ(R)</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : X̄ₙ ≈ N(m ; σ/√n) quelle que soit la loi de départ (indépendance, loi commune, variance finie). IC à (1-α) pour une proportion : p̂ ± z·√(p̂(1-p̂)/n). VaR paramétrique : E(R) − z·σ(R), avec z=1,645 (95%), z=1,96 (97,5% bilatéral) ou z=2,326 (99%).</p>
+
+<script>
+function erf(x){
+  const sign = x<0?-1:1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z){ return 0.5*(1+erf(z/Math.sqrt(2))); }
+function zScore(conf){
+  if (conf>=0.999) return 3.09;
+  if (conf>=0.995) return 2.58;
+  if (conf>=0.99) return 2.326;
+  if (conf>=0.975) return 1.96;
+  if (conf>=0.95) return 1.645;
+  if (conf>=0.9) return 1.28;
+  return 1.0;
+}
+
+let chartTCL = null;
+function calculerTCL() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const m = parseFloat(document.getElementById('mVal').value);
+    const sig = parseFloat(document.getElementById('sigVal').value);
+    const n = parseInt(document.getElementById('nVal').value);
+    const seuil = parseFloat(document.getElementById('seuilVal').value);
+    if ([m,sig,n,seuil].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (sig<=0 || n<=0) throw new Error('σ et n doivent être strictement positifs.');
+
+    const sigXbar = sig/Math.sqrt(n);
+    const z = (seuil-m)/sigXbar;
+    const Psup = 1-Phi(z);
+
+    resDiv.innerHTML = `
+      <table><tr><th>σ(X̄ₙ)=σ/√n</th><th>z</th><th>P(X̄ₙ&gt;${seuil})</th></tr>
+      <tr><td>${sigXbar.toFixed(4)}</td><td>${z.toFixed(4)}</td><td>${Psup.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Ce calcul ne suppose rien sur la forme de la loi des Xᵢ : seules leur indépendance, leur loi commune et une variance finie sont nécessaires.</p>
+    `;
+
+    const labels = [], valeurs = [], couleurs = [];
+    const lo = m-4*sigXbar, hi = m+4*sigXbar;
+    for (let i=0;i<=100;i++) { const x=lo+(hi-lo)*i/100; labels.push(x.toFixed(2)); valeurs.push((1/(sigXbar*Math.sqrt(2*Math.PI)))*Math.exp(-0.5*Math.pow((x-m)/sigXbar,2))); couleurs.push(x>seuil ? '#B56600' : '#1F6FB2'); }
+    if (chartTCL) chartTCL.destroy();
+    chartTCL = new Chart(document.getElementById('graphiqueTCL').getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: [{ label: 'densité de X̄ₙ', data: valeurs, borderColor:'#1F6FB2', backgroundColor:'rgba(31,111,178,0.1)', fill:true, borderWidth:2, pointRadius:0 }] },
+      options: { responsive: true, scales: { x: { title: { display:true, text:'x̄' } }, y: { title: { display:true, text:'densité' } } },
+        plugins: { title: { display:true, text:`X̄ₙ ≈ N(${m} ; ${sigXbar.toFixed(3)})` } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerSondage() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const phat = parseFloat(document.getElementById('phatVal').value);
+    const n = parseInt(document.getElementById('nSondage').value);
+    const conf = parseFloat(document.getElementById('confSondage').value);
+    if ([phat,n,conf].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (phat<0 || phat>1) throw new Error('p̂ doit être compris entre 0 et 1.');
+    if (n<=0) throw new Error('n doit être strictement positif.');
+    if (conf<=0 || conf>=1) throw new Error('Le niveau de confiance doit être strictement compris entre 0 et 1.');
+
+    const sigma = Math.sqrt(phat*(1-phat));
+    const alphaBilateral = 1-(1-conf)/2;
+    const z = zScore(alphaBilateral);
+    const marge = z*sigma/Math.sqrt(n);
+    const borneInf = phat-marge, borneSup = phat+marge;
+
+    resDiv.innerHTML = `
+      <table><tr><th>σ=√(p̂(1-p̂))</th><th>z</th><th>marge</th><th>IC à ${(conf*100).toFixed(0)}%</th></tr>
+      <tr><td>${sigma.toFixed(4)}</td><td>${z}</td><td>±${marge.toFixed(4)}</td><td>[${borneInf.toFixed(4)} ; ${borneSup.toFixed(4)}]</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${borneInf>0.5 ? 'L\'intervalle est entièrement au-dessus de 0,5 : majorité confirmée au niveau de confiance choisi.' : (borneSup<0.5 ? 'L\'intervalle est entièrement en dessous de 0,5.' : 'L\'intervalle contient 0,5 : on ne peut pas conclure à une majorité.')}</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerVaR() {
+  const erreurDiv = document.getElementById('erreur3');
+  const resDiv = document.getElementById('resultat3');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const meanR = parseFloat(document.getElementById('meanR').value);
+    const sigR = parseFloat(document.getElementById('sigR').value);
+    const conf = parseFloat(document.getElementById('confVaR').value);
+    if ([meanR,sigR,conf].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (sigR<0) throw new Error('σ(R) doit être positif ou nul.');
+    if (conf<=0 || conf>=1) throw new Error('Le niveau de confiance doit être strictement compris entre 0 et 1.');
+
+    const z = zScore(conf);
+    const VaR = meanR - z*sigR;
+
+    resDiv.innerHTML = `
+      <table><tr><th>z (${(conf*100).toFixed(1)}%)</th><th>VaR = E(R) − z·σ(R)</th></tr>
+      <tr><td>${z}</td><td><strong>${(VaR*100).toFixed(2)} %</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Cette VaR paramétrique suppose la normalité des rendements ; si les queues réelles sont plus épaisses, ce chiffre sous-estime le risque de pertes extrêmes.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerTCL(); calculerSondage(); calculerVaR(); };
+</script>
+</body>
+</html>

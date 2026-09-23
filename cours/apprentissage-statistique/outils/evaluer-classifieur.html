@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Matrice de confusion, ROC, AUC — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Évaluer un classifieur : matrice de confusion, ROC, AUC</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage statistique</p>
+
+<div class="panneau">
+  <h2>1. Matrice de confusion : toutes les mesures</h2>
+  <div class="ligne">
+    <div><label for="vpIn6">Vrais positifs</label><input type="number" id="vpIn6" value="60" step="1" min="0"></div>
+    <div><label for="fnIn6">Faux négatifs</label><input type="number" id="fnIn6" value="40" step="1" min="0"></div>
+    <div><label for="fpIn6">Faux positifs</label><input type="number" id="fpIn6" value="90" step="1" min="0"></div>
+    <div><label for="vnIn6">Vrais négatifs</label><input type="number" id="vnIn6" value="810" step="1" min="0"></div>
+  </div>
+  <button onclick="calculerMatrice()">Calculer</button>
+  <div id="erreurM6" class="erreur"></div>
+  <div id="resultatM6" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Situer un point sur la courbe ROC</h2>
+  <div class="ligne">
+    <div><label for="rappelIn6">Rappel (TPR)</label><input type="number" id="rappelIn6" value="0.72" step="any" min="0" max="1"></div>
+    <div><label for="specIn6">Spécificité</label><input type="number" id="specIn6" value="0.65" step="any" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerROC()">Calculer</button>
+  <div id="erreurR6" class="erreur"></div>
+  <div id="resultatR6" class="resultat-zone"></div>
+  <svg id="svgROC6" width="380" height="380" viewBox="0 0 380 380"></svg>
+</div>
+
+<div class="panneau">
+  <h2>3. Approcher l'AUC par la méthode des trapèzes</h2>
+  <p class="aide">Une paire "FPR TPR" par ligne, dans l'ordre croissant de FPR, en commençant par (0,0) et terminant par (1,1).</p>
+  <textarea id="pointsIn6" rows="5">0 0
+0.1 0.5
+0.3 0.75
+0.6 0.9
+1 1</textarea>
+  <button onclick="calculerAUC()">Calculer</button>
+  <div id="erreurA6" class="erreur"></div>
+  <div id="resultatA6" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : exactitude $=(VP+VN)/n$, précision $=VP/(VP+FP)$, rappel $=VP/(VP+FN)$, spécificité $=VN/(VN+FP)$, $F_1=2\times\text{précision}\times\text{rappel}/(\text{précision}+\text{rappel})$ ; un point ROC au-dessus de la diagonale bat le hasard, en dessous il vaut mieux inverser les prédictions ; AUC $\approx0{,}5$ aléatoire, $0{,}7$–$0{,}8$ acceptable, $>0{,}95$ suspect (chercher une fuite de données).</p>
+
+<script>
+function calculerMatrice(){
+  const erreurDiv=document.getElementById('erreurM6'); const resDiv=document.getElementById('resultatM6');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const VP=parseFloat(document.getElementById('vpIn6').value);
+    const FN=parseFloat(document.getElementById('fnIn6').value);
+    const FP=parseFloat(document.getElementById('fpIn6').value);
+    const VN=parseFloat(document.getElementById('vnIn6').value);
+    if([VP,FN,FP,VN].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if([VP,FN,FP,VN].some(v=>v<0)) throw new Error('Toutes les valeurs doivent être positives.');
+    const n=VP+FN+FP+VN;
+    if(n===0) throw new Error('La matrice ne peut pas être vide.');
+    const exact=(VP+VN)/n;
+    const prec=(VP+FP)>0?VP/(VP+FP):NaN;
+    const rap=(VP+FN)>0?VP/(VP+FN):NaN;
+    const spec=(VN+FP)>0?VN/(VN+FP):NaN;
+    const f1=(prec+rap)>0?2*prec*rap/(prec+rap):NaN;
+    const trivial=(FP+VN)/n;
+    let out=`<p>$n=${n}$</p>
+      <p>Exactitude $=${(exact*100).toFixed(2)}\\%$ &nbsp;&nbsp; Précision $=${isNaN(prec)?'--':(prec*100).toFixed(2)+'\\%'}$ &nbsp;&nbsp; Rappel $=${isNaN(rap)?'--':(rap*100).toFixed(2)+'\\%'}$</p>
+      <p>Spécificité $=${isNaN(spec)?'--':(spec*100).toFixed(2)+'\\%'}$ &nbsp;&nbsp; $F_1=${isNaN(f1)?'--':(f1*100).toFixed(2)+'\\%'}$</p>
+      <p>Exactitude du classifieur trivial « toujours négatif » $=${(trivial*100).toFixed(2)}\\%$</p>`;
+    if(trivial>exact) out+='<p style="color:#b00020;font-weight:bold;">Le classifieur trivial bat le modèle sur la seule exactitude — comparez toujours à cette référence.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerROC(){
+  const erreurDiv=document.getElementById('erreurR6'); const resDiv=document.getElementById('resultatR6');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const rappel=parseFloat(document.getElementById('rappelIn6').value);
+    const spec=parseFloat(document.getElementById('specIn6').value);
+    if([rappel,spec].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(rappel<0||rappel>1||spec<0||spec>1) throw new Error('Rappel et spécificité doivent être compris entre 0 et 1.');
+    const fpr=1-spec;
+    const position=rappel>fpr?'au-dessus de la diagonale (meilleur que le hasard)':(rappel<fpr?'en dessous de la diagonale (pire que le hasard — envisager d\'inverser les prédictions)':'exactement sur la diagonale (aléatoire)');
+    resDiv.innerHTML=`<p>Taux de faux positifs $=1-${spec}=\\mathbf{${fpr.toFixed(4)}}$</p>
+      <p>Point ROC $=(${fpr.toFixed(4)}\\,;\\,${rappel.toFixed(4)})$ : <strong>${position}</strong></p>`;
+    dessinerROC(fpr,rappel);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgROC6').innerHTML=''; }
+}
+
+function dessinerROC(fpr,tpr){
+  const svg=document.getElementById('svgROC6');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=380,H=380,pad=45;
+  function xPix(x){ return pad+x*(W-2*pad); }
+  function yPix(y){ return H-pad-y*(H-2*pad); }
+  const diag=document.createElementNS(ns,'line');
+  diag.setAttribute('x1',xPix(0)); diag.setAttribute('y1',yPix(0)); diag.setAttribute('x2',xPix(1)); diag.setAttribute('y2',yPix(1));
+  diag.setAttribute('stroke','#5A5A5A'); diag.setAttribute('stroke-dasharray','5,4');
+  svg.appendChild(diag);
+  const axeX=document.createElementNS(ns,'line');
+  axeX.setAttribute('x1',xPix(0)); axeX.setAttribute('y1',yPix(0)); axeX.setAttribute('x2',xPix(1)); axeX.setAttribute('y2',yPix(0));
+  axeX.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axeX);
+  const axeY=document.createElementNS(ns,'line');
+  axeY.setAttribute('x1',xPix(0)); axeY.setAttribute('y1',yPix(0)); axeY.setAttribute('x2',xPix(0)); axeY.setAttribute('y2',yPix(1));
+  axeY.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axeY);
+  const pt=document.createElementNS(ns,'circle');
+  pt.setAttribute('cx',xPix(fpr)); pt.setAttribute('cy',yPix(tpr)); pt.setAttribute('r',5); pt.setAttribute('fill','#1F6FB2');
+  svg.appendChild(pt);
+  const lblX=document.createElementNS(ns,'text');
+  lblX.setAttribute('x',W/2); lblX.setAttribute('y',H-8); lblX.setAttribute('text-anchor','middle'); lblX.setAttribute('font-size','11');
+  lblX.textContent='taux de faux positifs';
+  svg.appendChild(lblX);
+  const lblY=document.createElementNS(ns,'text');
+  lblY.setAttribute('x',12); lblY.setAttribute('y',H/2); lblY.setAttribute('text-anchor','middle'); lblY.setAttribute('font-size','11');
+  lblY.setAttribute('transform',`rotate(-90 12 ${H/2})`);
+  lblY.textContent='rappel';
+  svg.appendChild(lblY);
+}
+
+function calculerAUC(){
+  const erreurDiv=document.getElementById('erreurA6'); const resDiv=document.getElementById('resultatA6');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('pointsIn6').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<2) throw new Error('Au moins 2 points requis.');
+    const pts=lignes.map(l=>{
+      const parts=l.split(/\s+/).map(Number);
+      if(parts.length!==2||parts.some(isNaN)) throw new Error('Format invalide : "'+l+'". Attendu : FPR TPR.');
+      return parts;
+    });
+    for(let i=1;i<pts.length;i++){
+      if(pts[i][0]<pts[i-1][0]) throw new Error('Les points doivent être triés par FPR croissant.');
+    }
+    let auc=0;
+    let detail=[];
+    for(let i=1;i<pts.length;i++){
+      const [x1,y1]=pts[i-1], [x2,y2]=pts[i];
+      const aire=(x2-x1)*(y1+y2)/2;
+      auc+=aire;
+      detail.push(aire);
+    }
+    let out=`<p>Aires des trapèzes successifs : ${detail.map(a=>a.toFixed(4)).join(', ')}</p>
+      <p><strong>AUC totale $=${auc.toFixed(4)}$</strong></p>`;
+    let lecture;
+    if(auc<0.55) lecture='proche de l\'aléatoire';
+    else if(auc<0.7) lecture='médiocre';
+    else if(auc<=0.8) lecture='acceptable';
+    else if(auc<=0.95) lecture='bon à excellent';
+    else lecture='suspect — chercher une fuite de données';
+    out+=`<p>Lecture : <strong>${lecture}</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerMatrice(); calculerROC(); calculerAUC(); };
+</script>
+</body>
+</html>

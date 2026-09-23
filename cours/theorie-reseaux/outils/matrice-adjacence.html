@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Matrice d'adjacence et algèbre des graphes — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 200px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.83em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.55em; text-align: center; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .non { color: #b00020; font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .exemples { font-size: 0.82em; color: var(--cgris); margin-top: 0.4em; }
+  .exemples button { font-size: 0.78em; padding: 0.3em 0.7em; margin: 0.2em 0.3em 0 0; background: #eee; color: #333; }
+  .exemples button:hover { background: #ddd; }
+  .matbox { overflow-x: auto; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — La matrice d'adjacence et l'algèbre des graphes</h1>
+<p class="sous-titre">Calculatrice interactive — Théorie des réseaux</p>
+
+<div class="panneau">
+  <h2>Analyser un graphe par sa matrice d'adjacence</h2>
+  <p class="aide">Saisir les sommets et les arêtes (graphe non orienté). L'outil calcule $\mathbf{A}$, $\mathbf{A}^2$, $\mathbf{A}^3$, le nombre de triangles, le laplacien $\mathbf{L}$, ses valeurs propres, $\lambda_1$ et la distribution stationnaire de la marche aléatoire.</p>
+  <div class="ligne">
+    <div>
+      <label for="sommetsIn">Sommets (séparés par des virgules)</label>
+      <input type="text" id="sommetsIn" value="1,2,3,4,5,6,7">
+    </div>
+    <div>
+      <label for="rangIn">Rang $r$ de puissance additionnelle à afficher (optionnel, 1 à 6)</label>
+      <input type="number" id="rangIn" value="4" min="1" max="6">
+    </div>
+  </div>
+  <label for="aretesIn">Arêtes (une par ligne, format A-B)</label>
+  <textarea id="aretesIn">1-2
+1-3
+2-3
+3-4
+4-5
+5-6
+5-7
+6-7</textarea>
+  <div class="exemples">
+    Exemples rapides :
+    <button onclick="chargerExemple('filrouge')">Réseau du cours (fil-rouge)</button>
+    <button onclick="chargerExemple('triangle')">Un seul triangle (Exercice 2)</button>
+    <button onclick="chargerExemple('disjoint')">Deux composantes (Exercice 3)</button>
+  </div>
+  <button onclick="analyserGraphe()">Calculer</button>
+  <div id="erreurG" class="erreur"></div>
+  <div id="resultatG" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Les valeurs propres sont calculées par l'algorithme de Jacobi (matrices symétriques), directement dans le navigateur. La règle $d(i,j)=\min\{r:(\mathbf{A}^r)_{ij}>0\}$ peut être vérifiée en essayant plusieurs rangs $r$ pour une même paire de sommets.</p>
+
+<script>
+function chargerExemple(nom){
+  const sommets = document.getElementById('sommetsIn');
+  const aretes = document.getElementById('aretesIn');
+  if(nom === 'filrouge'){
+    sommets.value = '1,2,3,4,5,6,7';
+    aretes.value = '1-2\n1-3\n2-3\n3-4\n4-5\n5-6\n5-7\n6-7';
+  } else if(nom === 'triangle'){
+    sommets.value = 'S1,S2,S3,S4';
+    aretes.value = 'S1-S2\nS1-S3\nS2-S3\nS3-S4';
+  } else if(nom === 'disjoint'){
+    sommets.value = 'W1,W2,W3,W4,W5,W6';
+    aretes.value = 'W1-W2\nW1-W3\nW2-W3\nW4-W5\nW4-W6\nW5-W6';
+  }
+  analyserGraphe();
+}
+
+function parserGraphe(){
+  const sommetsTxt = document.getElementById('sommetsIn').value.trim();
+  const aretesTxt = document.getElementById('aretesIn').value.trim();
+  if(!sommetsTxt) throw new Error('La liste des sommets ne peut pas être vide.');
+  const V = sommetsTxt.split(',').map(s => s.trim()).filter(s => s.length > 0);
+  if(V.length < 1) throw new Error('Il faut au moins un sommet.');
+  const setV = new Set(V);
+  if(setV.size !== V.length) throw new Error('Les sommets doivent avoir des noms distincts.');
+  const E = [];
+  if(aretesTxt){
+    const lignes = aretesTxt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    for(const ligne of lignes){
+      const parts = ligne.split('-').map(s => s.trim());
+      if(parts.length !== 2) throw new Error(`Ligne d'arête invalide : "${ligne}" (attendu format A-B).`);
+      const [a, b] = parts;
+      if(!setV.has(a)) throw new Error(`Le sommet "${a}" n'est pas dans la liste des sommets.`);
+      if(!setV.has(b)) throw new Error(`Le sommet "${b}" n'est pas dans la liste des sommets.`);
+      if(a === b) throw new Error(`Boucle non autorisée : "${ligne}".`);
+      E.push([a, b]);
+    }
+  }
+  return { V, E };
+}
+
+function buildAdjMatrix(V, E){
+  const idx = {}; V.forEach((v,i)=>idx[v]=i);
+  const n = V.length;
+  const A = Array.from({length:n}, ()=>Array(n).fill(0));
+  for(const [a,b] of E){ A[idx[a]][idx[b]] = 1; A[idx[b]][idx[a]] = 1; }
+  return { A, idx };
+}
+
+function matMul(X, Y){
+  const n = X.length, m = Y[0].length, k = Y.length;
+  const Z = Array.from({length:n}, ()=>Array(m).fill(0));
+  for(let i=0;i<n;i++) for(let j=0;j<m;j++){ let s=0; for(let h=0;h<k;h++) s += X[i][h]*Y[h][j]; Z[i][j]=s; }
+  return Z;
+}
+
+function matPow(A, r){
+  const n = A.length;
+  let Result = Array.from({length:n}, (_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+  for(let p=0;p<r;p++) Result = matMul(Result, A);
+  return Result;
+}
+
+function trace(A){ let s=0; for(let i=0;i<A.length;i++) s+=A[i][i]; return s; }
+function degVector(A){ return A.map(row=>row.reduce((a,b)=>a+b,0)); }
+function numEdges(A){ let s=0; for(const row of A) s+=row.reduce((a,b)=>a+b,0); return s/2; }
+function laplacian(A){
+  const n = A.length; const deg = degVector(A);
+  const L = Array.from({length:n}, ()=>Array(n).fill(0));
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++) L[i][j] = (i===j?deg[i]:0) - A[i][j];
+  return L;
+}
+
+function jacobiEigenvalues(Ain, maxIter=200, tol=1e-12){
+  const n = Ain.length;
+  let A = Ain.map(row=>row.slice());
+  for(let iter=0; iter<maxIter; iter++){
+    let p=0,q=1,maxVal=0;
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){ if(Math.abs(A[i][j])>maxVal){ maxVal=Math.abs(A[i][j]); p=i; q=j; } }
+    if(maxVal < tol) break;
+    const app=A[p][p], aqq=A[q][q], apq=A[p][q];
+    const phi = 0.5*Math.atan2(2*apq, aqq-app);
+    const c = Math.cos(phi), s = Math.sin(phi);
+    const newA = A.map(row=>row.slice());
+    for(let i=0;i<n;i++){ newA[i][p] = c*A[i][p] - s*A[i][q]; newA[i][q] = s*A[i][p] + c*A[i][q]; }
+    const finalA = newA.map(row=>row.slice());
+    for(let j=0;j<n;j++){ finalA[p][j] = c*newA[p][j] - s*newA[q][j]; finalA[q][j] = s*newA[p][j] + c*newA[q][j]; }
+    A = finalA;
+  }
+  const eig = [];
+  for(let i=0;i<n;i++) eig.push(A[i][i]);
+  eig.sort((a,b)=>b-a);
+  return eig;
+}
+
+function matToHTML(M, V){
+  let h = '<div class="matbox"><table><tr><th></th>' + V.map(v=>`<th>${v}</th>`).join('') + '</tr>';
+  for(let i=0;i<M.length;i++){
+    h += `<tr><th>${V[i]}</th>` + M[i].map(x => `<td>${x}</td>`).join('') + '</tr>';
+  }
+  h += '</table></div>';
+  return h;
+}
+
+function analyserGraphe(){
+  const erreurDiv = document.getElementById('erreurG');
+  const resDiv = document.getElementById('resultatG');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const { V, E } = parserGraphe();
+    const rDemande = parseInt(document.getElementById('rangIn').value, 10) || 4;
+    const { A, idx } = buildAdjMatrix(V, E);
+    const n = V.length, m = numEdges(A);
+    const deg = degVector(A);
+    const sumDeg = deg.reduce((a,b)=>a+b,0);
+
+    let out = '';
+    out += `<h3>Matrice d'adjacence A</h3>`;
+    out += matToHTML(A, V);
+    out += `<div class="valeur">n = ${n}</div><div class="valeur">m = ${m}</div>`;
+
+    out += `<h3>Degrés (k = A·1)</h3>`;
+    out += '<table><tr>' + V.map(v=>`<th>${v}</th>`).join('') + '</tr><tr>' + V.map(v=>`<td>${deg[idx[v]]}</td>`).join('') + '</tr></table>';
+    out += `<p>Somme des degrés = ${sumDeg} ${sumDeg===2*m ? '<span class="ok">= 2m &#10003;</span>' : '<span class="non">&ne; 2m</span>'}</p>`;
+
+    const A2 = matPow(A, 2);
+    out += `<h3>A&sup2;</h3>`;
+    out += matToHTML(A2, V);
+    out += `<p class="aide">Diagonale de A&sup2; = degrés : ${V.map((v,i)=>A2[i][i]===deg[i] ? 'OK' : 'ERREUR').every(x=>x==='OK') ? '<span class="ok">vérifié pour tous les sommets &#10003;</span>' : '<span class="non">incohérence détectée</span>'}</p>`;
+
+    const A3 = matPow(A, 3);
+    out += `<h3>A&sup3; et comptage des triangles</h3>`;
+    out += matToHTML(A3, V);
+    const tr3 = trace(A3);
+    const tri = tr3/6;
+    out += `<div class="valeur">trace(A&sup3;) = ${tr3}</div><div class="valeur">nombre de triangles = ${tri}</div>`;
+
+    if(rDemande >= 1 && rDemande <= 6 && rDemande !== 2 && rDemande !== 3){
+      const Ar = matPow(A, rDemande);
+      out += `<h3>A^${rDemande} (rang demandé)</h3>`;
+      out += matToHTML(Ar, V);
+    }
+
+    const L = laplacian(A);
+    out += `<h3>Laplacien L = D - A</h3>`;
+    out += matToHTML(L, V);
+    const Lsum = L.map(row => row.reduce((a,b)=>a+b,0));
+    out += `<p>Somme de chaque ligne de L : ${Lsum.join(', ')} ${Lsum.every(x=>Math.abs(x)<1e-9) ? '<span class="ok">= 0 partout &#10003; (L·1=0)</span>' : '<span class="non">anomalie</span>'}</p>`;
+
+    const eigL = jacobiEigenvalues(L);
+    const zerosL = eigL.filter(x => Math.abs(x) < 1e-8).length;
+    out += `<h3>Spectre du laplacien</h3>`;
+    out += `<p>Valeurs propres (triées) : ${eigL.map(x=>x.toFixed(4)).join(', ')}</p>`;
+    out += `<div class="valeur">Multiplicité de 0 = ${zerosL} &rArr; ${zerosL} composante(s) connexe(s)</div>`;
+
+    const eigA = jacobiEigenvalues(A);
+    const lambda1 = eigA[0];
+    const kbar = sumDeg/n, kmax = Math.max(...deg);
+    out += `<h3>Spectre de A et rayon spectral</h3>`;
+    out += `<p>Valeurs propres de A (triées) : ${eigA.map(x=>x.toFixed(4)).join(', ')}</p>`;
+    out += `<div class="valeur">&lambda;&#8321; = ${lambda1.toFixed(4)}</div><div class="valeur">k&#772; = ${kbar.toFixed(4)}</div><div class="valeur">k_max = ${kmax}</div>`;
+    out += `<p>Encadrement k&#772; &le; &lambda;&#8321; &le; k_max : ${(kbar <= lambda1+1e-9 && lambda1 <= kmax+1e-9) ? '<span class="ok">vérifié &#10003;</span>' : '<span class="non">anomalie</span>'}</p>`;
+
+    out += `<h3>Distribution stationnaire de la marche aléatoire (&pi;&#7522; = k&#7522;/2m)</h3>`;
+    out += '<table><tr>' + V.map(v=>`<th>${v}</th>`).join('') + '</tr><tr>' + V.map((v,i)=>`<td>${(deg[idx[v]]/(2*m)).toFixed(4)}</td>`).join('') + '</tr></table>';
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { analyserGraphe(); };
+</script>
+</body>
+</html>

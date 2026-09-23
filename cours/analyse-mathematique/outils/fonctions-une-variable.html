@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Limites et dérivées — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille { display: grid; grid-template-columns: 2fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Limites, continuité, dérivabilité</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse mathématique</p>
+
+<div class="panneau">
+  <h2>Limites unilatérales en un point (estimation numérique)</h2>
+  <div class="grille">
+    <div><label for="fonc1">f(x) =</label><input id="fonc1" value="(x^2-4)/(x-2)"></div>
+    <div><label for="pointA">au point a =</label><input id="pointA" value="2"></div>
+  </div>
+  <button onclick="calculerLimite()">Estimer la limite</button>
+  <div id="erreurL" class="erreur"></div>
+  <div id="resultatL" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Dérivée numérique et tangente en un point</h2>
+  <div class="grille">
+    <div><label for="fonc2">f(x) =</label><input id="fonc2" value="x^2*ln(x)"></div>
+    <div><label for="pointB">au point a =</label><input id="pointB" value="2"></div>
+  </div>
+  <button onclick="calculerDerivee()">Calculer f'(a) et tracer</button>
+  <div id="erreurD" class="erreur"></div>
+  <div id="resultatD" class="resultat-zone"></div>
+  <canvas id="graphique" height="260"></canvas>
+</div>
+
+<p class="avertissement">Syntaxe : utiliser <code>^</code> pour la puissance, <code>ln(x)</code>, <code>exp(x)</code>, <code>sqrt(x)</code>. Les limites et dérivées sont estimées numériquement (différences finies), non calculées symboliquement — un écart résiduel de l'ordre de 10⁻⁶ est normal.</p>
+
+<script>
+function compiler(expr) {
+  const e = expr.replace(/\^/g, '**').replace(/ln\(/g, 'Math.log(').replace(/exp\(/g, 'Math.exp(').replace(/sqrt\(/g, 'Math.sqrt(').replace(/\bpi\b/g, 'Math.PI');
+  return new Function('x', 'return ' + e + ';');
+}
+
+function calculerLimite() {
+  const erreurDiv = document.getElementById('erreurL');
+  const resDiv = document.getElementById('resultatL');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const f = compiler(document.getElementById('fonc1').value);
+    const a = parseFloat(document.getElementById('pointA').value);
+    if (isNaN(a)) throw new Error('Le point a doit être numérique.');
+    const hs = [0.1, 0.01, 0.001, 0.0001];
+    let lignes = '<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:0.88em;">';
+    lignes += '<tr style="border-bottom:1px solid #ccc;"><th style="text-align:left;">h</th><th>f(a−h)</th><th>f(a+h)</th></tr>';
+    let gauche, droite;
+    hs.forEach(h => {
+      const fg = f(a - h), fd = f(a + h);
+      gauche = fg; droite = fd;
+      lignes += `<tr><td>${h}</td><td>${isFinite(fg) ? fg.toFixed(6) : '—'}</td><td>${isFinite(fd) ? fd.toFixed(6) : '—'}</td></tr>`;
+    });
+    lignes += '</table>';
+    resDiv.innerHTML = lignes;
+    const p = document.createElement('p');
+    if (isFinite(gauche) && isFinite(droite) && Math.abs(gauche - droite) < 1e-3) {
+      p.innerHTML = `<strong>Les limites à gauche et à droite semblent coïncider</strong> (≈ ${((gauche+droite)/2).toFixed(5)}) : la limite bilatérale existe probablement en a = ${a}.`;
+    } else {
+      p.innerHTML = `<strong>Les limites à gauche et à droite diffèrent</strong> (ou divergent) : la limite bilatérale n'existe probablement pas en a = ${a}, ou f n'est pas définie de part et d'autre.`;
+    }
+    resDiv.appendChild(p);
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerDerivee() {
+  const erreurDiv = document.getElementById('erreurD');
+  const resDiv = document.getElementById('resultatD');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const f = compiler(document.getElementById('fonc2').value);
+    const a = parseFloat(document.getElementById('pointB').value);
+    if (isNaN(a)) throw new Error('Le point a doit être numérique.');
+    const h = 1e-5;
+    const fa = f(a);
+    const fprime = (f(a + h) - f(a - h)) / (2 * h);
+    if (!isFinite(fa) || !isFinite(fprime)) throw new Error('f(a) ou f\'(a) n\'est pas défini (domaine de f ?).');
+
+    const p1 = document.createElement('p');
+    p1.innerHTML = `<strong>f(${a}) ≈ ${fa.toFixed(5)}</strong>, <strong>f'(${a}) ≈ ${fprime.toFixed(5)}</strong>`;
+    resDiv.appendChild(p1);
+    const p2 = document.createElement('p');
+    p2.innerHTML = `Équation de la tangente : y = ${fa.toFixed(4)} + ${fprime.toFixed(4)}·(x − ${a})`;
+    resDiv.appendChild(p2);
+
+    const pts = [], tan = [];
+    const largeur = Math.max(1, Math.abs(a) * 0.6, 1.5);
+    for (let x = a - largeur; x <= a + largeur; x += largeur / 40) {
+      const y = f(x);
+      if (isFinite(y)) pts.push({ x, y });
+      tan.push({ x, y: fa + fprime * (x - a) });
+    }
+    if (window.chartAM1) window.chartAM1.destroy();
+    const ctx = document.getElementById('graphique').getContext('2d');
+    window.chartAM1 = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [
+        { label: 'f(x)', data: pts, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0, tension: 0.1 },
+        { label: 'tangente en a', data: tan, borderColor: '#B56600', borderDash: [6,4], backgroundColor: 'transparent', pointRadius: 0 }
+      ]},
+      options: { responsive: true, scales: { x: { type: 'linear', title: { display: true, text: 'x' } }, y: { title: { display: true, text: 'f(x)' } } },
+        plugins: { title: { display: true, text: 'Fonction et tangente' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = function() { calculerLimite(); calculerDerivee(); };
+</script>
+</body>
+</html>

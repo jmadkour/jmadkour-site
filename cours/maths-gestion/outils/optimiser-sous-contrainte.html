@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Optimiser sous contrainte — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Optimiser sous contrainte</h1>
+<p class="sous-titre">Calculatrice interactive — Mathématiques pour la gestion</p>
+
+<div class="panneau">
+  <h2>Résoudre par Lagrange : f(x,y) sous la contrainte g(x,y)=c</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir f(x,y) et g(x,y) en JavaScript. Exemples : $f=$ <code>Math.pow(x,0.3)*Math.pow(y,0.7)</code> avec $g=$ <code>3*x+5*y</code> et $c=300$ ; ou $f=$ <code>x*y</code> avec $g=$ <code>4*x+2*y</code> et $c=40$.</p>
+  <div class="grille3">
+    <div><label for="fExpr">f(x,y) =</label><input id="fExpr" value="x*y"></div>
+    <div><label for="gExpr">g(x,y) =</label><input id="gExpr" value="4*x+2*y"></div>
+    <div><label for="cVal">c =</label><input id="cVal" value="40"></div>
+  </div>
+  <div class="grille3">
+    <div><label for="x0">point de départ $x_0$</label><input id="x0" value="1"></div>
+    <div><label for="y0">point de départ $y_0$</label><input id="y0" value="1"></div>
+    <div><label for="lam0">$\lambda_0$ de départ</label><input id="lam0" value="1"></div>
+  </div>
+  <button onclick="resoudreLagrange()">Résoudre par Lagrange</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueLagrange" height="280"></canvas>
+</div>
+
+<p class="avertissement">La méthode résout numériquement, par Newton-Raphson à trois inconnues $(x,y,\lambda)$, le système $f'_x-\lambda g'_x=0$, $f'_y-\lambda g'_y=0$, $c-g(x,y)=0$ (dérivées estimées par différence centrée). Le graphique montre la contrainte et la courbe de niveau de $f$ passant par la solution : elles doivent être tangentes au point trouvé, exactement comme l'exige la méthode du cours.</p>
+
+<script>
+let chartLag = null;
+
+function partiel(f, x, y, wrt) {
+  const h = 1e-4;
+  if (wrt === 'x') return (f(x+h,y)-f(x-h,y))/(2*h);
+  return (f(x,y+h)-f(x,y-h))/(2*h);
+}
+
+function resoudreLagrange() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const fExpr = document.getElementById('fExpr').value;
+    const gExpr = document.getElementById('gExpr').value;
+    const c = parseFloat(document.getElementById('cVal').value);
+    let x = parseFloat(document.getElementById('x0').value);
+    let y = parseFloat(document.getElementById('y0').value);
+    let lam = parseFloat(document.getElementById('lam0').value);
+    if ([c,x,y,lam].some(isNaN)) throw new Error('Toutes les valeurs numériques doivent être renseignées.');
+
+    const f = new Function('x','y','return '+fExpr+';');
+    const g = new Function('x','y','return '+gExpr+';');
+
+    function F(x,y,lam) {
+      return [
+        partiel(f,x,y,'x') - lam*partiel(g,x,y,'x'),
+        partiel(f,x,y,'y') - lam*partiel(g,x,y,'y'),
+        c - g(x,y)
+      ];
+    }
+
+    let converge = false, iterations = 0;
+    for (let k=0;k<200;k++){
+      iterations = k+1;
+      const F0 = F(x,y,lam);
+      const h = 1e-4;
+      const Fx = F(x+h,y,lam).map((v,i)=>(v-F0[i])/h);
+      const Fy = F(x,y+h,lam).map((v,i)=>(v-F0[i])/h);
+      const Fl = F(x,y,lam+h).map((v,i)=>(v-F0[i])/h);
+      // Jacobian columns: Fx, Fy, Fl -> solve J * delta = -F0 (3x3 linear solve via Cramer)
+      const J = [[Fx[0],Fy[0],Fl[0]],[Fx[1],Fy[1],Fl[1]],[Fx[2],Fy[2],Fl[2]]];
+      const b = F0.map(v=>-v);
+      const det = J[0][0]*(J[1][1]*J[2][2]-J[1][2]*J[2][1]) - J[0][1]*(J[1][0]*J[2][2]-J[1][2]*J[2][0]) + J[0][2]*(J[1][0]*J[2][1]-J[1][1]*J[2][0]);
+      if (Math.abs(det) < 1e-12) throw new Error('Le système est numériquement singulier : essayez un autre point de départ.');
+      function detWithCol(colIdx, vec) {
+        const M = J.map(row=>row.slice());
+        for (let r=0;r<3;r++) M[r][colIdx] = vec[r];
+        return M[0][0]*(M[1][1]*M[2][2]-M[1][2]*M[2][1]) - M[0][1]*(M[1][0]*M[2][2]-M[1][2]*M[2][0]) + M[0][2]*(M[1][0]*M[2][1]-M[1][1]*M[2][0]);
+      }
+      const dx = detWithCol(0,b)/det, dy = detWithCol(1,b)/det, dl = detWithCol(2,b)/det;
+      x += dx; y += dy; lam += dl;
+      if (Math.abs(dx)<1e-9 && Math.abs(dy)<1e-9 && Math.abs(dl)<1e-9) { converge = true; break; }
+    }
+    if (!converge) throw new Error('Pas de convergence en 200 itérations : essayez un autre point de départ.');
+
+    const valF = f(x,y);
+    resDiv.innerHTML = `
+      <p>Convergence en ${iterations} itérations.</p>
+      <table><tr><th>x*</th><th>y*</th><th>&lambda;*</th><th>f(x*,y*)</th></tr>
+      <tr><td>${x.toFixed(4)}</td><td>${y.toFixed(4)}</td><td>${lam.toFixed(4)}</td><td>${valF.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">$\\lambda^\\star\\approx${lam.toFixed(4)}$ : variation approximative de l'optimum pour une unité supplémentaire de $c$.</p>
+    `;
+
+    // plot: constraint curve g(x,y)=c and level curve f(x,y)=valF, both solved for y given x by bisection
+    function resoudreY(func, cible, xVal, ylo, yhi) {
+      let flo = func(xVal,ylo)-cible, fhi = func(xVal,yhi)-cible;
+      if (Math.sign(flo) === Math.sign(fhi)) return null;
+      let lo=ylo, hi=yhi;
+      for (let k=0;k<60;k++){ const mid=(lo+hi)/2; const fm=func(xVal,mid)-cible; if (Math.sign(fm)===Math.sign(flo)) { lo=mid; } else { hi=mid; } }
+      return (lo+hi)/2;
+    }
+    const xmin = Math.max(0.01, x*0.2), xmax = x*2.2+1;
+    const ylo = 0.001, yhi = Math.max(y*4+5, 50);
+    const ptsG = [], ptsF = [];
+    const n = 100;
+    for (let i=0;i<=n;i++){
+      const xv = xmin + i*(xmax-xmin)/n;
+      const yg = resoudreY(g, c, xv, ylo, yhi);
+      if (yg !== null) ptsG.push({x:xv,y:yg});
+      const yf = resoudreY(f, valF, xv, ylo, yhi);
+      if (yf !== null) ptsF.push({x:xv,y:yf});
+    }
+
+    if (chartLag) chartLag.destroy();
+    chartLag = new Chart(document.getElementById('graphiqueLagrange').getContext('2d'), {
+      type: 'line',
+      data: { datasets: [
+        { label: 'contrainte g(x,y)=c', data: ptsG, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'courbe de niveau f(x,y)=f*', data: ptsF, borderColor: '#B56600', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'point optimal', data: [{x:x,y:y}], borderColor: '#1D9E75', backgroundColor: '#1D9E75', pointRadius: 6, showLine:false }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'x' } }, y: { title: { display: true, text: 'y' } } },
+        plugins: { title: { display: true, text: 'Tangence entre la contrainte et la courbe de niveau optimale' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = resoudreLagrange;
+</script>
+</body>
+</html>

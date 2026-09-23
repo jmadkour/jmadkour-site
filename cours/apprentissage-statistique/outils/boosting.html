@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Le boosting de gradient — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Le boosting de gradient</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage statistique</p>
+
+<div class="panneau">
+  <h2>1. Lien entre $\eta$ et $B$ à distance constante</h2>
+  <div class="ligne">
+    <div><label for="eta0In9">$\eta_0$ initial</label><input type="number" id="eta0In9" value="0.1" step="any" min="0"></div>
+    <div><label for="b0In9">$B_0$ initial</label><input type="number" id="b0In9" value="200" step="1" min="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="eta1In9">Nouveau $\eta_1$ (ou vide)</label><input type="number" id="eta1In9" value="0.02" step="any" min="0"></div>
+    <div><label for="b1In9">ou nouveau $B_1$ (ou vide)</label><input type="number" id="b1In9" value="" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerEtaB()">Calculer</button>
+  <div id="erreurE9" class="erreur"></div>
+  <div id="resultatE9" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Repérer le point d'arrêt précoce</h2>
+  <p class="aide">Une paire "B erreur" par ligne.</p>
+  <textarea id="courbeIn9" rows="6">100 0.22
+300 0.15
+500 0.11
+700 0.13
+900 0.19</textarea>
+  <button onclick="calculerArret()">Calculer</button>
+  <div id="erreurA9" class="erreur"></div>
+  <div id="resultatA9" class="resultat-zone"></div>
+  <svg id="svgArret9" width="420" height="180" viewBox="0 0 420 180"></svg>
+</div>
+
+<div class="panneau">
+  <h2>3. Sous-échantillonnage des lignes et des colonnes</h2>
+  <div class="ligne">
+    <div><label for="nIn9">$n$ (observations)</label><input type="number" id="nIn9" value="2000" step="1" min="1"></div>
+    <div><label for="pIn9">$p$ (variables)</label><input type="number" id="pIn9" value="40" step="1" min="1"></div>
+    <div><label for="fracLIn9">fraction de lignes</label><input type="number" id="fracLIn9" value="0.7" step="any" min="0" max="1"></div>
+    <div><label for="fracCIn9">fraction de colonnes</label><input type="number" id="fracCIn9" value="0.6" step="any" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerSousEch()">Calculer</button>
+  <div id="erreurS9" class="erreur"></div>
+  <div id="resultatS9" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\eta\times B$ reste approximativement constant pour une même « distance » parcourue ; le boosting sur-ajuste si l'on ne s'arrête pas au minimum de l'erreur de validation, contrairement à la forêt aléatoire ; le sous-échantillonnage transpose au boosting le bootstrap et le tirage de variables du chapitre 8.</p>
+
+<script>
+function calculerEtaB(){
+  const erreurDiv=document.getElementById('erreurE9'); const resDiv=document.getElementById('resultatE9');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const eta0=parseFloat(document.getElementById('eta0In9').value);
+    const b0=parseFloat(document.getElementById('b0In9').value);
+    const eta1Raw=document.getElementById('eta1In9').value;
+    const b1Raw=document.getElementById('b1In9').value;
+    if([eta0,b0].some(isNaN)) throw new Error('eta0 et B0 sont requis.');
+    if(eta0<=0||b0<=0) throw new Error('eta0 et B0 doivent être strictement positifs.');
+    const dist=eta0*b0;
+    let out=`<p>Produit $\\eta_0\\times B_0=${eta0}\\times${b0}=${dist.toFixed(4)}$ (« distance » de référence)</p>`;
+    if(eta1Raw!==''){
+      const eta1=parseFloat(eta1Raw);
+      if(isNaN(eta1)||eta1<=0) throw new Error('eta1 doit être un nombre strictement positif.');
+      const b1=dist/eta1;
+      out+=`<p>Pour $\\eta_1=${eta1}$ : $B_1=${dist.toFixed(4)}/${eta1}=\\mathbf{${b1.toFixed(1)}}$</p>`;
+    }
+    if(b1Raw!==''){
+      const b1=parseFloat(b1Raw);
+      if(isNaN(b1)||b1<=0) throw new Error('B1 doit être un nombre strictement positif.');
+      const eta1=dist/b1;
+      out+=`<p>Pour $B_1=${b1}$ : $\\eta_1=${dist.toFixed(4)}/${b1}=\\mathbf{${eta1.toFixed(5)}}$</p>`;
+    }
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerArret(){
+  const erreurDiv=document.getElementById('erreurA9'); const resDiv=document.getElementById('resultatA9');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('courbeIn9').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<2) throw new Error('Au moins 2 points requis.');
+    const pts=lignes.map(l=>{
+      const parts=l.split(/\s+/).map(Number);
+      if(parts.length!==2||parts.some(isNaN)) throw new Error('Format invalide : "'+l+'". Attendu : B erreur.');
+      return {b:parts[0], err:parts[1]};
+    });
+    let best=pts[0];
+    pts.forEach(p=>{ if(p.err<best.err) best=p; });
+    resDiv.innerHTML=`<p><strong>Arrêt précoce recommandé : $B=${best.b}$ (erreur minimale $=${best.err.toFixed(4)}$)</strong></p>`;
+    dessinerArret(pts,best);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgArret9').innerHTML=''; }
+}
+
+function dessinerArret(pts,best){
+  const svg=document.getElementById('svgArret9');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=420,H=180,pad=40;
+  const maxB=Math.max(...pts.map(p=>p.b)), minB=Math.min(...pts.map(p=>p.b));
+  const maxErr=Math.max(...pts.map(p=>p.err))*1.15;
+  function xPix(b){ return pad+(b-minB)/(maxB-minB||1)*(W-2*pad); }
+  function yPix(e){ return H-pad-(e/maxErr)*(H-2*pad); }
+  let d='';
+  pts.forEach((p,i)=>{ d += (i===0?'M':'L') + xPix(p.b) + ' ' + yPix(p.err) + ' '; });
+  const path=document.createElementNS(ns,'path');
+  path.setAttribute('d',d); path.setAttribute('stroke','#1F6FB2'); path.setAttribute('fill','none'); path.setAttribute('stroke-width','2');
+  svg.appendChild(path);
+  pts.forEach(p=>{
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',xPix(p.b)); c.setAttribute('cy',yPix(p.err)); c.setAttribute('r',3); c.setAttribute('fill','#1F6FB2');
+    svg.appendChild(c);
+  });
+  const bestPt=document.createElementNS(ns,'circle');
+  bestPt.setAttribute('cx',xPix(best.b)); bestPt.setAttribute('cy',yPix(best.err)); bestPt.setAttribute('r',5); bestPt.setAttribute('fill','#B56600');
+  svg.appendChild(bestPt);
+  const axeX=document.createElementNS(ns,'line');
+  axeX.setAttribute('x1',pad); axeX.setAttribute('y1',H-pad); axeX.setAttribute('x2',W-pad); axeX.setAttribute('y2',H-pad);
+  axeX.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axeX);
+}
+
+function calculerSousEch(){
+  const erreurDiv=document.getElementById('erreurS9'); const resDiv=document.getElementById('resultatS9');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('nIn9').value);
+    const p=parseFloat(document.getElementById('pIn9').value);
+    const fracL=parseFloat(document.getElementById('fracLIn9').value);
+    const fracC=parseFloat(document.getElementById('fracCIn9').value);
+    if([n,p,fracL,fracC].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(n<1||p<1) throw new Error('n et p doivent être strictement positifs.');
+    if(fracL<0||fracL>1||fracC<0||fracC>1) throw new Error('Les fractions doivent être comprises entre 0 et 1.');
+    const lignes=fracL*n, colonnes=fracC*p;
+    resDiv.innerHTML=`<p>Lignes par arbre $=${fracL}\\times${n}=\\mathbf{${lignes.toFixed(1)}}$</p>
+      <p>Colonnes par arbre $=${fracC}\\times${p}=\\mathbf{${colonnes.toFixed(1)}}$</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerEtaB(); calculerArret(); calculerSousEch(); };
+</script>
+</body>
+</html>

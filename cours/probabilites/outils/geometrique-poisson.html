@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Géométrique et Poisson — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.poisson { border-left-color: var(--cex); }
+  .panneau.poisson h2 { color: var(--cex); }
+  .panneau.approx { border-left-color: var(--cintu); }
+  .panneau.approx h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.poisson button { background: var(--cex); }
+  .panneau.poisson button:hover { background: #206040; }
+  .panneau.approx button { background: var(--cintu); }
+  .panneau.approx button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — Géométrique et Poisson</h1>
+<p class="sous-titre">Calculatrice interactive — Probabilités</p>
+
+<div class="panneau">
+  <h2>Loi géométrique : E(X), V(X) et absence de mémoire</h2>
+  <div class="grille4">
+    <div><label for="pGeom">p</label><input id="pGeom" value="0.15"></div>
+    <div><label for="kGeom">k (pour P(X=k))</label><input id="kGeom" value="4"></div>
+    <div><label for="mGeom">m (échecs déjà observés)</label><input id="mGeom" value="3"></div>
+    <div><label for="kCondGeom">k (attente supplémentaire)</label><input id="kCondGeom" value="4"></div>
+  </div>
+  <button onclick="calculerGeometrique()">Calculer P(X=k), E(X), V(X) et tester l'absence de mémoire</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueGeom" height="220"></canvas>
+</div>
+
+<div class="panneau poisson">
+  <h2>Loi de Poisson : P(X=k) et dimensionnement par quantile</h2>
+  <div class="grille3">
+    <div><label for="lambdaVal">λ (moyenne d'événements)</label><input id="lambdaVal" value="4"></div>
+    <div><label for="kPoisson">k (pour P(X=k))</label><input id="kPoisson" value="2"></div>
+    <div><label for="seuilPoisson">seuil s (pour P(X ≥ s))</label><input id="seuilPoisson" value="8"></div>
+  </div>
+  <button onclick="calculerPoisson()">Calculer P(X=k), P(X ≥ seuil) et tracer la loi</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphiquePoisson" height="240"></canvas>
+</div>
+
+<div class="panneau approx">
+  <h2>Poisson approxime la binomiale : comparaison directe</h2>
+  <div class="grille3">
+    <div><label for="nApprox">n</label><input id="nApprox" value="100"></div>
+    <div><label for="pApprox">p</label><input id="pApprox" value="0.05"></div>
+    <div><label for="kApprox">k</label><input id="kApprox" value="5"></div>
+  </div>
+  <button onclick="calculerApproximation()">Comparer P(X=k) binomiale exacte vs Poisson (λ=np)</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : géométrique — P(X=k)=(1-p)^(k-1)p, E(X)=1/p, V(X)=(1-p)/p², absence de mémoire P(X&gt;m+k|X&gt;m)=P(X&gt;k). Poisson — P(X=k)=e^(-λ)λ^k/k!, E(X)=V(X)=λ. Approximation valable si n≥30 et p≤0,1.</p>
+
+<script>
+function comb(n,k){
+  if (k<0 || k>n) return 0;
+  k = Math.min(k, n-k);
+  let logC = 0;
+  for (let i=0;i<k;i++) logC += Math.log(n-i) - Math.log(i+1);
+  return Math.exp(logC);
+}
+function binomP(n,p,k){ return comb(n,k) * Math.pow(p,k) * Math.pow(1-p,n-k); }
+function lnFactorial(k){ let s=0; for (let i=2;i<=k;i++) s+=Math.log(i); return s; }
+function poissonP(lambda,k){ return Math.exp(-lambda + k*Math.log(lambda) - lnFactorial(k)); }
+
+let chartGeom = null;
+function calculerGeometrique() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const p = parseFloat(document.getElementById('pGeom').value);
+    const k = parseInt(document.getElementById('kGeom').value);
+    const m = parseInt(document.getElementById('mGeom').value);
+    const kc = parseInt(document.getElementById('kCondGeom').value);
+    if ([p,k,m,kc].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (p<=0 || p>1) throw new Error('p doit être strictement compris entre 0 et 1.');
+    if (k<1) throw new Error('k doit être un entier positif (rang de la première épreuve = 1).');
+
+    const EX = 1/p, VX = (1-p)/(p*p);
+    const Pk = Math.pow(1-p,k-1)*p;
+    const PXsupmk = Math.pow(1-p, m+kc);
+    const PXsupm = Math.pow(1-p, m);
+    const condProb = PXsupmk/PXsupm;
+    const PXsupk = Math.pow(1-p, kc);
+
+    resDiv.innerHTML = `
+      <table><tr><th>E(X)=1/p</th><th>V(X)=(1-p)/p²</th><th>P(X=${k})</th></tr>
+      <tr><td>${EX.toFixed(4)}</td><td>${VX.toFixed(4)}</td><td>${Pk.toFixed(6)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Absence de mémoire — après ${m} échecs, P(X&gt;${m+kc}|X&gt;${m}) = ${condProb.toFixed(6)}, à comparer à P(X&gt;${kc}) = ${PXsupk.toFixed(6)} calculée sans tenir compte du passé : ${Math.abs(condProb-PXsupk)<1e-9 ? '<strong>identiques</strong>, la loi géométrique oublie le passé.' : '<strong>différentes</strong> (vérifier les paramètres saisis).'}</p>
+    `;
+
+    const labels = [], valeurs = [], couleurs = [];
+    const kmax = Math.max(15, k+3);
+    for (let x=1; x<=kmax; x++) { labels.push(x); valeurs.push(Math.pow(1-p,x-1)*p); couleurs.push(x===k ? '#B56600' : '#1F6FB2'); }
+    if (chartGeom) chartGeom.destroy();
+    chartGeom = new Chart(document.getElementById('graphiqueGeom').getContext('2d'), {
+      type: 'bar',
+      data: { labels: labels, datasets: [{ label: 'P(X=k)', data: valeurs, backgroundColor: couleurs }] },
+      options: { responsive: true, scales: { x: { title: { display:true, text:'k (rang du premier succès)' } }, y: { title: { display:true, text:'P(X=k)' } } },
+        plugins: { title: { display:true, text:`Loi géométrique, p=${p} : le mode est toujours k=1` }, legend: { display:false } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+let chartPoisson = null;
+function calculerPoisson() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const lambda = parseFloat(document.getElementById('lambdaVal').value);
+    const k = parseInt(document.getElementById('kPoisson').value);
+    const s = parseInt(document.getElementById('seuilPoisson').value);
+    if ([lambda,k,s].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (lambda<=0) throw new Error('λ doit être strictement positif.');
+    if (k<0) throw new Error('k doit être positif ou nul.');
+
+    const Pk = poissonP(lambda,k);
+    let cumInf = 0;
+    for (let x=0;x<s;x++) cumInf += poissonP(lambda,x);
+    const Psup = 1-cumInf;
+
+    resDiv.innerHTML = `
+      <table><tr><th>E(X)=V(X)=λ</th><th>P(X=${k})</th><th>P(X ≥ ${s})</th></tr>
+      <tr><td>${lambda.toFixed(4)}</td><td>${Pk.toFixed(6)}</td><td>${Psup.toFixed(6)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Dimensionner sur la seule moyenne λ=${lambda} garantit une saturation dans une proportion P(X ≥ ${s}) = ${(Psup*100).toFixed(2)}\\% des cas.</p>
+    `;
+
+    const labels = [], valeurs = [], couleurs = [];
+    const kmax = Math.max(2*lambda+5, s+3);
+    for (let x=0; x<=kmax; x++) { labels.push(x); valeurs.push(poissonP(lambda,x)); couleurs.push(x>=s ? '#B56600' : '#1D9E75'); }
+    if (chartPoisson) chartPoisson.destroy();
+    chartPoisson = new Chart(document.getElementById('graphiquePoisson').getContext('2d'), {
+      type: 'bar',
+      data: { labels: labels, datasets: [{ label: 'P(X=k)', data: valeurs, backgroundColor: couleurs }] },
+      options: { responsive: true, scales: { x: { title: { display:true, text:'k' } }, y: { title: { display:true, text:'P(X=k)' } } },
+        plugins: { title: { display:true, text:`Loi de Poisson, λ=${lambda} (orange : k ≥ ${s})` }, legend: { display:false } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerApproximation() {
+  const erreurDiv = document.getElementById('erreur3');
+  const resDiv = document.getElementById('resultat3');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const n = parseInt(document.getElementById('nApprox').value);
+    const p = parseFloat(document.getElementById('pApprox').value);
+    const k = parseInt(document.getElementById('kApprox').value);
+    if ([n,p,k].some(isNaN)) throw new Error('n, p et k doivent être des nombres.');
+    if (n<=0 || !Number.isInteger(n)) throw new Error('n doit être un entier strictement positif.');
+    if (p<0 || p>1) throw new Error('p doit être compris entre 0 et 1.');
+    if (k<0 || k>n) throw new Error('k doit être compris entre 0 et n.');
+
+    const lambda = n*p;
+    const Pbinom = binomP(n,p,k);
+    const Ppoisson = poissonP(lambda,k);
+    const ecart = Math.abs(Pbinom-Ppoisson);
+    const conditionOK = (n>=30 && p<=0.1);
+
+    resDiv.innerHTML = `
+      <table><tr><th>λ=np</th><th>P(X=${k}) binomiale exacte</th><th>P(X=${k}) Poisson</th><th>écart absolu</th></tr>
+      <tr><td>${lambda.toFixed(3)}</td><td>${Pbinom.toFixed(6)}</td><td>${Ppoisson.toFixed(6)}</td><td>${ecart.toFixed(6)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Condition pratique (n≥30 et p≤0,1) : ${conditionOK ? '<strong>satisfaite</strong>, l\'approximation est fiable.' : '<strong>non satisfaite</strong> — l\'approximation peut être de moins bonne qualité.'}</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerGeometrique(); calculerPoisson(); calculerApproximation(); };
+</script>
+</body>
+</html>

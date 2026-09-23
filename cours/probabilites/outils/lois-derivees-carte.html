@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 18 — Les lois dérivées et la carte des lois — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.fisher { border-left-color: var(--cex); }
+  .panneau.fisher h2 { color: var(--cex); }
+  .panneau.carte { border-left-color: var(--cintu); }
+  .panneau.carte h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.fisher button { background: var(--cex); }
+  .panneau.fisher button:hover { background: #206040; }
+  .panneau.carte button { background: var(--cintu); }
+  .panneau.carte button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 18 — Les lois dérivées et la carte des lois</h1>
+<p class="sous-titre">Calculatrice interactive — Probabilités</p>
+
+<div class="panneau">
+  <h2>Construire un khi-deux à partir de valeurs standardisées</h2>
+  <label for="zVals">valeurs z_i (séparées par des virgules, réalisations indépendantes de N(0;1))</label>
+  <input id="zVals" value="0.5,-1.2,0.8,-0.3">
+  <button onclick="calculerChi2()">Calculer χ², E(χ²) et V(χ²)</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau fisher">
+  <h2>Statistique de Fisher F(d1;d2) à partir de deux khi-deux</h2>
+  <div class="grille4">
+    <div><label for="chi1">χ²(d1)</label><input id="chi1" value="9.6"></div>
+    <div><label for="d1Val">d1</label><input id="d1Val" value="3"></div>
+    <div><label for="chi2b">χ²(d2)</label><input id="chi2b" value="15.2"></div>
+    <div><label for="d2Val">d2</label><input id="d2Val" value="10"></div>
+  </div>
+  <button onclick="calculerFisher()">Calculer F=(χ²(d1)/d1)/(χ²(d2)/d2)</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau carte">
+  <h2>La carte des lois : trois questions pour identifier la bonne loi</h2>
+  <div class="grille3">
+    <div><label for="q1">Que compte-t-on ?</label>
+      <select id="q1"><option value="discret">des occurrences dénombrables</option><option value="continu">une mesure continue</option></select>
+    </div>
+    <div><label for="q2">Combien de fois ?</label>
+      <select id="q2"><option value="fixe">un nombre fixé n</option><option value="attente">une attente (jusqu'au succès)</option><option value="rare">événements rares, n grand p petit</option><option value="somme">somme de nombreuses causes</option><option value="uniforme">aucune valeur privilégiée</option></select>
+    </div>
+    <div><label for="q3">Indépendance et p constant ?</label>
+      <select id="q3"><option value="oui">oui</option><option value="non">non / sans objet</option></select>
+    </div>
+  </div>
+  <button onclick="identifierLoi()">Identifier la loi la plus probable</button>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : χ²_k=Z1²+...+Zk², E(χ²_k)=k, V(χ²_k)=2k. F(d1;d2)=(χ²_d1/d1)/(χ²_d2/d2). La carte des lois se parcourt avec trois questions, jamais avec une formule mémorisée mécaniquement.</p>
+
+<script>
+function calculerChi2() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const zs = document.getElementById('zVals').value.split(',').map(s=>parseFloat(s.trim()));
+    if (zs.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (zs.length < 1) throw new Error('Il faut au moins une valeur.');
+    const k = zs.length;
+    const chi2 = zs.reduce((s,z)=>s+z*z, 0);
+    const E = k, V = 2*k, sig = Math.sqrt(V);
+    const ecarts = Math.abs(chi2-E)/sig;
+
+    resDiv.innerHTML = `
+      <table><tr><th>k (degrés de liberté)</th><th>χ²</th><th>E(χ²_k)=k</th><th>V(χ²_k)=2k</th><th>écart en σ</th></tr>
+      <tr><td>${k}</td><td>${chi2.toFixed(4)}</td><td>${E}</td><td>${V}</td><td>${ecarts.toFixed(3)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${ecarts<2 ? 'Cette valeur est courante, à moins de 2 écarts-types de l\'espérance.' : 'Cette valeur est assez éloignée de l\'espérance : à surveiller si elle sert de statistique de test.'}</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerFisher() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const chi1 = parseFloat(document.getElementById('chi1').value);
+    const d1 = parseFloat(document.getElementById('d1Val').value);
+    const chi2v = parseFloat(document.getElementById('chi2b').value);
+    const d2 = parseFloat(document.getElementById('d2Val').value);
+    if ([chi1,d1,chi2v,d2].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (chi1<0 || chi2v<0) throw new Error('Les valeurs de χ² doivent être positives ou nulles.');
+    if (d1<=0 || d2<=0) throw new Error('Les degrés de liberté doivent être strictement positifs.');
+
+    const F = (chi1/d1)/(chi2v/d2);
+
+    resDiv.innerHTML = `
+      <table><tr><th>χ²(d1)/d1</th><th>χ²(d2)/d2</th><th>F(${d1};${d2})</th></tr>
+      <tr><td>${(chi1/d1).toFixed(4)}</td><td>${(chi2v/d2).toFixed(4)}</td><td><strong>${F.toFixed(4)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">F est un rapport de deux quantités positives : il est donc toujours positif ou nul. Un F proche de 1 signale des variances comparables ; un F très supérieur à 1 signale une variance nettement plus grande au numérateur.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function identifierLoi() {
+  const q1 = document.getElementById('q1').value;
+  const q2 = document.getElementById('q2').value;
+  const q3 = document.getElementById('q3').value;
+  const resDiv = document.getElementById('resultat3');
+  let loi = '', explication = '';
+
+  if (q1==='continu' && q2==='somme') { loi = 'Loi normale N(m;σ)'; explication = "somme de nombreuses causes indépendantes → théorème central limite."; }
+  else if (q1==='continu' && q2==='uniforme') { loi = 'Loi uniforme U[a;b]'; explication = "aucune valeur de l'intervalle n'est privilégiée."; }
+  else if (q1==='continu' && q2==='attente') { loi = 'Loi exponentielle'; explication = "délai continu avant un événement, sans mémoire."; }
+  else if (q1==='discret' && q2==='attente' && q3==='oui') { loi = 'Loi géométrique'; explication = "rang du premier succès, épreuves indépendantes de p constant."; }
+  else if (q1==='discret' && q2==='rare') { loi = 'Loi de Poisson P(λ)'; explication = "événements rares, n immense et p minuscule, seul λ=np compte."; }
+  else if (q1==='discret' && q2==='fixe' && q3==='oui') { loi = 'Loi binomiale B(n;p) (ou Bernoulli si n=1)'; explication = "nombre fixé d'épreuves indépendantes, p constant."; }
+  else { loi = 'Aucune loi simple ne correspond exactement'; explication = "revoir les trois questions : au moins une condition (indépendance, p constant, nombre d'épreuves fixé) n'est pas remplie."; }
+
+  resDiv.innerHTML = `
+    <table><tr><th>Loi identifiée</th></tr><tr><td><strong>${loi}</strong></td></tr></table>
+    <p style="font-size:0.85em;color:var(--cgris);">${explication}</p>
+  `;
+}
+
+window.onload = () => { calculerChi2(); calculerFisher(); identifierLoi(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Le cercle des corrélations — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; min-height: 4.5em; resize: vertical; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  svg { background:white; border:1px solid #eee; border-radius:6px; margin-top:0.8em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Le cercle des corrélations</h1>
+<p class="sous-titre">Calculatrice interactive — Introduction à l'analyse des données</p>
+
+<div class="panneau">
+  <h2>Placer des variables sur le cercle des corrélations</h2>
+  <p style="font-size:0.85em;color:var(--cgris);margin-top:0;">Une ligne par variable : nom, corrélation avec l'axe 1, corrélation avec l'axe 2 (valeurs entre -1 et 1).</p>
+  <textarea id="varInput" rows="5">accueil, 0.975, 0.224
+fidélité, 0.975, -0.224</textarea>
+  <button onclick="tracerCercle()">Tracer le cercle</button>
+  <div id="erreurC" class="erreur"></div>
+  <div id="resultatC" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : longueur $=\sqrt{\text{cor}_1^2+\text{cor}_2^2}$ — proche de $1$, la variable est bien représentée ; proche de $0$, elle ne l'est pas. Pour deux variables bien représentées, $\cos(\text{angle})$ entre leurs points est une estimation de leur corrélation.</p>
+
+<script>
+function tracerCercle(){
+  const erreurDiv=document.getElementById('erreurC'); const resDiv=document.getElementById('resultatC');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('varInput').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length<1) throw new Error('Au moins une variable requise.');
+    const vars=lignes.map(l=>{
+      const parts=l.split(',').map(s=>s.trim());
+      if(parts.length!==3) throw new Error(`Ligne "${l}" : format attendu "nom, cor1, cor2".`);
+      const nom=parts[0], c1=parseFloat(parts[1]), c2=parseFloat(parts[2]);
+      if(isNaN(c1)||isNaN(c2)) throw new Error(`Ligne "${l}" : corrélations non numériques.`);
+      return {nom,c1,c2,len:Math.sqrt(c1*c1+c2*c2)};
+    });
+
+    const cx=210, cy=210, R=180;
+    let svg=`<svg width="420" height="420" viewBox="0 0 420 420">
+      <line x1="10" y1="210" x2="410" y2="210" stroke="#ccc"/>
+      <line x1="210" y1="10" x2="210" y2="410" stroke="#ccc"/>
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#999" stroke-dasharray="4,3"/>`;
+    const couleurs=['#1F6FB2','#1D9E75','#B56600','#1F6FB2','#5A5A5A','#B00020'];
+    vars.forEach((v,i)=>{
+      const col=couleurs[i%couleurs.length];
+      const px=cx+v.c1*R, py=cy-v.c2*R;
+      svg+=`<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="${col}" stroke-width="2" marker-end="url(#arrow${i})"/>
+        <circle cx="${px}" cy="${py}" r="3" fill="${col}"/>
+        <text x="${px+6}" y="${py-6}" font-size="12" fill="${col}" font-family="Helvetica">${v.nom}</text>`;
+    });
+    svg+=`</svg>`;
+
+    let out=`<table><tr><th>variable</th><th>cor. axe 1</th><th>cor. axe 2</th><th>longueur</th><th>qualité</th></tr>`;
+    vars.forEach(v=>{
+      const qual = v.len>0.7 ? 'bien représentée' : (v.len>0.4 ? 'moyennement représentée' : 'mal représentée');
+      out+=`<tr><td>${v.nom}</td><td>${v.c1.toFixed(3)}</td><td>${v.c2.toFixed(3)}</td><td>${v.len.toFixed(3)}</td><td>${qual}</td></tr>`;
+    });
+    out+='</table>';
+
+    if(vars.length>=2){
+      out+='<p style="margin-top:0.6em;">Angles et corrélations estimées (paires bien représentées, longueur $>0{,}7$) :</p><table><tr><th></th>';
+      vars.forEach(v=>out+=`<th>${v.nom}</th>`); out+='</tr>';
+      for(let i=0;i<vars.length;i++){
+        out+=`<tr><th>${vars[i].nom}</th>`;
+        for(let k=0;k<vars.length;k++){
+          if(i===k){ out+='<td>—</td>'; continue; }
+          const cosang=vars[i].c1*vars[k].c1+vars[i].c2*vars[k].c2;
+          const fiable = vars[i].len>0.7 && vars[k].len>0.7;
+          out+=`<td>${cosang.toFixed(3)}${fiable?'':' *'}</td>`;
+        }
+        out+='</tr>';
+      }
+      out+='</table><p style="font-size:0.82em;color:var(--cgris);">* au moins une des deux variables est mal représentée : ce cosinus n\'est pas fiable comme estimation de corrélation.</p>';
+    }
+
+    resDiv.innerHTML=svg+out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ tracerCercle(); };
+</script>
+</body>
+</html>

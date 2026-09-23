@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Équation caractéristique — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .etiquette { display: inline-block; padding: 0.3em 0.8em; border-radius: 12px; font-size: 0.9em; color: white; }
+  .reel { background: var(--ceco); } .double { background: var(--cintu); } .complexe { background: var(--cex); }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Équation caractéristique (ordre 2)</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse dynamique</p>
+
+<div class="panneau">
+  <h2>Résoudre $y_{t+2}=a_1y_{t+1}+a_2y_t$ (classification automatique des racines)</h2>
+  <div class="grille4">
+    <div><label for="a1">a₁</label><input id="a1" value="1"></div>
+    <div><label for="a2">a₂</label><input id="a2" value="-0.5"></div>
+    <div><label for="y0">y₀</label><input id="y0" value="4"></div>
+    <div><label for="y1">y₁</label><input id="y1" value="5"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="horizon6">Horizon (périodes)</label><input id="horizon6" value="12"></div>
+    <div></div><div></div><div></div>
+  </div>
+  <button onclick="resoudre6()">Résoudre l'équation caractéristique</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphique6" height="280"></canvas>
+</div>
+
+<p class="avertissement">Équation caractéristique : $\lambda^2-a_1\lambda-a_2=0$. Discriminant $\Delta=a_1^2+4a_2$. $\Delta>0$ : racines réelles distinctes $y_t=A\lambda_1^t+B\lambda_2^t$. $\Delta=0$ : racine double $y_t=(A+Bt)\lambda^t$. $\Delta<0$ : racines complexes $y_t=r^t(A\cos\theta t+B\sin\theta t)$, de période $2\pi/\theta$.</p>
+
+<script>
+let chart6 = null;
+
+function resoudre6() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const a1 = parseFloat(document.getElementById('a1').value);
+    const a2 = parseFloat(document.getElementById('a2').value);
+    const y0 = parseFloat(document.getElementById('y0').value);
+    const y1 = parseFloat(document.getElementById('y1').value);
+    const horizon = parseInt(document.getElementById('horizon6').value);
+    if ([a1,a2,y0,y1,horizon].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+
+    const disc = a1*a1 + 4*a2;
+    const pts = [];
+    let html = '';
+
+    if (disc > 1e-9) {
+      const l1 = (a1+Math.sqrt(disc))/2, l2 = (a1-Math.sqrt(disc))/2;
+      if (Math.abs(l2-l1) < 1e-12) throw new Error('Cas limite numérique, ajuster légèrement a1 ou a2.');
+      const B = (y1-l1*y0)/(l2-l1);
+      const A = y0-B;
+      for (let t=0;t<=horizon;t++) pts.push({x:t, y: A*Math.pow(l1,t)+B*Math.pow(l2,t)});
+      const stable = Math.abs(l1)<1 && Math.abs(l2)<1;
+      html = `<p><span class="etiquette reel">Racines réelles distinctes</span></p>
+        <p><strong>λ₁ = ${l1.toFixed(4)}, λ₂ = ${l2.toFixed(4)}</strong></p>
+        <p><strong>A = ${A.toFixed(4)}, B = ${B.toFixed(4)}</strong></p>
+        <p><strong>Solution :</strong> y_t = ${A.toFixed(3)}×(${l1.toFixed(3)})^t + ${B.toFixed(3)}×(${l2.toFixed(3)})^t</p>
+        <p><strong>Stabilité :</strong> ${stable ? 'stable (|λ₁|<1 et |λ₂|<1)' : 'instable'}</p>`;
+    } else if (Math.abs(disc) <= 1e-9) {
+      const l = a1/2;
+      const A = y0;
+      const B = l !== 0 ? (y1-A*l)/l : NaN;
+      for (let t=0;t<=horizon;t++) pts.push({x:t, y: (A+B*t)*Math.pow(l,t)});
+      html = `<p><span class="etiquette double">Racine double</span></p>
+        <p><strong>λ = ${l.toFixed(4)}</strong></p>
+        <p><strong>A = ${A.toFixed(4)}, B = ${B.toFixed(4)}</strong></p>
+        <p><strong>Solution :</strong> y_t = (${A.toFixed(3)} + ${B.toFixed(3)}×t)×(${l.toFixed(3)})^t</p>
+        <p><strong>Stabilité :</strong> ${Math.abs(l)<1 ? 'stable' : 'instable'}</p>`;
+    } else {
+      const re = a1/2, im = Math.sqrt(-disc)/2;
+      const r = Math.sqrt(re*re+im*im), theta = Math.atan2(im,re);
+      const A = y0;
+      const B = (y1/r - A*Math.cos(theta))/Math.sin(theta);
+      for (let t=0;t<=horizon;t++) pts.push({x:t, y: Math.pow(r,t)*(A*Math.cos(theta*t)+B*Math.sin(theta*t))});
+      const periode = 2*Math.PI/theta;
+      html = `<p><span class="etiquette complexe">Racines complexes</span></p>
+        <p><strong>module r = ${r.toFixed(4)}, angle θ = ${theta.toFixed(4)} rad</strong></p>
+        <p><strong>période = ${periode.toFixed(4)} périodes</strong></p>
+        <p><strong>A = ${A.toFixed(4)}, B = ${B.toFixed(4)}</strong></p>
+        <p><strong>Solution :</strong> y_t = (${r.toFixed(3)})^t × [${A.toFixed(3)}cos(θt) + ${B.toFixed(3)}sin(θt)]</p>
+        <p><strong>Stabilité :</strong> ${r<1 ? 'stable (oscillations amorties)' : 'instable (oscillations amplifiées)'}</p>`;
+    }
+    resDiv.innerHTML = html;
+
+    if (chart6) chart6.destroy();
+    const ctx = document.getElementById('graphique6').getContext('2d');
+    chart6 = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [{ label: 'y_t', data: pts, borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 3 }] },
+      options: { responsive: true, scales: { x: { title: { display: true, text: 't (périodes)' } }, y: { title: { display: true, text: 'y_t' } } },
+        plugins: { title: { display: true, text: 'Trajectoire de la solution' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = resoudre6;
+</script>
+</body>
+</html>

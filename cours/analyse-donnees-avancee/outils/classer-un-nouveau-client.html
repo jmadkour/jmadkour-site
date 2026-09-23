@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 16 — Classer un nouveau client — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 180px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 16 — Classer un nouveau client</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse des données avancée</p>
+
+<div class="panneau">
+  <h2>1. Affecter au centre le plus proche</h2>
+  <p class="aide">Un centre de groupe par ligne : <code>nom score</code>.</p>
+  <textarea id="centresInput" rows="4">Rare -0.785
+Mensuelle -0.036
+Hebdomadaire 0.901</textarea>
+  <label for="scoreClient">Score du nouveau client</label>
+  <input type="number" id="scoreClient" value="0.6" step="any">
+  <button onclick="classerClient()">Classer</button>
+  <div id="erreurCl" class="erreur"></div>
+  <div id="resultatCl" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Analyser une matrice de confusion</h2>
+  <p class="aide">Matrice carrée : une ligne = un groupe réel, valeurs séparées par des espaces = effectifs prédits dans chaque groupe (même ordre en ligne et en colonne).</p>
+  <textarea id="confInput" rows="4">80 28 4
+25 40 22
+1 19 81</textarea>
+  <label for="nomsGroupes">Noms des groupes (séparés par des virgules)</label>
+  <input type="text" id="nomsGroupes" value="Rare, Mensuelle, Hebdomadaire">
+  <button onclick="analyserConfusion()">Analyser</button>
+  <div id="erreurCf" class="erreur"></div>
+  <div id="resultatCf" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Écart resubstitution / validation croisée</h2>
+  <div class="ligne">
+    <div><label for="tauxResub">Taux en resubstitution (%)</label><input type="number" id="tauxResub" value="67.0" step="any"></div>
+    <div><label for="tauxCV">Taux en validation croisée (%)</label><input type="number" id="tauxCV" value="65.3" step="any"></div>
+  </div>
+  <button onclick="calculerEcart()">Calculer</button>
+  <div id="erreurE" class="erreur"></div>
+  <div id="resultatE" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : on affecte au centre le plus proche ; une matrice de confusion se lit toujours ligne par ligne, jamais par son seul taux global ; un écart important entre resubstitution et validation croisée signale un surajustement — c'est toujours le taux en validation croisée qu'il faut publier.</p>
+
+<script>
+function classerClient(){
+  const erreurDiv=document.getElementById('erreurCl'); const resDiv=document.getElementById('resultatCl');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('centresInput').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<2) throw new Error('Au moins 2 centres requis.');
+    const centres=lignes.map(l=>{
+      const parts=l.split(/\s+/);
+      const val=parseFloat(parts[parts.length-1]);
+      const nom=parts.slice(0,parts.length-1).join(' ');
+      if(isNaN(val)||nom.length===0) throw new Error('Ligne invalide : "'+l+'".');
+      return {nom,val};
+    });
+    const score=parseFloat(document.getElementById('scoreClient').value);
+    if(isNaN(score)) throw new Error('Score du client invalide.');
+    const distances=centres.map(c=>({...c,d:Math.abs(score-c.val)}));
+    let out=`<table><tr><th>groupe</th><th>centre</th><th>distance</th></tr>`;
+    distances.forEach(c=>out+=`<tr><td>${c.nom}</td><td>${c.val}</td><td>${c.d.toFixed(4)}</td></tr>`);
+    out+='</table>';
+    const meilleur=distances.reduce((a,b)=>b.d<a.d?b:a);
+    out+=`<p style="margin-top:0.6em;"><strong>Client affecté au groupe : ${meilleur.nom}</strong> (distance ${meilleur.d.toFixed(4)})</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function analyserConfusion(){
+  const erreurDiv=document.getElementById('erreurCf'); const resDiv=document.getElementById('resultatCf');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('confInput').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    const matrice=lignes.map(l=>l.split(/\s+/).map(Number));
+    const K=matrice.length;
+    if(K<2) throw new Error('Au moins 2 groupes requis.');
+    matrice.forEach((row,i)=>{ if(row.length!==K||row.some(isNaN)) throw new Error('La matrice doit être carrée ('+K+'x'+K+') avec des valeurs numériques.'); if(row.some(v=>v<0)) throw new Error('Effectifs négatifs interdits.'); });
+    let noms=document.getElementById('nomsGroupes').value.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+    if(noms.length!==K) noms=matrice.map((_,i)=>'Groupe '+(i+1));
+    const totLignes=matrice.map(row=>row.reduce((a,b)=>a+b,0));
+    let totBon=0, totGeneral=0;
+    let out=`<table><tr><th>groupe</th><th>effectif</th><th>bien classés</th><th>taux</th></tr>`;
+    matrice.forEach((row,i)=>{
+      const bon=row[i];
+      const taux=100*bon/totLignes[i];
+      totBon+=bon; totGeneral+=totLignes[i];
+      out+=`<tr><td>${noms[i]}</td><td>${totLignes[i]}</td><td>${bon}</td><td>${taux.toFixed(1)} %</td></tr>`;
+    });
+    const tauxGlobal=100*totBon/totGeneral;
+    out+=`</table><p style="margin-top:0.6em;"><strong>Taux global : ${tauxGlobal.toFixed(1)} %</strong></p>`;
+    const taux=matrice.map((row,i)=>100*row[i]/totLignes[i]);
+    const iMin=taux.indexOf(Math.min(...taux));
+    out+=`<p>Groupe le moins bien prédit : <strong>${noms[iMin]}</strong> (${taux[iMin].toFixed(1)} %) — c'est ce chiffre-là, pas le taux global seul, qu'il faut commenter.</p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerEcart(){
+  const erreurDiv=document.getElementById('erreurE'); const resDiv=document.getElementById('resultatE');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const resub=parseFloat(document.getElementById('tauxResub').value);
+    const cv=parseFloat(document.getElementById('tauxCV').value);
+    if(isNaN(resub)||isNaN(cv)) throw new Error('Valeurs numériques requises.');
+    const ecart=resub-cv;
+    let out=`<p>Écart : $${resub}-${cv}=${ecart.toFixed(2)}$ point(s)</p>`;
+    out += ecart<5 ? '<p class="ok">Écart faible : la règle se généralise bien, peu de risque de surajustement.</p>' : '<p class="alerte">Écart important : signe de surajustement — publier impérativement le taux en validation croisée.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ classerClient(); analyserConfusion(); calculerEcart(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Intervalle de confiance — Simulateur interactif</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.sim { border-left-color: var(--ceco); } .panneau.sim h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.sim button { background: var(--ceco); } .panneau.sim button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Le principe de l'intervalle de confiance</h1>
+<p class="sous-titre">Calculatrice et simulateur interactifs — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Construire un intervalle de confiance</h2>
+  <div class="grille4">
+    <div><label for="xbar1">moyenne d'échantillon x̄</label><input id="xbar1" value="7005.80"></div>
+    <div><label for="sigma1">écart-type (σ ou s) σ(X̄) déjà erreur-type ? non : écart-type brut</label><input id="sigma1" value="2250.98"></div>
+    <div><label for="n1">taille n</label><input id="n1" value="50"></div>
+    <div><label for="niveau1">niveau de confiance</label>
+      <select id="niveau1">
+        <option value="1.645">90%</option>
+        <option value="1.960" selected>95%</option>
+        <option value="2.576">99%</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="calculerIC()">Calculer l'intervalle</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau sim">
+  <h2>Simulateur : « 95 intervalles sur 100 »</h2>
+  <div class="grille4">
+    <div><label for="m2">vraie moyenne de population m</label><input id="m2" value="7158.26"></div>
+    <div><label for="sigma2">écart-type de population σ</label><input id="sigma2" value="2598.10"></div>
+    <div><label for="n2">taille d'échantillon n</label><input id="n2" value="50"></div>
+    <div><label for="nbSim">nombre d'intervalles simulés</label><input id="nbSim" value="100"></div>
+  </div>
+  <button onclick="simulerIC()">Simuler des échantillons à 95%</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <div id="graphe2"></div>
+</div>
+
+<p class="avertissement">Rappels : demi-largeur $=z_{\alpha/2}\times\sigma(\overline X)$. La confiance porte sur la <strong>méthode</strong> (la proportion d'intervalles qui contiendraient $m$ si l'on répétait le tirage), jamais sur un intervalle particulier déjà calculé.</p>
+
+<script>
+function calculerIC(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const xbar=parseFloat(document.getElementById('xbar1').value);
+    const s=parseFloat(document.getElementById('sigma1').value);
+    const n=parseFloat(document.getElementById('n1').value);
+    const z=parseFloat(document.getElementById('niveau1').value);
+    if([xbar,s,n,z].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(s<=0) throw new Error('L’écart-type doit être strictement positif.');
+    if(n<2) throw new Error('n doit être ≥2.');
+    const se=s/Math.sqrt(n);
+    const demiLargeur=z*se;
+    resDiv.innerHTML=`<table><tr><th>erreur-type σ(X̄)</th><th>quantile z</th><th>demi-largeur</th></tr>
+      <tr><td>${se.toFixed(4)}</td><td>${z}</td><td>${demiLargeur.toFixed(4)}</td></tr></table>
+      <table><tr><th>borne basse</th><th>borne haute</th></tr>
+      <tr><td>${(xbar-demiLargeur).toFixed(2)}</td><td>${(xbar+demiLargeur).toFixed(2)}</td></tr></table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function gaussienne(m,sigma){
+  // Box-Muller
+  let u1=Math.random(), u2=Math.random();
+  const z=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+  return m+sigma*z;
+}
+
+function simulerIC(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  const grapheDiv=document.getElementById('graphe2');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const m=parseFloat(document.getElementById('m2').value);
+    const sigma=parseFloat(document.getElementById('sigma2').value);
+    const n=parseFloat(document.getElementById('n2').value);
+    const nbSim=parseInt(document.getElementById('nbSim').value);
+    if([m,sigma,n,nbSim].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(sigma<=0) throw new Error('σ doit être strictement positif.');
+    if(n<2) throw new Error('n doit être ≥2.');
+    if(nbSim<1||nbSim>500) throw new Error('Le nombre de simulations doit être entre 1 et 500.');
+    const se=sigma/Math.sqrt(n);
+    const demiLargeur=1.96*se;
+    let contient=0;
+    const intervalles=[];
+    for(let s=0;s<nbSim;s++){
+      // simuler une moyenne d'echantillon directement (loi normale de X-bar)
+      const xbarSim=gaussienne(m,se);
+      const basse=xbarSim-demiLargeur, haute=xbarSim+demiLargeur;
+      const ok = (basse<=m && m<=haute);
+      if(ok) contient++;
+      intervalles.push({basse,haute,ok});
+    }
+    const tauxCouverture=(contient/nbSim*100).toFixed(1);
+    resDiv.innerHTML=`<table><tr><th>intervalles contenant m</th><th>intervalles ne contenant pas m</th><th>taux de couverture observé</th></tr>
+      <tr><td>${contient} / ${nbSim}</td><td>${nbSim-contient} / ${nbSim}</td><td><strong>${tauxCouverture}%</strong> (théorie : 95%)</td></tr></table>`;
+    // svg: draw vertical lines for each interval
+    const w=Math.min(900, nbSim*8+40), h=260, pad=30;
+    const minVal=Math.min(m-demiLargeur*2.5, ...intervalles.map(iv=>iv.basse));
+    const maxVal=Math.max(m+demiLargeur*2.5, ...intervalles.map(iv=>iv.haute));
+    const Y=(v)=>(h-pad)-((v-minVal)/(maxVal-minVal))*(h-2*pad);
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    const yM=Y(m);
+    svg+=`<line x1="0" y1="${yM}" x2="${w}" y2="${yM}" stroke="#1F6FB2" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+    svg+=`<text x="4" y="${yM-4}" font-size="10" fill="#1F6FB2">m</text>`;
+    intervalles.forEach((iv,i)=>{
+      const x=pad+i*((w-2*pad)/nbSim)+3;
+      const couleur = iv.ok ? '#1D9E75' : '#b00020';
+      svg+=`<line x1="${x}" y1="${Y(iv.basse)}" x2="${x}" y2="${Y(iv.haute)}" stroke="${couleur}" stroke-width="2"/>`;
+    });
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerIC(); simulerIC(); };
+</script>
+</body>
+</html>

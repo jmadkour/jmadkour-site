@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Déterminant, inverse et Cramer — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: 2fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.matrice { border-collapse: collapse; margin: 0.4em 0; }
+  table.matrice td, table.matrice th { border: 1px solid #999; padding: 0.35em 0.6em; font-family: "Courier New", monospace; text-align: right; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Déterminant, inverse et formules de Cramer</h1>
+<p class="sous-titre">Calculatrice interactive — Mathématiques pour la gestion</p>
+
+<div class="panneau">
+  <h2>Résoudre Ax=b par trois méthodes à la fois (ordre 2 ou 3)</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir $A$ ligne par ligne (lignes séparées par « ; », termes par « , »), et $b$ séparé par des virgules. Exemple : $A=$ <code>3,1,2;1,4,1;2,1,3</code>, $b=$ <code>85,90,95</code>.</p>
+  <div class="grille2">
+    <div><label for="matA">Matrice A</label><textarea id="matA" rows="3">3,1,2;1,4,1;2,1,3</textarea></div>
+    <div><label for="vecB">Second membre b</label><textarea id="vecB" rows="3">85,90,95</textarea></div>
+  </div>
+  <button onclick="analyserSysteme()">Calculer déterminant, inverse et solution</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">L'outil calcule $\det A$ (formule directe à l'ordre 2, règle de Sarrus à l'ordre 3), la matrice inverse $A^{-1}$ par la méthode des cofacteurs, la solution $x=A^{-1}b$, et vérifie qu'elle coïncide avec les formules de Cramer $x_i=\det A_i/\det A$ — les trois méthodes du chapitre doivent nécessairement s'accorder.</p>
+
+<script>
+function parseMatrice(texte) {
+  const lignes = texte.trim().split(';').map(l => l.trim()).filter(l => l.length > 0);
+  const M = lignes.map(l => l.split(',').map(v => parseFloat(v.trim())));
+  const n = M.length;
+  if (M.some(row => row.length !== n || row.some(isNaN))) throw new Error("A doit être une matrice carrée (2×2 ou 3×3), tous les termes numériques.");
+  if (n !== 2 && n !== 3) throw new Error("Cet outil gère uniquement les matrices d'ordre 2 ou 3.");
+  return M;
+}
+function parseVecteur(texte, n) {
+  const v = texte.trim().split(',').map(s => parseFloat(s.trim()));
+  if (v.length !== n || v.some(isNaN)) throw new Error(`b doit contenir exactement ${n} nombres.`);
+  return v;
+}
+
+function det(M) {
+  const n = M.length;
+  if (n === 2) return M[0][0]*M[1][1] - M[0][1]*M[1][0];
+  return M[0][0]*M[1][1]*M[2][2] + M[0][1]*M[1][2]*M[2][0] + M[0][2]*M[1][0]*M[2][1]
+       - M[0][2]*M[1][1]*M[2][0] - M[0][0]*M[1][2]*M[2][1] - M[0][1]*M[1][0]*M[2][2];
+}
+
+function mineur(M, i, j) {
+  return M.filter((_,r)=>r!==i).map(row => row.filter((_,c)=>c!==j));
+}
+
+function inverse(M) {
+  const n = M.length, d = det(M);
+  if (Math.abs(d) < 1e-9) return null;
+  if (n === 2) {
+    return [[M[1][1]/d, -M[0][1]/d], [-M[1][0]/d, M[0][0]/d]];
+  }
+  // ordre 3 : matrice des cofacteurs, transposée (adjugate), divisée par det
+  const cof = M.map((row,i) => row.map((_,j) => {
+    const signe = ((i+j)%2===0) ? 1 : -1;
+    return signe * det(mineur(M,i,j));
+  }));
+  const adj = cof[0].map((_,j) => cof.map(row => row[j])); // transposée
+  return adj.map(row => row.map(v => v/d));
+}
+
+function matvec(M, v) { return M.map(row => row.reduce((s,a,i) => s + a*v[i], 0)); }
+
+function remplacerColonne(M, j, b) {
+  return M.map((row,i) => row.map((v,c) => c===j ? b[i] : v));
+}
+
+function formatMat(M) {
+  return '<table class="matrice">' + M.map(row => '<tr>' + row.map(v => `<td>${Math.abs(v)<1e-9?0:v.toFixed(4)}</td>`).join('') + '</tr>').join('') + '</table>';
+}
+
+function analyserSysteme() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const A = parseMatrice(document.getElementById('matA').value);
+    const n = A.length;
+    const b = parseVecteur(document.getElementById('vecB').value, n);
+
+    const dA = det(A);
+    let html = `<p><strong>det A = ${dA.toFixed(4)}</strong></p>`;
+
+    if (Math.abs(dA) < 1e-9) {
+      html += `<p>Le déterminant est nul : $A$ n'est \\textbf{pas inversible}, et le système n'a pas de solution unique (aucune solution, ou une infinité selon $b$).</p>`;
+      resDiv.innerHTML = html;
+      return;
+    }
+
+    const Ainv = inverse(A);
+    html += `<p><strong>Matrice inverse $A^{-1}$ :</strong></p>` + formatMat(Ainv);
+
+    const xInv = matvec(Ainv, b);
+    html += `<p><strong>Solution par $x=A^{-1}b$ :</strong></p>` + formatMat([xInv]);
+
+    // Cramer
+    const xCramer = [];
+    let detailCramer = '<table class="matrice"><tr><th>i</th><th>det A_i</th><th>x_i = det A_i / det A</th></tr>';
+    for (let i=0;i<n;i++) {
+      const Ai = remplacerColonne(A, i, b);
+      const dAi = det(Ai);
+      const xi = dAi / dA;
+      xCramer.push(xi);
+      detailCramer += `<tr><td>${i+1}</td><td>${dAi.toFixed(4)}</td><td>${xi.toFixed(4)}</td></tr>`;
+    }
+    detailCramer += '</table>';
+    html += `<p><strong>Solution par les formules de Cramer :</strong></p>` + detailCramer;
+
+    const accord = xInv.every((v,i) => Math.abs(v - xCramer[i]) < 1e-6);
+    html += `<p style="font-size:0.85em;color:var(--cgris);">${accord ? 'Les deux méthodes concordent, comme il se doit.' : 'Écart détecté : vérifiez la saisie.'}</p>`;
+
+    resDiv.innerHTML = html;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = analyserSysteme;
+</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Les machines à vecteurs de support — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Les machines à vecteurs de support</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage statistique</p>
+
+<div class="panneau">
+  <h2>1. Transformation par noyau $z=x_1^2+x_2^2$</h2>
+  <p class="aide">Une ligne par point : "x1 x2 étiquette".</p>
+  <textarea id="pointsIn10" rows="5">0 0 A
+0.5 0.3 A
+3 0 B
+0 3 B
+2 2 B</textarea>
+  <button onclick="calculerNoyau()">Calculer</button>
+  <div id="erreurN10" class="erreur"></div>
+  <div id="resultatN10" class="resultat-zone"></div>
+  <svg id="svgNoyau10" width="380" height="280" viewBox="0 0 380 280"></svg>
+</div>
+
+<div class="panneau">
+  <h2>2. Coût de calcul quadratique en $n$</h2>
+  <div class="ligne">
+    <div><label for="nRefIn10">$n$ de référence</label><input type="number" id="nRefIn10" value="1000" step="1" min="1"></div>
+    <div><label for="nNouvIn10">$n$ nouveau</label><input type="number" id="nNouvIn10" value="5000" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerCoutSVM()">Calculer</button>
+  <div id="erreurC10" class="erreur"></div>
+  <div id="resultatC10" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Diagnostic de sur-ajustement selon $C$</h2>
+  <div class="ligne">
+    <div><label for="violIn10">violations</label><input type="number" id="violIn10" value="15" step="1" min="0"></div>
+    <div><label for="totIn10">observations</label><input type="number" id="totIn10" value="50" step="1" min="1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="errAppIn10">erreur d'apprentissage (%)</label><input type="number" id="errAppIn10" value="15" step="any" min="0"></div>
+    <div><label for="errTestIn10">erreur de test (%)</label><input type="number" id="errTestIn10" value="17" step="any" min="0"></div>
+  </div>
+  <button onclick="calculerDiagnosticC()">Calculer</button>
+  <div id="erreurD10" class="erreur"></div>
+  <div id="resultatD10" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : la transformation $z=x_1^2+x_2^2$ peut rendre séparable par un plan ce qui ne l'était pas par une droite ; coût de calcul $\propto n^2$ ; un $C$ grand (marge étroite, peu de violations tolérées) réduit le biais mais augmente la variance, un écart important entre erreur de test et d'apprentissage signale un sur-ajustement.</p>
+
+<script>
+function calculerNoyau(){
+  const erreurDiv=document.getElementById('erreurN10'); const resDiv=document.getElementById('resultatN10');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('pointsIn10').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<2) throw new Error('Au moins 2 points requis.');
+    const pts=lignes.map(l=>{
+      const parts=l.split(/\s+/);
+      if(parts.length!==3) throw new Error('Format invalide : "'+l+'". Attendu : x1 x2 étiquette.');
+      const x1=parseFloat(parts[0]), x2=parseFloat(parts[1]);
+      if(isNaN(x1)||isNaN(x2)) throw new Error('Coordonnées invalides sur la ligne "'+l+'".');
+      return {x1,x2,label:parts[2],z:x1*x1+x2*x2};
+    });
+    let out='<table><tr><th>point</th><th>$x_1$</th><th>$x_2$</th><th>étiquette</th><th>$z=x_1^2+x_2^2$</th></tr>';
+    pts.forEach((p,i)=>{ out+=`<tr><td>P${i+1}</td><td>${p.x1}</td><td>${p.x2}</td><td>${p.label}</td><td>${p.z.toFixed(4)}</td></tr>`; });
+    out+='</table>';
+    const labels=[...new Set(pts.map(p=>p.label))];
+    if(labels.length===2){
+      const g1=pts.filter(p=>p.label===labels[0]).map(p=>p.z);
+      const g2=pts.filter(p=>p.label===labels[1]).map(p=>p.z);
+      const max1=Math.max(...g1), min2=Math.min(...g2);
+      const max2=Math.max(...g2), min1=Math.min(...g1);
+      if(max1<min2){ out+=`<p style="margin-top:0.6em;">Séparable par $z=k$ avec $k\\in\\,]${max1.toFixed(4)}\\,;\\,${min2.toFixed(4)}[$ (ex. $k=${((max1+min2)/2).toFixed(4)}$)</p>`; }
+      else if(max2<min1){ out+=`<p style="margin-top:0.6em;">Séparable par $z=k$ avec $k\\in\\,]${max2.toFixed(4)}\\,;\\,${min1.toFixed(4)}[$ (ex. $k=${((max2+min1)/2).toFixed(4)}$)</p>`; }
+      else { out+='<p style="margin-top:0.6em;">Les deux groupes se chevauchent en $z$ : cette seule transformation ne suffit pas à les séparer.</p>'; }
+    }
+    resDiv.innerHTML=out;
+    dessinerNoyau(pts);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgNoyau10').innerHTML=''; }
+}
+
+function dessinerNoyau(pts){
+  const svg=document.getElementById('svgNoyau10');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=380,H=280,pad=40;
+  const maxAbs=Math.max(1,...pts.map(p=>Math.max(Math.abs(p.x1),Math.abs(p.x2))))*1.2;
+  function xPix(x){ return pad+(x+maxAbs)/(2*maxAbs)*(W-2*pad); }
+  function yPix(y){ return H-pad-(y+maxAbs)/(2*maxAbs)*(H-2*pad); }
+  const couleurs={};
+  let palette=['#1F6FB2','#B56600','#1D9E75','#1F6FB2'];
+  let idx=0;
+  pts.forEach(p=>{
+    if(!(p.label in couleurs)){ couleurs[p.label]=palette[idx%palette.length]; idx++; }
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',xPix(p.x1)); c.setAttribute('cy',yPix(p.x2)); c.setAttribute('r',5); c.setAttribute('fill',couleurs[p.label]);
+    svg.appendChild(c);
+  });
+  const axeX=document.createElementNS(ns,'line');
+  axeX.setAttribute('x1',pad); axeX.setAttribute('y1',yPix(0)); axeX.setAttribute('x2',W-pad); axeX.setAttribute('y2',yPix(0));
+  axeX.setAttribute('stroke','#ccc');
+  svg.appendChild(axeX);
+  const axeY=document.createElementNS(ns,'line');
+  axeY.setAttribute('x1',xPix(0)); axeY.setAttribute('y1',pad); axeY.setAttribute('x2',xPix(0)); axeY.setAttribute('y2',H-pad);
+  axeY.setAttribute('stroke','#ccc');
+  svg.appendChild(axeY);
+}
+
+function calculerCoutSVM(){
+  const erreurDiv=document.getElementById('erreurC10'); const resDiv=document.getElementById('resultatC10');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const nRef=parseFloat(document.getElementById('nRefIn10').value);
+    const nNouv=parseFloat(document.getElementById('nNouvIn10').value);
+    if([nRef,nNouv].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(nRef<=0||nNouv<=0) throw new Error('n doit être strictement positif.');
+    const ratio=Math.pow(nNouv/nRef,2);
+    resDiv.innerHTML=`<p>Rapport de coût $=(${nNouv}/${nRef})^2=\\mathbf{${ratio.toFixed(2)}}$</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerDiagnosticC(){
+  const erreurDiv=document.getElementById('erreurD10'); const resDiv=document.getElementById('resultatD10');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const viol=parseFloat(document.getElementById('violIn10').value);
+    const tot=parseFloat(document.getElementById('totIn10').value);
+    const errApp=parseFloat(document.getElementById('errAppIn10').value);
+    const errTest=parseFloat(document.getElementById('errTestIn10').value);
+    if([viol,tot,errApp,errTest].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(tot<=0) throw new Error('Le nombre total d\'observations doit être strictement positif.');
+    if(viol<0||viol>tot) throw new Error('Le nombre de violations doit être compris entre 0 et le total.');
+    const propViol=viol/tot*100;
+    const gap=errTest-errApp;
+    let diagnostic = gap>15?'sur-ajustement marqué':(gap<5?'pas de signe net de sur-ajustement':'zone intermédiaire');
+    resDiv.innerHTML=`<p>Proportion de violations $=${viol}/${tot}=\\mathbf{${propViol.toFixed(2)}\\%}$</p>
+      <p>Écart test $-$ apprentissage $=${gap.toFixed(2)}$ points : <strong>${diagnostic}</strong></p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerNoyau(); calculerCoutSVM(); calculerDiagnosticC(); };
+</script>
+</body>
+</html>

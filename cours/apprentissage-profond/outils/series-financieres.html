@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Prévision de séries financières — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], input[type=text], input[type=date] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 140px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Prévision de séries financières par réseaux</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage profond</p>
+
+<div class="panneau">
+  <h2>1. Gain sur la prévision naïve, face aux coûts</h2>
+  <div class="ligne">
+    <div><label for="maeModeleIn1">EAM du modèle</label><input type="number" id="maeModeleIn1" value="0.82" step="0.01"></div>
+    <div><label for="maeNaifIn1">EAM prévision naïve</label><input type="number" id="maeNaifIn1" value="0.85" step="0.01"></div>
+    <div><label for="coutIn1">Coût de transaction (pts)</label><input type="number" id="coutIn1" value="0.05" step="0.01"></div>
+  </div>
+  <button onclick="calculerGain()">Calculer</button>
+  <div id="erreurG1" class="erreur"></div>
+  <div id="resultatG1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Jours de décalage de publication</h2>
+  <div class="ligne">
+    <div><label for="dateFinIn2">Fin de la période de référence</label><input type="date" id="dateFinIn2" value="2025-06-30"></div>
+    <div><label for="datePubIn2">Date de publication réelle</label><input type="date" id="datePubIn2" value="2025-08-15"></div>
+  </div>
+  <button onclick="calculerDecalage()">Calculer</button>
+  <div id="erreurD2" class="erreur"></div>
+  <div id="resultatD2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Coût comparé : structure codée contre structure apprise</h2>
+  <div class="ligne">
+    <div><label for="pStructIn3">Paramètres (modèle structuré)</label><input type="number" id="pStructIn3" value="3" step="1" min="1"></div>
+    <div><label for="pReseauIn3">Paramètres (réseau)</label><input type="number" id="pReseauIn3" value="1217" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerRatioParams()">Calculer</button>
+  <div id="erreurR3" class="erreur"></div>
+  <div id="resultatR3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : comparer systématiquement au trivial (prévision naïve) ; un gain de prévision inférieur aux coûts de transaction n'est pas exploitable ; un décalage entre date de référence et date de disponibilité produit une fuite de données ; « quand une structure est connue, la coder vaut mieux que l'apprendre ».</p>
+
+<script>
+function calculerGain(){
+  const erreurDiv=document.getElementById('erreurG1'); const resDiv=document.getElementById('resultatG1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const maeModele=parseFloat(document.getElementById('maeModeleIn1').value);
+    const maeNaif=parseFloat(document.getElementById('maeNaifIn1').value);
+    const cout=parseFloat(document.getElementById('coutIn1').value);
+    if([maeModele,maeNaif,cout].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if(maeNaif<=0) throw new Error('L\'EAM naïve doit être strictement positive.');
+    const gain=maeNaif-maeModele;
+    const pct=gain/maeNaif*100;
+    let out=`<p>Gain $=${maeNaif}-${maeModele}=\\mathbf{${gain.toFixed(3)}}$ point(s), soit $\\mathbf{${pct.toFixed(2)}\\,\\%}$</p>`;
+    if(gain<=0) out+='<p style="color:#b00020;font-weight:bold;">Le modèle ne bat pas la prévision naïve : aucun avantage à en tirer.</p>';
+    else if(gain<cout) out+='<p style="color:#b00020;font-weight:bold;">Le gain est inférieur au coût de transaction : il ne serait pas exploitable tel quel.</p>';
+    else out+='<p style="color:#1D9E75;font-weight:bold;">Le gain dépasse le coût de transaction indiqué.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerDecalage(){
+  const erreurDiv=document.getElementById('erreurD2'); const resDiv=document.getElementById('resultatD2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const dateFinStr=document.getElementById('dateFinIn2').value;
+    const datePubStr=document.getElementById('datePubIn2').value;
+    if(!dateFinStr||!datePubStr) throw new Error('Les deux dates sont requises.');
+    const dateFin=new Date(dateFinStr);
+    const datePub=new Date(datePubStr);
+    const diffDays=Math.round((datePub-dateFin)/(1000*60*60*24));
+    if(diffDays<0) throw new Error('La date de publication doit être postérieure à la fin de la période.');
+    resDiv.innerHTML=`<p>Écart $=\\mathbf{${diffDays}}$ jours entre la fin de la période de référence et sa publication effective.</p><p class="aide">Utiliser cette donnée avant le ${datePubStr} constituerait une fuite d'information.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerRatioParams(){
+  const erreurDiv=document.getElementById('erreurR3'); const resDiv=document.getElementById('resultatR3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const pStruct=parseFloat(document.getElementById('pStructIn3').value);
+    const pReseau=parseFloat(document.getElementById('pReseauIn3').value);
+    if([pStruct,pReseau].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(pStruct<1||pReseau<1) throw new Error('Les deux valeurs doivent être positives.');
+    const ratio=pReseau/pStruct;
+    resDiv.innerHTML=`<p>Rapport $=${pReseau}/${pStruct}\\approx\\mathbf{${ratio.toFixed(1)}}$ : le réseau compte environ ${ratio.toFixed(0)} fois plus de paramètres pour, potentiellement, une performance comparable.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerGain(); calculerDecalage(); calculerRatioParams(); };
+</script>
+</body>
+</html>

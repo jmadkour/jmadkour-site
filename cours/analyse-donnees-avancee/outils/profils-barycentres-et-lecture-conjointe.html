@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Profils, barycentres et lecture conjointe — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 180px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .alerte { color: #b00020; font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Profils, barycentres et lecture conjointe</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse des données avancée</p>
+
+<div class="panneau">
+  <h2>1. Formule de transition (barycentre pondéré)</h2>
+  <p style="font-size:0.85em;color:var(--cgris);margin-top:0;">Profil de la ligne (une valeur par colonne, somme $=1$) et coordonnées-colonnes $G_k$ sur l'axe, une par ligne de texte (même ordre).</p>
+  <div class="ligne">
+    <div><label for="profilInput">Profil de la ligne</label>
+      <textarea id="profilInput" rows="4">0.636
+0.091
+0.227
+0.045</textarea></div>
+    <div><label for="gInput">Coordonnées-colonnes $G_k$</label>
+      <textarea id="gInput" rows="4">-0.544
+0.523
+-0.366
+0.419</textarea></div>
+  </div>
+  <label for="lambdaTrans">Valeur propre $\lambda_k$ de cet axe</label>
+  <input type="number" id="lambdaTrans" value="0.2267" step="any">
+  <button onclick="calculerTransition()">Calculer $F_k(i)$</button>
+  <div id="erreurT" class="erreur"></div>
+  <div id="resultatT" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Contribution et cosinus carré (poids AFC)</h2>
+  <div class="ligne">
+    <div><label for="fi">Poids $f_{i\cdot}$</label><input type="number" id="fi" value="0.0733" step="any"></div>
+    <div><label for="Fk">Coordonnée $F_k(i)$</label><input type="number" id="Fk" value="-0.762" step="any"></div>
+    <div><label for="lambdaCtr">Valeur propre $\lambda_k$</label><input type="number" id="lambdaCtr" value="0.2267" step="any"></div>
+    <div><label for="d2i">$d^2_{\chi^2}(i,\text{profil moyen})$</label><input type="number" id="d2i" value="0.8" step="any"></div>
+  </div>
+  <button onclick="calculerCtrCos()">Calculer</button>
+  <div id="erreurC" class="erreur"></div>
+  <div id="resultatC" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $F_k(i)=\dfrac{1}{\sqrt{\lambda_k}}\sum_j\dfrac{f_{ij}}{f_{i\cdot}}G_k(j)$ ; $\text{ctr}_k(i)=f_{i\cdot}F_k(i)^2/\lambda_k$ (le poids $f_{i\cdot}$ remplace le $1/n$ de l'ACP) ; $\cos^2_k(i)=F_k(i)^2/d^2_{\chi^2}(i,\text{profil moyen})$.</p>
+
+<script>
+function calculerTransition(){
+  const erreurDiv=document.getElementById('erreurT'); const resDiv=document.getElementById('resultatT');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const profil=document.getElementById('profilInput').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0).map(Number);
+    const g=document.getElementById('gInput').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0).map(Number);
+    const lambda=parseFloat(document.getElementById('lambdaTrans').value);
+    if(profil.some(isNaN)||g.some(isNaN)||isNaN(lambda)) throw new Error('Valeurs numériques requises.');
+    if(profil.length!==g.length) throw new Error('Le profil et les coordonnées G doivent avoir le même nombre de valeurs.');
+    if(profil.length<2) throw new Error('Au moins 2 colonnes requises.');
+    if(lambda<=0) throw new Error('La valeur propre doit être strictement positive.');
+    const sommeProfil=profil.reduce((a,b)=>a+b,0);
+    let bary=0; for(let j=0;j<profil.length;j++) bary+=profil[j]*g[j];
+    const dil=1/Math.sqrt(lambda);
+    const F=bary*dil;
+    let out=`<p>Somme du profil : ${sommeProfil.toFixed(4)} ${Math.abs(sommeProfil-1)<0.01?'<span class="ok">(≈1, cohérent)</span>':'<span class="alerte">(devrait valoir 1 !)</span>'}</p>
+      <p>Barycentre non dilaté : $\\sum_j f_{ij}/f_{i\\cdot}\\times G_k(j) = ${bary.toFixed(4)}$</p>
+      <p>Facteur de dilatation : $1/\\sqrt{\\lambda_k}=${dil.toFixed(4)}$</p>
+      <p><strong>$F_k(i)=${F.toFixed(4)}$</strong></p>`;
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerCtrCos(){
+  const erreurDiv=document.getElementById('erreurC'); const resDiv=document.getElementById('resultatC');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const fi=parseFloat(document.getElementById('fi').value);
+    const Fk=parseFloat(document.getElementById('Fk').value);
+    const lambda=parseFloat(document.getElementById('lambdaCtr').value);
+    const d2=parseFloat(document.getElementById('d2i').value);
+    if([fi,Fk,lambda,d2].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(fi<=0||fi>1) throw new Error('Le poids doit être compris entre 0 et 1.');
+    if(lambda<=0) throw new Error('La valeur propre doit être strictement positive.');
+    if(d2<=0) throw new Error('La distance au carré doit être strictement positive.');
+    if(Fk*Fk>d2+1e-9) throw new Error("F_k(i)² ne peut pas dépasser d²(i, profil moyen).");
+    const ctr=fi*Fk*Fk/lambda;
+    const cos2=Fk*Fk/d2;
+    let out=`<p>$\\text{ctr}_k(i)=\\dfrac{${fi}\\times${Fk}^2}{${lambda}}=${(100*ctr).toFixed(2)}\\,\\%$</p>
+      <p>$\\cos^2_k(i)=\\dfrac{${Fk}^2}{${d2}}=${cos2.toFixed(3)}$</p>`;
+    out += cos2>0.5 ? '<p class="ok">Bien représentée sur cet axe.</p>' : '<p class="alerte">Représentation faible — commenter avec prudence.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerTransition(); calculerCtrCos(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Le graphe aléatoire d'Erdős et Rényi — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 180px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.6em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Le graphe aléatoire d'Erdős et Rényi</h1>
+<p class="sous-titre">Calculatrice interactive — Théorie des réseaux</p>
+
+<div class="panneau">
+  <h2>Moments de $G(n,p)$ et loi de Poisson</h2>
+  <div class="ligne">
+    <div><label for="nIn">n</label><input type="number" id="nIn" value="50"></div>
+    <div><label for="pIn">p</label><input type="number" id="pIn" value="0.08" step="0.01"></div>
+  </div>
+  <button onclick="calculerMoments()">Calculer</button>
+  <div id="resultatM" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Seuil de la composante géante : $S=1-e^{-\bar kS}$</h2>
+  <div class="ligne">
+    <div><label for="kbarIn">k&#772; (degré moyen)</label><input type="number" id="kbarIn" value="2" step="0.1"></div>
+  </div>
+  <button onclick="calculerGeante()">Résoudre pour S</button>
+  <div id="resultatS" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Clustering prédit vs observé</h2>
+  <div class="ligne">
+    <div><label for="nCIn">n</label><input type="number" id="nCIn" value="300"></div>
+    <div><label for="mCIn">m</label><input type="number" id="mCIn" value="900"></div>
+    <div><label for="CobsIn">C observé</label><input type="number" id="CobsIn" value="0.35" step="0.01"></div>
+  </div>
+  <button onclick="calculerClustering()">Comparer</button>
+  <div id="resultatC" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Le rapport C_observé / E[C] grandit mécaniquement avec n, à k&#772; fixé, puisque E[C]=p=k&#772;/(n-1) tend vers 0 quand n devient grand.</p>
+
+<script>
+function lgamma(x){
+  if (Number.isInteger(x) && x >= 1) { let s=0; for(let i=2;i<x;i++) s+=Math.log(i); return s; }
+  const g=7;
+  const c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if (x<0.5) return Math.log(Math.PI/Math.sin(Math.PI*x))-lgamma(1-x);
+  x-=1; let a=c[0]; const t=x+g+0.5;
+  for(let i=1;i<g+2;i++) a+=c[i]/(x+i);
+  return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);
+}
+function poissonPMF(k, lambda){
+  const logP = -lambda + k*Math.log(lambda) - lgamma(k+1);
+  return Math.exp(logP);
+}
+function solveGiantFraction(kbar, tol=1e-14, maxIter=2000){
+  if (kbar <= 1) return 0;
+  let S = 0.9;
+  for (let it=0; it<maxIter; it++){
+    const newS = 1 - Math.exp(-kbar*S);
+    if (Math.abs(newS-S) < tol) { S = newS; break; }
+    S = newS;
+  }
+  return S;
+}
+
+function calculerMoments(){
+  const n = parseFloat(document.getElementById('nIn').value);
+  const p = parseFloat(document.getElementById('pIn').value);
+  const resDiv = document.getElementById('resultatM');
+  if(isNaN(n) || isNaN(p) || n<2 || p<0 || p>1){
+    resDiv.innerHTML = '<p style="color:#b00020;">Paramètres invalides (n&ge;2, 0&le;p&le;1).</p>';
+    return;
+  }
+  const Em = p*n*(n-1)/2;
+  const kbar = p*(n-1);
+  let out = `<div class="valeur">E[m] = ${Em.toFixed(2)}</div><div class="valeur">k&#772; = ${kbar.toFixed(4)}</div><div class="valeur">&sigma; = &radic;k&#772; = ${Math.sqrt(kbar).toFixed(4)}</div>`;
+  out += '<h3>Distribution de Poisson approchée P(k_i = k)</h3>';
+  out += '<table><tr>' + Array.from({length:Math.min(16,Math.ceil(kbar*3)+3)},(_,k)=>`<th>${k}</th>`).join('') + '</tr><tr>';
+  const kmax = Math.min(15, Math.ceil(kbar*3)+2);
+  for(let k=0;k<=kmax;k++) out += `<td>${poissonPMF(k,kbar).toFixed(4)}</td>`;
+  out += '</tr></table>';
+  resDiv.innerHTML = out;
+}
+
+function calculerGeante(){
+  const kbar = parseFloat(document.getElementById('kbarIn').value);
+  const resDiv = document.getElementById('resultatS');
+  if(isNaN(kbar) || kbar<0){
+    resDiv.innerHTML = '<p style="color:#b00020;">k&#772; doit être positif.</p>';
+    return;
+  }
+  const S = solveGiantFraction(kbar);
+  let out = `<div class="valeur">S = ${S.toFixed(4)}</div>`;
+  out += `<p>${kbar<=1 ? 'k&#772; &le; 1 : régime sous-critique, aucune composante géante (S=0).' : 'k&#772; > 1 : régime sur-critique, une composante géante contient environ '+(S*100).toFixed(1)+'% des sommets.'}</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerClustering(){
+  const n = parseFloat(document.getElementById('nCIn').value);
+  const m = parseFloat(document.getElementById('mCIn').value);
+  const Cobs = parseFloat(document.getElementById('CobsIn').value);
+  const resDiv = document.getElementById('resultatC');
+  if(isNaN(n) || isNaN(m) || n<2 || m<0){
+    resDiv.innerHTML = '<p style="color:#b00020;">Paramètres invalides.</p>';
+    return;
+  }
+  const p = m/(n*(n-1)/2);
+  const kbar = 2*m/n;
+  const ratio = Cobs/p;
+  let out = `<div class="valeur">p = ${p.toFixed(6)}</div><div class="valeur">k&#772; = ${kbar.toFixed(4)}</div><div class="valeur">E[C] = p = ${p.toFixed(6)}</div>`;
+  out += `<div class="valeur">C_obs / E[C] = ${ratio.toFixed(2)}</div>`;
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerMoments(); calculerGeante(); calculerClustering(); };
+</script>
+</body>
+</html>

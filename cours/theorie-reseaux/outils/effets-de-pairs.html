@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — L'identification des effets de pairs — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  textarea { resize: vertical; min-height: 3.2em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 190px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — L'identification des effets de pairs</h1>
+<p class="sous-titre">Calculatrice interactive — Théorie des réseaux</p>
+
+<div class="panneau">
+  <h2>Le problème du reflet de Manski</h2>
+  <div class="ligne">
+    <div><label for="mAlpha">&alpha;</label><input type="number" id="mAlpha" value="2" step="0.1"></div>
+    <div><label for="mBeta">&beta;</label><input type="number" id="mBeta" value="0.4" step="0.05"></div>
+    <div><label for="mGamma">&gamma;</label><input type="number" id="mGamma" value="0.3" step="0.05"></div>
+    <div><label for="mDelta">&delta;</label><input type="number" id="mDelta" value="0.5" step="0.05"></div>
+    <div><label for="mXbar">x&#772; du groupe</label><input type="number" id="mXbar" value="20" step="1"></div>
+  </div>
+  <button onclick="calculerManski()">Calculer y&#772; prédit</button>
+  <div id="resultatManski" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>L'instrument de Bramoullé-Djebbari-Fortin : I, G, G² sont-elles indépendantes ?</h2>
+  <p class="aide">Arêtes : une par ligne, format <code>a,b</code>.</p>
+  <div class="ligne">
+    <div><label for="bdfE">Arêtes du réseau</label><textarea id="bdfE">1,2
+1,3
+2,3
+3,4
+4,5</textarea></div>
+  </div>
+  <button onclick="calculerBDF()">Calculer G², vérifier l'indépendance</button>
+  <div id="resultatBDF" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Corrélation individu / pair</h2>
+  <p class="aide">Une valeur par ligne pour chaque colonne (même nombre de lignes).</p>
+  <div class="ligne">
+    <div><label for="corrX">Valeurs y_i</label><textarea id="corrX">11
+9
+22
+18
+14
+16</textarea></div>
+    <div><label for="corrY">Valeurs y du pair</label><textarea id="corrY">9
+11
+18
+22
+16
+14</textarea></div>
+  </div>
+  <button onclick="calculerCorr()">Calculer la corrélation</button>
+  <div id="resultatCorr" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Une corrélation individu/pair élevée n'implique jamais, à elle seule, un effet de pairs causal : un effet corrélé (environnement commun) ou une sélection produisent exactement le même signal statistique.</p>
+
+<script>
+function manskiYbar(alpha, beta, gamma, delta, xbar) { return (alpha + (gamma+delta)*xbar) / (1 - beta); }
+
+function parseEdges(text) {
+  return text.trim().split('\n').map(l => l.trim()).filter(l => l.length).map(l => l.split(',').map(s => s.trim()));
+}
+function nodesFromEdges(E) {
+  const s = new Set();
+  E.forEach(([a,b]) => { s.add(a); s.add(b); });
+  return Array.from(s);
+}
+function buildAdj(V, E) {
+  const adj = {};
+  V.forEach(v => adj[v] = new Set());
+  E.forEach(([a,b]) => { adj[a].add(b); adj[b].add(a); });
+  return adj;
+}
+function buildAdjMatrix(V, adj) {
+  const n = V.length;
+  const idx = {}; V.forEach((v,i) => idx[v] = i);
+  const A = Array.from({length:n}, () => new Array(n).fill(0));
+  V.forEach(v => adj[v].forEach(u => { A[idx[v]][idx[u]] = 1; }));
+  return A;
+}
+function matMul(A, B) {
+  const n = A.length, m = B[0].length, k = B.length;
+  const C = Array.from({length:n}, () => new Array(m).fill(0));
+  for (let i=0;i<n;i++) for (let j=0;j<m;j++) { let s=0; for (let l=0;l<k;l++) s += A[i][l]*B[l][j]; C[i][j]=s; }
+  return C;
+}
+function identity(n) { return Array.from({length:n}, (_,i) => Array.from({length:n}, (_,j) => i===j?1:0)); }
+function flatten(M) { const v=[]; M.forEach(row => row.forEach(x => v.push(x))); return v; }
+function rankOfRows(rows) {
+  const R = rows.map(r => r.slice());
+  const m = R.length, n = R[0].length;
+  let rank = 0;
+  for (let col = 0; col < n && rank < m; col++) {
+    let piv = -1;
+    for (let r = rank; r < m; r++) if (Math.abs(R[r][col]) > 1e-9) { piv = r; break; }
+    if (piv === -1) continue;
+    [R[rank], R[piv]] = [R[piv], R[rank]];
+    for (let r = 0; r < m; r++) {
+      if (r === rank) continue;
+      const factor = R[r][col] / R[rank][col];
+      if (Math.abs(factor) < 1e-12) continue;
+      for (let c = 0; c < n; c++) R[r][c] -= factor * R[rank][c];
+    }
+    rank++;
+  }
+  return rank;
+}
+function pearsonCorrelation(x, y) {
+  const n = x.length;
+  const mx = x.reduce((a,b)=>a+b,0)/n;
+  const my = y.reduce((a,b)=>a+b,0)/n;
+  let sxy=0, sxx=0, syy=0;
+  for (let i=0;i<n;i++) { sxy += (x[i]-mx)*(y[i]-my); sxx += (x[i]-mx)**2; syy += (y[i]-my)**2; }
+  return sxy / Math.sqrt(sxx*syy);
+}
+
+function calculerManski() {
+  const alpha = parseFloat(document.getElementById('mAlpha').value);
+  const beta = parseFloat(document.getElementById('mBeta').value);
+  const gamma = parseFloat(document.getElementById('mGamma').value);
+  const delta = parseFloat(document.getElementById('mDelta').value);
+  const xbar = parseFloat(document.getElementById('mXbar').value);
+  const resDiv = document.getElementById('resultatManski');
+  if ([alpha,beta,gamma,delta,xbar].some(isNaN) || Math.abs(beta) >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Paramètres invalides (|&beta;| doit être &lt; 1).</p>';
+    return;
+  }
+  const ybar = manskiYbar(alpha, beta, gamma, delta, xbar);
+  const slope = (gamma+delta)/(1-beta);
+  let out = `<div class="valeur">y&#772; prédit = ${ybar.toFixed(4)}</div><div class="valeur">pente (&gamma;+&delta;)/(1-&beta;) = ${slope.toFixed(4)}</div>`;
+  out += `<p>Ce résultat ne dépend que de x&#772; (la moyenne du groupe), jamais de la dispersion interne des x_i : deux groupes de même x&#772; mais de composition différente donnent exactement le même y&#772; prédit. Seule la pente composite (&gamma;+&delta;)/(1-&beta;) est identifiable à partir de données de groupes partitionnés — jamais &beta;, &gamma; et &delta; séparément.</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerBDF() {
+  const resDiv = document.getElementById('resultatBDF');
+  try {
+    const E = parseEdges(document.getElementById('bdfE').value);
+    const V = nodesFromEdges(E);
+    const adj = buildAdj(V, E);
+    const G = buildAdjMatrix(V, adj);
+    const n = V.length;
+    const I = identity(n);
+    const G2 = matMul(G, G);
+    const rank = rankOfRows([flatten(I), flatten(G), flatten(G2)]);
+    let out = `<div class="valeur">n = ${n}</div><div class="valeur">rang(I, G, G²) = ${rank}</div>`;
+    out += rank === 3
+      ? '<p style="color:var(--cex);"><strong>I, G et G² sont linéairement indépendantes.</strong> L\'instrument de Bramoullé-Djebbari-Fortin est disponible : &beta; et &gamma; sont identifiables (sous exogénéité du réseau).</p>'
+      : '<p class="erreur"><strong>I, G et G² sont linéairement dépendantes</strong> (rang &lt; 3) : la stratégie d\'instrumentation échoue, comme dans le problème du reflet de Manski (c\'est le cas, par exemple, d\'un réseau complet).</p>';
+    out += '<h3>G² (nombre de chemins de longueur 2)</h3><table><tr><th></th>' + V.map(v=>`<th>${v}</th>`).join('') + '</tr>';
+    V.forEach((v,i) => { out += `<tr><th>${v}</th>` + G2[i].map(x=>`<td>${x}</td>`).join('') + '</tr>'; });
+    out += '</table>';
+    resDiv.innerHTML = out;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie : vérifier le format des arêtes.</p>';
+  }
+}
+
+function calculerCorr() {
+  const resDiv = document.getElementById('resultatCorr');
+  try {
+    const x = document.getElementById('corrX').value.trim().split('\n').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+    const y = document.getElementById('corrY').value.trim().split('\n').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+    if (x.length !== y.length || x.length < 2) { resDiv.innerHTML = '<p class="erreur">Les deux colonnes doivent avoir le même nombre de valeurs (au moins 2).</p>'; return; }
+    const r = pearsonCorrelation(x, y);
+    resDiv.innerHTML = `<div class="valeur">n = ${x.length}</div><div class="valeur">corrélation = ${r.toFixed(4)}</div>
+      <p>Rappel : cette corrélation, à elle seule, ne distingue jamais influence, sélection et environnement commun. Elle peut provenir d'un effet de pairs authentique, d'un choc partagé, ou du simple découpage en groupes (exercice 3 du chapitre).</p>`;
+  } catch (e) {
+    resDiv.innerHTML = '<p class="erreur">Erreur de saisie.</p>';
+  }
+}
+
+window.onload = () => { calculerManski(); calculerBDF(); calculerCorr(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — Tester une moyenne, une proportion — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .non-ok { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — Tester une moyenne, tester une proportion</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Test complet d'une moyenne (Student)</h2>
+  <div class="grille4">
+    <div><label for="xbar1">observé x̄</label><input id="xbar1" value="7005.80"></div>
+    <div><label for="m01">valeur testée m₀</label><input id="m01" value="6500"></div>
+    <div><label for="s1">écart-type s</label><input id="s1" value="2250.98"></div>
+    <div><label for="n1">taille n</label><input id="n1" value="50"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="forme1">forme du test</label>
+      <select id="forme1">
+        <option value="superieur">H₁ : m &gt; m₀</option>
+        <option value="inferieur">H₁ : m &lt; m₀</option>
+        <option value="different" selected>H₁ : m ≠ m₀</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="testerMoyenne()">Tester</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Test complet d'une proportion (normale)</h2>
+  <div class="grille4">
+    <div><label for="n2">taille n</label><input id="n2" value="50"></div>
+    <div><label for="k2">nombre de succès k</label><input id="k2" value="13"></div>
+    <div><label for="p02">proportion testée p₀</label><input id="p02" value="0.15"></div>
+    <div><label for="forme2">forme du test</label>
+      <select id="forme2">
+        <option value="superieur">H₁ : p &gt; p₀</option>
+        <option value="inferieur">H₁ : p &lt; p₀</option>
+        <option value="different" selected>H₁ : p ≠ p₀</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="testerProportion()">Tester</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : moyenne, $t=(\overline x-m_0)/(s/\sqrt n)\sim\text{Student}_{n-1}$. Proportion, $z=(f-p_0)/\sqrt{p_0(1-p_0)/n}\sim\mathcal N(0,1)$ — le dénominateur utilise $p_0$ (la valeur de $H_0$), pas $f$. Décision : comparer $|t|$ ou $|z|$ au quantile correspondant à $\alpha=5\,\%$.</p>
+
+<script>
+function erf(x){
+  const sign = x>=0?1:-1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z){ return 0.5*(1+erf(z/Math.sqrt(2))); }
+
+const dfList = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,40,60,120,Infinity];
+const t95  = [6.314,2.920,2.353,2.132,2.015,1.943,1.895,1.860,1.833,1.812,1.796,1.782,1.771,1.761,1.753,1.746,1.740,1.734,1.729,1.725,1.721,1.717,1.714,1.711,1.708,1.706,1.703,1.701,1.699,1.697,1.684,1.671,1.658,1.645];
+const t975 = [12.706,4.303,3.182,2.776,2.571,2.447,2.365,2.306,2.262,2.228,2.201,2.179,2.160,2.145,2.131,2.120,2.110,2.101,2.093,2.086,2.080,2.074,2.069,2.064,2.060,2.056,2.052,2.048,2.045,2.042,2.021,2.000,1.980,1.960];
+function interpoler(df, table){
+  if(df<=1) return table[0];
+  for(let i=0;i<dfList.length-1;i++){
+    const a=dfList[i], b=dfList[i+1];
+    if(df>=a && df<=b){
+      const invA=1/a, invB=isFinite(b)?1/b:0, invDf=1/df;
+      const frac=(invDf-invA)/(invB-invA);
+      return table[i]+frac*(table[i+1]-table[i]);
+    }
+  }
+  return table[table.length-1];
+}
+
+function testerMoyenne(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const xbar=parseFloat(document.getElementById('xbar1').value);
+    const m0=parseFloat(document.getElementById('m01').value);
+    const s=parseFloat(document.getElementById('s1').value);
+    const n=parseFloat(document.getElementById('n1').value);
+    const forme=document.getElementById('forme1').value;
+    if([xbar,m0,s,n].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(s<=0) throw new Error('s doit être strictement positif.');
+    if(n<2) throw new Error('n doit être ≥2.');
+    const df=n-1;
+    const se=s/Math.sqrt(n);
+    const t=(xbar-m0)/se;
+    const seuil = forme==='different' ? interpoler(df,t975) : interpoler(df,t95);
+    let rejet;
+    if(forme==='superieur') rejet = t>seuil;
+    else if(forme==='inferieur') rejet = t<-seuil;
+    else rejet = Math.abs(t)>seuil;
+    resDiv.innerHTML=`<table><tr><th>ddl</th><th>erreur-type</th><th>t observé</th><th>seuil</th><th>conclusion</th></tr>
+      <tr><td>${df}</td><td>${se.toFixed(3)}</td><td>${t.toFixed(4)}</td><td>${seuil.toFixed(3)}</td><td class="${rejet?'non-ok':'ok'}">${rejet?'on rejette H₀':'on ne rejette pas H₀'}</td></tr></table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function testerProportion(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('n2').value);
+    const k=parseFloat(document.getElementById('k2').value);
+    const p0=parseFloat(document.getElementById('p02').value);
+    const forme=document.getElementById('forme2').value;
+    if([n,k,p0].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(p0<=0||p0>=1) throw new Error('p₀ doit être strictement compris entre 0 et 1.');
+    if(n<1||k<0||k>n) throw new Error('k doit être compris entre 0 et n.');
+    const np0=n*p0, nq0=n*(1-p0);
+    const validite = np0>=5 && nq0>=5;
+    const f=k/n;
+    const se=Math.sqrt(p0*(1-p0)/n);
+    const z=(f-p0)/se;
+    const seuil = forme==='different' ? 1.960 : 1.645;
+    let rejet;
+    if(forme==='superieur') rejet = z>seuil;
+    else if(forme==='inferieur') rejet = z<-seuil;
+    else rejet = Math.abs(z)>seuil;
+    resDiv.innerHTML=`<table><tr><th>f=k/n</th><th>np₀</th><th>n(1−p₀)</th><th>conditions ≥5 ?</th></tr>
+      <tr><td>${f.toFixed(4)}</td><td>${np0.toFixed(1)}</td><td>${nq0.toFixed(1)}</td><td class="${validite?'ok':'non-ok'}">${validite?'validées ✓':'NON validées ✗'}</td></tr></table>
+      <table><tr><th>erreur-type</th><th>z observé</th><th>seuil</th><th>conclusion</th></tr>
+      <tr><td>${se.toFixed(4)}</td><td>${z.toFixed(4)}</td><td>${seuil}</td><td class="${rejet?'non-ok':'ok'}">${rejet?'on rejette H₀':'on ne rejette pas H₀'}</td></tr></table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ testerMoyenne(); testerProportion(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Le mouvement brownien — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.proba { border-left-color: var(--cex); }
+  .panneau.proba h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.proba button { background: var(--cex); }
+  .panneau.proba button:hover { background: #226b43; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Le mouvement brownien</h1>
+<p class="sous-titre">Calculatrice interactive — Calcul stochastique pour la finance</p>
+
+<div class="panneau">
+  <h2>Variance et covariance de $W_s$ et $W_t$</h2>
+  <div class="grille3">
+    <div><label for="sVal">$s$</label><input id="sVal" value="3"></div>
+    <div><label for="tVal">$t$ (avec $t>s$)</label><input id="tVal" value="8"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerCovariance()">Calculer</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueTrajectoires" height="260"></canvas>
+</div>
+
+<p class="avertissement">Quelques trajectoires simulées d'un brownien standard sont affichées avec l'enveloppe $\pm\sqrt t$ (l'écart-type), pour visualiser à quel point les niveaux $W_s$ et $W_t$ restent liés par le trajet commun entre $0$ et $s$.</p>
+
+<div class="panneau proba">
+  <h2>Calculer une probabilité gaussienne sur $W_t$</h2>
+  <div class="grille3">
+    <div><label for="tProba">$t$</label><input id="tProba" value="4"></div>
+    <div><label for="seuilX">seuil $x$</label><input id="seuilX" value="3"></div>
+    <div><label for="modeProba">calculer</label>
+      <select id="modeProba">
+        <option value="sup">$P(W_t>x)$</option>
+        <option value="inf">$P(W_t<x)$</option>
+        <option value="abs">$P(|W_t|>x)$ (avec $x>0$)</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="calculerProba()">Calculer la probabilité</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphiqueDensite" height="240"></canvas>
+</div>
+
+<script>
+let chartTraj = null, chartDensite = null;
+
+function erf(x) {
+  const sign = x>=0 ? 1 : -1; x = Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t = 1/(1+p*x);
+  const y = 1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z) { return 0.5*(1+erf(z/Math.sqrt(2))); }
+function densiteNormale(x, mu, sigma) { return Math.exp(-0.5*Math.pow((x-mu)/sigma,2))/(sigma*Math.sqrt(2*Math.PI)); }
+
+function simulerTrajectoires(tmax, nPas, nTraj) {
+  const dt = tmax/nPas;
+  const datasets = [];
+  for (let s=0;s<nTraj;s++) {
+    const chemin = [{x:0,y:0}];
+    let w = 0;
+    for (let k=1;k<=nPas;k++) { w += Math.sqrt(dt)*(Math.random()<0.5?-1:1); chemin.push({x:k*dt, y:w}); }
+    datasets.push({ data: chemin, borderColor: `hsla(${(s*53)%360},60%,45%,0.6)`, backgroundColor:'transparent', pointRadius:0, borderWidth:1 });
+  }
+  return datasets;
+}
+
+function calculerCovariance() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const s = parseFloat(document.getElementById('sVal').value);
+    const t = parseFloat(document.getElementById('tVal').value);
+    if ([s,t].some(v=>isNaN(v)||v<0) || t<=s) throw new Error('Il faut 0 ≤ s < t.');
+
+    const varS = s, varT = t, cov = Math.min(s,t), varAccr = t-s;
+    resDiv.innerHTML = `
+      <table><tr><th>Var(W_s)</th><th>Var(W_t)</th><th>Cov(W_s,W_t)</th><th>Var(W_t-W_s)</th></tr>
+      <tr><td>${varS}</td><td>${varT}</td><td>${cov}</td><td>${varAccr}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Corrélation entre $W_s$ et $W_t$ : $\\rho=\\mathrm{Cov}/\\sqrt{\\mathrm{Var}(W_s)\\mathrm{Var}(W_t)}=${(cov/Math.sqrt(varS*varT)).toFixed(4)}$ — d'autant plus proche de $1$ que $s$ est proche de $t$.</p>
+    `;
+
+    const tmax = t*1.15;
+    const datasets = simulerTrajectoires(tmax, 300, 12);
+    const enveloppeHaut = [], enveloppeBas = [];
+    for (let i=0;i<=100;i++){ const x = i*tmax/100; enveloppeHaut.push({x,y:Math.sqrt(x)}); enveloppeBas.push({x,y:-Math.sqrt(x)}); }
+    datasets.push({ label:'+√t', data: enveloppeHaut, borderColor:'#5A5A5A', borderDash:[4,3], backgroundColor:'transparent', pointRadius:0 });
+    datasets.push({ label:'-√t', data: enveloppeBas, borderColor:'#5A5A5A', borderDash:[4,3], backgroundColor:'transparent', pointRadius:0 });
+
+    if (chartTraj) chartTraj.destroy();
+    chartTraj = new Chart(document.getElementById('graphiqueTrajectoires').getContext('2d'), {
+      type: 'line',
+      data: { datasets },
+      options: { responsive: true, animation:false,
+        scales: { x: { title: { display: true, text: 't' } }, y: { title: { display: true, text: 'W(t)' } } },
+        plugins: { legend: { display:false }, title: { display: true, text: 'Trajectoires simulées et enveloppe ±√t' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerProba() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const t = parseFloat(document.getElementById('tProba').value);
+    const x = parseFloat(document.getElementById('seuilX').value);
+    const mode = document.getElementById('modeProba').value;
+    if ([t,x].some(isNaN) || t<=0) throw new Error('t doit être strictement positif.');
+    const sigma = Math.sqrt(t);
+    const z = x/sigma;
+    let proba, texte;
+    if (mode === 'sup') { proba = 1-Phi(z); texte = `P(W_${t}>${x})`; }
+    else if (mode === 'inf') { proba = Phi(z); texte = `P(W_${t}<${x})`; }
+    else { if (x<0) throw new Error('Pour |W_t|>x, x doit être positif.'); proba = 2*(1-Phi(Math.abs(z))); texte = `P(|W_${t}|>${x})`; }
+
+    resDiv.innerHTML = `<p>$W_{${t}}\\sim\\mathcal N(0,${t})$, écart-type $=${sigma.toFixed(4)}$, $z=${z.toFixed(4)}$</p>
+      <p><strong>${texte} ≈ ${(proba*100).toFixed(2)} %</strong></p>`;
+
+    const xmin = -4*sigma, xmax = 4*sigma;
+    const pts = [];
+    for (let i=0;i<=200;i++){ const xv = xmin+i*(xmax-xmin)/200; pts.push({x:xv, y:densiteNormale(xv,0,sigma)}); }
+    const zone = pts.filter(p => mode==='sup' ? p.x>x : mode==='inf' ? p.x<x : Math.abs(p.x)>x);
+
+    if (chartDensite) chartDensite.destroy();
+    chartDensite = new Chart(document.getElementById('graphiqueDensite').getContext('2d'), {
+      type: 'line',
+      data: { datasets: [
+        { label: `densité de W_${t}`, data: pts, borderColor:'#1F6FB2', backgroundColor:'transparent', pointRadius:0 },
+        { label: 'zone calculée', data: zone, borderColor:'transparent', backgroundColor:'rgba(46,139,87,0.35)', pointRadius:0, fill:true }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'valeur de W_t' } }, y: { title: { display: true, text: 'densité' } } },
+        plugins: { title: { display: true, text: 'Densité de W_t et zone de probabilité calculée' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerCovariance(); calculerProba(); };
+</script>
+</body>
+</html>

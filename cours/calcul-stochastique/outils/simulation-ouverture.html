@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Simulation Monte Carlo — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.antith { border-left-color: var(--cex); }
+  .panneau.antith h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0 1em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.antith button { background: var(--cex); }
+  .panneau.antith button:hover { background: #226b43; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Simuler, et ce qui vient après</h1>
+<p class="sous-titre">Calculatrice interactive — Calcul stochastique pour la finance</p>
+
+<div class="panneau">
+  <h2>Évaluation d'un call par Monte Carlo, sous ℚ</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">
+    Simulation \textbf{exacte} du brownien géométrique sous $\mathbb{Q}$ (dérive $r$, jamais $\mu$), comparée au prix de Black-Scholes.
+  </p>
+  <div class="grille5">
+    <div><label for="S0">S₀</label><input id="S0" value="100"></div>
+    <div><label for="K">K</label><input id="K" value="95"></div>
+    <div><label for="r">r</label><input id="r" value="0.03"></div>
+    <div><label for="sigma">σ</label><input id="sigma" value="0.25"></div>
+    <div><label for="T">T (ans)</label><input id="T" value="0.5"></div>
+  </div>
+  <div class="grille3">
+    <div><label for="N">nombre de trajectoires N</label><input id="N" value="2000"></div>
+    <div><label for="antithetique">variables antithétiques ?</label>
+      <select id="antithetique"><option value="non">non</option><option value="oui">oui</option></select>
+    </div>
+    <div></div>
+  </div>
+  <button onclick="simulerMC()">Lancer la simulation Monte Carlo</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueConvergence" height="240"></canvas>
+</div>
+
+<p class="avertissement">Le graphique montre l'estimation Monte Carlo cumulée à mesure que les trajectoires s'accumulent, avec sa bande de confiance à ±1 écart-type (∝1/√N) : elle doit se resserrer et converger vers le prix de Black-Scholes.</p>
+
+<div class="panneau antith">
+  <h2>Euler-Maruyama contre simulation exacte, sur une trajectoire</h2>
+  <div class="grille5">
+    <div><label for="X0">X₀</label><input id="X0" value="50"></div>
+    <div><label for="muE">μ</label><input id="muE" value="0.08"></div>
+    <div><label for="sigmaE">σ</label><input id="sigmaE" value="0.30"></div>
+    <div><label for="dtE">pas Δt</label><input id="dtE" value="0.01"></div>
+    <div><label for="nStepsE">nombre de pas</label><input id="nStepsE" value="50"></div>
+  </div>
+  <button onclick="comparerSchemas()">Comparer les deux schémas</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphiqueSchemas" height="240"></canvas>
+</div>
+
+<script>
+let chartConvergence = null, chartSchemas = null;
+
+function erf(x){
+  const sign = x<0?-1:1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(x){ return 0.5*(1+erf(x/Math.SQRT2)); }
+function prixBSCall(S0,K,r,sigma,T){
+  const d1 = (Math.log(S0/K) + (r+sigma*sigma/2)*T) / (sigma*Math.sqrt(T));
+  const d2 = d1 - sigma*Math.sqrt(T);
+  return S0*Phi(d1) - K*Math.exp(-r*T)*Phi(d2);
+}
+function gaussien(){
+  const u1=Math.random(), u2=Math.random();
+  return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+}
+
+function simulerMC() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const S0 = parseFloat(document.getElementById('S0').value);
+    const K = parseFloat(document.getElementById('K').value);
+    const r = parseFloat(document.getElementById('r').value);
+    const sigma = parseFloat(document.getElementById('sigma').value);
+    const T = parseFloat(document.getElementById('T').value);
+    const N = parseInt(document.getElementById('N').value);
+    const antith = document.getElementById('antithetique').value==='oui';
+    if ([S0,K,r,sigma,T,N].some(v=>isNaN(v)) || S0<=0||K<=0||sigma<=0||T<=0||N<10) throw new Error('Vérifier les valeurs saisies (au moins 10 trajectoires).');
+
+    const drift = (r-sigma*sigma/2)*T, vol = sigma*Math.sqrt(T);
+    const payoffs = [];
+    const nDraws = antith ? Math.ceil(N/2) : N;
+    for (let i=0;i<nDraws;i++) {
+      const eps = gaussien();
+      const ST1 = S0*Math.exp(drift+vol*eps);
+      payoffs.push(Math.max(ST1-K,0));
+      if (antith) {
+        const ST2 = S0*Math.exp(drift+vol*(-eps));
+        payoffs.push(Math.max(ST2-K,0));
+      }
+    }
+    const nEff = payoffs.length;
+    const moy = payoffs.reduce((s,v)=>s+v,0)/nEff;
+    const variance = payoffs.reduce((s,v)=>s+(v-moy)*(v-moy),0)/nEff;
+    const ecartTypePayoff = Math.sqrt(variance);
+    const CMC = Math.exp(-r*T)*moy;
+    const seCMC = Math.exp(-r*T)*ecartTypePayoff/Math.sqrt(nEff);
+    const CBS = prixBSCall(S0,K,r,sigma,T);
+
+    resDiv.innerHTML = `
+      <table><tr><th>trajectoires effectives</th><th>Ĉ₀ (Monte Carlo)</th><th>écart-type de Ĉ₀</th><th>C₀ (Black-Scholes)</th><th>écart</th></tr>
+      <tr><td>${nEff}</td><td>${CMC.toFixed(4)}</td><td>${seCMC.toFixed(4)}</td><td>${CBS.toFixed(4)}</td><td>${(CMC-CBS).toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${antith ? 'Variables antithétiques activées : à N comparable, l\'écart-type devrait être plus faible qu\'en tirage indépendant.' : 'Essayez d\'activer les variables antithétiques pour comparer la précision à N comparable.'}</p>
+    `;
+
+    // convergence cumulative
+    const labels = [], estimCum = [], bandeHaute = [], bandeBasse = [];
+    let sommeCum = 0, sommeCarreCum = 0;
+    const pas = Math.max(1, Math.floor(nEff/60));
+    for (let i=0;i<nEff;i++) {
+      sommeCum += payoffs[i]; sommeCarreCum += payoffs[i]*payoffs[i];
+      if ((i+1)%pas===0 || i===nEff-1) {
+        const n=i+1, m=sommeCum/n, v=Math.max(sommeCarreCum/n - m*m,0);
+        const c = Math.exp(-r*T)*m, se = Math.exp(-r*T)*Math.sqrt(v)/Math.sqrt(n);
+        labels.push(n); estimCum.push(c); bandeHaute.push(c+se); bandeBasse.push(c-se);
+      }
+    }
+    if (chartConvergence) chartConvergence.destroy();
+    chartConvergence = new Chart(document.getElementById('graphiqueConvergence').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'Ĉ₀ cumulé', data: estimCum, borderColor:'#1F6FB2', backgroundColor:'transparent', borderWidth:2, pointRadius:0 },
+        { label: '+1 écart-type', data: bandeHaute, borderColor:'#5A5A5A', borderDash:[3,3], backgroundColor:'transparent', borderWidth:1, pointRadius:0 },
+        { label: '-1 écart-type', data: bandeBasse, borderColor:'#5A5A5A', borderDash:[3,3], backgroundColor:'transparent', borderWidth:1, pointRadius:0 },
+        { label: 'C₀ Black-Scholes', data: labels.map(()=>CBS), borderColor:'#B56600', backgroundColor:'transparent', borderWidth:1.5, pointRadius:0 }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display:true, text:'nombre de trajectoires cumulées' } }, y: { title: { display:true, text:'prix estimé' } } },
+        plugins: { title: { display:true, text:'Convergence de l\'estimateur Monte Carlo' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function comparerSchemas() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const X0 = parseFloat(document.getElementById('X0').value);
+    const mu = parseFloat(document.getElementById('muE').value);
+    const sigma = parseFloat(document.getElementById('sigmaE').value);
+    const dt = parseFloat(document.getElementById('dtE').value);
+    const nSteps = parseInt(document.getElementById('nStepsE').value);
+    if ([X0,mu,sigma,dt,nSteps].some(v=>isNaN(v)) || X0<=0 || dt<=0 || nSteps<1) throw new Error('Vérifier les valeurs saisies.');
+
+    const epsilons = Array.from({length:nSteps}, ()=>gaussien());
+    let xEuler = X0, xExact = X0;
+    const serieEuler = [X0], serieExact = [X0];
+    for (let k=0;k<nSteps;k++) {
+      const eps = epsilons[k];
+      xEuler = xEuler + mu*xEuler*dt + sigma*xEuler*Math.sqrt(dt)*eps;
+      xExact = xExact*Math.exp((mu-sigma*sigma/2)*dt + sigma*Math.sqrt(dt)*eps);
+      serieEuler.push(xEuler);
+      serieExact.push(xExact);
+    }
+    const labels = serieEuler.map((_,i)=>i);
+    const ecartFinal = serieEuler[serieEuler.length-1]-serieExact[serieExact.length-1];
+
+    resDiv.innerHTML = `
+      <table><tr><th>X final (Euler-Maruyama)</th><th>X final (exact)</th><th>écart</th></tr>
+      <tr><td>${xEuler.toFixed(4)}</td><td>${xExact.toFixed(4)}</td><td>${ecartFinal.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Les deux trajectoires utilisent les mêmes tirages $\\varepsilon_k$ à chaque pas ; l'écart provient uniquement de l'erreur de discrétisation d'Euler, absente du schéma exact.</p>
+    `;
+
+    if (chartSchemas) chartSchemas.destroy();
+    chartSchemas = new Chart(document.getElementById('graphiqueSchemas').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'Euler-Maruyama', data: serieEuler, borderColor:'#1F6FB2', backgroundColor:'transparent', borderWidth:2, pointRadius:0 },
+        { label: 'récurrence exacte', data: serieExact, borderColor:'#1D9E75', backgroundColor:'transparent', borderWidth:1.5, borderDash:[5,3], pointRadius:0 }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display:true, text:'pas de temps' } }, y: { title: { display:true, text:'X_k' } } },
+        plugins: { title: { display:true, text:'Même trajectoire de bruit, deux schémas' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { simulerMC(); comparerSchemas(); };
+</script>
+</body>
+</html>

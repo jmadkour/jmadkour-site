@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — La corrélation linéaire — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.matrice { border-left-color: var(--ceco); } .panneau.matrice h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; resize: vertical; min-height: 2.6em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.matrice button { background: var(--ceco); } .panneau.matrice button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .diag { background: #1F6FB222; font-weight: bold; }
+  .pos { color: var(--cex); }
+  .neg { color: #b00020; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — La corrélation linéaire</h1>
+<p class="sous-titre">Calculatrice interactive — Introduction à l'analyse des données</p>
+
+<div class="panneau">
+  <h2>Corrélation entre deux variables, avec nuage de points</h2>
+  <div class="grille2">
+    <div><label for="xList">valeurs de x (séparées par des virgules)</label><textarea id="xList">8,10,12,14,16</textarea></div>
+    <div><label for="yList">valeurs de y (séparées par des virgules)</label><textarea id="yList">4,12,8,16,20</textarea></div>
+  </div>
+  <button onclick="calculerR()">Calculer r</button>
+  <div id="erreurR" class="erreur"></div>
+  <div id="resultatR" class="resultat-zone"></div>
+  <div id="grapheR"></div>
+</div>
+
+<div class="panneau matrice">
+  <h2>Matrice des corrélations R (2 à 6 variables)</h2>
+  <label for="varsInput">une ligne par variable — nom, puis valeurs séparées par des virgules</label>
+  <textarea id="varsInput" rows="3">accueil, 8, 10, 12, 14, 16
+fidelite, 4, 12, 8, 16, 20</textarea>
+  <button onclick="calculerMatriceR()">Calculer R</button>
+  <div id="erreurM" class="erreur"></div>
+  <div id="resultatM" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $r_{xy}=\operatorname{cov}(x,y)/(s_xs_y)$, toujours dans $[-1,1]$. $r=0$ signifie « pas de liaison linéaire », jamais « pas de liaison ». Un seul point aberrant peut créer, détruire, ou inverser une corrélation — toujours regarder le nuage de points, jamais se fier au seul coefficient.</p>
+
+<script>
+function stats2(x,y){
+  const n=x.length;
+  const xbar=x.reduce((a,b)=>a+b,0)/n, ybar=y.reduce((a,b)=>a+b,0)/n;
+  const devx=x.map(v=>v-xbar), devy=y.map(v=>v-ybar);
+  const Vx=devx.reduce((a,d)=>a+d*d,0)/n, Vy=devy.reduce((a,d)=>a+d*d,0)/n;
+  const cov=devx.reduce((a,d,i)=>a+d*devy[i],0)/n;
+  const sx=Math.sqrt(Vx), sy=Math.sqrt(Vy);
+  const r=(sx>0&&sy>0)?cov/(sx*sy):NaN;
+  return {n,xbar,ybar,Vx,Vy,cov,sx,sy,r};
+}
+
+function calculerR(){
+  const erreurDiv=document.getElementById('erreurR'); const resDiv=document.getElementById('resultatR');
+  const grapheDiv=document.getElementById('grapheR');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const x=document.getElementById('xList').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    const y=document.getElementById('yList').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    if(x.length<2||y.length<2) throw new Error('Il faut au moins 2 valeurs dans chaque série.');
+    if(x.length!==y.length) throw new Error(`Les deux séries doivent avoir la même longueur (x: ${x.length}, y: ${y.length}).`);
+    const s=stats2(x,y);
+    if(isNaN(s.r)){ throw new Error('Variance nulle pour x ou y : corrélation indéfinie.'); }
+    let lecture;
+    const ar=Math.abs(s.r);
+    if(ar>0.9) lecture='liaison linéaire très forte';
+    else if(ar>0.7) lecture='liaison linéaire forte';
+    else if(ar>0.4) lecture='liaison linéaire modérée';
+    else if(ar>0.1) lecture='liaison linéaire faible';
+    else lecture='pas de liaison linéaire détectable';
+    resDiv.innerHTML=`<table><tr><th>n</th><th>x̄</th><th>ȳ</th><th>cov(x,y)</th><th>s_x</th><th>s_y</th><th>r</th></tr>
+      <tr><td>${s.n}</td><td>${s.xbar.toFixed(3)}</td><td>${s.ybar.toFixed(3)}</td><td>${s.cov.toFixed(4)}</td><td>${s.sx.toFixed(4)}</td><td>${s.sy.toFixed(4)}</td><td><strong>${s.r.toFixed(4)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Lecture : ${lecture} (${s.r>0?'positive':(s.r<0?'négative':'nulle')}).</p>`;
+    const w=460,h=260,pad=36;
+    const xMin=Math.min(...x), xMax=Math.max(...x), yMin=Math.min(...y), yMax=Math.max(...y);
+    const xPad=(xMax-xMin)*0.15||1, yPad=(yMax-yMin)*0.15||1;
+    const X=(v)=>pad+((v-(xMin-xPad))/((xMax+xPad)-(xMin-xPad)))*(w-pad-15);
+    const Y=(v)=>(h-pad)-((v-(yMin-yPad))/((yMax+yPad)-(yMin-yPad)))*(h-pad-15);
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${w-10}" y2="${h-pad}" stroke="#5A5A5A"/>`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${pad}" y2="10" stroke="#5A5A5A"/>`;
+    x.forEach((v,i)=>{ svg+=`<circle cx="${X(v).toFixed(1)}" cy="${Y(y[i]).toFixed(1)}" r="4" fill="#1F6FB2" fill-opacity="0.8"/>`; });
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerMatriceR(){
+  const erreurDiv=document.getElementById('erreurM'); const resDiv=document.getElementById('resultatM');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('varsInput').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length<2) throw new Error('Il faut au moins 2 variables.');
+    if(lignes.length>6) throw new Error('Maximum 6 variables pour cette calculatrice.');
+    const noms=[]; const vars=[];
+    lignes.forEach(l=>{
+      const parts=l.split(',').map(s=>s.trim());
+      const nom=parts[0];
+      const vals=parts.slice(1).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+      if(vals.length<2) throw new Error(`Variable "${nom}" : au moins 2 valeurs numériques requises.`);
+      noms.push(nom); vars.push(vals);
+    });
+    const n=vars[0].length;
+    if(vars.some(v=>v.length!==n)) throw new Error('Toutes les variables doivent avoir le même nombre de valeurs.');
+    const p=vars.length;
+    const means=vars.map(v=>v.reduce((a,b)=>a+b,0)/n);
+    const devs=vars.map((v,i)=>v.map(x=>x-means[i]));
+    const s=devs.map(d=>Math.sqrt(d.reduce((a,x)=>a+x*x,0)/n));
+    const R=[];
+    for(let i=0;i<p;i++){
+      const row=[];
+      for(let j=0;j<p;j++){
+        const c=devs[i].reduce((sm,d,k)=>sm+d*devs[j][k],0)/n;
+        row.push((s[i]>0&&s[j]>0)?c/(s[i]*s[j]):NaN);
+      }
+      R.push(row);
+    }
+    let entete='<tr><th></th>'; noms.forEach(nm=>entete+=`<th>${nm}</th>`); entete+='</tr>';
+    let corps='';
+    for(let i=0;i<p;i++){
+      corps+=`<tr><th>${noms[i]}</th>`;
+      for(let j=0;j<p;j++){
+        const v=R[i][j];
+        const cls=(i===j)?'diag':(v>0?'pos':(v<0?'neg':''));
+        corps+=`<td class="${cls}">${isNaN(v)?'—':v.toFixed(4)}</td>`;
+      }
+      corps+='</tr>';
+    }
+    resDiv.innerHTML=`<table>${entete}${corps}</table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerR(); calculerMatriceR(); };
+</script>
+</body>
+</html>

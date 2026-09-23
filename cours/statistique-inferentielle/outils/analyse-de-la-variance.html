@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 17 — L'analyse de la variance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.risque { border-left-color: var(--cintu); } .panneau.risque h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { resize: vertical; min-height: 2.6em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.risque button { background: var(--cintu); } .panneau.risque button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .non-ok { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 17 — L'analyse de la variance</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>ANOVA à un facteur (k groupes)</h2>
+  <p style="font-size:0.85em;color:var(--cgris);margin-top:0;">Entrer une ligne par groupe : <code>n, moyenne, écart-type</code> (un groupe par ligne).</p>
+  <textarea id="groupes" rows="5">12, 45.2, 4.1
+15, 48.7, 3.8
+13, 51.3, 4.5</textarea>
+  <button onclick="calculerANOVA()">Calculer l'ANOVA</button>
+  <div id="erreurA" class="erreur"></div>
+  <div id="resultatA" class="resultat-zone"></div>
+  <div id="grapheA"></div>
+</div>
+
+<div class="panneau risque">
+  <h2>Le risque des comparaisons deux à deux</h2>
+  <div class="grille3">
+    <div><label for="kGroupes">nombre de groupes k</label><input id="kGroupes" value="6"></div>
+    <div><label for="alphaR">seuil α par test</label><input id="alphaR" value="0.05"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerRisque()">Calculer le risque réel</button>
+  <div id="erreurR" class="erreur"></div>
+  <div id="resultatR" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\text{SCT}=\text{SCE}+\text{SCR}$, $F=\dfrac{\text{SCE}/(k-1)}{\text{SCR}/(n-k)}\sim\text{Fisher}_{(k-1),(n-k)}$, $\eta^2=\text{SCE}/\text{SCT}$. Le seuil de Fisher est calculé exactement (fonction bêta incomplète inversée), pas interpolé sur une table. Un rejet de $H_0$ signale un effet réel ; $\eta^2$ en mesure l'ampleur — les deux sont nécessaires.</p>
+
+<script>
+// --- Fonction bêta incomplète régularisée (Numerical Recipes), pour le seuil de Fisher exact ---
+function betacf(x,a,b){
+  const MAXIT=200, EPS=3e-7, FPMIN=1e-30;
+  const qab=a+b, qap=a+1, qam=a-1;
+  let c=1, d=1-qab*x/qap;
+  if(Math.abs(d)<FPMIN) d=FPMIN;
+  d=1/d;
+  let h=d;
+  for(let m=1;m<=MAXIT;m++){
+    const m2=2*m;
+    let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+    d=1+aa*d; if(Math.abs(d)<FPMIN) d=FPMIN;
+    c=1+aa/c; if(Math.abs(c)<FPMIN) c=FPMIN;
+    d=1/d; h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+    d=1+aa*d; if(Math.abs(d)<FPMIN) d=FPMIN;
+    c=1+aa/c; if(Math.abs(c)<FPMIN) c=FPMIN;
+    d=1/d;
+    const del=d*c; h*=del;
+    if(Math.abs(del-1)<EPS) break;
+  }
+  return h;
+}
+function logGamma(x){
+  const cof=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let y=x, tmp=x+5.5; tmp-=(x+0.5)*Math.log(tmp);
+  let ser=1.000000000190015;
+  for(let j=0;j<6;j++){ y+=1; ser+=cof[j]/y; }
+  return -tmp+Math.log(2.5066282746310005*ser/x);
+}
+function betainc(x,a,b){
+  if(x<=0) return 0; if(x>=1) return 1;
+  const bt=Math.exp(logGamma(a+b)-logGamma(a)-logGamma(b)+a*Math.log(x)+b*Math.log(1-x));
+  if(x<(a+1)/(a+b+2)) return bt*betacf(x,a,b)/a;
+  else return 1-bt*betacf(1-x,b,a)/b;
+}
+function invbetainc(p,a,b){
+  let lo=0, hi=1;
+  for(let i=0;i<100;i++){
+    const mid=(lo+hi)/2;
+    if(betainc(mid,a,b)<p) lo=mid; else hi=mid;
+  }
+  return (lo+hi)/2;
+}
+function Fquantile(p,d1,d2){
+  const y=invbetainc(p,d1/2,d2/2);
+  return d2*y/(d1*(1-y));
+}
+function Fcdf(x,d1,d2){
+  const y=d1*x/(d1*x+d2);
+  return betainc(y,d1/2,d2/2);
+}
+
+function calculerANOVA(){
+  const erreurDiv=document.getElementById('erreurA'); const resDiv=document.getElementById('resultatA');
+  const grapheDiv=document.getElementById('grapheA');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('groupes').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length<2) throw new Error('Il faut au moins 2 groupes.');
+    const groupes=lignes.map(l=>{
+      const parts=l.split(',').map(s=>parseFloat(s.trim()));
+      if(parts.length!==3||parts.some(isNaN)) throw new Error(`Ligne invalide : "${l}" (attendu : n, moyenne, écart-type)`);
+      const [n,m,s]=parts;
+      if(n<2) throw new Error(`n doit être ≥2 pour chaque groupe (ligne : "${l}")`);
+      if(s<0) throw new Error(`écart-type doit être ≥0 (ligne : "${l}")`);
+      return {n,m,s};
+    });
+    const k=groupes.length;
+    const N=groupes.reduce((a,g)=>a+g.n,0);
+    const xbar=groupes.reduce((a,g)=>a+g.n*g.m,0)/N;
+    const SCE=groupes.reduce((a,g)=>a+g.n*(g.m-xbar)**2,0);
+    const SCR=groupes.reduce((a,g)=>a+(g.n-1)*g.s*g.s,0);
+    const SCT=SCE+SCR;
+    const dfE=k-1, dfR=N-k;
+    const CME=SCE/dfE, CMR= dfR>0 ? SCR/dfR : NaN;
+    const F=CMR>0 ? CME/CMR : Infinity;
+    const seuil=Fquantile(0.95,dfE,dfR);
+    const pvalue=1-Fcdf(F,dfE,dfR);
+    const eta2=SCT>0 ? SCE/SCT : 0;
+    const rejet=F>seuil;
+    resDiv.innerHTML=`<table><tr><th>Source</th><th>Somme de carrés</th><th>ddl</th><th>Carré moyen</th></tr>
+      <tr><td>Entre (SCE)</td><td>${SCE.toFixed(3)}</td><td>${dfE}</td><td>${CME.toFixed(3)}</td></tr>
+      <tr><td>Résiduelle (SCR)</td><td>${SCR.toFixed(3)}</td><td>${dfR}</td><td>${CMR.toFixed(3)}</td></tr>
+      <tr><td><strong>Totale (SCT)</strong></td><td>${SCT.toFixed(3)}</td><td>${N-1}</td><td></td></tr></table>
+      <table><tr><th>F observé</th><th>seuil (5%)</th><th>p-value</th><th>η²</th><th>conclusion</th></tr>
+      <tr><td>${isFinite(F)?F.toFixed(3):'∞'}</td><td>${seuil.toFixed(3)}</td><td>${pvalue<0.0001?'&lt;0,0001':pvalue.toFixed(4)}</td><td>${eta2.toFixed(4)}</td><td class="${rejet?'non-ok':'ok'}">${rejet?'on rejette H₀':'on ne rejette pas H₀'}</td></tr></table>`;
+    // graphe : moyennes de groupe en barres
+    const w=520,h=220,pad=34;
+    const maxM=Math.max(...groupes.map(g=>g.m))*1.15;
+    const barW=(w-2*pad)/k*0.6;
+    const gap=(w-2*pad)/k;
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${w-10}" y2="${h-pad}" stroke="#5A5A5A"/>`;
+    const yBar=(v)=>(h-pad)-(v/maxM)*(h-pad-20);
+    const yLine=yBar(xbar);
+    svg+=`<line x1="${pad}" y1="${yLine}" x2="${w-10}" y2="${yLine}" stroke="#5A5A5A" stroke-dasharray="4,3"/>`;
+    svg+=`<text x="${w-14}" y="${yLine-4}" font-size="9" fill="#5A5A5A" text-anchor="end">x̄=${xbar.toFixed(2)}</text>`;
+    groupes.forEach((g,i)=>{
+      const xc=pad+gap*i+gap/2;
+      const yTop=yBar(g.m);
+      svg+=`<rect x="${(xc-barW/2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${(h-pad-yTop).toFixed(1)}" fill="#1F6FB2" fill-opacity="0.3" stroke="#1F6FB2"/>`;
+      svg+=`<text x="${xc.toFixed(1)}" y="${(yTop-4).toFixed(1)}" font-size="9" text-anchor="middle" fill="#1F6FB2">${g.m}</text>`;
+      svg+=`<text x="${xc.toFixed(1)}" y="${h-pad+14}" font-size="9" text-anchor="middle" fill="#5A5A5A">groupe ${i+1} (n=${g.n})</text>`;
+    });
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerRisque(){
+  const erreurDiv=document.getElementById('erreurR'); const resDiv=document.getElementById('resultatR');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const k=parseInt(document.getElementById('kGroupes').value);
+    const alpha=parseFloat(document.getElementById('alphaR').value);
+    if(isNaN(k)||k<2) throw new Error('k doit être un entier ≥2.');
+    if(isNaN(alpha)||alpha<=0||alpha>=1) throw new Error('α doit être strictement compris entre 0 et 1.');
+    const paires=k*(k-1)/2;
+    const risque=1-Math.pow(1-alpha,paires);
+    resDiv.innerHTML=`<table><tr><th>groupes k</th><th>paires possibles</th><th>α par test</th><th>risque réel</th></tr>
+      <tr><td>${k}</td><td>${paires}</td><td>${alpha}</td><td><strong>${(risque*100).toFixed(1)}%</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Avec $k=${k}$ groupes comparés deux à deux à $\\alpha=${alpha}$, le risque réel de trouver au moins une différence \\og significative \\fg{} par pur hasard est de ${(risque*100).toFixed(1)}\\%, bien au-delà du ${(alpha*100).toFixed(0)}\\% affiché par chaque test pris isolément. L'ANOVA (test unique sur les $k$ moyennes) évite cette inflation.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerANOVA(); calculerRisque(); };
+</script>
+</body>
+</html>

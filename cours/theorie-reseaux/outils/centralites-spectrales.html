@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Les centralités spectrales — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 180px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .top { background: #fdeedb; color: var(--cintu); font-weight: bold; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .exemples { font-size: 0.82em; color: var(--cgris); margin-top: 0.4em; }
+  .exemples button { font-size: 0.78em; padding: 0.3em 0.7em; margin: 0.2em 0.3em 0 0; background: #eee; color: #333; }
+  .exemples button:hover { background: #ddd; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Les centralités spectrales</h1>
+<p class="sous-titre">Calculatrice interactive — Théorie des réseaux</p>
+
+<div class="panneau">
+  <h2>Calculer $C_E$, $C_K$ (Katz/Bonacich) et PageRank</h2>
+  <p class="aide">Saisir un graphe non orienté. L'outil calcule $\lambda_1$ et $C_E$ par itération de la puissance, $C_K$ en résolvant $(\mathbf{I}-\alpha\mathbf{A})\mathbf{x}=\beta\mathbf{1}$ (accepte $\alpha$ négatif, modèle de Bonacich), et PageRank par itération.</p>
+  <div class="ligne">
+    <div><label for="sommetsIn">Sommets (séparés par des virgules)</label><input type="text" id="sommetsIn" value="1,2,3,4,5,6,7"></div>
+    <div><label for="alphaIn">$\alpha$ pour Katz/Bonacich</label><input type="number" id="alphaIn" value="0.2" step="0.05"></div>
+    <div><label for="dIn">$d$ pour PageRank</label><input type="number" id="dIn" value="0.85" step="0.05" min="0" max="1"></div>
+  </div>
+  <label for="aretesIn">Arêtes (une par ligne, format A-B)</label>
+  <textarea id="aretesIn">1-2
+1-3
+2-3
+3-4
+4-5
+5-6
+5-7
+6-7</textarea>
+  <div class="exemples">
+    Exemples rapides :
+    <button onclick="chargerExemple('filrouge')">Réseau du cours</button>
+    <button onclick="chargerExemple('doublehub')">Double hub (Exercice 1)</button>
+    <button onclick="chargerExemple('triangle')">Triangle + pendant (Exercice 2)</button>
+    <button onclick="chargerExemple('rivalite')">Rivalité, &alpha;&lt;0 (Exercice 6)</button>
+  </div>
+  <button onclick="analyserGraphe()">Calculer</button>
+  <div id="erreurG" class="erreur"></div>
+  <div id="resultatG" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Pour Katz/Bonacich, l'outil avertit si $|\alpha|\geq1/\lambda_1$ (série potentiellement divergente pour $\alpha>0$). Cases en orange : sommet(s) en tête de chaque mesure.</p>
+
+<script>
+function chargerExemple(nom){
+  const sommets = document.getElementById('sommetsIn');
+  const aretes = document.getElementById('aretesIn');
+  const alphaIn = document.getElementById('alphaIn');
+  if(nom === 'filrouge'){
+    sommets.value = '1,2,3,4,5,6,7';
+    aretes.value = '1-2\n1-3\n2-3\n3-4\n4-5\n5-6\n5-7\n6-7';
+    alphaIn.value = 0.35;
+  } else if(nom === 'doublehub'){
+    sommets.value = 'La1,La2,Hub1,Hub2,Lb1,Lb2';
+    aretes.value = 'La1-Hub1\nLa2-Hub1\nHub1-Hub2\nHub2-Lb1\nHub2-Lb2';
+    alphaIn.value = 0.2;
+  } else if(nom === 'triangle'){
+    sommets.value = 'M1,M2,M3,M4';
+    aretes.value = 'M1-M2\nM1-M3\nM2-M3\nM3-M4';
+    alphaIn.value = 0.1;
+  } else if(nom === 'rivalite'){
+    sommets.value = 'R1,R2,R3,R4';
+    aretes.value = 'R1-R2\nR1-R3\nR2-R3\nR3-R4';
+    alphaIn.value = -0.2;
+  }
+  analyserGraphe();
+}
+
+function parserGraphe(){
+  const sommetsTxt = document.getElementById('sommetsIn').value.trim();
+  const aretesTxt = document.getElementById('aretesIn').value.trim();
+  if(!sommetsTxt) throw new Error('La liste des sommets ne peut pas être vide.');
+  const V = sommetsTxt.split(',').map(s => s.trim()).filter(s => s.length > 0);
+  if(V.length < 2) throw new Error('Il faut au moins deux sommets.');
+  const setV = new Set(V);
+  if(setV.size !== V.length) throw new Error('Les sommets doivent avoir des noms distincts.');
+  const E = [];
+  if(aretesTxt){
+    const lignes = aretesTxt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    for(const ligne of lignes){
+      const parts = ligne.split('-').map(s => s.trim());
+      if(parts.length !== 2) throw new Error(`Ligne d'arête invalide : "${ligne}".`);
+      const [a, b] = parts;
+      if(!setV.has(a)) throw new Error(`Le sommet "${a}" n'est pas dans la liste des sommets.`);
+      if(!setV.has(b)) throw new Error(`Le sommet "${b}" n'est pas dans la liste des sommets.`);
+      if(a === b) throw new Error(`Boucle non autorisée : "${ligne}".`);
+      E.push([a, b]);
+    }
+  }
+  return { V, E };
+}
+
+function buildAdjMatrix(V, E){
+  const idx = {}; V.forEach((v,i)=>idx[v]=i);
+  const n = V.length;
+  const A = Array.from({length:n}, ()=>Array(n).fill(0));
+  for(const [a,b] of E){ A[idx[a]][idx[b]]=1; A[idx[b]][idx[a]]=1; }
+  return { A, idx };
+}
+
+function matVec(A, x){ return A.map(row => row.reduce((s,aij,j)=>s+aij*x[j],0)); }
+function norm2(x){ return Math.sqrt(x.reduce((s,xi)=>s+xi*xi,0)); }
+
+function powerIteration(A, iters=1000, tol=1e-14){
+  const n = A.length;
+  let x = Array(n).fill(1/Math.sqrt(n));
+  let lambda = 0;
+  for(let it=0; it<iters; it++){
+    const y = matVec(A, x);
+    const ny = norm2(y);
+    if(ny < 1e-15) break;
+    const newX = y.map(v=>v/ny);
+    if(Math.abs(ny - lambda) < tol){ x = newX; lambda = ny; break; }
+    x = newX; lambda = ny;
+  }
+  if(x.some(v=>v<0)) x = x.map(v=>-v);
+  return { lambda, x };
+}
+
+function eigenvectorCentrality(A){
+  const { lambda, x } = powerIteration(A);
+  const maxX = Math.max(...x);
+  const CE = x.map(v => maxX>0 ? v/maxX : 0);
+  return { lambda, CE };
+}
+
+function solveLinear(M, b){
+  const n = M.length;
+  const Aug = M.map((row,i) => [...row, b[i]]);
+  for(let col=0; col<n; col++){
+    let maxRow = col;
+    for(let r=col+1; r<n; r++) if(Math.abs(Aug[r][col]) > Math.abs(Aug[maxRow][col])) maxRow = r;
+    if(Math.abs(Aug[maxRow][col]) < 1e-12) throw new Error("Système singulier : alpha trop proche du seuil 1/lambda1, ou choix invalide.");
+    [Aug[col], Aug[maxRow]] = [Aug[maxRow], Aug[col]];
+    const pivot = Aug[col][col];
+    for(let j=col; j<=n; j++) Aug[col][j] /= pivot;
+    for(let r=0; r<n; r++){
+      if(r===col) continue;
+      const factor = Aug[r][col];
+      for(let j=col; j<=n; j++) Aug[r][j] -= factor*Aug[col][j];
+    }
+  }
+  return Aug.map(row => row[n]);
+}
+
+function katzCentrality(A, alpha, beta=1){
+  const n = A.length;
+  const M = Array.from({length:n}, (_,i)=>Array.from({length:n},(_,j)=>(i===j?1:0) - alpha*A[i][j]));
+  const b = Array(n).fill(beta);
+  return solveLinear(M, b);
+}
+
+function pageRank(A, d=0.85, iters=2000, tol=1e-15){
+  const n = A.length;
+  const kOut = A.map(row => row.reduce((s,v)=>s+v,0));
+  let x = Array(n).fill(1/n);
+  for(let it=0; it<iters; it++){
+    const newX = Array(n).fill((1-d)/n);
+    for(let j=0;j<n;j++){
+      if(kOut[j]===0) continue;
+      for(let i=0;i<n;i++) if(A[j][i]>0) newX[i] += d*x[j]/kOut[j];
+    }
+    const diff = newX.reduce((s,v,i)=>s+Math.abs(v-x[i]),0);
+    x = newX;
+    if(diff < tol) break;
+  }
+  return x;
+}
+
+function analyserGraphe(){
+  const erreurDiv = document.getElementById('erreurG');
+  const resDiv = document.getElementById('resultatG');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const { V, E } = parserGraphe();
+    const alpha = parseFloat(document.getElementById('alphaIn').value);
+    const d = parseFloat(document.getElementById('dIn').value);
+    const { A } = buildAdjMatrix(V, E);
+    const deg = A.map(row=>row.reduce((a,b)=>a+b,0));
+
+    const { lambda, CE } = eigenvectorCentrality(A);
+    const maxCE = Math.max(...CE);
+
+    let out = '<h3>Centralité de vecteur propre</h3>';
+    out += `<div class="valeur">&lambda;&#8321; = ${lambda.toFixed(4)}</div><div class="valeur">seuil de Katz : 1/&lambda;&#8321; = ${(1/lambda).toFixed(4)}</div>`;
+    out += '<table><tr><th>Sommet</th><th>k<sub>i</sub></th><th>C_E</th></tr>';
+    V.forEach((v,i)=>{ const cls = Math.abs(CE[i]-maxCE)<1e-9 ? 'top' : ''; out += `<tr><td>${v}</td><td>${deg[i]}</td><td class="${cls}">${CE[i].toFixed(4)}</td></tr>`; });
+    out += '</table>';
+
+    out += `<h3>Centralité de Katz / Bonacich (&alpha; = ${alpha})</h3>`;
+    if(!isNaN(alpha)){
+      if(alpha > 0 && alpha >= 1/lambda){
+        out += `<p style="color:#b00020;">Attention : &alpha;=${alpha} &ge; 1/&lambda;&#8321;=${(1/lambda).toFixed(4)} &mdash; la série de Katz diverge pour ce choix (résultat possiblement instable ou incalculable).</p>`;
+      }
+      try{
+        const xk = katzCentrality(A, alpha, 1);
+        const maxXk = Math.max(...xk);
+        out += '<table><tr><th>Sommet</th><th>C_K</th></tr>';
+        V.forEach((v,i)=>{ const cls = Math.abs(xk[i]-maxXk)<1e-9 ? 'top' : ''; out += `<tr><td>${v}</td><td class="${cls}">${xk[i].toFixed(4)}</td></tr>`; });
+        out += '</table>';
+        if(alpha < 0) out += '<p class="aide">&alpha; &lt; 0 : modèle de Bonacich (relation compétitive) &mdash; être relié à un voisin fort réduit ici la centralité.</p>';
+      }catch(e){
+        out += `<p style="color:#b00020;">${e.message}</p>`;
+      }
+    }
+
+    out += `<h3>PageRank (d = ${d})</h3>`;
+    const pr = pageRank(A, d);
+    const maxPr = Math.max(...pr);
+    out += '<table><tr><th>Sommet</th><th>k<sub>out</sub></th><th>PageRank</th></tr>';
+    V.forEach((v,i)=>{ const cls = Math.abs(pr[i]-maxPr)<1e-9 ? 'top' : ''; out += `<tr><td>${v}</td><td>${deg[i]}</td><td class="${cls}">${pr[i].toFixed(4)}</td></tr>`; });
+    out += '</table>';
+    out += `<p class="aide">Somme des PageRank = ${pr.reduce((a,b)=>a+b,0).toFixed(4)} (doit valoir 1). Avec d=1, PageRank redonne exactement &pi;&#7522;=k&#7522;/2m (chapitre 2).</p>`;
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { analyserGraphe(); };
+</script>
+</body>
+</html>

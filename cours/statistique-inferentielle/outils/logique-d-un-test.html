@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — La logique d'un test — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — La logique d'un test</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Calculer une statistique de test pour une moyenne</h2>
+  <div class="grille4">
+    <div><label for="xbar1">observé x̄</label><input id="xbar1" value="7005.80"></div>
+    <div><label for="m01">valeur prévue par H₀</label><input id="m01" value="6500"></div>
+    <div><label for="s1">écart-type s (ou σ)</label><input id="s1" value="2250.98"></div>
+    <div><label for="n1">taille n</label><input id="n1" value="50"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="forme1">forme du test</label>
+      <select id="forme1">
+        <option value="superieur">H₁ : m &gt; m₀ (unilatéral droite)</option>
+        <option value="inferieur">H₁ : m &lt; m₀ (unilatéral gauche)</option>
+        <option value="different">H₁ : m ≠ m₀ (bilatéral)</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="calculerStat()">Calculer la statistique et la p-value</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <div id="graphe1"></div>
+</div>
+
+<p class="avertissement">Rappel : statistique $=\dfrac{\text{observé}-\text{prévu par }H_0}{\text{erreur-type}}$, un écart mesuré en nombre d'erreurs-types. Cette calculatrice affiche la statistique et sa $p$-value (loi normale) ; la décision de rejet exige de comparer cette $p$-value au risque $\alpha$ choisi (chapitre suivant).</p>
+
+<script>
+function erf(x){
+  const sign = x>=0?1:-1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z){ return 0.5*(1+erf(z/Math.sqrt(2))); }
+
+function calculerStat(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  const grapheDiv=document.getElementById('graphe1');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const xbar=parseFloat(document.getElementById('xbar1').value);
+    const m0=parseFloat(document.getElementById('m01').value);
+    const s=parseFloat(document.getElementById('s1').value);
+    const n=parseFloat(document.getElementById('n1').value);
+    const forme=document.getElementById('forme1').value;
+    if([xbar,m0,s,n].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(s<=0) throw new Error('L’écart-type doit être strictement positif.');
+    if(n<2) throw new Error('n doit être ≥2.');
+    const se=s/Math.sqrt(n);
+    const t=(xbar-m0)/se;
+    let pValue;
+    if(forme==='superieur') pValue=1-Phi(t);
+    else if(forme==='inferieur') pValue=Phi(t);
+    else pValue=2*(1-Phi(Math.abs(t)));
+    resDiv.innerHTML=`<table><tr><th>erreur-type</th><th>statistique t</th><th>p-value</th></tr>
+      <tr><td>${se.toFixed(4)}</td><td><strong>${t.toFixed(4)}</strong></td><td><strong>${pValue.toFixed(4)}</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Phrase-type : « l'observation est à ${Math.abs(t).toFixed(3)} erreurs-types ${t>=0?'au-dessus':'en-dessous'} de ce que H₀ prévoit ». Pour conclure, comparer cette p-value au risque α retenu (par exemple 0,05).</p>`;
+    // svg curve
+    const w=520,h=220,pad=30;
+    const xmin=-4, xmax=4;
+    const X=(x)=>pad+((x-xmin)/(xmax-xmin))*(w-pad-20);
+    const Y=(y)=>(h-pad)-y*(h-pad-20)/0.5;
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${w-10}" y2="${h-pad}" stroke="#5A5A5A"/>`;
+    let path='';
+    for(let i=0;i<=100;i++){
+      const x=xmin+(i/100)*(xmax-xmin);
+      const y=0.4*Math.exp(-x*x/2);
+      const px=X(x), py=Y(y);
+      path+=(i===0?'M':'L')+px.toFixed(1)+','+py.toFixed(1)+' ';
+    }
+    svg+=`<path d="${path}" fill="none" stroke="#5A5A5A" stroke-width="1.5"/>`;
+    const xClamped=Math.max(xmin,Math.min(xmax,t));
+    const xT=X(xClamped), yT=Y(0.4*Math.exp(-xClamped*xClamped/2));
+    svg+=`<line x1="${xT}" y1="${h-pad}" x2="${xT}" y2="${yT}" stroke="#B56600" stroke-dasharray="4,3"/>`;
+    svg+=`<circle cx="${xT}" cy="${yT}" r="4" fill="#B56600"/>`;
+    svg+=`<text x="${xT+6}" y="${yT-6}" font-size="11" fill="#B56600">t=${t.toFixed(2)}</text>`;
+    svg+=`<text x="${X(0)-8}" y="${h-pad+16}" font-size="10" fill="#1F6FB2">0 (H₀)</text>`;
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerStat(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Variance, covariance et couples — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.couple { border-left-color: var(--cex); }
+  .panneau.couple h2 { color: var(--cex); }
+  .panneau.div { border-left-color: var(--cintu); }
+  .panneau.div h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.couple button { background: var(--cex); }
+  .panneau.couple button:hover { background: #206040; }
+  .panneau.div button { background: var(--cintu); }
+  .panneau.div button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+  input[type=range] { padding: 0; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Variance, covariance et couples</h1>
+<p class="sous-titre">Calculatrice interactive — Probabilités</p>
+
+<div class="panneau">
+  <h2>Variance d'une variable (König-Huygens) et effet d'une transformation affine</h2>
+  <div class="grille4">
+    <div><label for="xVals">valeurs x_i</label><input id="xVals" value="10,20,30,40"></div>
+    <div><label for="pVals">probabilités p_i</label><input id="pVals" value="0.4,0.3,0.2,0.1"></div>
+    <div><label for="aVal">a (pour aX+b)</label><input id="aVal" value="3"></div>
+    <div><label for="bVal">b (pour aX+b)</label><input id="bVal" value="5"></div>
+  </div>
+  <button onclick="calculerVariance()">Calculer E(X), V(X) et V(aX+b)</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau couple">
+  <h2>Couple (X,Y) : loi jointe, indépendance et covariance</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">
+    Table 2×2 : donner les 2 valeurs de X, les 2 valeurs de Y, puis les 4 probabilités jointes dans l'ordre (X1,Y1), (X1,Y2), (X2,Y1), (X2,Y2).
+  </p>
+  <div class="grille2">
+    <div><label for="xCouple">valeurs de X (2)</label><input id="xCouple" value="1,2"></div>
+    <div><label for="yCouple">valeurs de Y (2)</label><input id="yCouple" value="10,20"></div>
+  </div>
+  <label for="pJointe">probabilités jointes (4, ordre X1Y1, X1Y2, X2Y1, X2Y2)</label>
+  <input id="pJointe" value="0.2,0.3,0.3,0.2">
+  <button onclick="calculerCouple()">Calculer marginales, indépendance et covariance</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau div">
+  <h2>Diversification de portefeuille : V(X+Y) selon la corrélation</h2>
+  <div class="grille3">
+    <div><label for="sigX">écart-type de X</label><input id="sigX" value="0.20"></div>
+    <div><label for="sigY">écart-type de Y</label><input id="sigY" value="0.25"></div>
+    <div><label for="rhoRange">corrélation ρ : <span id="rhoAffiche">0.30</span></label>
+      <input type="range" id="rhoRange" min="-1" max="1" step="0.05" value="0.3" oninput="document.getElementById('rhoAffiche').textContent=parseFloat(this.value).toFixed(2); calculerDiversification();">
+    </div>
+  </div>
+  <button onclick="calculerDiversification()">Calculer V(X+Y) et tracer selon ρ</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+  <canvas id="graphiqueDiv" height="230"></canvas>
+</div>
+
+<p class="avertissement">Rappels : V(X)=E(X²)-[E(X)]² ; V(aX+b)=a²V(X) ; cov(X,Y)=E(XY)-E(X)E(Y) ; indépendance ⟹ cov=0 (la réciproque est fausse) ; V(X+Y)=V(X)+V(Y)+2ρσ(X)σ(Y).</p>
+
+<script>
+function calculerVariance() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const xs = document.getElementById('xVals').value.split(',').map(s=>parseFloat(s.trim()));
+    const ps = document.getElementById('pVals').value.split(',').map(s=>parseFloat(s.trim()));
+    const a = parseFloat(document.getElementById('aVal').value);
+    const b = parseFloat(document.getElementById('bVal').value);
+    if (xs.length!==ps.length) throw new Error('Le nombre de valeurs x_i doit être égal au nombre de probabilités.');
+    if (xs.some(isNaN) || ps.some(isNaN) || isNaN(a) || isNaN(b)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    const sommeP = ps.reduce((s,p)=>s+p,0);
+    if (Math.abs(sommeP-1)>0.02) throw new Error('La somme des probabilités devrait valoir 1 (actuellement '+sommeP.toFixed(3)+').');
+
+    const EX = xs.reduce((s,x,i)=>s+ps[i]*x,0);
+    const EX2 = xs.reduce((s,x,i)=>s+ps[i]*x*x,0);
+    const VX = EX2 - EX*EX;
+    const sigX = Math.sqrt(VX);
+    const VaXb = a*a*VX;
+    const sigAXb = Math.sqrt(VaXb);
+
+    resDiv.innerHTML = `
+      <table><tr><th>E(X)</th><th>E(X²)</th><th>V(X)</th><th>σ(X)</th><th>V(aX+b)</th><th>σ(aX+b)</th></tr>
+      <tr><td>${EX.toFixed(4)}</td><td>${EX2.toFixed(4)}</td><td>${VX.toFixed(4)}</td><td>${sigX.toFixed(4)}</td><td>${VaXb.toFixed(4)}</td><td>${sigAXb.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Note : V(aX+b)=a²V(X) ne dépend pas de b, seulement de a² = ${(a*a).toFixed(2)} ; ici a²×V(X) = ${(a*a).toFixed(2)}×${VX.toFixed(4)} = ${VaXb.toFixed(4)}.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerCouple() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const xv = document.getElementById('xCouple').value.split(',').map(s=>parseFloat(s.trim()));
+    const yv = document.getElementById('yCouple').value.split(',').map(s=>parseFloat(s.trim()));
+    const pj = document.getElementById('pJointe').value.split(',').map(s=>parseFloat(s.trim()));
+    if (xv.length!==2 || yv.length!==2) throw new Error('Il faut exactement 2 valeurs pour X et 2 valeurs pour Y.');
+    if (pj.length!==4) throw new Error('Il faut exactement 4 probabilités jointes.');
+    if (xv.some(isNaN) || yv.some(isNaN) || pj.some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    const somme = pj.reduce((s,p)=>s+p,0);
+    if (Math.abs(somme-1)>0.02) throw new Error('La somme des 4 probabilités jointes devrait valoir 1 (actuellement '+somme.toFixed(3)+').');
+
+    const [x1,x2] = xv, [y1,y2] = yv;
+    const [p11,p12,p21,p22] = pj; // (x1,y1),(x1,y2),(x2,y1),(x2,y2)
+
+    const PX1 = p11+p12, PX2 = p21+p22;
+    const PY1 = p11+p21, PY2 = p12+p22;
+    const EX = x1*PX1 + x2*PX2;
+    const EY = y1*PY1 + y2*PY2;
+    const EXY = x1*y1*p11 + x1*y2*p12 + x2*y1*p21 + x2*y2*p22;
+    const cov = EXY - EX*EY;
+
+    const attendu11 = PX1*PY1, attendu12 = PX1*PY2, attendu21 = PX2*PY1, attendu22 = PX2*PY2;
+    const independant = [ [p11,attendu11],[p12,attendu12],[p21,attendu21],[p22,attendu22] ].every(([o,a])=>Math.abs(o-a)<1e-6);
+
+    resDiv.innerHTML = `
+      <table>
+        <tr><th></th><th>Y=${y1}</th><th>Y=${y2}</th><th>marginale X</th></tr>
+        <tr><th>X=${x1}</th><td>${p11}</td><td>${p12}</td><td>${PX1.toFixed(3)}</td></tr>
+        <tr><th>X=${x2}</th><td>${p21}</td><td>${p22}</td><td>${PX2.toFixed(3)}</td></tr>
+        <tr><th>marginale Y</th><td>${PY1.toFixed(3)}</td><td>${PY2.toFixed(3)}</td><td>1</td></tr>
+      </table>
+      <p style="font-size:0.85em;color:var(--cgris);">E(X)=${EX.toFixed(4)}, E(Y)=${EY.toFixed(4)}, E(XY)=${EXY.toFixed(4)}.<br>
+      cov(X,Y) = E(XY) − E(X)E(Y) = ${EXY.toFixed(4)} − ${(EX*EY).toFixed(4)} = <strong>${cov.toFixed(4)}</strong>.<br>
+      Test d'indépendance (chaque case jointe comparée à p<sub>i•</sub>×p<sub>•j</sub>) : ${independant ? '<strong>vérifiée</strong> — X et Y semblent indépendantes.' : '<strong>non vérifiée</strong> — X et Y ne sont pas indépendantes (rappel : indépendance ⟹ cov=0, mais cov=0 n\'implique pas indépendance).'}</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+let chartDiv = null;
+function calculerDiversification() {
+  const erreurDiv = document.getElementById('erreur3');
+  const resDiv = document.getElementById('resultat3');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const sigX = parseFloat(document.getElementById('sigX').value);
+    const sigY = parseFloat(document.getElementById('sigY').value);
+    const rho = parseFloat(document.getElementById('rhoRange').value);
+    if ([sigX,sigY,rho].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if (sigX<0 || sigY<0) throw new Error('Les écarts-types doivent être positifs.');
+    if (rho<-1 || rho>1) throw new Error('ρ doit être compris entre -1 et 1.');
+
+    const VX = sigX*sigX, VY = sigY*sigY;
+    const VXY = VX + VY + 2*rho*sigX*sigY;
+    const sigXY = Math.sqrt(Math.max(VXY,0));
+    const sommeSigmas = sigX+sigY;
+    const gainDiversification = sommeSigmas - sigXY;
+
+    resDiv.innerHTML = `
+      <table><tr><th>ρ</th><th>V(X)</th><th>V(Y)</th><th>V(X+Y)</th><th>σ(X+Y)</th><th>σ(X)+σ(Y) (sans diversif.)</th></tr>
+      <tr><td>${rho.toFixed(2)}</td><td>${VX.toFixed(4)}</td><td>${VY.toFixed(4)}</td><td><strong>${VXY.toFixed(4)}</strong></td><td>${sigXY.toFixed(4)}</td><td>${sommeSigmas.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Gain de diversification (écart-type évité) : ${gainDiversification.toFixed(4)}. ${rho<0 ? 'Une corrélation négative amplifie fortement ce gain.' : (rho===0 ? 'Sans corrélation, une partie du risque disparaît déjà par diversification.' : 'Une corrélation positive réduit le bénéfice de la diversification.')}</p>
+    `;
+
+    const rhos = []; const variances = [];
+    for (let r=-1; r<=1.001; r+=0.05) { rhos.push(parseFloat(r.toFixed(2))); variances.push(VX+VY+2*r*sigX*sigY); }
+    if (chartDiv) chartDiv.destroy();
+    chartDiv = new Chart(document.getElementById('graphiqueDiv').getContext('2d'), {
+      type: 'line',
+      data: { labels: rhos, datasets: [
+        { label: 'V(X+Y)', data: variances, borderColor:'#B56600', backgroundColor:'transparent', borderWidth:2, pointRadius:0 },
+        { label: 'point courant', data: rhos.map(r=>Math.abs(r-rho)<0.026 ? VXY : null), borderColor:'#1D9E75', backgroundColor:'#1D9E75', pointRadius:6, showLine:false }
+      ] },
+      options: { responsive: true, scales: { x: { title: { display:true, text:'ρ' } }, y: { title: { display:true, text:'V(X+Y)' } } },
+        plugins: { title: { display:true, text:'Variance du portefeuille en fonction de la corrélation' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerVariance(); calculerCouple(); calculerDiversification(); };
+</script>
+</body>
+</html>

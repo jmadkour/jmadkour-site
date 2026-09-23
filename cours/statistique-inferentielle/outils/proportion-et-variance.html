@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Proportion et variance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.variance { border-left-color: var(--cex); } .panneau.variance h2 { color: var(--cex); }
+  .panneau.khi { border-left-color: var(--cintu); } .panneau.khi h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.variance button { background: var(--cex); } .panneau.variance button:hover { background: #226b43; }
+  .panneau.khi button { background: var(--cintu); } .panneau.khi button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .ok { color: var(--cex); font-weight: bold; } .non-ok { color: #b00020; font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Proportion et variance</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Distribution d'échantillonnage d'une proportion F</h2>
+  <div class="grille3">
+    <div><label for="p1">proportion p (population, entre 0 et 1)</label><input id="p1" value="0.30"></div>
+    <div><label for="n1">taille de l'échantillon n</label><input id="n1" value="80"></div>
+    <div><label for="seuil1">borne pour P(F ≥ seuil)</label><input id="seuil1" value="0.35"></div>
+  </div>
+  <button onclick="calculerProportion()">Calculer σ(F) et P(F ≥ seuil)</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <div id="graphe1"></div>
+</div>
+
+<div class="panneau variance">
+  <h2>Variance biaisée (÷n) contre variance corrigée (÷n−1)</h2>
+  <label for="donnees2">observations (séparées par des virgules)</label>
+  <textarea id="donnees2" rows="2">50.2, 50.5, 49.8, 50.1, 50.3, 49.9</textarea>
+  <button onclick="calculerVariance()">Calculer</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau khi">
+  <h2>Statistique (n−1)s²/σ² et comparaison à E[χ²]=n−1</h2>
+  <div class="grille3">
+    <div><label for="n3">taille de l'échantillon n</label><input id="n3" value="15"></div>
+    <div><label for="s2_3">variance corrigée s² (÷n−1)</label><input id="s2_3" value="42"></div>
+    <div><label for="sigma2_3">variance supposée σ²</label><input id="sigma2_3" value="30"></div>
+  </div>
+  <button onclick="calculerKhi2()">Calculer la statistique</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\sigma(F)=\sqrt{p(1-p)/n}$, valable si $np\geq5$ et $n(1-p)\geq5$ ; $p(1-p)$ est maximal en $p=0{,}5$, d'où la borne universelle $\sigma(F)\leq0{,}5/\sqrt n$ utilisée par les instituts de sondage. La variance corrigée $s^2=\frac{1}{n-1}\sum(x_i-\overline x)^2$ est un estimateur sans biais de $\sigma^2$ (contrairement à $s_n^2=\frac1n\sum(x_i-\overline x)^2$), car un degré de liberté est \og consommé \fg{} par le calcul de $\overline x$. Pour une population normale, $(n-1)s^2/\sigma^2\sim\chi^2_{n-1}$, d'espérance $n-1$.</p>
+
+<script>
+function erf(x){
+  const sign = x>=0?1:-1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z){ return 0.5*(1+erf(z/Math.sqrt(2))); }
+
+function calculerProportion(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  const grapheDiv=document.getElementById('graphe1');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const p=parseFloat(document.getElementById('p1').value);
+    const n=parseFloat(document.getElementById('n1').value);
+    const seuil=parseFloat(document.getElementById('seuil1').value);
+    if(isNaN(p)||p<=0||p>=1) throw new Error('p doit être strictement compris entre 0 et 1.');
+    if(isNaN(n)||n<2) throw new Error('n doit être un nombre ≥2.');
+    if(isNaN(seuil)) throw new Error('Le seuil doit être un nombre.');
+    const sigF=Math.sqrt(p*(1-p)/n);
+    const np=n*p, nq=n*(1-p);
+    const validite = (np>=5 && nq>=5);
+    const z=(seuil-p)/sigF;
+    const proba=1-Phi(z);
+    const bornePire=0.5/Math.sqrt(n);
+    let html=`<table><tr><th>σ(F)</th><th>np</th><th>n(1−p)</th><th>conditions np≥5 et n(1−p)≥5</th></tr>
+      <tr><td>${sigF.toFixed(4)}</td><td>${np.toFixed(1)}</td><td>${nq.toFixed(1)}</td><td class="${validite?'ok':'non-ok'}">${validite?'validées ✓':'NON validées ✗'}</td></tr></table>
+      <table><tr><th>Z</th><th>P(F ≥ ${seuil})</th><th>borne pire cas 0,5/√n</th></tr>
+      <tr><td>${z.toFixed(4)}</td><td><strong>${proba.toFixed(4)}</strong> (${(proba*100).toFixed(2)}%)</td><td>${bornePire.toFixed(4)}</td></tr></table>`;
+    if(!validite){
+      html+=`<p style="font-size:0.85em;color:#b00020;">Attention : l'approximation normale de F par une loi normale n'est pas garantie fiable ici (au moins une des deux conditions np≥5 / n(1-p)≥5 n'est pas respectée).</p>`;
+    }
+    resDiv.innerHTML=html;
+    // svg parabola p(1-p)
+    const w=520,h=220,pad=36;
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${w-10}" y2="${h-pad}" stroke="#5A5A5A"/>`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${pad}" y2="10" stroke="#5A5A5A"/>`;
+    let path='';
+    for(let i=0;i<=100;i++){
+      const pp=i/100;
+      const val=pp*(1-pp);
+      const x=pad+pp*(w-pad-20);
+      const y=(h-pad)-val/0.25*(h-pad-20);
+      path+=(i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
+    }
+    svg+=`<path d="${path}" fill="none" stroke="#1F6FB2" stroke-width="2"/>`;
+    const xp=pad+p*(w-pad-20);
+    const yp=(h-pad)-(p*(1-p))/0.25*(h-pad-20);
+    svg+=`<circle cx="${xp}" cy="${yp}" r="4" fill="#B56600"/>`;
+    svg+=`<text x="${xp+6}" y="${yp-6}" font-size="11" fill="#B56600">p=${p}</text>`;
+    const xmax=pad+0.5*(w-pad-20);
+    svg+=`<line x1="${xmax}" y1="${h-pad}" x2="${xmax}" y2="10" stroke="#1D9E75" stroke-dasharray="4,3"/>`;
+    svg+=`<text x="${xmax+4}" y="20" font-size="11" fill="#1D9E75">p=0,5 (maximum)</text>`;
+    svg+=`<text x="${pad}" y="${h-10}" font-size="10" fill="#5A5A5A">0</text>`;
+    svg+=`<text x="${w-30}" y="${h-10}" font-size="10" fill="#5A5A5A">1</text>`;
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerVariance(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const raw=document.getElementById('donnees2').value;
+    const x=raw.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    const n=x.length;
+    if(n<2) throw new Error('Il faut au moins 2 observations numériques valides, séparées par des virgules.');
+    const mean=x.reduce((a,b)=>a+b,0)/n;
+    const sumSq=x.reduce((a,b)=>a+(b-mean)**2,0);
+    const sn2=sumSq/n;
+    const s2=sumSq/(n-1);
+    resDiv.innerHTML=`<table><tr><th>n</th><th>moyenne x̄</th><th>Σ(xᵢ−x̄)²</th></tr>
+      <tr><td>${n}</td><td>${mean.toFixed(4)}</td><td>${sumSq.toFixed(4)}</td></tr></table>
+      <table><tr><th>s_n² (÷n, biaisée)</th><th>s² (÷n−1, corrigée)</th><th>ratio s²/s_n² = n/(n−1)</th></tr>
+      <tr><td>${sn2.toFixed(4)}</td><td><strong>${s2.toFixed(4)}</strong></td><td>${(n/(n-1)).toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">La division par n−1=${n-1} (au lieu de n=${n}) compense la perte d'un degré de liberté due à l'estimation de x̄ à partir des données elles-mêmes.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerKhi2(){
+  const erreurDiv=document.getElementById('erreur3'); const resDiv=document.getElementById('resultat3');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('n3').value);
+    const s2=parseFloat(document.getElementById('s2_3').value);
+    const sigma2=parseFloat(document.getElementById('sigma2_3').value);
+    if(isNaN(n)||n<2) throw new Error('n doit être un nombre ≥2.');
+    if(isNaN(s2)||s2<=0) throw new Error('s² doit être un nombre strictement positif.');
+    if(isNaN(sigma2)||sigma2<=0) throw new Error('σ² doit être un nombre strictement positif.');
+    const df=n-1;
+    const stat=df*s2/sigma2;
+    const esperance=df;
+    const ecartType=Math.sqrt(2*df);
+    const ecartsType=(stat-esperance)/ecartType;
+    resDiv.innerHTML=`<table><tr><th>degrés de liberté n−1</th><th>statistique (n−1)s²/σ²</th><th>E[χ²_{n−1}]</th><th>écart en nombre d'écarts-types de χ²</th></tr>
+      <tr><td>${df}</td><td><strong>${stat.toFixed(3)}</strong></td><td>${esperance}</td><td>${ecartsType.toFixed(3)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Écart-type théorique d'une loi χ²_{${df}} : √(2×${df}) ≈ ${ecartType.toFixed(2)}. Un écart de moins de 2 écarts-types environ n'est pas, à ce stade intuitif du cours, une preuve suffisante d'incompatibilité entre s² et l'hypothèse σ²=${sigma2}.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerProportion(); calculerVariance(); calculerKhi2(); };
+</script>
+</body>
+</html>

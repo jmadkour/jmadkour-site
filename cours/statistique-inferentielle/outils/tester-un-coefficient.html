@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 20 — Tester un coefficient — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .non-ok { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 20 — Tester un coefficient</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Test complet de significativité d'une pente</h2>
+  <div class="grille4">
+    <div><label for="n">taille n</label><input id="n" value="500"></div>
+    <div><label for="b1">pente β̂₁</label><input id="b1" value="277.17"></div>
+    <div><label for="sce">Σeᵢ² (somme des carrés résiduels)</label><input id="sce" value="2008647919"></div>
+    <div><label for="sxx">Σ(xᵢ-x̄)²</label><input id="sxx" value="17787"></div>
+  </div>
+  <button onclick="testerCoefficient()">Tester le coefficient</button>
+  <div id="erreurT" class="erreur"></div>
+  <div id="resultatT" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\widehat\sigma_\varepsilon^2=\sum_ie_i^2/(n-2)$, $\widehat\sigma(\widehat\beta_1)=\widehat\sigma_\varepsilon/\sqrt{\sum_i(x_i-\overline x)^2}$, $t=\widehat\beta_1/\widehat\sigma(\widehat\beta_1)\sim\text{Student}_{n-2}$. $\text{IC}_{95\,\%}(\beta_1)=\widehat\beta_1\pm t_{0{,}975\,;\,n-2}\times\widehat\sigma(\widehat\beta_1)$. En régression simple, $F=t^2$ et $R^2=F/(F+n-2)$. Un $t$ très significatif ne dit rien sur l'ampleur de $R^2$ : les deux sont toujours à publier ensemble.</p>
+
+<script>
+const dfList = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,40,60,120,Infinity];
+const t975 = [12.706,4.303,3.182,2.776,2.571,2.447,2.365,2.306,2.262,2.228,2.201,2.179,2.160,2.145,2.131,2.120,2.110,2.101,2.093,2.086,2.080,2.074,2.069,2.064,2.060,2.056,2.052,2.048,2.045,2.042,2.021,2.000,1.980,1.960];
+function interpoler(df, table){
+  if(df<=1) return table[0];
+  for(let i=0;i<dfList.length-1;i++){
+    const a=dfList[i], b=dfList[i+1];
+    if(df>=a && df<=b){
+      const invA=1/a, invB=isFinite(b)?1/b:0, invDf=1/df;
+      const frac=(invDf-invA)/(invB-invA);
+      return table[i]+frac*(table[i+1]-table[i]);
+    }
+  }
+  return table[table.length-1];
+}
+
+function testerCoefficient(){
+  const erreurDiv=document.getElementById('erreurT'); const resDiv=document.getElementById('resultatT');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('n').value);
+    const b1=parseFloat(document.getElementById('b1').value);
+    const sce=parseFloat(document.getElementById('sce').value);
+    const sxx=parseFloat(document.getElementById('sxx').value);
+    if([n,b1,sce,sxx].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(n<4) throw new Error('n doit être ≥4.');
+    if(sce<0) throw new Error('Σeᵢ² doit être ≥0.');
+    if(sxx<=0) throw new Error('Σ(xᵢ-x̄)² doit être strictement positif.');
+    const df=n-2;
+    const sigmaEps2=sce/df;
+    const sigmaEps=Math.sqrt(sigmaEps2);
+    const seB1=sigmaEps/Math.sqrt(sxx);
+    const t=b1/seB1;
+    const seuil=interpoler(df,t975);
+    const rejet=Math.abs(t)>seuil;
+    const ciLow=b1-seuil*seB1, ciHigh=b1+seuil*seB1;
+    const F=t*t;
+    const R2=F/(F+df);
+    resDiv.innerHTML=`<table><tr><th>σ̂ε</th><th>σ̂(β̂₁)</th><th>t observé</th><th>ddl</th><th>seuil (5%)</th><th>conclusion</th></tr>
+      <tr><td>${sigmaEps.toFixed(3)}</td><td>${seB1.toFixed(4)}</td><td>${t.toFixed(3)}</td><td>${df}</td><td>±${seuil.toFixed(3)}</td><td class="${rejet?'non-ok':'ok'}">${rejet?'on rejette H₀ (β₁≠0)':'on ne rejette pas H₀'}</td></tr></table>
+      <table><tr><th>IC 95% de β₁</th><th>F=t²</th><th>R²</th></tr>
+      <tr><td>[${ciLow.toFixed(3)} ; ${ciHigh.toFixed(3)}]</td><td>${F.toFixed(2)}</td><td>${R2.toFixed(4)}</td></tr></table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ testerCoefficient(); };
+</script>
+</body>
+</html>

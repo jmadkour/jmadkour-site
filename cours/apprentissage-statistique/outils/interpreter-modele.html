@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Interpréter un modèle de prévision — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4.5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Interpréter un modèle de prévision</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage statistique</p>
+
+<div class="panneau">
+  <h2>1. Vérifier une décomposition de Shapley</h2>
+  <div class="ligne">
+    <div><label for="baseIn11">prédiction moyenne</label><input type="number" id="baseIn11" value="0.10" step="any"></div>
+  </div>
+  <label for="contribIn11">contributions (séparées par des virgules)</label>
+  <input type="number" id="contribIn11" value="" style="display:none;">
+  <textarea id="contribListIn11" rows="2">0.22, 0.13, -0.05</textarea>
+  <div class="ligne">
+    <div><label for="seuilIn11">seuil de décision</label><input type="number" id="seuilIn11" value="0.35" step="any" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerShapley()">Calculer</button>
+  <div id="erreurS11" class="erreur"></div>
+  <div id="resultatS11" class="resultat-zone"></div>
+  <svg id="svgShapley11" width="420" height="180" viewBox="0 0 420 180"></svg>
+</div>
+
+<div class="panneau">
+  <h2>2. Importance par permutation, seule et combinée</h2>
+  <div class="ligne">
+    <div><label for="baseAucIn11">AUC de référence</label><input type="number" id="baseAucIn11" value="0.82" step="any" min="0" max="1"></div>
+    <div><label for="aucXIn11">AUC après permutation de $X$</label><input type="number" id="aucXIn11" value="0.80" step="any" min="0" max="1"></div>
+    <div><label for="aucYIn11">AUC après permutation de $Y$</label><input type="number" id="aucYIn11" value="0.81" step="any" min="0" max="1"></div>
+    <div><label for="aucXYIn11">AUC après retrait des deux</label><input type="number" id="aucXYIn11" value="0.71" step="any" min="0" max="1"></div>
+  </div>
+  <button onclick="calculerPermutation()">Calculer</button>
+  <div id="erreurP11" class="erreur"></div>
+  <div id="resultatP11" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>3. Dépendance partielle : forme et amplitude</h2>
+  <p class="aide">Une paire "tranche valeur" par ligne, dans l'ordre.</p>
+  <textarea id="pdIn11" rows="5">20-30 0.28
+30-40 0.12
+40-50 0.09
+50-60 0.11
+60-70 0.25</textarea>
+  <button onclick="calculerPD()">Calculer</button>
+  <div id="erreurD11" class="erreur"></div>
+  <div id="resultatD11" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : la décomposition de Shapley somme exactement à la prédiction, mais reste une explication du modèle, jamais du monde ; la dégradation combinée de deux variables corrélées dépasse souvent largement la somme des dégradations individuelles ; une dépendance partielle non monotone échappe à tout modèle linéaire.</p>
+
+<script>
+function calculerShapley(){
+  const erreurDiv=document.getElementById('erreurS11'); const resDiv=document.getElementById('resultatS11');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const base=parseFloat(document.getElementById('baseIn11').value);
+    const seuil=parseFloat(document.getElementById('seuilIn11').value);
+    if(isNaN(base)) throw new Error('Prédiction moyenne requise.');
+    if(isNaN(seuil)||seuil<0||seuil>1) throw new Error('Le seuil doit être compris entre 0 et 1.');
+    const contribs=document.getElementById('contribListIn11').value.split(',').map(s=>parseFloat(s.trim()));
+    if(contribs.some(isNaN)) throw new Error('Toutes les contributions doivent être numériques.');
+    const somme=contribs.reduce((a,b)=>a+b,base);
+    const classe=somme>seuil?'défaut (probabilité au-dessus du seuil)':'bon (probabilité au-dessous du seuil)';
+    let out=`<p>Probabilité prédite $=${base.toFixed(4)}+(${contribs.map(c=>c.toFixed(4)).join('+')})=\\mathbf{${somme.toFixed(4)}}$</p>
+      <p>Avec un seuil de $${seuil}$ : classement <strong>${classe}</strong></p>`;
+    resDiv.innerHTML=out;
+    dessinerShapley(base,contribs,somme);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgShapley11').innerHTML=''; }
+}
+
+function dessinerShapley(base,contribs,total){
+  const svg=document.getElementById('svgShapley11');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=420,H=180,pad=35;
+  const vals=[base,...contribs];
+  let cum=0;
+  const cums=vals.map(v=>{ const s=cum; cum+=v; return s; });
+  const maxV=Math.max(total,...vals.map((v,i)=>cums[i]+Math.max(v,0)))*1.15;
+  const minV=Math.min(0,...vals.map((v,i)=>cums[i]+Math.min(v,0)))*1.15;
+  const range=maxV-minV||1;
+  function yPix(v){ return H-pad-(v-minV)/range*(H-2*pad); }
+  const step=(W-2*pad)/vals.length;
+  const couleurs=['#5A5A5A'];
+  contribs.forEach(c=>couleurs.push(c>=0?'#1D9E75':'#B56600'));
+  vals.forEach((v,i)=>{
+    const x=pad+i*step+step*0.15;
+    const y1=yPix(cums[i]), y2=yPix(cums[i]+v);
+    const rect=document.createElementNS(ns,'rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',Math.min(y1,y2));
+    rect.setAttribute('width',step*0.7); rect.setAttribute('height',Math.abs(y2-y1)||1);
+    rect.setAttribute('fill',couleurs[i]);
+    svg.appendChild(rect);
+  });
+  const axeX=document.createElementNS(ns,'line');
+  axeX.setAttribute('x1',pad); axeX.setAttribute('y1',yPix(0)); axeX.setAttribute('x2',W-pad); axeX.setAttribute('y2',yPix(0));
+  axeX.setAttribute('stroke','#ccc');
+  svg.appendChild(axeX);
+}
+
+function calculerPermutation(){
+  const erreurDiv=document.getElementById('erreurP11'); const resDiv=document.getElementById('resultatP11');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const base=parseFloat(document.getElementById('baseAucIn11').value);
+    const aucX=parseFloat(document.getElementById('aucXIn11').value);
+    const aucY=parseFloat(document.getElementById('aucYIn11').value);
+    const aucXY=parseFloat(document.getElementById('aucXYIn11').value);
+    if([base,aucX,aucY,aucXY].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    const degX=base-aucX, degY=base-aucY, degXY=base-aucXY;
+    const sommeIndiv=degX+degY;
+    let out=`<p>Dégradation $X$ seule $=${degX.toFixed(4)}$ &nbsp;&nbsp; Dégradation $Y$ seule $=${degY.toFixed(4)}$</p>
+      <p>Somme des dégradations individuelles $=${sommeIndiv.toFixed(4)}$</p>
+      <p>Dégradation combinée (retrait des deux) $=${degXY.toFixed(4)}$</p>`;
+    if(degXY>sommeIndiv*1.3) out+='<p class="aide">La dégradation combinée dépasse largement la somme des dégradations individuelles : signe probable de variables corrélées, dont la permutation isolée sous-estime l\'importance réelle.</p>';
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerPD(){
+  const erreurDiv=document.getElementById('erreurD11'); const resDiv=document.getElementById('resultatD11');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('pdIn11').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<2) throw new Error('Au moins 2 points requis.');
+    const pts=lignes.map(l=>{
+      const parts=l.trim().split(/\s+/);
+      const val=parseFloat(parts[parts.length-1]);
+      if(isNaN(val)) throw new Error('Format invalide : "'+l+'".');
+      return {label:parts.slice(0,-1).join(' '), val};
+    });
+    const vals=pts.map(p=>p.val);
+    const maxV=Math.max(...vals), minV=Math.min(...vals);
+    let monotoneCroissant=true, monotoneDecroissant=true;
+    for(let i=1;i<vals.length;i++){
+      if(vals[i]<vals[i-1]) monotoneCroissant=false;
+      if(vals[i]>vals[i-1]) monotoneDecroissant=false;
+    }
+    const forme = monotoneCroissant?'monotone croissante':(monotoneDecroissant?'monotone décroissante':'non monotone');
+    resDiv.innerHTML=`<p>Forme de la relation : <strong>${forme}</strong></p>
+      <p>Écart max $-$ min $=${maxV.toFixed(4)}-${minV.toFixed(4)}=\\mathbf{${(maxV-minV).toFixed(4)}}$</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerShapley(); calculerPermutation(); calculerPD(); };
+</script>
+</body>
+</html>

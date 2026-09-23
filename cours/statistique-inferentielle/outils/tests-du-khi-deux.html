@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 18 — Les tests du khi-deux — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.indep { border-left-color: var(--ceco); } .panneau.indep h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { resize: vertical; min-height: 2.6em; }
+  .grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.indep button { background: var(--ceco); } .panneau.indep button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .non-ok { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 18 — Les tests du khi-deux</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Test d'adéquation</h2>
+  <div class="grille2">
+    <div><label for="obsList">effectifs observés (séparés par des virgules)</label><textarea id="obsList">42,58,35,61,54</textarea></div>
+    <div><label for="pList">probabilités théoriques $p_i$ sous $H_0$ (séparées par des virgules ; laisser vide pour une loi uniforme)</label><textarea id="pList">0.2,0.2,0.2,0.2,0.2</textarea></div>
+  </div>
+  <button onclick="testerAdequation()">Tester l'adéquation</button>
+  <div id="erreurAd" class="erreur"></div>
+  <div id="resultatAd" class="resultat-zone"></div>
+</div>
+
+<div class="panneau indep">
+  <h2>Test d'indépendance (tableau de contingence)</h2>
+  <label for="tableInput">tableau des effectifs observés — une ligne par ligne du tableau, valeurs séparées par des virgules</label>
+  <textarea id="tableInput" rows="4">45,25
+38,42
+22,48</textarea>
+  <button onclick="testerIndependance()">Tester l'indépendance</button>
+  <div id="erreurIn" class="erreur"></div>
+  <div id="resultatIn" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\chi^2=\sum(\text{observé}-\text{attendu})^2/\text{attendu}$, toujours unilatéral à droite. Adéquation : attendu $=np_i$, ddl $=k-1$. Indépendance : attendu $=n_{i\bullet}n_{\bullet j}/n$, ddl $=(l-1)(c-1)$. Condition de validité : tout effectif \textbf{attendu} $\geq5$ (sinon, regrouper des modalités). Le seuil et la $p$-value sont calculés exactement (fonction gamma incomplète inversée), pas interpolés sur une table. Une liaison détectée n'est jamais une causalité.</p>
+
+<script>
+// --- Fonction gamma incomplète régularisée (Numerical Recipes), pour un seuil et une p-value exacts ---
+function logGamma(x){
+  const cof=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let y=x, tmp=x+5.5; tmp-=(x+0.5)*Math.log(tmp);
+  let ser=1.000000000190015;
+  for(let j=0;j<6;j++){ y+=1; ser+=cof[j]/y; }
+  return -tmp+Math.log(2.5066282746310005*ser/x);
+}
+function gser(a,x){
+  const ITMAX=200, EPS=3e-9; const gln=logGamma(a);
+  if(x<=0) return 0;
+  let ap=a, sum=1/a, del=sum;
+  for(let n=1;n<=ITMAX;n++){ ap+=1; del*=x/ap; sum+=del; if(Math.abs(del)<Math.abs(sum)*EPS) break; }
+  return sum*Math.exp(-x+a*Math.log(x)-gln);
+}
+function gcf(a,x){
+  const ITMAX=200, EPS=3e-9, FPMIN=1e-30; const gln=logGamma(a);
+  let b=x+1-a, c=1/FPMIN, d=1/b, h=d;
+  for(let i=1;i<=ITMAX;i++){
+    const an=-i*(i-a);
+    b+=2; d=an*d+b; if(Math.abs(d)<FPMIN) d=FPMIN;
+    c=b+an/c; if(Math.abs(c)<FPMIN) c=FPMIN;
+    d=1/d; const del=d*c; h*=del;
+    if(Math.abs(del-1)<EPS) break;
+  }
+  return Math.exp(-x+a*Math.log(x)-gln)*h;
+}
+function gammp(a,x){ if(x<a+1) return gser(a,x); else return 1-gcf(a,x); }
+function chi2cdf(x,df){ return gammp(df/2,x/2); }
+function chi2quantile(p,df){
+  let lo=0, hi=df*20+50;
+  for(let i=0;i<100;i++){
+    const mid=(lo+hi)/2;
+    if(chi2cdf(mid,df)<p) lo=mid; else hi=mid;
+  }
+  return (lo+hi)/2;
+}
+
+function testerAdequation(){
+  const erreurDiv=document.getElementById('erreurAd'); const resDiv=document.getElementById('resultatAd');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const obs=document.getElementById('obsList').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    if(obs.length<2) throw new Error('Il faut au moins 2 catégories.');
+    if(obs.some(o=>o<0)) throw new Error('Les effectifs observés doivent être ≥0.');
+    const n=obs.reduce((a,b)=>a+b,0);
+    let pText=document.getElementById('pList').value.trim();
+    let p;
+    if(pText===''){ p=obs.map(()=>1/obs.length); }
+    else{
+      p=pText.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+      if(p.length!==obs.length) throw new Error(`Le nombre de probabilités (${p.length}) doit être égal au nombre de catégories (${obs.length}).`);
+      const sumP=p.reduce((a,b)=>a+b,0);
+      if(Math.abs(sumP-1)>0.01) throw new Error(`Les probabilités doivent sommer à 1 (somme actuelle : ${sumP.toFixed(3)}).`);
+    }
+    const exp=p.map(pi=>n*pi);
+    const tropFaible=exp.some(e=>e<5);
+    const chi2=obs.reduce((a,o,i)=>a+(o-exp[i])**2/exp[i],0);
+    const df=obs.length-1;
+    const seuil=chi2quantile(0.95,df);
+    const pvalue=1-chi2cdf(chi2,df);
+    const rejet=chi2>seuil;
+    let lignes='';
+    obs.forEach((o,i)=>{ lignes+=`<tr><td>cat. ${i+1}</td><td>${o}</td><td>${exp[i].toFixed(2)}</td></tr>`; });
+    resDiv.innerHTML=`<table><tr><th>catégorie</th><th>observé</th><th>attendu</th></tr>${lignes}</table>
+      ${tropFaible?'<p class="erreur" style="margin-top:0.4em;">Attention : au moins un effectif attendu est &lt;5 — condition de validité non respectée, envisager un regroupement de catégories.</p>':''}
+      <table><tr><th>n</th><th>χ² observé</th><th>ddl</th><th>seuil (5%)</th><th>p-value</th><th>conclusion</th></tr>
+      <tr><td>${n}</td><td>${chi2.toFixed(3)}</td><td>${df}</td><td>${seuil.toFixed(3)}</td><td>${pvalue<0.0001?'&lt;0,0001':pvalue.toFixed(4)}</td><td class="${rejet?'non-ok':'ok'}">${rejet?'on rejette H₀':'on ne rejette pas H₀'}</td></tr></table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function testerIndependance(){
+  const erreurDiv=document.getElementById('erreurIn'); const resDiv=document.getElementById('resultatIn');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignesTxt=document.getElementById('tableInput').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignesTxt.length<2) throw new Error('Il faut au moins 2 lignes.');
+    const table=lignesTxt.map(l=>l.split(',').map(s=>parseFloat(s.trim())));
+    const ncols=table[0].length;
+    if(ncols<2) throw new Error('Il faut au moins 2 colonnes.');
+    if(table.some(r=>r.length!==ncols||r.some(isNaN))) throw new Error('Toutes les lignes doivent avoir le même nombre de valeurs numériques.');
+    const l=table.length, c=ncols;
+    const rowsums=table.map(r=>r.reduce((a,b)=>a+b,0));
+    const colsums=Array.from({length:c},(_,j)=>table.reduce((a,r)=>a+r[j],0));
+    const N=rowsums.reduce((a,b)=>a+b,0);
+    let chi2=0; const expTable=[]; let tropFaible=false;
+    for(let i=0;i<l;i++){
+      const row=[];
+      for(let j=0;j<c;j++){
+        const e=rowsums[i]*colsums[j]/N;
+        if(e<5) tropFaible=true;
+        row.push(e);
+        chi2+=(table[i][j]-e)**2/e;
+      }
+      expTable.push(row);
+    }
+    const df=(l-1)*(c-1);
+    const seuil=chi2quantile(0.95,df);
+    const pvalue=1-chi2cdf(chi2,df);
+    const rejet=chi2>seuil;
+    let corps='';
+    for(let i=0;i<l;i++){
+      corps+='<tr><td>ligne '+(i+1)+'</td>';
+      for(let j=0;j<c;j++){ corps+=`<td>${table[i][j]} (att. ${expTable[i][j].toFixed(2)})</td>`; }
+      corps+='</tr>';
+    }
+    let entete='<tr><th></th>'; for(let j=0;j<c;j++) entete+=`<th>colonne ${j+1}</th>`; entete+='</tr>';
+    resDiv.innerHTML=`<table>${entete}${corps}</table>
+      ${tropFaible?'<p class="erreur" style="margin-top:0.4em;">Attention : au moins un effectif attendu est &lt;5 — condition de validité non respectée.</p>':''}
+      <table><tr><th>N</th><th>χ² observé</th><th>ddl</th><th>seuil (5%)</th><th>p-value</th><th>conclusion</th></tr>
+      <tr><td>${N}</td><td>${chi2.toFixed(3)}</td><td>${df}</td><td>${seuil.toFixed(3)}</td><td>${pvalue<0.0001?'&lt;0,0001':pvalue.toFixed(4)}</td><td class="${rejet?'non-ok':'ok'}">${rejet?'on rejette H₀ (liaison détectée)':'on ne rejette pas H₀ (indépendance plausible)'}</td></tr></table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ testerAdequation(); testerIndependance(); };
+</script>
+</body>
+</html>

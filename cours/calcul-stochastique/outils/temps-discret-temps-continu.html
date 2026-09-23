@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — Du temps discret au temps continu — Simulateur interactif</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.regle { border-left-color: var(--cintu); }
+  .panneau.regle h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1.2em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.regle button { background: var(--cintu); }
+  .panneau.regle button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Introduction — Du temps discret au temps continu</h1>
+<p class="sous-titre">Simulateur interactif — Calcul stochastique pour la finance</p>
+
+<div class="panneau">
+  <h2>De la marche aléatoire au mouvement brownien</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Choisir le nombre de pas $n$ sur l'intervalle $[0,t]$, la volatilité $\sigma$, et le mode de calibrage de l'amplitude $\delta$. L'outil simule plusieurs trajectoires et compare la variance empirique finale à la formule théorique.</p>
+  <div class="grille4">
+    <div><label for="tHoriz">horizon $t$</label><input id="tHoriz" value="1"></div>
+    <div><label for="nPas">nombre de pas $n$</label><input id="nPas" value="100"></div>
+    <div><label for="sigmaVal">$\sigma$</label><input id="sigmaVal" value="0.3"></div>
+    <div><label for="modeDelta">amplitude $\delta$</label>
+      <select id="modeDelta">
+        <option value="scaled" selected>$\delta=\sigma\sqrt{\Delta t}$ (stable)</option>
+        <option value="dt">$\delta=\Delta t$ (s'annule)</option>
+        <option value="const">$\delta=0{,}1$ (explose)</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="simuler()">Simuler des trajectoires</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueTrajectoires" height="280"></canvas>
+</div>
+
+<p class="avertissement">Chaque trajectoire est une marche aléatoire $y_k=y_{k-1}+\delta\varepsilon_k$ simulée avec $\varepsilon_k=\pm1$ équiprobables. La variance empirique à $t$ (calculée sur $200$ trajectoires) est comparée à $n\delta^2$ : elle doit s'en rapprocher d'autant plus que le nombre de trajectoires simulées est grand.</p>
+
+<div class="panneau regle">
+  <h2>La règle de la racine carrée du temps</h2>
+  <div class="grille3">
+    <div><label for="volJour">volatilité quotidienne (%)</label><input id="volJour" value="1.5"></div>
+    <div><label for="joursAn">jours de bourse par an</label><input id="joursAn" value="252"></div>
+    <div><label for="horizonJours">horizon à annualiser (jours)</label><input id="horizonJours" value="252"></div>
+  </div>
+  <button onclick="calculerRegle()">Annualiser la volatilité</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphiqueRegle" height="240"></canvas>
+</div>
+
+<script>
+let chartTraj = null, chartRegle = null;
+
+function simuler() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const t = parseFloat(document.getElementById('tHoriz').value);
+    const n = parseInt(document.getElementById('nPas').value);
+    const sigma = parseFloat(document.getElementById('sigmaVal').value);
+    const mode = document.getElementById('modeDelta').value;
+    if ([t,n,sigma].some(isNaN) || n<1 || n>2000) throw new Error('Vérifiez les valeurs saisies (n entre 1 et 2000).');
+
+    const dt = t/n;
+    let delta;
+    if (mode === 'scaled') delta = sigma*Math.sqrt(dt);
+    else if (mode === 'dt') delta = dt;
+    else delta = 0.1;
+
+    const nTraj = 200;
+    const datasetsAffiches = [];
+    const finales = [];
+    for (let s=0; s<nTraj; s++) {
+      const chemin = [0];
+      let y = 0;
+      for (let k=1;k<=n;k++) { y += delta * (Math.random()<0.5 ? -1 : 1); chemin.push(y); }
+      finales.push(y);
+      if (s < 15) datasetsAffiches.push({
+        label: s===0 ? 'trajectoires simulées' : undefined,
+        data: chemin.map((v,i)=>({x: i*dt, y:v})),
+        borderColor: `hsla(${(s*47)%360},60%,45%,0.55)`,
+        backgroundColor: 'transparent', pointRadius: 0, borderWidth: 1,
+        showLine: true
+      });
+    }
+    const varEmpirique = finales.reduce((s,v)=>s+v*v,0)/finales.length; // E(y)=0 donc Var ~ E(y^2)
+    const varTheorique = n*delta*delta;
+
+    resDiv.innerHTML = `
+      <table><tr><th>&delta;</th><th>Var théorique = n&delta;&sup2;</th><th>Var empirique (200 trajectoires)</th></tr>
+      <tr><td>${delta.toFixed(5)}</td><td>${varTheorique.toFixed(4)}</td><td>${varEmpirique.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">${mode==='scaled' ? "Avec δ=σ√Δt, la variance reste proche de σ²t="+(sigma*sigma*t).toFixed(4)+" quel que soit n." : mode==='dt' ? "Avec δ=Δt, la variance théorique tend vers 0 quand n augmente (essayez d'augmenter n)." : "Avec δ constant, la variance théorique croît sans borne quand n augmente (essayez d'augmenter n)."}</p>
+    `;
+
+    if (chartTraj) chartTraj.destroy();
+    chartTraj = new Chart(document.getElementById('graphiqueTrajectoires').getContext('2d'), {
+      type: 'line',
+      data: { datasets: datasetsAffiches },
+      options: { responsive: true, animation: false,
+        scales: { x: { title: { display: true, text: 'temps' } }, y: { title: { display: true, text: 'y(t)' } } },
+        plugins: { legend: { display: false }, title: { display: true, text: '15 trajectoires simulées (sur 200 utilisées pour la variance)' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerRegle() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const volJour = parseFloat(document.getElementById('volJour').value)/100;
+    const joursAn = parseFloat(document.getElementById('joursAn').value);
+    const horizonJours = parseFloat(document.getElementById('horizonJours').value);
+    if ([volJour,joursAn,horizonJours].some(v=>isNaN(v)||v<=0)) throw new Error('Toutes les valeurs doivent être des nombres strictement positifs.');
+
+    const volHorizon = volJour*Math.sqrt(horizonJours);
+    resDiv.innerHTML = `<p>Volatilité sur l'horizon choisi (${horizonJours} jours) : <strong>${(volHorizon*100).toFixed(2)} %</strong></p>`;
+
+    const pts = [];
+    for (let j=1;j<=joursAn*1.2;j+=Math.max(1,Math.round(joursAn/60))) pts.push({x:j, y: volJour*Math.sqrt(j)*100});
+    if (chartRegle) chartRegle.destroy();
+    chartRegle = new Chart(document.getElementById('graphiqueRegle').getContext('2d'), {
+      type: 'line',
+      data: { datasets: [
+        { label: 'volatilité cumulée (%)', data: pts, borderColor: '#B56600', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'horizon choisi', data: [{x:horizonJours, y:volHorizon*100}], borderColor: '#1D9E75', backgroundColor: '#1D9E75', pointRadius: 6, showLine:false }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'horizon (jours)' } }, y: { title: { display: true, text: 'volatilité (%)' } } },
+        plugins: { title: { display: true, text: 'Volatilité en fonction de l’horizon (croissance en racine carrée)' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { simuler(); calculerRegle(); };
+</script>
+</body>
+</html>

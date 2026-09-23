@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Petit monde et attachement préférentiel — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 170px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  button.secondaire { background: var(--cintu); }
+  button.secondaire:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  .valeur { font-size: 1.05em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right:0.5em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.6em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Petit monde et attachement préférentiel</h1>
+<p class="sous-titre">Calculatrice interactive — Théorie des réseaux</p>
+
+<div class="panneau">
+  <h2>Anneau de Watts-Strogatz : effet de raccourcis aléatoires</h2>
+  <div class="ligne">
+    <div><label for="wsN">n (nombre de sommets)</label><input type="number" id="wsN" value="30"></div>
+    <div><label for="wsK">k (voisins par côté, pair)</label><input type="number" id="wsK" value="4" step="2"></div>
+    <div><label for="wsShort">nombre de raccourcis</label><input type="number" id="wsShort" value="1"></div>
+  </div>
+  <button onclick="calculerWS()">Recâbler et calculer</button>
+  <div id="resultatWS" class="resultat-zone"></div>
+  <div id="dessinWS"></div>
+</div>
+
+<div class="panneau">
+  <h2>Attachement préférentiel : probabilité d'attirer le prochain lien</h2>
+  <p class="aide">Entrer les degrés actuels des nœuds existants, séparés par des virgules.</p>
+  <div class="ligne">
+    <div><label for="paDegres">degrés (ex : 3,2,2,1)</label><input type="text" id="paDegres" value="3,2,2,1" style="font-family:'Courier New',monospace;padding:0.5em;width:100%;border:1px solid #ccc;border-radius:4px;"></div>
+  </div>
+  <button onclick="calculerPA()">Calculer &Pi;(i)</button>
+  <div id="resultatPA" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Estimer l'exposant &gamma; d'une loi de puissance à partir de deux points</h2>
+  <div class="ligne">
+    <div><label for="k1In">k&#8321;</label><input type="number" id="k1In" value="2"></div>
+    <div><label for="Pk1In">&#8477;(k&#8321;)</label><input type="number" id="Pk1In" value="0.1768" step="0.0001"></div>
+    <div><label for="k2In">k&#8322;</label><input type="number" id="k2In" value="16"></div>
+    <div><label for="Pk2In">&#8477;(k&#8322;)</label><input type="number" id="Pk2In" value="0.0009766" step="0.0000001"></div>
+  </div>
+  <button onclick="calculerGamma()">Estimer &gamma;</button>
+  <div id="resultatGamma" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Bianconi-Barabási : probabilité avec aptitude</h2>
+  <div class="ligne">
+    <div><label for="bbK1">k&#8321;</label><input type="number" id="bbK1" value="1"></div>
+    <div><label for="bbEta1">&eta;&#8321;</label><input type="number" id="bbEta1" value="3" step="0.1"></div>
+    <div><label for="bbK2">k&#8322;</label><input type="number" id="bbK2" value="5"></div>
+    <div><label for="bbEta2">&eta;&#8322;</label><input type="number" id="bbEta2" value="1" step="0.1"></div>
+  </div>
+  <button onclick="calculerBB()">Calculer &Pi;&#8321; et &Pi;&#8322;</button>
+  <div id="resultatBB" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">L'asymétrie entre l'effet des raccourcis sur la distance moyenne (globale) et sur le clustering (local) s'accentue quand n grandit, à nombre de raccourcis fixé — testez par exemple n=200 avec 1 seul raccourci.</p>
+
+<script>
+function buildAdj(V, E) {
+  const adj = {};
+  V.forEach(v => adj[v] = new Set());
+  E.forEach(([a,b]) => { adj[a].add(b); adj[b].add(a); });
+  return adj;
+}
+function bfsDist(V, adj, src) {
+  const dist = {}; V.forEach(v => dist[v] = Infinity);
+  dist[src] = 0;
+  const queue = [src];
+  while (queue.length) {
+    const u = queue.shift();
+    adj[u].forEach(v => { if (dist[v] === Infinity) { dist[v] = dist[u] + 1; queue.push(v); } });
+  }
+  return dist;
+}
+function avgDistance(V, adj) {
+  let sum = 0, count = 0;
+  V.forEach(src => {
+    const dist = bfsDist(V, adj, src);
+    V.forEach(v => { if (v !== src && dist[v] < Infinity) { sum += dist[v]; count++; } });
+  });
+  return count > 0 ? sum / count : NaN;
+}
+function meanClustering(V, adj) {
+  let sum = 0;
+  V.forEach(v => {
+    const neigh = Array.from(adj[v]);
+    const k = neigh.length;
+    if (k < 2) return;
+    let links = 0;
+    for (let i=0;i<neigh.length;i++) for (let j=i+1;j<neigh.length;j++) if (adj[neigh[i]].has(neigh[j])) links++;
+    sum += (2*links)/(k*(k-1));
+  });
+  return sum / V.length;
+}
+function ringLattice(n, k) {
+  const V = Array.from({length:n}, (_,i)=>String(i));
+  const E = [];
+  const half = k/2;
+  for (let i=0;i<n;i++) for (let d=1; d<=half; d++) { const j=(i+d)%n; E.push([String(i), String(j)]); }
+  return { V, E };
+}
+
+function calculerWS() {
+  const n = parseInt(document.getElementById('wsN').value);
+  const k = parseInt(document.getElementById('wsK').value);
+  const nShort = parseInt(document.getElementById('wsShort').value);
+  const resDiv = document.getElementById('resultatWS');
+  if (isNaN(n) || isNaN(k) || n < 5 || k < 2 || k % 2 !== 0 || k >= n || isNaN(nShort) || nShort < 0) {
+    resDiv.innerHTML = '<p class="erreur">Paramètres invalides (n&ge;5, k pair, 2&le;k&lt;n, raccourcis&ge;0).</p>';
+    return;
+  }
+  const { V, E } = ringLattice(n, k);
+  const adjBase = buildAdj(V, E);
+  const distBase = avgDistance(V, adjBase);
+  const cBase = meanClustering(V, adjBase);
+
+  // recâblage : on retire nShort arêtes existantes (aléatoirement) et on les remplace par des arêtes vers des sommets distants
+  const Erewired = E.map(e => e.slice());
+  const usedIdx = new Set();
+  let attempts = 0;
+  let done = 0;
+  while (done < nShort && attempts < 500) {
+    attempts++;
+    const idx = Math.floor(Math.random() * Erewired.length);
+    if (usedIdx.has(idx)) continue;
+    const a = Erewired[idx][0];
+    let b;
+    do { b = String(Math.floor(Math.random()*n)); } while (b === a || Erewired.some(([x,y]) => (x===a&&y===b)||(x===b&&y===a)));
+    Erewired[idx] = [a, b];
+    usedIdx.add(idx);
+    done++;
+  }
+  const adjRewired = buildAdj(V, Erewired);
+  const distRewired = avgDistance(V, adjRewired);
+  const cRewired = meanClustering(V, adjRewired);
+
+  const dDrop = 100*(distBase - distRewired)/distBase;
+  const cDrop = 100*(cBase - cRewired)/cBase;
+
+  let out = `<h3>Avant recâblage (anneau pur)</h3>`;
+  out += `<div class="valeur">distance moyenne = ${distBase.toFixed(3)}</div><div class="valeur">clustering = ${cBase.toFixed(3)}</div>`;
+  out += `<h3>Après ${nShort} raccourci(s)</h3>`;
+  out += `<div class="valeur">distance moyenne = ${distRewired.toFixed(3)}</div><div class="valeur">clustering = ${cRewired.toFixed(3)}</div>`;
+  out += `<h3>Baisses relatives</h3>`;
+  out += `<div class="valeur">distance : -${dDrop.toFixed(2)}%</div><div class="valeur">clustering : -${cDrop.toFixed(2)}%</div>`;
+  if (cDrop > 0.001) out += `<div class="valeur">rapport = ${(dDrop/cDrop).toFixed(2)}</div>`;
+  resDiv.innerHTML = out;
+
+  // dessin SVG simplifié (anneau, sans étiquettes si n grand)
+  const svgSize = 380, R = 160, cx = svgSize/2, cy = svgSize/2;
+  const pos = {};
+  V.forEach((v,i) => { const angle = 2*Math.PI*i/n - Math.PI/2; pos[v] = [cx+R*Math.cos(angle), cy+R*Math.sin(angle)]; });
+  let svg = `<svg width="${svgSize}" height="${svgSize}">`;
+  Erewired.forEach(([a,b]) => {
+    const isShortcut = !E.some(([x,y]) => (x===a&&y===b)||(x===b&&y===a));
+    svg += `<line x1="${pos[a][0]}" y1="${pos[a][1]}" x2="${pos[b][0]}" y2="${pos[b][1]}" stroke="${isShortcut ? '#1F6FB2' : '#ccc'}" stroke-width="${isShortcut?2:1}" />`;
+  });
+  V.forEach(v => { svg += `<circle cx="${pos[v][0]}" cy="${pos[v][1]}" r="3" fill="#1F6FB2" />`; });
+  svg += `</svg>`;
+  document.getElementById('dessinWS').innerHTML = svg;
+}
+
+function calculerPA() {
+  const txt = document.getElementById('paDegres').value;
+  const resDiv = document.getElementById('resultatPA');
+  const degres = txt.split(',').map(s => parseFloat(s.trim())).filter(x => !isNaN(x));
+  if (degres.length === 0 || degres.some(d => d < 0)) {
+    resDiv.innerHTML = '<p class="erreur">Entrer une liste de degrés positifs séparés par des virgules.</p>';
+    return;
+  }
+  const total = degres.reduce((a,b)=>a+b, 0);
+  if (total === 0) { resDiv.innerHTML = '<p class="erreur">La somme des degrés doit être positive.</p>'; return; }
+  let out = '<table><tr><th>nœud</th>' + degres.map((_,i)=>`<th>${i+1}</th>`).join('') + '</tr>';
+  out += '<tr><td>k</td>' + degres.map(d=>`<td>${d}</td>`).join('') + '</tr>';
+  out += '<tr><td>&Pi;(i)</td>' + degres.map(d=>`<td>${(d/total).toFixed(4)}</td>`).join('') + '</tr></table>';
+  const maxIdx = degres.indexOf(Math.max(...degres));
+  out += `<p style="margin-top:0.6em;">Le nœud le plus probable de recevoir le prochain lien est le nœud ${maxIdx+1}, avec &Pi;=${(degres[maxIdx]/total).toFixed(4)}.</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerGamma() {
+  const k1 = parseFloat(document.getElementById('k1In').value);
+  const Pk1 = parseFloat(document.getElementById('Pk1In').value);
+  const k2 = parseFloat(document.getElementById('k2In').value);
+  const Pk2 = parseFloat(document.getElementById('Pk2In').value);
+  const resDiv = document.getElementById('resultatGamma');
+  if ([k1,Pk1,k2,Pk2].some(isNaN) || k1<=0 || k2<=0 || Pk1<=0 || Pk2<=0 || k1===k2) {
+    resDiv.innerHTML = '<p class="erreur">Toutes les valeurs doivent être strictement positives, avec k&#8321; &ne; k&#8322;.</p>';
+    return;
+  }
+  const gamma = -Math.log(Pk1/Pk2) / Math.log(k1/k2);
+  let out = `<div class="valeur">&gamma; = ${gamma.toFixed(4)}</div>`;
+  out += `<p>${gamma>=2 && gamma<=3 ? 'Cette valeur est compatible avec la fourchette [2,3] typique des réseaux réels.' : (gamma>3 ? 'Cette valeur dépasse la fourchette [2,3] typique des réseaux réels.' : 'Cette valeur est inférieure à la fourchette [2,3] typique des réseaux réels.')}</p>`;
+  out += `<p>Comparaison au modèle de Barabási-Albert nu (&gamma;=3 fixe) : écart de ${Math.abs(gamma-3).toFixed(4)}.</p>`;
+  resDiv.innerHTML = out;
+}
+
+function calculerBB() {
+  const k1 = parseFloat(document.getElementById('bbK1').value);
+  const eta1 = parseFloat(document.getElementById('bbEta1').value);
+  const k2 = parseFloat(document.getElementById('bbK2').value);
+  const eta2 = parseFloat(document.getElementById('bbEta2').value);
+  const resDiv = document.getElementById('resultatBB');
+  if ([k1,eta1,k2,eta2].some(isNaN) || k1<0 || k2<0 || eta1<0 || eta2<0) {
+    resDiv.innerHTML = '<p class="erreur">Toutes les valeurs doivent être positives ou nulles.</p>';
+    return;
+  }
+  const num1 = eta1*k1, num2 = eta2*k2, denom = num1+num2;
+  if (denom === 0) { resDiv.innerHTML = '<p class="erreur">La somme &eta;k doit être positive.</p>'; return; }
+  const pi1 = num1/denom, pi2 = num2/denom;
+  let out = `<div class="valeur">&Pi;&#8321; = ${pi1.toFixed(4)}</div><div class="valeur">&Pi;&#8322; = ${pi2.toFixed(4)}</div>`;
+  // sans aptitude
+  const num1b = k1, num2b = k2, denomb = num1b+num2b;
+  if (denomb > 0) {
+    const pi1b = num1b/denomb, pi2b = num2b/denomb;
+    out += `<h3>Sans aptitude (&eta;=1 pour les deux)</h3>`;
+    out += `<div class="valeur">&Pi;&#8321; = ${pi1b.toFixed(4)}</div><div class="valeur">&Pi;&#8322; = ${pi2b.toFixed(4)}</div>`;
+    if (pi1b > 0) out += `<p>Facteur multiplicatif de l'aptitude sur &Pi;&#8321; : ${(pi1/pi1b).toFixed(3)}&times;</p>`;
+  }
+  // eta1 nécessaire pour égalité (50/50), à k1,k2,eta2 fixés
+  if (k1 > 0) {
+    const etaEqual = (eta2*k2)/k1;
+    out += `<p style="margin-top:0.6em;">&eta;&#8321; nécessaire pour &Pi;&#8321;=&Pi;&#8322;=50% (à k&#8321;, k&#8322;, &eta;&#8322; fixés) : <strong>${etaEqual.toFixed(3)}</strong></p>`;
+  }
+  resDiv.innerHTML = out;
+}
+
+window.onload = () => { calculerWS(); calculerPA(); calculerGamma(); calculerBB(); };
+</script>
+</body>
+</html>

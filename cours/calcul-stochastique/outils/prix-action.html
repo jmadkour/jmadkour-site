@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 7 — Black-Scholes-Merton — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.estim { border-left-color: var(--cintu); }
+  .panneau.estim h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.estim button { background: var(--cintu); }
+  .panneau.estim button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 7 — Le modèle de Black-Scholes-Merton pour une action</h1>
+<p class="sous-titre">Calculatrice interactive — Calcul stochastique pour la finance</p>
+
+<div class="panneau">
+  <h2>Espérance, médiane et coût de la volatilité</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">
+    $S_t=S_0\exp\big[(\mu-\sigma^2/2)t+\sigma W_t\big]$, avec $\mathrm{E}(S_t)=S_0e^{\mu t}$ et médiane $=S_0e^{(\mu-\sigma^2/2)t}$.
+  </p>
+  <div class="grille5">
+    <div><label for="S0">S₀</label><input id="S0" value="100"></div>
+    <div><label for="mu">μ (annuel)</label><input id="mu" value="0.08"></div>
+    <div><label for="sigma">σ (annuel)</label><input id="sigma" value="0.25"></div>
+    <div><label for="tHoriz">horizon t (ans)</label><input id="tHoriz" value="10"></div>
+    <div><label for="nTraj">trajectoires simulées</label><input id="nTraj" value="3000"></div>
+  </div>
+  <button onclick="calculerBSM()">Calculer et simuler</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueHisto" height="240"></canvas>
+</div>
+
+<p class="avertissement">L'histogramme montre les $S_t$ simulés (loi log-normale) : la médiane empirique et la moyenne empirique doivent se rapprocher des valeurs théoriques, et l'asymétrie à droite de la distribution explique pourquoi la moyenne dépasse toujours la médiane dès que $\sigma>0$.</p>
+
+<div class="panneau estim">
+  <h2>Précision de l'estimation de μ</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">
+    L'écart-type de $\hat\mu$ vaut $\sigma/\sqrt T$ et ne dépend que de la durée totale d'observation $T$, jamais du nombre d'observations.
+  </p>
+  <div class="grille3">
+    <div><label for="muHat">μ̂ estimé</label><input id="muHat" value="0.08"></div>
+    <div><label for="sigmaEst">σ (connu ou estimé)</label><input id="sigmaEst" value="0.25"></div>
+    <div><label for="Tobs">T (années d'observation)</label><input id="Tobs" value="10"></div>
+  </div>
+  <button onclick="calculerIC()">Construire l'intervalle de confiance à 95 %</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<script>
+let chartHisto = null;
+
+function calculerBSM() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const S0 = parseFloat(document.getElementById('S0').value);
+    const mu = parseFloat(document.getElementById('mu').value);
+    const sigma = parseFloat(document.getElementById('sigma').value);
+    const t = parseFloat(document.getElementById('tHoriz').value);
+    const nTraj = parseInt(document.getElementById('nTraj').value);
+    if ([S0,mu,sigma,t,nTraj].some(v=>isNaN(v)) || S0<=0 || sigma<0 || t<=0 || nTraj<10) {
+      throw new Error('Vérifier les valeurs saisies (S0>0, sigma>=0, t>0, au moins 10 trajectoires).');
+    }
+    const Emean = S0*Math.exp(mu*t);
+    const median = S0*Math.exp((mu-sigma*sigma/2)*t);
+
+    // simulation de nTraj tirages de S_t
+    const resultats = [];
+    for (let i=0;i<nTraj;i++) {
+      // Box-Muller pour un W_t ~ N(0,t)
+      const u1 = Math.random(), u2 = Math.random();
+      const z = Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+      const Wt = Math.sqrt(t)*z;
+      const St = S0*Math.exp((mu-sigma*sigma/2)*t + sigma*Wt);
+      resultats.push(St);
+    }
+    resultats.sort((a,b)=>a-b);
+    const moyEmp = resultats.reduce((s,v)=>s+v,0)/nTraj;
+    const medEmp = resultats[Math.floor(nTraj/2)];
+
+    resDiv.innerHTML = `
+      <table><tr><th></th><th>théorique</th><th>empirique (${nTraj} trajectoires)</th></tr>
+      <tr><td>espérance E(S_t)</td><td>${Emean.toFixed(2)}</td><td>${moyEmp.toFixed(2)}</td></tr>
+      <tr><td>médiane</td><td>${median.toFixed(2)}</td><td>${medEmp.toFixed(2)}</td></tr>
+      </table>
+      <p style="font-size:0.85em;color:var(--cgris);">Écart relatif espérance/médiane théorique : ${((Emean/median-1)*100).toFixed(1)} % — c'est le coût de la volatilité (variance drag) sur cet horizon.</p>
+    `;
+
+    const nBins = 25;
+    const minV = resultats[0], maxV = resultats[nTraj-1];
+    const largeur = (maxV-minV)/nBins;
+    const bins = Array(nBins).fill(0);
+    resultats.forEach(v => { let idx = Math.floor((v-minV)/largeur); if (idx>=nBins) idx=nBins-1; if(idx<0) idx=0; bins[idx]++; });
+    const labels = bins.map((_,i)=> (minV+i*largeur).toFixed(0));
+
+    if (chartHisto) chartHisto.destroy();
+    chartHisto = new Chart(document.getElementById('graphiqueHisto').getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'fréquence', data: bins, backgroundColor: 'rgba(31,111,178,0.6)' }] },
+      options: { responsive: true, scales: { x: { title: { display: true, text: 'S_t simulé' } }, y: { title: { display: true, text: 'fréquence' } } },
+        plugins: { title: { display: true, text: 'Distribution log-normale simulée de S_t' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerIC() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const muHat = parseFloat(document.getElementById('muHat').value);
+    const sigma = parseFloat(document.getElementById('sigmaEst').value);
+    const T = parseFloat(document.getElementById('Tobs').value);
+    if ([muHat,sigma,T].some(v=>isNaN(v)) || sigma<0 || T<=0) throw new Error('Vérifier les valeurs saisies (sigma>=0, T>0).');
+    const se = sigma/Math.sqrt(T);
+    const bas = muHat - 1.96*se, haut = muHat + 1.96*se;
+    const contientZero = (bas<=0 && haut>=0);
+
+    resDiv.innerHTML = `
+      <table><tr><th>écart-type de μ̂</th><th>borne basse (95%)</th><th>borne haute (95%)</th></tr>
+      <tr><td>${se.toFixed(4)}</td><td>${bas.toFixed(4)}</td><td>${haut.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.9em;">${contientZero
+        ? '<strong>L\'intervalle contient 0</strong> : on ne peut pas exclure statistiquement que le rendement moyen réel soit nul (ou négatif), malgré μ̂ estimé positif.'
+        : '<strong>L\'intervalle exclut 0</strong> : le rendement moyen estimé est significativement différent de zéro à 95 %.'}</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerBSM(); calculerIC(); };
+</script>
+</body>
+</html>

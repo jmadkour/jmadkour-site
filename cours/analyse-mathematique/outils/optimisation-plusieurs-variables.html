@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 4 — Optimisation à plusieurs variables — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .etiquette { display: inline-block; padding: 0.3em 0.8em; border-radius: 12px; font-size: 0.9em; color: white; }
+  .min { background: var(--ceco); } .max { background: var(--cex); } .selle { background: var(--cintu); } .douteux { background: #999; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 4 — Optimisation des fonctions de plusieurs variables</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse mathématique</p>
+
+<div class="panneau">
+  <h2>Classifier un point critique par la hessienne 2×2</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir la hessienne Hf(a) = [[f_xx, f_xy], [f_xy, f_yy]] au point critique.</p>
+  <div class="grille3">
+    <div><label for="fxx">f_xx</label><input id="fxx" value="6"></div>
+    <div><label for="fxy">f_xy</label><input id="fxy" value="-3"></div>
+    <div><label for="fyy">f_yy</label><input id="fyy" value="6"></div>
+  </div>
+  <button onclick="classifier()">Classer le point critique</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Lagrange à deux variables, une contrainte linéaire</h2>
+  <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Maximiser f(x,y) = a·x·y sous la contrainte x + y = S (formes classiques type Cobb-Douglas/budget).</p>
+  <div class="grille3">
+    <div><label for="coefA">a (dans f = a·x·y)</label><input id="coefA" value="1"></div>
+    <div><label for="sommeS">S (x+y=S)</label><input id="sommeS" value="10"></div>
+    <div></div>
+  </div>
+  <button onclick="resoudreLagrange()">Résoudre</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Le premier outil applique le test des mineurs principaux $D_1=f_{xx}$, $D_2=f_{xx}f_{yy}-f_{xy}^2$ du chapitre 4. Le second résout par substitution le problème classique « maximiser un produit à somme fixée », dont la solution est toujours $x=y=S/2$ — un cas particulier utile à mémoriser (partage égal optimal sous une contrainte de somme et un objectif symétrique).</p>
+
+<script>
+function classifier() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const fxx = parseFloat(document.getElementById('fxx').value);
+    const fxy = parseFloat(document.getElementById('fxy').value);
+    const fyy = parseFloat(document.getElementById('fyy').value);
+    if ([fxx,fxy,fyy].some(isNaN)) throw new Error('Les trois valeurs doivent être numériques.');
+    const D1 = fxx, D2 = fxx*fyy - fxy*fxy;
+
+    const p1 = document.createElement('p');
+    p1.innerHTML = `<strong>D₁ = ${D1}</strong>, <strong>D₂ = ${D2}</strong>`;
+    resDiv.appendChild(p1);
+
+    let statut, classe;
+    if (D1 > 0 && D2 > 0) { statut = 'Minimum local'; classe = 'min'; }
+    else if (D1 < 0 && D2 > 0) { statut = 'Maximum local'; classe = 'max'; }
+    else if (D2 < 0) { statut = 'Point-selle'; classe = 'selle'; }
+    else { statut = 'Cas douteux (D₂ = 0) : la hessienne ne permet pas de conclure'; classe = 'douteux'; }
+
+    const p2 = document.createElement('p');
+    p2.innerHTML = `<span class="etiquette ${classe}">${statut}</span>`;
+    resDiv.appendChild(p2);
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function resoudreLagrange() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const a = parseFloat(document.getElementById('coefA').value);
+    const S = parseFloat(document.getElementById('sommeS').value);
+    if (isNaN(a) || isNaN(S)) throw new Error('a et S doivent être numériques.');
+    const x = S/2, y = S/2;
+    const lambda = a*x; // dérivée de a*x*y par rapport à x, évaluée à y=x=S/2, donne a*y = a*S/2 = lambda
+    const fMax = a*x*y;
+
+    resDiv.innerHTML = `
+      <p><strong>Lagrangien :</strong> L = ${a}xy − λ(x+y−${S})</p>
+      <p><strong>CPO :</strong> ${a}y = λ, ${a}x = λ ⟹ x = y</p>
+      <p><strong>Avec la contrainte :</strong> x* = y* = ${x}</p>
+      <p><strong>λ* = ${lambda}</strong></p>
+      <p><strong>Valeur maximale :</strong> f(x*,y*) = ${fMax}</p>
+      <p style="font-size:0.85em;color:var(--cgris);">Hessienne partielle H_L = [[0, ${a}], [${a}, 0]] : D₂ = −${a*a} &lt; 0, indéfinie — la conclusion ci-dessus repose sur la substitution (x=S−y réduit à une variable concave), pas sur ce test, exactement comme dans l'exercice 3 du chapitre.</p>
+    `;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = function() { classifier(); resoudreLagrange(); };
+</script>
+</body>
+</html>

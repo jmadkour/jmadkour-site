@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 21 — Mise en œuvre sur R et Python — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  .panneau.couv { border-left-color: var(--cex); } .panneau.couv h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { resize: vertical; min-height: 2.6em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .panneau.couv button { background: var(--cex); } .panneau.couv button:hover { background: #1f6b45; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .non-ok { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 21 — Mise en œuvre sur R et Python</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>pandas (n-1) contre numpy (n) : mesurer le piège</h2>
+  <label for="donnees">valeurs (séparées par des virgules)</label>
+  <textarea id="donnees">12,15,14,18,11,16,13,17,15,14</textarea>
+  <button onclick="calculerDdof()">Comparer les deux conventions</button>
+  <div id="erreurD" class="erreur"></div>
+  <div id="resultatD" class="resultat-zone"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Test de proportion : avec ou sans correction de continuité</h2>
+  <div class="grille3">
+    <div><label for="kProp">succès k</label><input id="kProp" value="13"></div>
+    <div><label for="nProp">taille n</label><input id="nProp" value="50"></div>
+    <div><label for="p0Prop">proportion testée p₀</label><input id="p0Prop" value="0.15"></div>
+  </div>
+  <button onclick="calculerProportion()">Comparer les deux versions</button>
+  <div id="erreurP" class="erreur"></div>
+  <div id="resultatP" class="resultat-zone"></div>
+</div>
+
+<div class="panneau couv">
+  <h2>Le taux de couverture d'une simulation est-il conforme au taux annoncé ?</h2>
+  <div class="grille3">
+    <div><label for="nSim">nombre de simulations n</label><input id="nSim" value="10000"></div>
+    <div><label for="p0Sim">taux annoncé p₀</label><input id="p0Sim" value="0.95"></div>
+    <div><label for="pObsSim">taux observé</label><input id="pObsSim" value="0.9503"></div>
+  </div>
+  <button onclick="calculerCouverture()">Tester la conformité</button>
+  <div id="erreurC" class="erreur"></div>
+  <div id="resultatC" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : <code>pandas.std()</code> divise par $n-1$, <code>numpy.std()</code> par $n$ (par défaut) — un écart d'environ $5\,\%$ sur $n=10$, invisible sur $n=500$. <code>prop.test(correct=FALSE)</code> retrouve $z^2$ calculé à la main ; par défaut R applique une correction de continuité. Le taux de couverture d'une simulation d'intervalles de confiance est lui-même une proportion, avec sa propre erreur-type $\sqrt{p_0(1-p_0)/n}$ — le message final du cours, appliqué à sa propre vérification.</p>
+
+<script>
+function erf(x){
+  const sign = x>=0?1:-1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z){ return 0.5*(1+erf(z/Math.sqrt(2))); }
+
+function logGamma(x){
+  const cof=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let y=x, tmp=x+5.5; tmp-=(x+0.5)*Math.log(tmp);
+  let ser=1.000000000190015;
+  for(let j=0;j<6;j++){ y+=1; ser+=cof[j]/y; }
+  return -tmp+Math.log(2.5066282746310005*ser/x);
+}
+function gser(a,x){ const ITMAX=200, EPS=3e-9; const gln=logGamma(a); if(x<=0) return 0; let ap=a, sum=1/a, del=sum; for(let n=1;n<=ITMAX;n++){ ap+=1; del*=x/ap; sum+=del; if(Math.abs(del)<Math.abs(sum)*EPS) break; } return sum*Math.exp(-x+a*Math.log(x)-gln); }
+function gcf(a,x){ const ITMAX=200, EPS=3e-9, FPMIN=1e-30; const gln=logGamma(a); let b=x+1-a,c=1/FPMIN,d=1/b,h=d; for(let i=1;i<=ITMAX;i++){ const an=-i*(i-a); b+=2; d=an*d+b; if(Math.abs(d)<FPMIN) d=FPMIN; c=b+an/c; if(Math.abs(c)<FPMIN) c=FPMIN; d=1/d; const del=d*c; h*=del; if(Math.abs(del-1)<EPS) break; } return Math.exp(-x+a*Math.log(x)-gln)*h; }
+function gammp(a,x){ if(x<a+1) return gser(a,x); else return 1-gcf(a,x); }
+function chi2cdf(x,df){ return gammp(df/2,x/2); }
+
+function calculerDdof(){
+  const erreurDiv=document.getElementById('erreurD'); const resDiv=document.getElementById('resultatD');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const data=document.getElementById('donnees').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    if(data.length<2) throw new Error('Il faut au moins 2 valeurs.');
+    const n=data.length;
+    const mean=data.reduce((a,b)=>a+b,0)/n;
+    const ss=data.reduce((a,x)=>a+(x-mean)**2,0);
+    const sN1=Math.sqrt(ss/(n-1));
+    const sN=Math.sqrt(ss/n);
+    const diffPct=(sN1-sN)/sN1*100;
+    resDiv.innerHTML=`<table><tr><th>n</th><th>moyenne</th><th>Σ(xᵢ-x̄)²</th></tr>
+      <tr><td>${n}</td><td>${mean.toFixed(4)}</td><td>${ss.toFixed(4)}</td></tr></table>
+      <table><tr><th>convention</th><th>dénominateur</th><th>écart-type</th></tr>
+      <tr><td>pandas.std()</td><td>n-1=${n-1}</td><td>${sN1.toFixed(4)}</td></tr>
+      <tr><td>numpy.std()</td><td>n=${n}</td><td>${sN.toFixed(4)}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Écart relatif : ${diffPct.toFixed(2)}%. Cet écart tend vers 0 quand n augmente.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerProportion(){
+  const erreurDiv=document.getElementById('erreurP'); const resDiv=document.getElementById('resultatP');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const k=parseFloat(document.getElementById('kProp').value);
+    const n=parseFloat(document.getElementById('nProp').value);
+    const p0=parseFloat(document.getElementById('p0Prop').value);
+    if([k,n,p0].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(p0<=0||p0>=1) throw new Error('p₀ doit être strictement compris entre 0 et 1.');
+    if(n<1||k<0||k>n) throw new Error('k doit être compris entre 0 et n.');
+    const f=k/n;
+    const se=Math.sqrt(p0*(1-p0)/n);
+    const z=(f-p0)/se;
+    const chi2NonCorr=z*z;
+    const e=n*p0, ne=n-e;
+    const chi2Corr=Math.pow(Math.abs(k-e)-0.5,2)/e + Math.pow(Math.abs((n-k)-ne)-0.5,2)/ne;
+    const seuil=3.841;
+    const pNonCorr=1-chi2cdf(chi2NonCorr,1);
+    const pCorr=1-chi2cdf(Math.max(chi2Corr,0),1);
+    const rejetNonCorr=chi2NonCorr>seuil, rejetCorr=chi2Corr>seuil;
+    resDiv.innerHTML=`<table><tr><th>version</th><th>statistique</th><th>seuil (5%, ddl=1)</th><th>p-value</th><th>conclusion</th></tr>
+      <tr><td>sans correction (z²)</td><td>${chi2NonCorr.toFixed(3)}</td><td>3.841</td><td>${pNonCorr.toFixed(4)}</td><td class="${rejetNonCorr?'non-ok':'ok'}">${rejetNonCorr?'rejet':'non-rejet'}</td></tr>
+      <tr><td>avec correction de continuité</td><td>${chi2Corr.toFixed(3)}</td><td>3.841</td><td>${pCorr.toFixed(4)}</td><td class="${rejetCorr?'non-ok':'ok'}">${rejetCorr?'rejet':'non-rejet'}</td></tr></table>
+      ${rejetNonCorr!==rejetCorr?'<p class="erreur" style="margin-top:0.4em;">Attention : les deux versions mènent ici à des conclusions différentes !</p>':'<p style="font-size:0.85em;color:var(--cgris);">Les deux versions mènent ici à la même conclusion, mais toujours préciser laquelle est utilisée.</p>'}`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerCouverture(){
+  const erreurDiv=document.getElementById('erreurC'); const resDiv=document.getElementById('resultatC');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('nSim').value);
+    const p0=parseFloat(document.getElementById('p0Sim').value);
+    const pobs=parseFloat(document.getElementById('pObsSim').value);
+    if([n,p0,pobs].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(p0<=0||p0>=1) throw new Error('p₀ doit être strictement compris entre 0 et 1.');
+    if(n<10) throw new Error('n doit être ≥10.');
+    const se=Math.sqrt(p0*(1-p0)/n);
+    const ciLow=p0-1.96*se, ciHigh=p0+1.96*se;
+    const z=(pobs-p0)/se;
+    const compatible=pobs>=ciLow && pobs<=ciHigh;
+    resDiv.innerHTML=`<table><tr><th>erreur-type de p̂</th><th>IC 95% de p₀</th><th>z</th><th>conclusion</th></tr>
+      <tr><td>${se.toFixed(5)}</td><td>[${ciLow.toFixed(4)} ; ${ciHigh.toFixed(4)}]</td><td>${z.toFixed(3)}</td><td class="${compatible?'ok':'non-ok'}">${compatible?'taux observé compatible avec p₀':'taux observé incompatible avec p₀'}</td></tr></table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerDdof(); calculerProportion(); calculerCouverture(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Corrélation et droite d'ajustement — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  svg { margin-top: 0.8em; width: 100%; max-width: 460px; height: auto; display:block; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — Corrélation et droite d'ajustement</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique descriptive</p>
+
+<div class="panneau">
+  <h2>Corrélation, droite des moindres carrés et prédiction</h2>
+  <label for="nuageInput">une ligne par individu : x,y</label>
+  <textarea id="nuageInput" rows="6">10,50
+12,45
+15,38
+8,60
+20,30</textarea>
+  <label for="xPred">valeur de x pour la prédiction</label>
+  <input id="xPred" value="25">
+  <button onclick="calculerRegression()">Calculer r, r², la droite d'ajustement et prédire ŷ</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <div id="svgZone"></div>
+</div>
+
+<p class="avertissement">Rappels : $r=\mathrm{cov}(x,y)/(\sigma_x\sigma_y)\in[-1,1]$ ; $\hat b=\mathrm{cov}(x,y)/V(x)$, $\hat a=\bar y-\hat b\bar x$ ; $r^2$ = part de variance de $y$ expliquée linéairement par $x$. La droite passe toujours par le point moyen. Prédire en dehors de l'intervalle des $x$ observés est une extrapolation, à interpréter avec prudence. Corrélation n'est jamais causalité : toujours envisager une troisième variable, un sens de causalité inverse, ou une coïncidence — et toujours regarder le nuage (quartet d'Anscombe).</p>
+
+<script>
+function calculerRegression(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1'); const svgZone=document.getElementById('svgZone');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; svgZone.innerHTML='';
+  try{
+    const lignes=document.getElementById('nuageInput').value.trim().split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    const pts=lignes.map(l=>{
+      const p=l.split(',').map(s=>parseFloat(s.trim()));
+      if(p.length!==2||p.some(isNaN)) throw new Error('Chaque ligne doit contenir 2 nombres : x,y.');
+      return p;
+    });
+    if(pts.length<3) throw new Error('Il faut au moins 3 points.');
+    const x=pts.map(p=>p[0]), y=pts.map(p=>p[1]);
+    const n=x.length;
+    const mx=x.reduce((a,b)=>a+b,0)/n, my=y.reduce((a,b)=>a+b,0)/n;
+    const mxy=x.reduce((s,v,i)=>s+v*y[i],0)/n;
+    const cov=mxy-mx*my;
+    const Vx=x.reduce((s,v)=>s+Math.pow(v-mx,2),0)/n;
+    const Vy=y.reduce((s,v)=>s+Math.pow(v-my,2),0)/n;
+    const r=cov/Math.sqrt(Vx*Vy);
+    const r2=r*r;
+    const b=cov/Vx, a=my-b*mx;
+    const xPred=parseFloat(document.getElementById('xPred').value);
+    if(isNaN(xPred)) throw new Error('La valeur de x pour la prédiction doit être un nombre.');
+    const yPred=a+b*xPred;
+    const xMinObs=Math.min(...x), xMaxObs=Math.max(...x);
+    const extrap = (xPred<xMinObs || xPred>xMaxObs);
+    let intensite='négligeable';
+    const ar=Math.abs(r);
+    if(ar>=0.8) intensite='très forte'; else if(ar>=0.6) intensite='forte'; else if(ar>=0.4) intensite='modérée'; else if(ar>=0.2) intensite='faible';
+    resDiv.innerHTML=`<table><tr><th>n</th><th>x̄</th><th>ȳ</th><th>cov(x,y)</th><th>r</th><th>r²</th></tr>
+      <tr><td>${n}</td><td>${mx.toFixed(3)}</td><td>${my.toFixed(3)}</td><td>${cov.toFixed(3)}</td><td><strong>${r.toFixed(4)}</strong></td><td>${r2.toFixed(4)}</td></tr></table>
+      <table><tr><th>â</th><th>b̂</th><th>droite</th></tr><tr><td>${a.toFixed(3)}</td><td>${b.toFixed(4)}</td><td>ŷ = ${a.toFixed(2)} + ${b.toFixed(4)}·x</td></tr></table>
+      <table><tr><th>x prédiction</th><th>ŷ prédit</th><th>type</th></tr><tr><td>${xPred}</td><td>${yPred.toFixed(3)}</td><td>${extrap ? 'extrapolation (hors du domaine observé, prudence)' : 'interpolation'}</td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">Liaison linéaire ${intensite} (|r|=${ar.toFixed(3)}). ${(r2*100).toFixed(1)}% de la variance de y est expliquée linéairement par x. Rappel : corrélation n'implique pas causalité.</p>`;
+    // SVG scatter + fitted line
+    const size=380, margin=36;
+    const padX=(xMaxObs-xMinObs)*0.1||1;
+    const yMinObs=Math.min(...y), yMaxObs=Math.max(...y);
+    const padY=(yMaxObs-yMinObs)*0.1||1;
+    const dxMin=Math.min(xMinObs,xPred)-padX, dxMax=Math.max(xMaxObs,xPred)+padX;
+    const dyMin=Math.min(yMinObs,yPred)-padY, dyMax=Math.max(yMaxObs,yPred)+padY;
+    const sx=v=>margin+(v-dxMin)/(dxMax-dxMin)*(size-2*margin);
+    const sy=v=>size-margin-(v-dyMin)/(dyMax-dyMin)*(size-2*margin);
+    let svg=`<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="9">`;
+    svg+=`<line x1="${margin}" y1="${size-margin}" x2="${size-margin}" y2="${size-margin}" stroke="#999"/>`;
+    svg+=`<line x1="${margin}" y1="${size-margin}" x2="${margin}" y2="${margin}" stroke="#999"/>`;
+    svg+=`<line x1="${sx(dxMin)}" y1="${sy(a+b*dxMin)}" x2="${sx(dxMax)}" y2="${sy(a+b*dxMax)}" stroke="#B56600" stroke-width="1.5"/>`;
+    pts.forEach(p=>{ svg+=`<circle cx="${sx(p[0])}" cy="${sy(p[1])}" r="3" fill="#1F6FB2"/>`; });
+    svg+=`<circle cx="${sx(xPred)}" cy="${sy(yPred)}" r="3.5" fill="none" stroke="#1F6FB2" stroke-width="2"/>`;
+    svg+=`<circle cx="${sx(mx)}" cy="${sy(my)}" r="3" fill="#1D9E75"/><text x="${sx(mx)+5}" y="${sy(my)-5}" fill="#1D9E75">G</text>`;
+    svg+=`</svg>`;
+    svgZone.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerRegression(); };
+</script>
+</body>
+</html>

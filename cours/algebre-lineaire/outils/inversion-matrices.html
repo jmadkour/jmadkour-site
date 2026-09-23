@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 3 — Inversion de matrices — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; resize: vertical; height: 4em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .matrice-visuelle { display: inline-grid; gap: 2px; margin: 0.6em 0; }
+  .cellule { display: flex; align-items: center; justify-content: center; min-width: 52px; min-height: 34px; border-radius: 3px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.88em; font-weight: bold; color: white; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 3 — Inversion de matrices carrées</h1>
+<p class="sous-titre">Calculatrice interactive — Algèbre linéaire</p>
+
+<div class="panneau">
+  <h2>Inverse d'une matrice 2×2</h2>
+  <label for="matA">Matrice A (2×2 ; lignes séparées par ; , valeurs par des virgules)</label>
+  <textarea id="matA">3,2;1,1</textarea>
+  <button onclick="calculerInverse()">Calculer A⁻¹</button>
+  <div id="erreurInv" class="erreur"></div>
+  <div id="resultatInv" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Modèle de Leontief : $X=(I-A)^{-1}D$</h2>
+  <p class="legende" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:0.85em;color:var(--cgris);">Saisir la matrice des coefficients techniques A (2×2) et le vecteur de demande finale D.</p>
+  <label for="matTech">Matrice A des coefficients techniques</label>
+  <textarea id="matTech">0.2,0.3;0.4,0.1</textarea>
+  <label for="vecD">Demande finale D</label>
+  <textarea id="vecD" style="height:2.2em;">100,50</textarea>
+  <button onclick="calculerLeontief()">Calculer la production totale</button>
+  <div id="erreurLeo" class="erreur"></div>
+  <div id="resultatLeo" class="resultat-zone"></div>
+  <canvas id="graphiqueLeo" height="200"></canvas>
+</div>
+
+<p class="avertissement">Outil pédagogique : limité aux matrices 2×2 (formule explicite du chapitre 3). Un déterminant nul signale une matrice singulière — le modèle de Leontief n'a alors pas de solution unique.</p>
+
+<script>
+let chartLeo = null;
+function parseMatrice(texte) {
+  return texte.trim().split(';').map(ligne => ligne.trim().split(',').map(v => { const n = parseFloat(v.trim()); if (isNaN(n)) throw new Error('valeur non numérique : "' + v.trim() + '"'); return n; }));
+}
+function parseVecteur(texte) {
+  return texte.trim().split(',').map(v => { const n = parseFloat(v.trim()); if (isNaN(n)) throw new Error('valeur non numérique : "' + v.trim() + '"'); return n; });
+}
+function inverse2x2(M) {
+  const det = M[0][0]*M[1][1] - M[0][1]*M[1][0];
+  if (Math.abs(det) < 1e-12) return null;
+  return { det, inv: [[M[1][1]/det, -M[0][1]/det], [-M[1][0]/det, M[0][0]/det]] };
+}
+function afficherMatrice(M, cont) {
+  const div = document.createElement('div');
+  div.className = 'matrice-visuelle';
+  div.style.gridTemplateColumns = `repeat(${M[0].length}, auto)`;
+  M.forEach(row => row.forEach(v => {
+    const cell = document.createElement('div');
+    cell.className = 'cellule';
+    cell.style.background = 'var(--ceco)';
+    cell.textContent = Number.isInteger(v) ? v : v.toFixed(4);
+    div.appendChild(cell);
+  }));
+  cont.appendChild(div);
+}
+
+function calculerInverse() {
+  const erreurDiv = document.getElementById('erreurInv');
+  const resDiv = document.getElementById('resultatInv');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const A = parseMatrice(document.getElementById('matA').value);
+    if (A.length !== 2 || A[0].length !== 2 || A[1].length !== 2) throw new Error('Cet outil ne traite que les matrices 2×2 (formule explicite du chapitre 3).');
+    const r = inverse2x2(A);
+    const p = document.createElement('p');
+    p.innerHTML = `<strong>det A = ${r ? r.det.toFixed(4) : (A[0][0]*A[1][1]-A[0][1]*A[1][0]).toFixed(4)}</strong>`;
+    resDiv.appendChild(p);
+    if (!r) {
+      const p2 = document.createElement('p');
+      p2.innerHTML = 'Déterminant nul : <strong>A n\'est pas inversible</strong> (matrice singulière).';
+      resDiv.appendChild(p2);
+    } else {
+      const p2 = document.createElement('p');
+      p2.innerHTML = '<strong>A⁻¹ =</strong>';
+      resDiv.appendChild(p2);
+      afficherMatrice(r.inv, resDiv);
+      // vérification AA^-1
+      const AI = [[A[0][0]*r.inv[0][0]+A[0][1]*r.inv[1][0], A[0][0]*r.inv[0][1]+A[0][1]*r.inv[1][1]],
+                  [A[1][0]*r.inv[0][0]+A[1][1]*r.inv[1][0], A[1][0]*r.inv[0][1]+A[1][1]*r.inv[1][1]]];
+      const p3 = document.createElement('p');
+      p3.innerHTML = `Vérification A·A⁻¹ = [[${AI[0][0].toFixed(3)}, ${AI[0][1].toFixed(3)}], [${AI[1][0].toFixed(3)}, ${AI[1][1].toFixed(3)}]] ≈ I₂.`;
+      resDiv.appendChild(p3);
+    }
+  } catch (e) { erreurDiv.textContent = 'Erreur : ' + e.message; }
+}
+
+function calculerLeontief() {
+  const erreurDiv = document.getElementById('erreurLeo');
+  const resDiv = document.getElementById('resultatLeo');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const A = parseMatrice(document.getElementById('matTech').value);
+    const D = parseVecteur(document.getElementById('vecD').value);
+    if (A.length !== 2 || A[0].length !== 2) throw new Error('Cet outil traite un modèle de Leontief à 2 secteurs (matrice 2×2).');
+    if (D.length !== 2) throw new Error('Le vecteur D doit avoir 2 composantes.');
+    const IminusA = [[1-A[0][0], -A[0][1]], [-A[1][0], 1-A[1][1]]];
+    const r = inverse2x2(IminusA);
+    const p1 = document.createElement('p');
+    p1.innerHTML = `<strong>det(I−A) = ${r ? r.det.toFixed(4) : (IminusA[0][0]*IminusA[1][1]-IminusA[0][1]*IminusA[1][0]).toFixed(4)}</strong>`;
+    resDiv.appendChild(p1);
+    if (!r) {
+      const p2 = document.createElement('p');
+      p2.innerHTML = '<strong>I−A n\'est pas inversible</strong> : la production totale n\'est pas déterminée de façon unique pour cette structure de coefficients techniques.';
+      resDiv.appendChild(p2);
+      if (chartLeo) { chartLeo.destroy(); chartLeo = null; }
+      return;
+    }
+    const X = [r.inv[0][0]*D[0]+r.inv[0][1]*D[1], r.inv[1][0]*D[0]+r.inv[1][1]*D[1]];
+    const p2 = document.createElement('p');
+    p2.innerHTML = '<strong>Matrice de Leontief (I−A)⁻¹ =</strong>';
+    resDiv.appendChild(p2);
+    afficherMatrice(r.inv, resDiv);
+    const p3 = document.createElement('p');
+    p3.innerHTML = `<strong>Production totale X = (I−A)⁻¹D :</strong> secteur 1 = ${X[0].toFixed(2)}, secteur 2 = ${X[1].toFixed(2)}.`;
+    resDiv.appendChild(p3);
+
+    if (chartLeo) chartLeo.destroy();
+    const ctx = document.getElementById('graphiqueLeo').getContext('2d');
+    chartLeo = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: ['Secteur 1', 'Secteur 2'], datasets: [
+        { label: 'Demande finale D', data: D, backgroundColor: '#B56600' },
+        { label: 'Production totale X', data: X, backgroundColor: '#1F6FB2' }
+      ]},
+      options: { responsive: true, plugins: { title: { display: true, text: 'Demande finale vs. production totale' } } }
+    });
+  } catch (e) { erreurDiv.textContent = 'Erreur : ' + e.message; }
+}
+
+window.onload = function() { calculerInverse(); calculerLeontief(); };
+</script>
+</body>
+</html>

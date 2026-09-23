@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Quatre modèles classiques — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Quatre modèles classiques</h1>
+<p class="sous-titre">Calculatrice interactive — Analyse dynamique</p>
+
+<div class="panneau">
+  <h2>Toile d'araignée : $p_t=\dfrac{a-c}{b}-\dfrac{d}{b}p_{t-1}$</h2>
+  <div class="grille4">
+    <div><label for="ta">a</label><input id="ta" value="20"></div>
+    <div><label for="tb">b</label><input id="tb" value="2"></div>
+    <div><label for="tc">c</label><input id="tc" value="-2"></div>
+    <div><label for="td">d</label><input id="td" value="0.8"></div>
+  </div>
+  <div class="grille3">
+    <div><label for="tp0">p₀</label><input id="tp0" value="5"></div>
+    <div><label for="tn">Périodes</label><input id="tn" value="10"></div>
+    <div></div>
+  </div>
+  <button onclick="calculerToile()">Calculer</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueToile" height="240"></canvas>
+</div>
+
+<div class="panneau">
+  <h2>Modèle de Solow : $\dot k=sk^\alpha-(n+\delta)k$</h2>
+  <div class="grille3">
+    <div><label for="sSolow">s (épargne)</label><input id="sSolow" value="0.3"></div>
+    <div><label for="ndSolow">n+δ</label><input id="ndSolow" value="0.1"></div>
+    <div><label for="alphaSolow">α</label><input id="alphaSolow" value="0.5"></div>
+  </div>
+  <button onclick="calculerSolow()">Calculer l'état stationnaire et la demi-vie</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <canvas id="graphiqueSolow" height="240"></canvas>
+</div>
+
+<p class="avertissement">Toile d'araignée stable ssi $d<b$. Solow : $k^\star=(s/(n+\delta))^{1/(1-\alpha)}$, $g'(k^\star)=(\alpha-1)(n+\delta)$, toujours stable pour $0<\alpha<1$.</p>
+
+<script>
+let chartToile = null, chartSolow = null;
+
+function calculerToile() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const a = parseFloat(document.getElementById('ta').value);
+    const b = parseFloat(document.getElementById('tb').value);
+    const c = parseFloat(document.getElementById('tc').value);
+    const d = parseFloat(document.getElementById('td').value);
+    const p0 = parseFloat(document.getElementById('tp0').value);
+    const n = parseInt(document.getElementById('tn').value);
+    if ([a,b,c,d,p0,n].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if (b===0) throw new Error('b ne peut pas être nul.');
+
+    const A = -d/b, B = (a-c)/b;
+    const pstar = B/(1-A);
+    const stable = d < b;
+    const pts = [p0];
+    let p = p0;
+    for (let t=0;t<n;t++){ p = A*p+B; pts.push(p); }
+
+    resDiv.innerHTML = `
+      <p><strong>p_t = ${A.toFixed(4)}×p_{t-1} + ${B.toFixed(4)}</strong></p>
+      <p><strong>Prix d'équilibre :</strong> p* = ${pstar.toFixed(4)}</p>
+      <p><strong>Condition d &lt; b :</strong> ${d} ${stable?'<':'≥'} ${b} → ${stable?'stable':'instable'}</p>
+    `;
+
+    if (chartToile) chartToile.destroy();
+    const ctx = document.getElementById('graphiqueToile').getContext('2d');
+    chartToile = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [
+        { label: 'p_t', data: pts.map((v,i)=>({x:i,y:v})), borderColor: '#1F6FB2', backgroundColor: 'transparent', pointRadius: 3 },
+        { label: 'p*', data: [{x:0,y:pstar},{x:n,y:pstar}], borderColor: '#5A5A5A', borderDash: [6,4], pointRadius: 0 }
+      ]},
+      options: { responsive: true, scales: { x: { title: { display: true, text: 't' } }, y: { title: { display: true, text: 'p_t' } } },
+        plugins: { title: { display: true, text: 'Trajectoire du prix' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerSolow() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const s = parseFloat(document.getElementById('sSolow').value);
+    const nd = parseFloat(document.getElementById('ndSolow').value);
+    const alpha = parseFloat(document.getElementById('alphaSolow').value);
+    if ([s,nd,alpha].some(isNaN)) throw new Error('Toutes les valeurs doivent être numériques.');
+    if (alpha<=0 || alpha>=1) throw new Error('α doit être strictement compris entre 0 et 1.');
+
+    const kstar = Math.pow(s/nd, 1/(1-alpha));
+    const ystar = Math.pow(kstar, alpha);
+    const gprime = (alpha-1)*nd;
+    const demiVie = Math.log(0.5)/gprime;
+
+    resDiv.innerHTML = `
+      <p><strong>k* = ${kstar.toFixed(4)}, y* = ${ystar.toFixed(4)}</strong></p>
+      <p><strong>g'(k*) = ${gprime.toFixed(4)}</strong> (toujours stable pour 0<α<1)</p>
+      <p><strong>Demi-vie ≈ ${demiVie.toFixed(4)}</strong> unités de temps</p>
+    `;
+
+    const n=60, k0=kstar*0.2, pts=[];
+    for (let i=0;i<=n;i++){
+      const t=i*(5*demiVie)/n;
+      pts.push({x:t, y: kstar+(k0-kstar)*Math.exp(gprime*t)});
+    }
+
+    if (chartSolow) chartSolow.destroy();
+    const ctx = document.getElementById('graphiqueSolow').getContext('2d');
+    chartSolow = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [
+        { label: 'k(t) [approximation linéarisée près de k*]', data: pts, borderColor: '#1D9E75', backgroundColor: 'transparent', pointRadius: 0 },
+        { label: 'k*', data: [{x:0,y:kstar},{x:pts[pts.length-1].x,y:kstar}], borderColor: '#5A5A5A', borderDash: [6,4], pointRadius: 0 }
+      ]},
+      options: { responsive: true, scales: { x: { type: 'linear', title: { display: true, text: 't' } }, y: { title: { display: true, text: 'k(t)' } } },
+        plugins: { title: { display: true, text: 'Convergence linéarisée vers k*' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = function(){ calculerToile(); calculerSolow(); };
+</script>
+</body>
+</html>

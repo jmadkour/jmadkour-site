@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — Stocks et files d'attente — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1100px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-end; }
+  .ligne > div { flex: 1; min-width: 160px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .optimum { background: #eef0fb; color: var(--cdef); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .non { color: #b00020; font-weight: bold; }
+  h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.95em; color: var(--cdef); margin: 1em 0 0.2em; }
+  svg { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.6em; }
+  .valeur { font-size: 1.1em; padding: 0.5em 0.8em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin-top: 0.4em; margin-right: 0.6em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — Gestion des stocks et files d'attente</h1>
+<p class="sous-titre">Calculatrice interactive — Recherche opérationnelle</p>
+
+<div class="panneau">
+  <h2>Formule de Wilson (quantité économique de commande)</h2>
+  <div class="ligne">
+    <div><label for="dIn">Demande annuelle $D$</label><input type="number" id="dIn" value="10000"></div>
+    <div><label for="clIn">Coût de lancement $C_\ell$ (DH/commande)</label><input type="number" id="clIn" value="200"></div>
+    <div><label for="cpIn">Coût de possession $C_p$ (DH/unité/an)</label><input type="number" id="cpIn" value="4"></div>
+  </div>
+  <button onclick="calculerWilson()">Calculer $Q^*$</button>
+  <div id="erreurW" class="erreur"></div>
+  <div id="resultatW" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>File d'attente M/M/1</h2>
+  <div class="ligne">
+    <div><label for="lambdaIn">Taux d'arrivée $\lambda$ (clients/heure)</label><input type="number" id="lambdaIn" value="8"></div>
+    <div><label for="muIn">Taux de service $\mu$ (clients/heure)</label><input type="number" id="muIn" value="10"></div>
+  </div>
+  <button onclick="calculerMM1()">Calculer</button>
+  <div id="erreurQ" class="erreur"></div>
+  <div id="resultatQ" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $Q^*=\sqrt{2DC_\ell/C_p}$ égalise le coût de lancement $\frac{D}{Q}C_\ell$ et le coût de possession $\frac{Q}{2}C_p$. Pour une file M/M/1 : $\rho=\lambda/\mu$ (stable si $\rho<1$), $L=\rho/(1-\rho)$, $L_q=\rho^2/(1-\rho)$, $W=1/(\mu-\lambda)$, $W_q=\rho/(\mu-\lambda)$, et la loi de Little $L=\lambda W$ vaut toujours, quelle que soit la loi des arrivées ou des services, pourvu que la file soit stable.</p>
+
+<script>
+function calculerWilson(){
+  const erreurDiv = document.getElementById('erreurW');
+  const resDiv = document.getElementById('resultatW');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const D = parseFloat(document.getElementById('dIn').value);
+    const Cl = parseFloat(document.getElementById('clIn').value);
+    const Cp = parseFloat(document.getElementById('cpIn').value);
+    if([D,Cl,Cp].some(v=>isNaN(v)) || D<=0 || Cl<=0 || Cp<=0) throw new Error('D, C_ℓ et C_p doivent être des nombres strictement positifs.');
+
+    const Qstar = Math.sqrt(2*D*Cl/Cp);
+    const lancement = D/Qstar*Cl;
+    const possession = Qstar/2*Cp;
+    const total = lancement + possession;
+    const nbCommandes = D/Qstar;
+    const joursEntre = 365/nbCommandes;
+
+    let out = '';
+    out += `<div class="valeur">Q* = ${Qstar.toFixed(2)}</div><div class="valeur">Coût total minimal = ${total.toFixed(2)} DH/an</div>`;
+    out += `<h3>Détail</h3>`;
+    out += `<table><tr><th>Lancement (D/Q·Cℓ)</th><th>Possession (Q/2·Cp)</th><th>Total</th><th>Nb commandes/an</th><th>Jours entre 2 commandes</th></tr>`;
+    out += `<tr><td>${lancement.toFixed(2)}</td><td>${possession.toFixed(2)}</td><td>${total.toFixed(2)}</td><td>${nbCommandes.toFixed(2)}</td><td>${joursEntre.toFixed(1)}</td></tr></table>`;
+
+    out += `<h3>Sensibilité autour de Q*</h3>`;
+    out += `<table><tr><th>Q</th><th>Écart à Q*</th><th>Lancement</th><th>Possession</th><th>Total</th><th>Écart de coût</th></tr>`;
+    [0.6, 0.8, 1.0, 1.2, 1.4].forEach(f=>{
+      const Q = Qstar*f;
+      const lc = D/Q*Cl, ps = Q/2*Cp, tot = lc+ps;
+      const ecartCout = (tot-total)/total*100;
+      const cls = Math.abs(f-1)<1e-9 ? 'optimum' : '';
+      out += `<tr class="${cls}"><td>${Q.toFixed(1)}</td><td>${((f-1)*100).toFixed(0)}%</td><td>${lc.toFixed(1)}</td><td>${ps.toFixed(1)}</td><td>${tot.toFixed(1)}</td><td>${ecartCout>=0?'+':''}${ecartCout.toFixed(2)}%</td></tr>`;
+    });
+    out += `</table>`;
+    out += `<p class="aide">Remarquer combien l'écart de coût reste faible même pour des écarts de quantité importants : c'est la platitude de la formule de Wilson autour de son minimum.</p>`;
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerMM1(){
+  const erreurDiv = document.getElementById('erreurQ');
+  const resDiv = document.getElementById('resultatQ');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try{
+    const lambda = parseFloat(document.getElementById('lambdaIn').value);
+    const mu = parseFloat(document.getElementById('muIn').value);
+    if([lambda,mu].some(v=>isNaN(v)) || lambda<=0 || mu<=0) throw new Error('λ et μ doivent être des nombres strictement positifs.');
+
+    const rho = lambda/mu;
+    let out = '';
+    if(rho >= 1){
+      out += `<p><span class="non">ρ = ${rho.toFixed(3)} ≥ 1 : la file est INSTABLE (elle diverge, l'attente croît sans limite). Augmenter μ ou réduire λ.</span></p>`;
+      resDiv.innerHTML = out;
+      return;
+    }
+    const L = rho/(1-rho);
+    const Lq = rho*rho/(1-rho);
+    const W = 1/(mu-lambda);
+    const Wq = rho/(mu-lambda);
+    const littleCheck = lambda*W;
+
+    out += `<p>ρ = λ/μ = ${rho.toFixed(4)} <span class="ok">(stable, ρ&lt;1)</span></p>`;
+    out += `<table><tr><th>L (système)</th><th>L_q (file)</th><th>W (système)</th><th>W_q (file)</th></tr>`;
+    out += `<tr><td>${L.toFixed(3)}</td><td>${Lq.toFixed(3)}</td><td>${W.toFixed(4)} h = ${(W*60).toFixed(1)} min</td><td>${Wq.toFixed(4)} h = ${(Wq*60).toFixed(1)} min</td></tr></table>`;
+    out += `<p>Vérification de la loi de Little : λW = ${lambda}×${W.toFixed(4)} = ${littleCheck.toFixed(3)} ${Math.abs(littleCheck-L)<1e-6?'<span class="ok">= L ✓</span>':'≠ L (erreur)'}</p>`;
+
+    out += `<h3>Sensibilité de l'attente au taux d'occupation</h3>`;
+    out += `<table><tr><th>ρ (en gardant μ fixe)</th><th>λ correspondant</th><th>L</th><th>W (min)</th></tr>`;
+    [0.5, 0.7, 0.8, 0.9, 0.95, 0.99].forEach(r=>{
+      const lam = r*mu;
+      const l = r/(1-r);
+      const w = 1/(mu-lam);
+      out += `<tr><td>${r.toFixed(2)}</td><td>${lam.toFixed(2)}</td><td>${l.toFixed(2)}</td><td>${(w*60).toFixed(1)}</td></tr>`;
+    });
+    out += `</table>`;
+    out += `<p class="aide">L'attente n'augmente pas proportionnellement à ρ : elle explose lorsque ρ s'approche de 1.</p>`;
+
+    resDiv.innerHTML = out;
+  }catch(e){
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { calculerWilson(); calculerMM1(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Centrer et réduire — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; resize: vertical; min-height: 2.6em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Rappels sur une variable : centrer et réduire</h1>
+<p class="sous-titre">Calculatrice interactive — Introduction à l'analyse des données</p>
+
+<div class="panneau">
+  <h2>Centrer et réduire une variable</h2>
+  <label for="valeurs">valeurs (séparées par des virgules)</label>
+  <textarea id="valeurs">8,10,12,14,16</textarea>
+  <button onclick="calculerCentrageReduction()">Calculer moyenne, variance, et z</button>
+  <div id="erreurC" class="erreur"></div>
+  <div id="resultatC" class="resultat-zone"></div>
+  <div id="grapheC"></div>
+</div>
+
+<p class="avertissement">Rappels : $\overline x=\frac{1}{n}\sum_ix_i$, $V(x)=\frac{1}{n}\sum_i(x_i-\overline x)^2$, $s_x=\sqrt{V(x)}$, $z_i=(x_i-\overline x)/s_x$. Toute variable centrée réduite a $\overline z=0$ et $V(z)=1$, quelles que soient ses valeurs de départ — c'est ce qui rend possible la comparaison de variables d'unités différentes.</p>
+
+<script>
+function calculerCentrageReduction(){
+  const erreurDiv=document.getElementById('erreurC'); const resDiv=document.getElementById('resultatC');
+  const grapheDiv=document.getElementById('grapheC');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const x=document.getElementById('valeurs').value.split(',').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+    if(x.length<2) throw new Error('Il faut au moins 2 valeurs.');
+    const n=x.length;
+    const xbar=x.reduce((a,b)=>a+b,0)/n;
+    const dev=x.map(v=>v-xbar);
+    const sumDev=dev.reduce((a,b)=>a+b,0);
+    const V=dev.reduce((a,d)=>a+d*d,0)/n;
+    if(V===0) throw new Error('Variance nulle : toutes les valeurs sont identiques, la réduction est impossible (division par zéro).');
+    const s=Math.sqrt(V);
+    const z=dev.map(d=>d/s);
+    const zbar=z.reduce((a,b)=>a+b,0)/n;
+    const Vz=z.reduce((a,v)=>a+v*v,0)/n;
+    let lignes='<tr><th>i</th><th>x</th><th>x-x̄</th><th>z=(x-x̄)/s</th></tr>';
+    x.forEach((v,i)=>{ lignes+=`<tr><td>${i+1}</td><td>${v}</td><td>${dev[i].toFixed(3)}</td><td>${z[i].toFixed(4)}</td></tr>`; });
+    resDiv.innerHTML=`<table><tr><th>n</th><th>x̄</th><th>somme des écarts</th><th>V(x)</th><th>s</th></tr>
+      <tr><td>${n}</td><td>${xbar.toFixed(4)}</td><td>${sumDev.toFixed(6)}</td><td>${V.toFixed(4)}</td><td>${s.toFixed(4)}</td></tr></table>
+      <table>${lignes}</table>
+      <p style="font-size:0.85em;color:var(--cgris);">Vérification : z̄ = ${zbar.toFixed(6)} (attendu 0), V(z) = ${Vz.toFixed(6)} (attendu 1).</p>`;
+    // graphe : positions sur une droite, avant (x) et apres (z), alignees verticalement
+    const w=480,h=200,pad=40;
+    const xMin=Math.min(...x), xMax=Math.max(...x);
+    const zMin=Math.min(...z), zMax=Math.max(...z);
+    const X1=(v)=>pad+((v-xMin)/((xMax-xMin)||1))*(w-2*pad);
+    const X2=(v)=>pad+((v-zMin)/((zMax-zMin)||1))*(w-2*pad);
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    svg+=`<line x1="${pad}" y1="60" x2="${w-pad}" y2="60" stroke="#5A5A5A"/>`;
+    svg+=`<text x="${pad-8}" y="64" font-size="9" fill="#5A5A5A" text-anchor="end">x</text>`;
+    x.forEach(v=>{ svg+=`<circle cx="${X1(v).toFixed(1)}" cy="60" r="4" fill="#1F6FB2"/>`; });
+    svg+=`<line x1="${pad}" y1="150" x2="${w-pad}" y2="150" stroke="#5A5A5A"/>`;
+    svg+=`<text x="${pad-8}" y="154" font-size="9" fill="#5A5A5A" text-anchor="end">z</text>`;
+    z.forEach(v=>{ svg+=`<circle cx="${X2(v).toFixed(1)}" cy="150" r="4" fill="#1D9E75"/>`; });
+    svg+=`<line x1="${(pad+(w-2*pad)*(0-zMin)/((zMax-zMin)||1)).toFixed(1)}" y1="140" x2="${(pad+(w-2*pad)*(0-zMin)/((zMax-zMin)||1)).toFixed(1)}" y2="160" stroke="#B56600" stroke-dasharray="3,2"/>`;
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerCentrageReduction(); };
+</script>
+</body>
+</html>

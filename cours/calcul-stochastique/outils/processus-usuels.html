@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Autres processus de la finance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 950px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--ceco); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--ceco); margin-top: 0; }
+  .panneau.cir { border-left-color: var(--cex); }
+  .panneau.cir h2 { color: var(--cex); }
+  .panneau.jump { border-left-color: var(--cintu); }
+  .panneau.jump h2 { color: var(--cintu); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.cir button { background: var(--cex); }
+  .panneau.cir button:hover { background: #226b43; }
+  .panneau.jump button { background: var(--cintu); }
+  .panneau.jump button:hover { background: #b56600; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.9em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  canvas { max-width: 100%; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Les autres processus de la finance</h1>
+<p class="sous-titre">Calculatrice interactive — Calcul stochastique pour la finance</p>
+
+<div class="panneau">
+  <h2>Ornstein-Uhlenbeck (Vasicek) : trajectoires et loi stationnaire</h2>
+  <div class="grille4">
+    <div><label for="theta">θ (vitesse de rappel)</label><input id="theta" value="0.4"></div>
+    <div><label for="xbar">x&#772; (niveau long terme)</label><input id="xbar" value="0.03"></div>
+    <div><label for="sigma">σ</label><input id="sigma" value="0.06"></div>
+    <div><label for="X0">X₀</label><input id="X0" value="0.05"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="tHoriz">horizon t</label><input id="tHoriz" value="5"></div>
+    <div><label for="nPas">pas de simulation</label><input id="nPas" value="200"></div>
+    <div><label for="nTraj">trajectoires affichées</label><input id="nTraj" value="8"></div>
+    <div></div>
+  </div>
+  <button onclick="simulerOU()">Simuler l'OU</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <canvas id="graphiqueOU" height="260"></canvas>
+</div>
+
+<div class="panneau cir">
+  <h2>Condition de Feller (processus CIR)</h2>
+  <div class="grille3">
+    <div><label for="thetaCIR">θ</label><input id="thetaCIR" value="0.5"></div>
+    <div><label for="xbarCIR">x&#772;</label><input id="xbarCIR" value="0.02"></div>
+    <div><label for="sigmaCIR">σ</label><input id="sigmaCIR" value="0.18"></div>
+  </div>
+  <button onclick="verifierFeller()">Vérifier la condition</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau jump">
+  <h2>Processus de Merton à sauts</h2>
+  <div class="grille3">
+    <div><label for="lambdaJ">λ (sauts/an)</label><input id="lambdaJ" value="2"></div>
+    <div><label for="Tj">fenêtre T (ans)</label><input id="Tj" value="0.5"></div>
+    <div><label for="Jm1">amplitude J-1</label><input id="Jm1" value="-0.15"></div>
+  </div>
+  <button onclick="calculerMerton()">Calculer la loi de Poisson</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+  <canvas id="graphiquePoisson" height="220"></canvas>
+</div>
+
+<p class="avertissement">Modifier θ dans le premier panneau change la vitesse à laquelle les trajectoires reviennent vers x&#772; ; augmenter σ dans le deuxième panneau au-delà du seuil de Feller signale qu'un CIR simulé pourrait toucher zéro.</p>
+
+<script>
+let chartOU = null, chartPoisson = null;
+
+function simulerOU() {
+  const erreurDiv = document.getElementById('erreur1');
+  const resDiv = document.getElementById('resultat1');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const theta = parseFloat(document.getElementById('theta').value);
+    const xbar = parseFloat(document.getElementById('xbar').value);
+    const sigma = parseFloat(document.getElementById('sigma').value);
+    const X0 = parseFloat(document.getElementById('X0').value);
+    const t = parseFloat(document.getElementById('tHoriz').value);
+    const nPas = parseInt(document.getElementById('nPas').value);
+    const nTraj = parseInt(document.getElementById('nTraj').value);
+    if ([theta,xbar,sigma,X0,t,nPas,nTraj].some(v=>isNaN(v)) || theta<=0 || t<=0 || nPas<10 || nTraj<1) {
+      throw new Error('Vérifier les valeurs saisies (theta>0, t>0, au moins 10 pas).');
+    }
+    const dt = t/nPas;
+    const labels = Array.from({length:nPas+1}, (_,i)=> (i*dt).toFixed(2));
+    const datasets = [];
+    const couleurs = ['#1F6FB2','#1D9E75','#B56600','#1F6FB2','#5A5A5A','#B02A5B','#0E8C8C','#8C5E1F'];
+    for (let tr=0; tr<nTraj; tr++) {
+      let x = X0;
+      const serie = [x];
+      for (let k=0;k<nPas;k++) {
+        const dW = Math.sqrt(dt)*(Math.random()<0.5?-1:1);
+        x = x + theta*(xbar-x)*dt + sigma*dW;
+        serie.push(x);
+      }
+      datasets.push({ label: 'trajectoire '+(tr+1), data: serie, borderColor: couleurs[tr%couleurs.length], backgroundColor:'transparent', borderWidth:1.3, pointRadius:0 });
+    }
+    // ligne du niveau moyen
+    datasets.push({ label: 'x&#772; (niveau long terme)', data: labels.map(()=>xbar), borderColor:'#000', borderDash:[4,4], borderWidth:1, pointRadius:0 });
+
+    if (chartOU) chartOU.destroy();
+    chartOU = new Chart(document.getElementById('graphiqueOU').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: { responsive: true, plugins: { legend: { display:false }, title: { display:true, text:'Trajectoires simulées d\'Ornstein-Uhlenbeck' } },
+        scales: { x: { title: { display:true, text:'temps' } }, y: { title: { display:true, text:'X_t' } } } }
+    });
+
+    const Emean = xbar+(X0-xbar)*Math.exp(-theta*t);
+    const Var = sigma*sigma/(2*theta)*(1-Math.exp(-2*theta*t));
+    const VarStat = sigma*sigma/(2*theta);
+    resDiv.innerHTML = `
+      <table><tr><th></th><th>théorique à t=${t}</th><th>stationnaire (t→∞)</th></tr>
+      <tr><td>Espérance</td><td>${Emean.toFixed(5)}</td><td>${xbar.toFixed(5)}</td></tr>
+      <tr><td>Variance</td><td>${Var.toFixed(7)}</td><td>${VarStat.toFixed(7)}</td></tr>
+      <tr><td>Écart-type</td><td>${Math.sqrt(Var).toFixed(5)}</td><td>${Math.sqrt(VarStat).toFixed(5)}</td></tr>
+      </table>`;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function verifierFeller() {
+  const erreurDiv = document.getElementById('erreur2');
+  const resDiv = document.getElementById('resultat2');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const theta = parseFloat(document.getElementById('thetaCIR').value);
+    const xbar = parseFloat(document.getElementById('xbarCIR').value);
+    const sigma = parseFloat(document.getElementById('sigmaCIR').value);
+    if ([theta,xbar,sigma].some(v=>isNaN(v)) || theta<=0 || xbar<0 || sigma<0) throw new Error('Vérifier les valeurs saisies (theta>0, xbar>=0, sigma>=0).');
+    const sigmaMax = Math.sqrt(2*theta*xbar);
+    const verifiee = sigma <= sigmaMax;
+    resDiv.innerHTML = `
+      <table><tr><th>2θx&#772;</th><th>σ²</th><th>σ_max = √(2θx&#772;)</th><th>condition de Feller</th></tr>
+      <tr><td>${(2*theta*xbar).toFixed(5)}</td><td>${(sigma*sigma).toFixed(5)}</td><td>${sigmaMax.toFixed(5)}</td>
+      <td style="color:${verifiee?'#1D9E75':'#b00020'};font-weight:bold;">${verifiee?'vérifiée — X reste > 0':'non vérifiée — X peut toucher 0'}</td></tr></table>`;
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+function calculerMerton() {
+  const erreurDiv = document.getElementById('erreur3');
+  const resDiv = document.getElementById('resultat3');
+  erreurDiv.textContent = ''; resDiv.innerHTML = '';
+  try {
+    const lambda = parseFloat(document.getElementById('lambdaJ').value);
+    const T = parseFloat(document.getElementById('Tj').value);
+    const Jm1 = parseFloat(document.getElementById('Jm1').value);
+    if ([lambda,T,Jm1].some(v=>isNaN(v)) || lambda<0 || T<=0) throw new Error('Vérifier les valeurs saisies (lambda>=0, T>0).');
+    const m = lambda*T;
+    function factorielle(k){ let r=1; for(let i=2;i<=k;i++) r*=i; return r; }
+    const nMax = 8;
+    const probas = [];
+    for (let k=0;k<=nMax;k++) probas.push(Math.exp(-m)*Math.pow(m,k)/factorielle(k));
+    const p0 = probas[0], p1plus = 1-p0;
+    const contribMoy = Jm1*m;
+
+    resDiv.innerHTML = `
+      <table><tr><th>E(sauts) = λT</th><th>P(N=0)</th><th>P(N≥1)</th><th>contribution moyenne (J-1)×λT</th></tr>
+      <tr><td>${m.toFixed(4)}</td><td>${p0.toFixed(4)}</td><td>${p1plus.toFixed(4)}</td><td>${(contribMoy*100).toFixed(2)} %</td></tr></table>`;
+
+    if (chartPoisson) chartPoisson.destroy();
+    chartPoisson = new Chart(document.getElementById('graphiquePoisson').getContext('2d'), {
+      type: 'bar',
+      data: { labels: probas.map((_,k)=>'k='+k), datasets: [{ label: 'P(N_T=k)', data: probas, backgroundColor: 'rgba(224,128,0,0.65)' }] },
+      options: { responsive: true, scales: { y: { title: { display:true, text:'probabilité' } } },
+        plugins: { title: { display:true, text:'Loi de Poisson du nombre de sauts sur la fenêtre T' } } }
+    });
+  } catch (e) {
+    erreurDiv.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.onload = () => { simulerOU(); verifierFeller(); calculerMerton(); };
+</script>
+</body>
+</html>

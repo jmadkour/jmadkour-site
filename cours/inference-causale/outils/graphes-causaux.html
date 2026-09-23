@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Graphes causaux — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  select, input[type=number] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 160px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .verdict-ok { color: var(--cex); font-weight: bold; }
+  .verdict-non { color: #b00020; font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Graphes causaux et variables à ne pas contrôler</h1>
+<p class="sous-titre">Calculatrice interactive — Inférence causale</p>
+
+<div class="panneau">
+  <h2>1. Classer un motif à trois variables</h2>
+  <p class="aide">Choisir la structure reliant $T$ (traitement), $Y$ (résultat) et la troisième variable.</p>
+  <div class="ligne">
+    <div>
+      <label for="motifSel">Structure</label>
+      <select id="motifSel">
+        <option value="chaine">Chaine : T -&gt; M -&gt; Y</option>
+        <option value="fourche">Fourche : T &lt;- X -&gt; Y</option>
+        <option value="collisionneur">Collisionneur : T -&gt; C &lt;- Y</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="classerMotif()">Analyser</button>
+  <div id="resultatMotif" class="resultat-zone"></div>
+  <svg id="svgMotif" width="360" height="160" viewBox="0 0 360 160"></svg>
+</div>
+
+<div class="panneau">
+  <h2>2. Biais de sélection dans un tableau 2x2</h2>
+  <p class="aide">Effectifs des quatre cellules (variables binaires $R$ et $N$, indépendantes en population), puis règle de sélection.</p>
+  <div class="ligne">
+    <div><label for="n11In">R=1, N=1</label><input type="number" id="n11In" value="100" min="0" step="1"></div>
+    <div><label for="n10In">R=1, N=0</label><input type="number" id="n10In" value="100" min="0" step="1"></div>
+    <div><label for="n01In">R=0, N=1</label><input type="number" id="n01In" value="100" min="0" step="1"></div>
+    <div><label for="n00In">R=0, N=0</label><input type="number" id="n00In" value="100" min="0" step="1"></div>
+  </div>
+  <label for="regleSel">Règle de sélection (conditionner sur)</label>
+  <select id="regleSel">
+    <option value="or">Sélectionné si R=1 OU N=1 (exclut R=0,N=0)</option>
+    <option value="and">Sélectionné si R=1 ET N=1 (garde seulement R=1,N=1)</option>
+    <option value="aucune">Aucune sélection (population complète)</option>
+  </select>
+  <button onclick="calculerSelection()">Calculer</button>
+  <div id="erreurSel" class="erreur"></div>
+  <div id="resultatSel" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : critère de la porte arrière — un ensemble $X$ identifie l'effet de $T$ sur $Y$ s'il bloque tous les chemins de porte arrière (commençant par une flèche entrant dans $T$) et ne contient aucun descendant de $T$ ; conditionner sur un collisionneur (ou l'un de ses descendants) ouvre un chemin fermé par défaut et crée une association artificielle.</p>
+
+<script>
+function classerMotif(){
+  const val=document.getElementById('motifSel').value;
+  const resDiv=document.getElementById('resultatMotif');
+  let out='';
+  if(val==='chaine'){
+    out='<p><strong>Chaine</strong> : la variable du milieu est un <strong>mediateur</strong>. Le traitement agit <em>a travers</em> elle. <span class="verdict-non">Ne pas controler</span> : cela retirerait une partie de l\'effet total recherche.</p>';
+  } else if(val==='fourche'){
+    out='<p><strong>Fourche</strong> : la variable est un <strong>confondant</strong>. Elle cause a la fois T et Y, creant une association non causale entre eux. <span class="verdict-ok">Il faut la controler</span> pour identifier l\'effet.</p>';
+  } else {
+    out='<p><strong>Collisionneur</strong> : la variable est causee par T et par Y. Par defaut ce chemin est ferme. <span class="verdict-non">Ne pas la controler</span> : la conditionner ouvrirait le chemin et creerait une association artificielle entre T et Y.</p>';
+  }
+  resDiv.innerHTML=out;
+  dessinerMotif(val);
+}
+
+function dessinerMotif(val){
+  const svg=document.getElementById('svgMotif');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  function noeud(x,y,label){
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',18);
+    c.setAttribute('fill','#fff'); c.setAttribute('stroke','#1F6FB2'); c.setAttribute('stroke-width',2);
+    svg.appendChild(c);
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x',x); t.setAttribute('y',y+5); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','14');
+    t.textContent=label;
+    svg.appendChild(t);
+  }
+  function fleche(x1,y1,x2,y2){
+    const dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len, uy=dy/len;
+    const sx=x1+ux*20, sy=y1+uy*20, ex=x2-ux*20, ey=y2-uy*20;
+    const line=document.createElementNS(ns,'line');
+    line.setAttribute('x1',sx); line.setAttribute('y1',sy); line.setAttribute('x2',ex); line.setAttribute('y2',ey);
+    line.setAttribute('stroke','#5A5A5A'); line.setAttribute('stroke-width',2); line.setAttribute('marker-end','url(#fleche)');
+    svg.appendChild(line);
+  }
+  const defs=document.createElementNS(ns,'defs');
+  defs.innerHTML='<marker id="fleche" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5A5A5A"/></marker>';
+  svg.appendChild(defs);
+  if(val==='chaine'){
+    noeud(60,80,'T'); noeud(180,80,'M'); noeud(300,80,'Y');
+    fleche(60,80,180,80); fleche(180,80,300,80);
+  } else if(val==='fourche'){
+    noeud(180,40,'X'); noeud(60,120,'T'); noeud(300,120,'Y');
+    fleche(180,40,60,120); fleche(180,40,300,120);
+  } else {
+    noeud(60,60,'T'); noeud(300,60,'Y'); noeud(180,140,'C');
+    fleche(60,60,180,140); fleche(300,60,180,140);
+  }
+}
+
+function calculerSelection(){
+  const erreurDiv=document.getElementById('erreurSel'); const resDiv=document.getElementById('resultatSel');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n11=parseFloat(document.getElementById('n11In').value);
+    const n10=parseFloat(document.getElementById('n10In').value);
+    const n01=parseFloat(document.getElementById('n01In').value);
+    const n00=parseFloat(document.getElementById('n00In').value);
+    if([n11,n10,n01,n00].some(v=>isNaN(v)||v<0)) throw new Error('Tous les effectifs doivent etre des nombres positifs ou nuls.');
+    const regle=document.getElementById('regleSel').value;
+
+    const popPN1R1=n11/(n11+n10); const popPN1R0=n01/(n01+n00);
+
+    let s11=n11,s10=n10,s01=n01,s00=n00;
+    let libelle='';
+    if(regle==='or'){ s00=0; libelle='selection : R=1 OU N=1 (exclut R=0,N=0)'; }
+    else if(regle==='and'){ s10=0; s01=0; s00=0; libelle='selection : R=1 ET N=1 (garde seulement R=1,N=1)'; }
+    else { libelle='aucune selection'; }
+
+    const selR1=s11+s10, selR0=s01+s00;
+    if(selR1===0||selR0===0) throw new Error('La selection choisie elimine entierement un groupe (R=1 ou R=0) : impossible de comparer.');
+    const selPN1R1=s11/selR1; const selPN1R0=s01/selR0;
+
+    let out=`<p>${libelle}</p><table><tr><th></th><th>P(N=1|R=1)</th><th>P(N=1|R=0)</th><th>ecart</th></tr>`;
+    out+=`<tr><td>Population complete</td><td>${popPN1R1.toFixed(3)}</td><td>${popPN1R0.toFixed(3)}</td><td>${(popPN1R1-popPN1R0).toFixed(3)}</td></tr>`;
+    out+=`<tr><td>Apres selection</td><td>${selPN1R1.toFixed(3)}</td><td>${selPN1R0.toFixed(3)}</td><td>${(selPN1R1-selPN1R0).toFixed(3)}</td></tr></table>`;
+    const ecartPop=Math.abs(popPN1R1-popPN1R0);
+    const ecartSel=Math.abs(selPN1R1-selPN1R0);
+    if(ecartPop<1e-9&&ecartSel>1e-9){
+      out+='<p class="verdict-non">Biais de collisionneur detecte : R et N sont independants en population, mais une association apparait apres selection.</p>';
+    } else if(ecartSel>ecartPop+1e-9){
+      out+='<p class="verdict-non">La selection amplifie l\'association entre R et N par rapport a la population.</p>';
+    } else {
+      out+='<p class="verdict-ok">Pas de biais de selection notable ici : l\'ecart apres selection reste proche de l\'ecart en population.</p>';
+    }
+    resDiv.innerHTML=out;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ classerMotif(); calculerSelection(); };
+</script>
+</body>
+</html>

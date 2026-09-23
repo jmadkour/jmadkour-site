@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Effets hétérogènes — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 6em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .alerte { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Effets hétérogènes et forêts causales</h1>
+<p class="sous-titre">Calculatrice interactive — Inférence causale</p>
+
+<div class="panneau">
+  <h2>1. ATE à partir d'effets par sous-groupe</h2>
+  <p class="aide">Une ligne par sous-groupe, au format "nom,proportion,effet". Les proportions doivent sommer à 1.</p>
+  <textarea id="groupesIn">diplomes,0.5,20
+non-diplomes,0.5,-20</textarea>
+  <button onclick="calculerHeterogeneite()">Calculer</button>
+  <div id="erreurHet" class="erreur"></div>
+  <div id="resultatHet" class="resultat-zone"></div>
+  <svg id="svgHet" width="380" height="200" viewBox="0 0 380 200"></svg>
+</div>
+
+<div class="panneau">
+  <h2>2. Comparaisons multiples : faux positifs attendus</h2>
+  <div class="ligne">
+    <div><label for="nGroupesIn">Nombre de sous-groupes testés</label><input type="number" id="nGroupesIn" value="20" min="1" step="1"></div>
+    <div><label for="seuilTestIn">Seuil de significativité</label><input type="number" id="seuilTestIn" value="0.05" min="0" max="1" step="0.01"></div>
+    <div><label for="trouvesIn">Nombre trouvé "significatif"</label><input type="number" id="trouvesIn" value="3" min="0" step="1"></div>
+  </div>
+  <button onclick="calculerComparaisons()">Calculer</button>
+  <div id="resultatComp" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\tau(x)=E[Y(1)-Y(0)\mid X{=}x]$ ; l'ATE est la moyenne pondérée des $\tau(x)$ sur la population, et peut masquer (ou non) une forte hétérogénéité ; sous l'absence totale d'hétérogénéité réelle, tester $k$ sous-groupes à un seuil $\alpha$ produit en moyenne $k\times\alpha$ faux positifs.</p>
+
+<script>
+function calculerHeterogeneite(){
+  const erreurDiv=document.getElementById('erreurHet'); const resDiv=document.getElementById('resultatHet');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('groupesIn').value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lignes.length<1) throw new Error('Au moins un sous-groupe requis.');
+    const groupes=lignes.map(l=>{
+      const parts=l.split(',');
+      if(parts.length!==3) throw new Error('Format attendu : "nom,proportion,effet" par ligne.');
+      const nom=parts[0].trim();
+      const p=parseFloat(parts[1]);
+      const effet=parseFloat(parts[2]);
+      if(isNaN(p)||isNaN(effet)) throw new Error('Proportion et effet doivent etre numeriques.');
+      return {nom,p,effet};
+    });
+    const sommeP=groupes.reduce((a,g)=>a+g.p,0);
+    const ate=groupes.reduce((a,g)=>a+g.p*g.effet,0);
+    let out='<table><tr><th>groupe</th><th>proportion</th><th>effet</th></tr>';
+    groupes.forEach(g=>{ out+=`<tr><td>${g.nom}</td><td>${g.p}</td><td>${g.effet}</td></tr>`; });
+    out+=`</table><p>Somme des proportions : ${sommeP.toFixed(3)}</p>`;
+    out+=`<p><strong>ATE = ${ate.toFixed(3)}</strong></p>`;
+    if(Math.abs(sommeP-1)>0.01) out+='<p class="alerte">Attention : les proportions ne somment pas a 1.</p>';
+    const maxAbsEffet=Math.max(...groupes.map(g=>Math.abs(g.effet)));
+    if(maxAbsEffet>0&&Math.abs(ate)<0.3*maxAbsEffet){
+      out+='<p class="alerte">L\'ATE est faible par rapport aux effets par sous-groupe : possible masquage d\'une forte heterogeneite.</p>';
+    } else {
+      out+='<p class="ok">L\'ATE reste representatif de l\'ordre de grandeur des effets par sous-groupe.</p>';
+    }
+    resDiv.innerHTML=out;
+    dessinerHet(groupes,ate);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgHet').innerHTML=''; }
+}
+
+function dessinerHet(groupes,ate){
+  const svg=document.getElementById('svgHet');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=380,H=200,padL=45,padR=15,padT=15,padB=40;
+  const vals=[...groupes.map(g=>g.effet),ate];
+  const labels=[...groupes.map(g=>g.nom),'ATE'];
+  const maxAbs=Math.max(1,...vals.map(Math.abs))*1.2;
+  const yZero=H-padB-((0-(-maxAbs))/(2*maxAbs))*(H-padT-padB);
+  const step=(W-padL-padR)/vals.length;
+  vals.forEach((v,i)=>{
+    const x=padL+i*step+step*0.2;
+    const yToPix=y=>H-padB-((y-(-maxAbs))/(2*maxAbs))*(H-padT-padB);
+    const yVal=yToPix(v);
+    const rect=document.createElementNS(ns,'rect');
+    const yTop=Math.min(yVal,yZero);
+    const height=Math.abs(yVal-yZero);
+    rect.setAttribute('x',x); rect.setAttribute('y',yTop);
+    rect.setAttribute('width',step*0.6); rect.setAttribute('height',height);
+    rect.setAttribute('fill', i===vals.length-1 ? '#B56600' : (v>=0 ? '#1D9E75' : '#b00020'));
+    svg.appendChild(rect);
+    const txt=document.createElementNS(ns,'text');
+    txt.setAttribute('x',x+step*0.3); txt.setAttribute('y', v>=0 ? yVal-6 : yVal+14);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','10');
+    txt.textContent=v.toFixed(1);
+    svg.appendChild(txt);
+    const lbl=document.createElementNS(ns,'text');
+    lbl.setAttribute('x',x+step*0.3); lbl.setAttribute('y',H-padB+16);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-size','9');
+    lbl.textContent=labels[i].substring(0,10);
+    svg.appendChild(lbl);
+  });
+  const axe=document.createElementNS(ns,'line');
+  axe.setAttribute('x1',padL); axe.setAttribute('y1',yZero); axe.setAttribute('x2',W-padR); axe.setAttribute('y2',yZero);
+  axe.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axe);
+}
+
+function calculerComparaisons(){
+  const resDiv=document.getElementById('resultatComp');
+  const n=parseFloat(document.getElementById('nGroupesIn').value);
+  const seuil=parseFloat(document.getElementById('seuilTestIn').value);
+  const trouves=parseFloat(document.getElementById('trouvesIn').value);
+  if([n,seuil,trouves].some(isNaN)||n<=0){ resDiv.innerHTML='<p class="erreur">Valeurs invalides.</p>'; return; }
+  const attendu=n*seuil;
+  let out=`<table><tr><th>quantite</th><th>valeur</th></tr>
+    <tr><td>Faux positifs attendus par hasard</td><td>${attendu.toFixed(2)}</td></tr>
+    <tr><td>Nombre trouve "significatif"</td><td>${trouves}</td></tr></table>`;
+  if(trouves<=attendu*1.5){
+    out+='<p class="alerte">Le nombre trouve est proche de ce qu\'on attendrait par pur hasard : la preuve d\'heterogeneite reelle est fragile sans validation complementaire.</p>';
+  } else {
+    out+='<p class="ok">Le nombre trouve depasse nettement l\'attente sous hasard pur, ce qui est plus (mais pas totalement) rassurant ; une validation sur echantillon independant reste recommandee.</p>';
+  }
+  resDiv.innerHTML=out;
+}
+
+window.onload=()=>{ calculerHeterogeneite(); calculerComparaisons(); };
+</script>
+</body>
+</html>

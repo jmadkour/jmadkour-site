@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Risques et puissance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.taille { border-left-color: var(--cex); } .panneau.taille h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.taille button { background: var(--cex); } .panneau.taille button:hover { background: #226b43; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .non-ok { color: #b00020; font-weight: bold; }
+  .ok { color: var(--cex); font-weight: bold; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — Les deux risques et la puissance</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique inférentielle</p>
+
+<div class="panneau">
+  <h2>Calculer la puissance d'un test sur une moyenne</h2>
+  <div class="grille4">
+    <div><label for="sigma1">écart-type σ (ou s)</label><input id="sigma1" value="1200"></div>
+    <div><label for="n1">taille n</label><input id="n1" value="64"></div>
+    <div><label for="delta1">écart réel δ à détecter</label><input id="delta1" value="300"></div>
+    <div><label for="forme1">forme du test</label>
+      <select id="forme1">
+        <option value="unilateral">unilatéral (α=5%, z=1,645)</option>
+        <option value="bilateral" selected>bilatéral (α=5%, z=1,960)</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="calculerPuissance()">Calculer la puissance</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <div id="graphe1"></div>
+</div>
+
+<div class="panneau taille">
+  <h2>Taille d'échantillon pour atteindre 80% de puissance</h2>
+  <div class="grille4">
+    <div><label for="sigma2">écart-type σ (ou s)</label><input id="sigma2" value="2250.98"></div>
+    <div><label for="delta2">écart réel δ à détecter</label><input id="delta2" value="300"></div>
+    <div><label for="forme2">forme du test</label>
+      <select id="forme2">
+        <option value="unilateral">unilatéral (z=1,645)</option>
+        <option value="bilateral" selected>bilatéral (z=1,960)</option>
+      </select>
+    </div>
+    <div><label for="pcible2">puissance cible</label><input id="pcible2" value="0.80"></div>
+  </div>
+  <button onclick="calculerTaille()">Calculer n nécessaire</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappel : $\text{puissance}=1-\Phi(z_\alpha-\delta/(\sigma/\sqrt n))$ (approximation unilatérale, valable aussi en bonne approximation pour un test bilatéral quand $\delta>0$). Convention usuelle de planification : viser une puissance de $80\,\%$ sur l'écart jugé économiquement significatif.</p>
+
+<script>
+function erf(x){
+  const sign = x>=0?1:-1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function Phi(z){ return 0.5*(1+erf(z/Math.sqrt(2))); }
+function invPhi(p){
+  let lo=-8, hi=8;
+  for(let i=0;i<100;i++){ const mid=(lo+hi)/2; if(Phi(mid)<p) lo=mid; else hi=mid; }
+  return (lo+hi)/2;
+}
+const zTable = {unilateral:1.645, bilateral:1.960};
+
+function calculerPuissance(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  const grapheDiv=document.getElementById('graphe1');
+  erreurDiv.textContent=''; resDiv.innerHTML=''; grapheDiv.innerHTML='';
+  try{
+    const sigma=parseFloat(document.getElementById('sigma1').value);
+    const n=parseFloat(document.getElementById('n1').value);
+    const delta=parseFloat(document.getElementById('delta1').value);
+    const forme=document.getElementById('forme1').value;
+    if([sigma,n,delta].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(sigma<=0) throw new Error('σ doit être strictement positif.');
+    if(n<2) throw new Error('n doit être ≥2.');
+    const se=sigma/Math.sqrt(n);
+    const z=zTable[forme];
+    const puissance=1-Phi(z-delta/se);
+    const validite = puissance>=0.80;
+    resDiv.innerHTML=`<table><tr><th>erreur-type</th><th>z (seuil)</th><th>puissance</th><th>≥ 80% ?</th></tr>
+      <tr><td>${se.toFixed(3)}</td><td>${z}</td><td><strong>${(puissance*100).toFixed(1)}%</strong></td><td class="${validite?'ok':'non-ok'}">${validite?'oui ✓':'non ✗'}</td></tr></table>`;
+    // svg: two overlapping normal curves
+    const w=520,h=240,pad=30;
+    const xmin=-4, xmax=4+delta/se;
+    const X=(x)=>pad+((x-xmin)/(xmax-xmin))*(w-pad-20);
+    const Y=(y)=>(h-pad)-y*(h-pad-20)/0.45;
+    let svg=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+    svg+=`<line x1="${pad}" y1="${h-pad}" x2="${w-10}" y2="${h-pad}" stroke="#5A5A5A"/>`;
+    let path0='', path1='';
+    for(let i=0;i<=100;i++){
+      const x=xmin+(i/100)*(xmax-xmin);
+      const y0=0.4*Math.exp(-x*x/2);
+      const y1=0.4*Math.exp(-(x-delta/se)*(x-delta/se)/2);
+      path0+=(i===0?'M':'L')+X(x).toFixed(1)+','+Y(y0).toFixed(1)+' ';
+      path1+=(i===0?'M':'L')+X(x).toFixed(1)+','+Y(y1).toFixed(1)+' ';
+    }
+    svg+=`<path d="${path0}" fill="none" stroke="#5A5A5A" stroke-width="1.5"/>`;
+    svg+=`<path d="${path1}" fill="none" stroke="#1F6FB2" stroke-width="1.5"/>`;
+    const xz=X(z);
+    svg+=`<line x1="${xz}" y1="${h-pad}" x2="${xz}" y2="20" stroke="#B56600" stroke-dasharray="4,3"/>`;
+    svg+=`<text x="${xz+4}" y="18" font-size="10" fill="#B56600">seuil z=${z}</text>`;
+    svg+=`<text x="${X(0)-10}" y="${h-pad+16}" font-size="10" fill="#5A5A5A">H0</text>`;
+    svg+=`<text x="${X(delta/se)-10}" y="${h-pad+16}" font-size="10" fill="#1F6FB2">H1 (δ)</text>`;
+    svg+='</svg>';
+    grapheDiv.innerHTML=svg;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerTaille(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const sigma=parseFloat(document.getElementById('sigma2').value);
+    const delta=parseFloat(document.getElementById('delta2').value);
+    const forme=document.getElementById('forme2').value;
+    const pcible=parseFloat(document.getElementById('pcible2').value);
+    if([sigma,delta,pcible].some(isNaN)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(sigma<=0||delta<=0) throw new Error('σ et δ doivent être strictement positifs.');
+    if(pcible<=0||pcible>=1) throw new Error('La puissance cible doit être strictement comprise entre 0 et 1.');
+    const z=zTable[forme];
+    const zBeta=invPhi(pcible);
+    const n=Math.pow((z+zBeta)*sigma/delta,2);
+    resDiv.innerHTML=`<table><tr><th>z_β (puissance ${(pcible*100).toFixed(0)}%)</th><th>n nécessaire</th></tr>
+      <tr><td>${zBeta.toFixed(3)}</td><td><strong>${Math.ceil(n)}</strong> (${n.toFixed(1)})</td></tr></table>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerPuissance(); calculerTaille(); };
+</script>
+</body>
+</html>

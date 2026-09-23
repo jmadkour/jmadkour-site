@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Population, variable, modalité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.classes { border-left-color: var(--cintu); } .panneau.classes h2 { color: var(--cintu); }
+  .panneau.binaire { border-left-color: var(--cex); } .panneau.binaire h2 { color: var(--cex); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.classes button { background: var(--cintu); } .panneau.classes button:hover { background: #b56600; }
+  .panneau.binaire button { background: var(--cex); } .panneau.binaire button:hover { background: #206040; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.88em; margin-top: 0.6em; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Population, variable, modalité</h1>
+<p class="sous-titre">Calculatrice interactive — Statistique descriptive</p>
+
+<div class="panneau classes">
+  <h2>Vérifier des classes (exhaustivité et incompatibilité)</h2>
+  <label for="classesInput">Bornes des classes (une borne inférieure par ligne, séparées par des virgules : borneInf,borneSup — utiliser "inf" pour −∞ et "sup" pour +∞)</label>
+  <textarea id="classesInput" rows="4">0,5
+5,10
+10,20
+20,sup</textarea>
+  <button onclick="verifierClasses()">Vérifier le découpage en classes</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau binaire">
+  <h2>Variable binaire : moyenne = proportion</h2>
+  <div class="grille2">
+    <div><label for="effectifTotal">effectif total n</label><input id="effectifTotal" value="250"></div>
+    <div><label for="nombreUns">nombre de "1" (succès)</label><input id="nombreUns" value="35"></div>
+  </div>
+  <button onclick="calculerProportion()">Calculer la moyenne / proportion</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : des modalités (ou classes) sont exhaustives si chaque individu en possède au moins une, incompatibles si chaque individu n'en possède qu'une seule. Convention : classes fermées à gauche, ouvertes à droite, [a,b[. Une variable binaire codée 0/1 a pour moyenne la proportion de 1 dans l'effectif — c'est la seule variable qualitative dont la moyenne a un sens.</p>
+
+<script>
+function verifierClasses(){
+  const erreurDiv=document.getElementById('erreur1'); const resDiv=document.getElementById('resultat1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('classesInput').value.trim().split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    const classes=lignes.map(l=>{
+      const parts=l.split(',').map(s=>s.trim());
+      if(parts.length!==2) throw new Error('Chaque ligne doit contenir exactement 2 valeurs séparées par une virgule.');
+      const a = parts[0]==='inf' ? -Infinity : parseFloat(parts[0]);
+      const b = parts[1]==='sup' ? Infinity : parseFloat(parts[1]);
+      if(isNaN(a)||isNaN(b)) throw new Error('Les bornes doivent être des nombres (ou "inf"/"sup").');
+      if(a>=b) throw new Error('La borne inférieure doit être strictement inférieure à la borne supérieure.');
+      return [a,b];
+    });
+    classes.sort((x,y)=>x[0]-y[0]);
+    let chevauchements=[];
+    for(let i=0;i<classes.length-1;i++){
+      if(classes[i][1] > classes[i+1][0]){
+        chevauchements.push(`classe [${classes[i][0]},${classes[i][1]}[ et classe [${classes[i+1][0]},${classes[i+1][1]}[ se chevauchent`);
+      }
+    }
+    const incompatibles = chevauchements.length===0;
+    const debutMin = classes[0][0];
+    const finMax = classes[classes.length-1][1];
+    let trous=[];
+    for(let i=0;i<classes.length-1;i++){
+      if(classes[i][1] < classes[i+1][0]){
+        trous.push(`trou entre ${classes[i][1]} et ${classes[i+1][0]}`);
+      }
+    }
+    const exhaustivesADroite = finMax===Infinity;
+    const exhaustivesAGauche = debutMin<=0;
+    let lignesTable='';
+    classes.forEach(c=>{ lignesTable+=`<tr><td>[${c[0]===-Infinity?'−∞':c[0]}, ${c[1]===Infinity?'+∞':c[1]}[</td></tr>`; });
+    resDiv.innerHTML=`<table><tr><th>classes (triées)</th></tr>${lignesTable}</table>
+      <table><tr><th>incompatibles (pas de chevauchement) ?</th><th>couvre jusqu'à +∞ ?</th><th>commence à 0 ou moins ?</th></tr>
+      <tr><td>${incompatibles?'oui ✓':'non ✗'}</td><td>${exhaustivesADroite?'oui ✓':'non ✗ (borne supérieure finie : vérifier qu\'aucune valeur ne dépasse '+finMax+')'}</td><td>${exhaustivesAGauche?'oui ✓':'non ✗ (borne inférieure = '+debutMin+' : vérifier qu\'aucune valeur n\'est inférieure)'}</td></tr></table>
+      ${chevauchements.length>0?'<p style="color:#b00020;font-size:0.85em;">'+chevauchements.join('<br>')+'</p>':''}
+      ${trous.length>0?'<p style="color:#b00020;font-size:0.85em;">Trou(s) détecté(s) — certaines valeurs ne seraient couvertes par aucune classe : '+trous.join(', ')+'</p>':''}`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerProportion(){
+  const erreurDiv=document.getElementById('erreur2'); const resDiv=document.getElementById('resultat2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('effectifTotal').value);
+    const k=parseFloat(document.getElementById('nombreUns').value);
+    if(isNaN(n)||isNaN(k)) throw new Error('Toutes les valeurs doivent être des nombres.');
+    if(n<=0||k<0||k>n) throw new Error('Vérifier que 0≤k≤n et n>0.');
+    const moyenne=k/n;
+    resDiv.innerHTML=`<table><tr><th>moyenne = k/n</th><th>proportion</th></tr>
+      <tr><td><strong>${moyenne.toFixed(4)}</strong></td><td><strong>${(moyenne*100).toFixed(2)} %</strong></td></tr></table>
+      <p style="font-size:0.85em;color:var(--cgris);">La moyenne de cette variable binaire codée 0/1 est exactement la proportion d'individus ayant la modalité codée 1.</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ verifierClasses(); calculerProportion(); };
+</script>
+</body>
+</html>

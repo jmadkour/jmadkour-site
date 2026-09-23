@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 1 — Le compromis biais-variance — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 5em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.85em; margin-top: 0.6em; width: 100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.5em; text-align: center; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 1 — Le compromis biais-variance</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage statistique</p>
+
+<div class="panneau">
+  <h2>1. Calculer l'EQM décomposée</h2>
+  <div class="ligne">
+    <div><label for="biaisIn1">biais$^2$</label><input type="number" id="biaisIn1" value="2.5" step="any" min="0"></div>
+    <div><label for="varIn1">variance</label><input type="number" id="varIn1" value="1.5" step="any" min="0"></div>
+    <div><label for="bruitIn1">bruit $\sigma^2$</label><input type="number" id="bruitIn1" value="0.8" step="any" min="0"></div>
+  </div>
+  <button onclick="calculerEQM()">Calculer</button>
+  <div id="erreurEQM1" class="erreur"></div>
+  <div id="resultatEQM1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Trouver la complexité optimale</h2>
+  <p class="aide">Une ligne par niveau : "complexité biais² variance". Le bruit s'ajoute à chaque ligne.</p>
+  <textarea id="tableauIn1" rows="5">2 6.0 0.4
+4 3.0 0.9
+6 1.5 1.8
+8 0.8 3.5
+12 0.3 7.0</textarea>
+  <label for="bruitTableIn1">bruit $\sigma^2$ (commun)</label>
+  <input type="number" id="bruitTableIn1" value="1.2" step="any" min="0" style="max-width:200px;">
+  <button onclick="calculerTableau()">Calculer</button>
+  <div id="erreurTab1" class="erreur"></div>
+  <div id="resultatTab1" class="resultat-zone"></div>
+  <svg id="svgCourbe1" width="440" height="180" viewBox="0 0 440 180"></svg>
+</div>
+
+<div class="panneau">
+  <h2>3. Malédiction de la dimension</h2>
+  <div class="ligne">
+    <div><label for="pIn1">fraction de volume $p$</label><input type="number" id="pIn1" value="0.05" step="any" min="0" max="1"></div>
+    <div><label for="dIn1">dimension $d$</label><input type="number" id="dIn1" value="8" step="1" min="1"></div>
+  </div>
+  <button onclick="calculerDimension()">Calculer</button>
+  <div id="erreurDim1" class="erreur"></div>
+  <div id="resultatDim1" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : $\text{EQM}=\text{biais}^2+\text{variance}+\sigma^2$ ; la flexibilité réduit le biais et augmente la variance, d'où un optimum intérieur ; le côté nécessaire pour couvrir une fraction $p$ du volume en dimension $d$ vaut $p^{1/d}$, et tend vers $1$ quand $d$ augmente.</p>
+
+<script>
+function calculerEQM(){
+  const erreurDiv=document.getElementById('erreurEQM1'); const resDiv=document.getElementById('resultatEQM1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const b=parseFloat(document.getElementById('biaisIn1').value);
+    const v=parseFloat(document.getElementById('varIn1').value);
+    const s=parseFloat(document.getElementById('bruitIn1').value);
+    if([b,v,s].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if([b,v,s].some(x=>x<0)) throw new Error('Les trois termes doivent être positifs.');
+    const eqm=b+v+s;
+    resDiv.innerHTML=`<p><strong>EQM $=${b.toFixed(4)}+${v.toFixed(4)}+${s.toFixed(4)}=${eqm.toFixed(4)}$</strong></p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerTableau(){
+  const erreurDiv=document.getElementById('erreurTab1'); const resDiv=document.getElementById('resultatTab1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const bruit=parseFloat(document.getElementById('bruitTableIn1').value);
+    if(isNaN(bruit)||bruit<0) throw new Error('Le bruit doit être un nombre positif.');
+    const lignes=document.getElementById('tableauIn1').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<1) throw new Error('Au moins une ligne requise.');
+    const rows=lignes.map(l=>{
+      const parts=l.split(/\s+/).map(Number);
+      if(parts.length!==3||parts.some(isNaN)) throw new Error('Format invalide : "'+l+'". Attendu : complexité biais² variance.');
+      return {c:parts[0], b:parts[1], v:parts[2], eqm:parts[1]+parts[2]+bruit};
+    });
+    let best=rows[0];
+    rows.forEach(r=>{ if(r.eqm<best.eqm) best=r; });
+    let out='<table><tr><th>complexité</th>'+rows.map(r=>`<th>${r.c}</th>`).join('')+'</tr>';
+    out+='<tr><th>biais²</th>'+rows.map(r=>`<td>${r.b.toFixed(2)}</td>`).join('')+'</tr>';
+    out+='<tr><th>variance</th>'+rows.map(r=>`<td>${r.v.toFixed(2)}</td>`).join('')+'</tr>';
+    out+='<tr><th>EQM</th>'+rows.map(r=>`<td>${r.eqm===best.eqm?'<strong>':''}${r.eqm.toFixed(2)}${r.eqm===best.eqm?'</strong>':''}</td>`).join('')+'</tr></table>';
+    out+=`<p style="margin-top:0.6em;"><strong>Complexité optimale : ${best.c} (EQM $=${best.eqm.toFixed(4)}$)</strong></p>`;
+    resDiv.innerHTML=out;
+    dessinerCourbe(rows);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgCourbe1').innerHTML=''; }
+}
+
+function dessinerCourbe(rows){
+  const svg=document.getElementById('svgCourbe1');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=440,H=180,pad=40;
+  const xs=rows.map(r=>r.c), maxX=Math.max(...xs), minX=Math.min(...xs);
+  const maxY=Math.max(...rows.map(r=>Math.max(r.b,r.v,r.eqm)))*1.1;
+  function xPix(x){ return pad + (x-minX)/(maxX-minX||1) * (W-2*pad); }
+  function yPix(y){ return H-pad - (y/maxY) * (H-2*pad); }
+  function tracer(champ,couleur){
+    let d='';
+    rows.forEach((r,i)=>{ d += (i===0?'M':'L') + xPix(r.c) + ' ' + yPix(r[champ]) + ' '; });
+    const path=document.createElementNS(ns,'path');
+    path.setAttribute('d',d); path.setAttribute('stroke',couleur); path.setAttribute('fill','none'); path.setAttribute('stroke-width','2');
+    svg.appendChild(path);
+    rows.forEach(r=>{
+      const c=document.createElementNS(ns,'circle');
+      c.setAttribute('cx',xPix(r.c)); c.setAttribute('cy',yPix(r[champ])); c.setAttribute('r',3); c.setAttribute('fill',couleur);
+      svg.appendChild(c);
+    });
+  }
+  const axeX=document.createElementNS(ns,'line');
+  axeX.setAttribute('x1',pad); axeX.setAttribute('y1',H-pad); axeX.setAttribute('x2',W-pad); axeX.setAttribute('y2',H-pad);
+  axeX.setAttribute('stroke','#5A5A5A');
+  svg.appendChild(axeX);
+  tracer('b','#1F6FB2'); tracer('v','#B56600'); tracer('eqm','#1F6FB2');
+  const legend=[['biais²','#1F6FB2'],['variance','#B56600'],['EQM','#1F6FB2']];
+  legend.forEach((l,i)=>{
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x', pad + i*110); t.setAttribute('y', 15); t.setAttribute('font-size','11'); t.setAttribute('fill',l[1]);
+    t.textContent=l[0];
+    svg.appendChild(t);
+  });
+}
+
+function calculerDimension(){
+  const erreurDiv=document.getElementById('erreurDim1'); const resDiv=document.getElementById('resultatDim1');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const p=parseFloat(document.getElementById('pIn1').value);
+    const d=parseFloat(document.getElementById('dIn1').value);
+    if([p,d].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(p<=0||p>1) throw new Error('p doit être strictement compris entre 0 et 1.');
+    if(d<1) throw new Error('La dimension doit être au moins égale à 1.');
+    const cote=Math.pow(p,1/d);
+    resDiv.innerHTML=`<p><strong>Côté nécessaire $=${p}^{1/${d}}=${cote.toFixed(4)}$</strong> (soit ${(cote*100).toFixed(2)}\\% de l'étendue de chaque variable)</p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerEQM(); calculerTableau(); calculerDimension(); };
+</script>
+</body>
+</html>

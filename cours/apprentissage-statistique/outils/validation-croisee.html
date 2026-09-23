@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Rééchantillonnage et validation croisée — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1000px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input[type=number], textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  textarea { min-height: 4em; resize: vertical; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne > div { flex: 1; min-width: 150px; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  svg { background: #fff; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Rééchantillonnage et validation croisée</h1>
+<p class="sous-titre">Calculatrice interactive — Apprentissage statistique</p>
+
+<div class="panneau">
+  <h2>1. Tailles de blocs pour une validation croisée à $K$ blocs</h2>
+  <div class="ligne">
+    <div><label for="nIn2">Taille totale $n$</label><input type="number" id="nIn2" value="3600" step="1" min="2"></div>
+    <div><label for="kIn2">Nombre de blocs $K$</label><input type="number" id="kIn2" value="6" step="1" min="2"></div>
+  </div>
+  <button onclick="calculerBlocs()">Calculer</button>
+  <div id="erreurB2" class="erreur"></div>
+  <div id="resultatB2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>2. Moyenner les erreurs d'une validation croisée</h2>
+  <p class="aide">Une erreur par ligne (un bloc par ligne).</p>
+  <textarea id="erreursIn2" rows="5">0.18
+0.21
+0.15
+0.24
+0.17</textarea>
+  <button onclick="calculerMoyenneCV()">Calculer</button>
+  <div id="erreurM2" class="erreur"></div>
+  <div id="resultatM2" class="resultat-zone"></div>
+  <svg id="svgCV2" width="440" height="170" viewBox="0 0 440 170"></svg>
+</div>
+
+<div class="panneau">
+  <h2>3. Comparer le coût du leave-one-out</h2>
+  <div class="ligne">
+    <div><label for="nLooIn2">Taille totale $n$</label><input type="number" id="nLooIn2" value="50" step="1" min="2"></div>
+    <div><label for="kRefIn2">$K$ de référence</label><input type="number" id="kRefIn2" value="5" step="1" min="2"></div>
+  </div>
+  <button onclick="calculerLOO()">Calculer</button>
+  <div id="erreurL2" class="erreur"></div>
+  <div id="resultatL2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : bloc de validation $=n/K$, apprentissage $=n-n/K$ ; l'erreur de validation croisée est la \textbf{moyenne} des $K$ erreurs, jamais le minimum ; le leave-one-out ($K=n$) a un biais quasi nul mais une variance élevée, car ses $n$ modèles sont presque identiques.</p>
+
+<script>
+function calculerBlocs(){
+  const erreurDiv=document.getElementById('erreurB2'); const resDiv=document.getElementById('resultatB2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('nIn2').value);
+    const k=parseFloat(document.getElementById('kIn2').value);
+    if([n,k].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(n<2) throw new Error('n doit être au moins 2.');
+    if(k<2||!Number.isInteger(k)) throw new Error('K doit être un entier au moins égal à 2.');
+    if(k>n) throw new Error('K ne peut pas dépasser n.');
+    const bloc=n/k, train=n-bloc;
+    resDiv.innerHTML=`<p>Bloc de validation $=${n}/${k}=\\mathbf{${bloc.toFixed(2)}}$</p>
+      <p>Ensemble d'apprentissage $=${n}-${bloc.toFixed(2)}=\\mathbf{${train.toFixed(2)}}$</p>
+      <p>Nombre de modèles estimés : <strong>${k}</strong></p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+function calculerMoyenneCV(){
+  const erreurDiv=document.getElementById('erreurM2'); const resDiv=document.getElementById('resultatM2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const lignes=document.getElementById('erreursIn2').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lignes.length<2) throw new Error('Au moins 2 blocs requis.');
+    const errs=lignes.map(Number);
+    if(errs.some(isNaN)) throw new Error('Toutes les erreurs doivent être numériques.');
+    if(errs.some(e=>e<0)) throw new Error('Les erreurs doivent être positives.');
+    const moyenne=errs.reduce((a,b)=>a+b,0)/errs.length;
+    const maxE=Math.max(...errs), minE=Math.min(...errs);
+    resDiv.innerHTML=`<p>Moyenne de validation croisée $=\\mathbf{${moyenne.toFixed(4)}}$</p>
+      <p>Écart max$-$min $=${(maxE-minE).toFixed(4)}$</p>`;
+    dessinerCV(errs,moyenne);
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; document.getElementById('svgCV2').innerHTML=''; }
+}
+
+function dessinerCV(errs,moyenne){
+  const svg=document.getElementById('svgCV2');
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  const W=440,H=170,pad=40;
+  const maxY=Math.max(...errs,moyenne)*1.25;
+  const bw=(W-2*pad)/errs.length*0.6;
+  const step=(W-2*pad)/errs.length;
+  errs.forEach((e,i)=>{
+    const x=pad+i*step+step*0.2;
+    const h=(e/maxY)*(H-2*pad);
+    const rect=document.createElementNS(ns,'rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',H-pad-h);
+    rect.setAttribute('width',bw); rect.setAttribute('height',h);
+    rect.setAttribute('fill','#B56600');
+    svg.appendChild(rect);
+    const txt=document.createElementNS(ns,'text');
+    txt.setAttribute('x',x+bw/2); txt.setAttribute('y',H-pad-h-5);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','10');
+    txt.textContent=e.toFixed(3);
+    svg.appendChild(txt);
+    const lbl=document.createElementNS(ns,'text');
+    lbl.setAttribute('x',x+bw/2); lbl.setAttribute('y',H-pad+14);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-size','10');
+    lbl.textContent='bloc '+(i+1);
+    svg.appendChild(lbl);
+  });
+  const yMoy=H-pad-(moyenne/maxY)*(H-2*pad);
+  const ligne=document.createElementNS(ns,'line');
+  ligne.setAttribute('x1',pad); ligne.setAttribute('y1',yMoy); ligne.setAttribute('x2',W-pad); ligne.setAttribute('y2',yMoy);
+  ligne.setAttribute('stroke','#1F6FB2'); ligne.setAttribute('stroke-dasharray','4,3'); ligne.setAttribute('stroke-width','2');
+  svg.appendChild(ligne);
+  const lblMoy=document.createElementNS(ns,'text');
+  lblMoy.setAttribute('x',pad+5); lblMoy.setAttribute('y',yMoy-5); lblMoy.setAttribute('font-size','10'); lblMoy.setAttribute('fill','#1F6FB2');
+  lblMoy.textContent='moyenne = '+moyenne.toFixed(3);
+  svg.appendChild(lblMoy);
+}
+
+function calculerLOO(){
+  const erreurDiv=document.getElementById('erreurL2'); const resDiv=document.getElementById('resultatL2');
+  erreurDiv.textContent=''; resDiv.innerHTML='';
+  try{
+    const n=parseFloat(document.getElementById('nLooIn2').value);
+    const kRef=parseFloat(document.getElementById('kRefIn2').value);
+    if([n,kRef].some(isNaN)) throw new Error('Valeurs numériques requises.');
+    if(n<2||!Number.isInteger(n)) throw new Error('n doit être un entier au moins égal à 2.');
+    if(kRef<2||kRef>n) throw new Error('K de référence doit être compris entre 2 et n.');
+    const ratio=n/kRef;
+    resDiv.innerHTML=`<p>Leave-one-out : apprentissage $=${n-1}$, validation $=1$, nombre de modèles $=${n}$</p>
+      <p>Rapport de coût par rapport à $K=${kRef}$ : <strong>${ratio.toFixed(2)}$\\times$</strong></p>`;
+  }catch(e){ erreurDiv.textContent='Erreur : '+e.message; }
+}
+
+window.onload=()=>{ calculerBlocs(); calculerMoyenneCV(); calculerLOO(); };
+</script>
+</body>
+</html>
