@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Les taux d'intérêt et la courbe — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Application : taux d'intérêt et courbe</h1>
+<p class="sous-titre">Calculatrice interactive — taux zéro-coupon continus et taux à terme (exercice 5), position de pente neutralisée en duration (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Taux zéro-coupon continus et taux à terme</h2>
+  <p class="aide">$r(t)=-\ln d(t)/t$ (capitalisation continue) ; taux à terme $f(t_1,t_2)=\dfrac{r(t_2)t_2-r(t_1)t_1}{t_2-t_1}$.</p>
+  <div class="ligne">
+    <div><label for="c9_d1">Facteur d'actualisation $d(1)$</label><input type="number" id="c9_d1" value="0.96" step="0.005"></div>
+    <div><label for="c9_d2">Facteur d'actualisation $d(2)$</label><input type="number" id="c9_d2" value="0.911429" step="0.005"></div>
+  </div>
+  <button onclick="calculerTaux()">Calculer</button>
+  <div id="resultatTaux" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Position de pente neutralisée en duration</h2>
+  <p class="aide">Notionnel neutralisant : $N_L=N_S D_S/D_L$. Variation de valeur d'une jambe (achetée) : $\Delta V=-D\,\Delta y\,N$ ; une jambe vendue a le signe opposé.</p>
+  <div class="ligne">
+    <div><label for="c9b_ns">Notionnel acheté, 2 ans $N_S$ (€)</label><input type="number" id="c9b_ns" value="10000000" step="500000"></div>
+    <div><label for="c9b_ds">Duration 2 ans $D_S$</label><input type="number" id="c9b_ds" value="1.7" step="0.1"></div>
+    <div><label for="c9b_dl">Duration 10 ans $D_L$</label><input type="number" id="c9b_dl" value="8.5" step="0.1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c9b_dys">Variation taux court $\Delta y_S$ (%)</label><input type="number" id="c9b_dys" value="-0.25" step="0.05"></div>
+    <div><label for="c9b_dyl">Variation taux long $\Delta y_L$ (%)</label><input type="number" id="c9b_dyl" value="0.35" step="0.05"></div>
+  </div>
+  <button onclick="calculerPente()">Calculer</button>
+  <div id="resultatPente" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerTaux() {
+  var resDiv = document.getElementById('resultatTaux');
+  var d1 = parseFloat(document.getElementById('c9_d1').value);
+  var d2 = parseFloat(document.getElementById('c9_d2').value);
+
+  if ([d1, d2].some(isNaN) || d1 <= 0 || d1 >= 1 || d2 <= 0 || d2 >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Les facteurs d\'actualisation doivent être strictement compris entre 0 et 1.</p>';
+    return;
+  }
+
+  var r1 = -Math.log(d1) / 1;
+  var r2 = -Math.log(d2) / 2;
+  var f12 = (r2 * 2 - r1 * 1) / (2 - 1);
+  var croissante = r2 > r1;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>r(1)</th><td>' + (r1 * 100).toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>r(2)</th><td>' + (r2 * 100).toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>f(1,2)</th><td>' + (f12 * 100).toFixed(4) + ' %</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (croissante ? 'ok' : 'mid') + '">courbe ' + (croissante ? 'croissante' : 'décroissante ou plate') + ' — le taux à terme est ' + (f12 > r1 ? 'supérieur' : 'inférieur') + ' au taux comptant à 1 an, cohérent avec ' + (croissante ? 'une courbe croissante' : 'ce profil de courbe') + '</div>';
+  html += dessinerCourbeTaux(r1, r2, f12);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCourbeTaux(r1, r2, f12) {
+  var largeur = 320, hauteur = 220, margeG = 45, margeD = 15, margeH = 15, margeB = 35;
+  var valeurs = [r1, r2, f12].map(function (v) { return v * 100; });
+  var yMax = Math.max.apply(null, valeurs) * 1.15;
+  var yMin = Math.min(0, Math.min.apply(null, valeurs) * 0.9);
+  function xPix(x) { return margeG + (x / 2) * (largeur - margeG - margeD); }
+  function yPix(y) { return (hauteur - margeB) - ((y - yMin) / (yMax - yMin)) * (hauteur - margeB - margeH); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + xPix(0) + '" y1="' + yPix(yMin) + '" x2="' + xPix(0) + '" y2="' + yPix(yMax) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + xPix(0) + '" y1="' + yPix(0) + '" x2="' + xPix(2) + '" y2="' + yPix(0) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<polyline points="' + xPix(1) + ',' + yPix(r1 * 100).toFixed(1) + ' ' + xPix(2) + ',' + yPix(r2 * 100).toFixed(1) + '" fill="none" stroke="var(--cdef, #4A3B8C)" stroke-width="2"/>';
+  svg += '<line x1="' + xPix(1) + '" y1="' + yPix(f12 * 100).toFixed(1) + '" x2="' + xPix(2) + '" y2="' + yPix(f12 * 100).toFixed(1) + '" stroke="var(--cintu, #E08000)" stroke-width="2" stroke-dasharray="4,3"/>';
+  svg += '<circle cx="' + xPix(1).toFixed(1) + '" cy="' + yPix(r1 * 100).toFixed(1) + '" r="3" fill="var(--cdef, #4A3B8C)"/>';
+  svg += '<circle cx="' + xPix(2).toFixed(1) + '" cy="' + yPix(r2 * 100).toFixed(1) + '" r="3" fill="var(--cdef, #4A3B8C)"/>';
+  svg += '<text x="' + xPix(1).toFixed(1) + '" y="' + (yPix(r1 * 100) + 14).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">r(1)=' + (r1 * 100).toFixed(2) + '%</text>';
+  svg += '<text x="' + xPix(2).toFixed(1) + '" y="' + (yPix(r2 * 100) - 6).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">r(2)=' + (r2 * 100).toFixed(2) + '%</text>';
+  svg += '<text x="' + ((xPix(1) + xPix(2)) / 2).toFixed(1) + '" y="' + (yPix(f12 * 100) - 6).toFixed(1) + '" font-size="9" text-anchor="middle" fill="var(--cintu, #E08000)">f(1,2)=' + (f12 * 100).toFixed(2) + '%</text>';
+  svg += '<text x="' + margeG + '" y="' + (hauteur - 5) + '" font-size="9" fill="currentColor">maturité t (années)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerPente() {
+  var resDiv = document.getElementById('resultatPente');
+  var NS = parseFloat(document.getElementById('c9b_ns').value);
+  var DS = parseFloat(document.getElementById('c9b_ds').value);
+  var DL = parseFloat(document.getElementById('c9b_dl').value);
+  var dyS = parseFloat(document.getElementById('c9b_dys').value) / 100;
+  var dyL = parseFloat(document.getElementById('c9b_dyl').value) / 100;
+
+  if ([NS, DS, DL, dyS, dyL].some(isNaN) || NS <= 0 || DS <= 0 || DL <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var NL = NS * DS / DL;
+  var pnlS = -DS * dyS * NS;       // jambe achetée (2 ans)
+  var pnlL = -(-DL * dyL * NL);    // jambe vendue (10 ans) : inverse du P&L d'une position longue
+  var total = pnlS + pnlL;
+
+  var ecart = dyL - dyS;
+  var typeMouvement = Math.abs(ecart) < 1e-9 ? 'aucun changement de pente (déplacement parallèle pur)' : (ecart > 0 ? 'pentification (l\'écart long − court augmente)' : 'aplatissement (l\'écart long − court diminue)');
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Notionnel neutralisant $N_L$</th><td>' + NL.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' €</td></tr>';
+  html += '<tr><th>Résultat jambe 2 ans (achetée)</th><td>' + pnlS.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' €</td></tr>';
+  html += '<tr><th>Résultat jambe 10 ans (vendue)</th><td>' + pnlL.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' €</td></tr>';
+  html += '<tr><th>Résultat total</th><td><strong>' + total.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' €</strong></td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (total > 0 ? 'ok' : (total < 0 ? 'ko' : 'mid')) + '">' + typeMouvement + ' — la position ' + (total > 0 ? 'en profite' : (total < 0 ? 'en pâtit' : 'est indifférente')) + '</div>';
+  html += dessinerBarresPente(pnlS, pnlL, total);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresPente(pnlS, pnlL, total) {
+  var largeur = 300, hauteur = 230, margeG = 48, margeD = 15, margeH = 15, margeB = 45;
+  var valeurs = [pnlS, pnlL, total];
+  var yMax = Math.max(0, Math.max.apply(null, valeurs)) * 1.2;
+  var yMin = Math.min(0, Math.min.apply(null, valeurs)) * 1.2;
+  if (yMax === 0) yMax = 1;
+  function yPix(y) { return margeH + (yMax - y) / (yMax - yMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 55;
+  var espace = (largeur - margeG - margeD) / 3;
+  var noms = ['2 ans (achetée)', '10 ans (vendue)', 'Total'];
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--cintu, #E08000)', 'var(--cex, #2E8B57)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var x = margeG + i * espace + (espace - largeurBarre) / 2;
+    var v = valeurs[i];
+    var yTop = yPix(Math.max(v, 0));
+    var yBot = yPix(Math.min(v, 0));
+    var h = Math.max(yBot - yTop, 1);
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    var yLabel = v >= 0 ? (yTop - 5) : (yBot + 12);
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + yLabel.toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + Math.round(v).toLocaleString('fr-FR') + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerTaux(); calculerPente(); };
+</script>
+</body>
+</html>

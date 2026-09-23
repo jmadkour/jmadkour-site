@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 12 — Les déformations non parallèles de la courbe — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 12 — Application : déformations non parallèles de la courbe</h1>
+<p class="sous-titre">Calculatrice interactive — VaR par les facteurs de l'analyse en composantes principales (exercice 5), KR01 et couverture par tranche (exercice 6)</p>
+
+<div class="panneau">
+  <h2>VaR par les facteurs de l'analyse en composantes principales</h2>
+  <p class="aide">$\sigma_P=\sqrt{\sum_i \sigma_i^2 f_i^2}$ (facteurs non corrélés). VaR à $h$ jours et 99&nbsp;% : $\sqrt{h}\times 2{,}326\,\sigma_P$.</p>
+  <div class="ligne3">
+    <div class="bloc">
+      <h3>Facteur 1 — niveau</h3>
+      <label for="c12_f1">Sensibilité $f_1$</label><input type="number" id="c12_f1" value="18" step="1">
+      <label for="c12_s1">Écart-type $\sigma_1$</label><input type="number" id="c12_s1" value="12.40" step="0.1">
+    </div>
+    <div class="bloc">
+      <h3>Facteur 2 — pente</h3>
+      <label for="c12_f2">Sensibilité $f_2$</label><input type="number" id="c12_f2" value="-22" step="1">
+      <label for="c12_s2">Écart-type $\sigma_2$</label><input type="number" id="c12_s2" value="5.10" step="0.1">
+    </div>
+    <div class="bloc">
+      <h3>Facteur 3 — courbure</h3>
+      <label for="c12_f3">Sensibilité $f_3$</label><input type="number" id="c12_f3" value="9" step="1">
+      <label for="c12_s3">Écart-type $\sigma_3$</label><input type="number" id="c12_s3" value="2.75" step="0.1">
+    </div>
+  </div>
+  <div class="ligne">
+    <div><label for="c12_h">Horizon de la VaR (jours)</label><input type="number" id="c12_h" value="10" step="1"></div>
+    <div><label for="c12_z">Quantile (99&nbsp;% : 2,326 ; 95&nbsp;% : 1,645)</label><input type="number" id="c12_z" value="2.326" step="0.001"></div>
+  </div>
+  <button onclick="calculerVaR()">Calculer</button>
+  <div id="resultatVaR" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>KR01, durations partielles et couverture par tranche</h2>
+  <p class="aide">Duration partielle $=10\,000\times\text{KR01}/V$. Neutraliser un seul KR01 laisse subsister les autres : le portefeuille reste exposé aux déformations non parallèles touchant les tranches non couvertes.</p>
+  <div class="ligne">
+    <div><label for="c12b_v">Valeur du portefeuille $V$</label><input type="number" id="c12b_v" value="50000000" step="1000000"></div>
+  </div>
+  <div class="ligne3">
+    <div class="bloc"><h3>2 ans</h3><label for="c12b_k1">KR01</label><input type="number" id="c12b_k1" value="120" step="5"></div>
+    <div class="bloc"><h3>5 ans</h3><label for="c12b_k2">KR01</label><input type="number" id="c12b_k2" value="-45" step="5"></div>
+    <div class="bloc"><h3>10 ans</h3><label for="c12b_k3">KR01</label><input type="number" id="c12b_k3" value="95" step="5"></div>
+    <div class="bloc"><h3>30 ans</h3><label for="c12b_k4">KR01</label><input type="number" id="c12b_k4" value="40" step="5"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c12b_bucket">Tranche à couvrir intégralement</label>
+      <select id="c12b_bucket" style="width:100%; padding:0.5em; border:1px solid #ccc; border-radius:4px; font-family:'Courier New',monospace; font-size:0.9em;">
+        <option value="0">2 ans</option>
+        <option value="1">5 ans</option>
+        <option value="2">10 ans</option>
+        <option value="3">30 ans</option>
+      </select>
+    </div>
+    <div><label for="c12b_kcouv">KR01 de l'instrument de couverture (par million, sur cette même tranche)</label><input type="number" id="c12b_kcouv" value="80" step="5"></div>
+  </div>
+  <button onclick="calculerKR01()">Calculer</button>
+  <div id="resultatKR01" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerVaR() {
+  var resDiv = document.getElementById('resultatVaR');
+  var f1 = parseFloat(document.getElementById('c12_f1').value);
+  var f2 = parseFloat(document.getElementById('c12_f2').value);
+  var f3 = parseFloat(document.getElementById('c12_f3').value);
+  var s1 = parseFloat(document.getElementById('c12_s1').value);
+  var s2 = parseFloat(document.getElementById('c12_s2').value);
+  var s3 = parseFloat(document.getElementById('c12_s3').value);
+  var h = parseFloat(document.getElementById('c12_h').value);
+  var z = parseFloat(document.getElementById('c12_z').value);
+
+  if ([f1, f2, f3, s1, s2, s3, h, z].some(isNaN) || s1 < 0 || s2 < 0 || s3 < 0 || h <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les écarts-types et l\'horizon doivent être positifs.</p>';
+    return;
+  }
+
+  var var1 = Math.pow(f1 * s1, 2);
+  var var2 = Math.pow(f2 * s2, 2);
+  var var3 = Math.pow(f3 * s3, 2);
+  var varTotal = var1 + var2 + var3;
+  var sigmaP = Math.sqrt(varTotal);
+  var VaR1j = z * sigmaP;
+  var VaRhj = Math.sqrt(h) * z * sigmaP;
+
+  var part1 = var1 / varTotal * 100;
+  var part2 = var2 / varTotal * 100;
+  var part3 = var3 / varTotal * 100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Variance — facteur 1 (niveau)</th><td>' + var1.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '<tr><th>Variance — facteur 2 (pente)</th><td>' + var2.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '<tr><th>Variance — facteur 3 (courbure)</th><td>' + var3.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '<tr><th>$\\sigma_P$ (écart-type quotidien)</th><td><strong>' + sigmaP.toFixed(2) + '</strong></td></tr>';
+  html += '<tr><th>VaR à 1 jour</th><td>' + VaR1j.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '<tr><th>VaR à ' + h + ' jour(s)</th><td><strong>' + VaRhj.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</strong></td></tr>';
+  html += '</table>';
+  var dominant = part1 >= part2 && part1 >= part3 ? 'le niveau' : (part2 >= part3 ? 'la pente' : 'la courbure');
+  html += '<div class="valeur mid">facteur dominant : ' + dominant + ' (' + Math.max(part1, part2, part3).toFixed(2) + ' % de la variance totale)</div>';
+  html += dessinerBarresVariance(part1, part2, part3);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresVariance(p1, p2, p3) {
+  var largeur = 300, hauteur = 230, margeG = 45, margeD = 15, margeH = 15, margeB = 45;
+  var valeurs = [p1, p2, p3];
+  var yMax = Math.max(1, Math.max.apply(null, valeurs)) * 1.15;
+  function yPix(y) { return margeH + (yMax - y) / yMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 55;
+  var espace = (largeur - margeG - margeD) / 3;
+  var noms = ['Niveau', 'Pente', 'Courbure'];
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--cintu, #E08000)', 'var(--cex, #2E8B57)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var x = margeG + i * espace + (espace - largeurBarre) / 2;
+    var v = Math.max(valeurs[i], 0);
+    var yTop = yPix(v);
+    var h = Math.max(yZero - yTop, 1);
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yTop - 5).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(1) + ' %</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerKR01() {
+  var resDiv = document.getElementById('resultatKR01');
+  var V = parseFloat(document.getElementById('c12b_v').value);
+  var k = [
+    parseFloat(document.getElementById('c12b_k1').value),
+    parseFloat(document.getElementById('c12b_k2').value),
+    parseFloat(document.getElementById('c12b_k3').value),
+    parseFloat(document.getElementById('c12b_k4').value)
+  ];
+  var noms = ['2 ans', '5 ans', '10 ans', '30 ans'];
+  var bucketIdx = parseInt(document.getElementById('c12b_bucket').value, 10);
+  var kCouv = parseFloat(document.getElementById('c12b_kcouv').value);
+
+  if (k.some(isNaN) || isNaN(V) || V <= 0 || isNaN(kCouv) || kCouv <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : la valeur du portefeuille et le KR01 de couverture doivent être strictement positifs.</p>';
+    return;
+  }
+
+  var dv01 = k.reduce(function (a, b) { return a + b; }, 0);
+  var durations = k.map(function (ki) { return 10000 * ki / V; });
+  var durationTotale = durations.reduce(function (a, b) { return a + b; }, 0);
+  var durationCheck = 10000 * dv01 / V;
+
+  var notional = kCouv > 0 ? (k[bucketIdx] / kCouv) * 1000000 : 0;
+  var dv01Restant = dv01 - k[bucketIdx];
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>DV01 total (somme des KR01)</th><td><strong>' + dv01.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</strong></td></tr>';
+  for (var i = 0; i < 4; i++) {
+    html += '<tr><th>Duration partielle — ' + noms[i] + '</th><td>' + durations[i].toFixed(4) + '</td></tr>';
+  }
+  html += '<tr><th>Duration totale (somme des durations partielles)</th><td>' + durationTotale.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Vérification : $10\\,000\\times \\text{DV01}/V$</th><td>' + durationCheck.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Montant nominal à vendre pour couvrir la tranche ' + noms[bucketIdx] + '</th><td><strong>' + notional.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' €</strong></td></tr>';
+  html += '<tr><th>DV01 restant après cette couverture</th><td>' + dv01Restant.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ko">même après cette couverture, le portefeuille reste exposé aux KR01 non neutralisés — toute déformation non parallèle touchant ces tranches produit encore un résultat</div>';
+  html += dessinerBarresKR01(k, noms, bucketIdx);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresKR01(valeurs, noms, bucketIdx) {
+  var largeur = 320, hauteur = 240, margeG = 48, margeD = 15, margeH = 15, margeB = 45;
+  var yMaxBrut = Math.max.apply(null, valeurs.concat([0]));
+  var yMinBrut = Math.min.apply(null, valeurs.concat([0]));
+  var yMax = (yMaxBrut === 0 ? 1 : yMaxBrut) * 1.25;
+  var yMin = yMinBrut * 1.25;
+  function yPix(y) { return margeH + (yMax - y) / (yMax - yMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 40;
+  var espace = (largeur - margeG - margeD) / 4;
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--cintu, #E08000)', 'var(--ceco, #1F6FB2)', 'var(--cex, #2E8B57)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="250">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var x = margeG + i * espace + (espace - largeurBarre) / 2;
+    var v = valeurs[i];
+    var yTop = yPix(Math.max(v, 0));
+    var yBot = yPix(Math.min(v, 0));
+    var h = Math.max(yBot - yTop, 1);
+    var opac = (i === bucketIdx) ? '0.35' : '0.85';
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="' + opac + '" stroke="' + couleurs[i] + '" stroke-width="' + (i === bucketIdx ? '1.5' : '0') + '" stroke-dasharray="' + (i === bucketIdx ? '3,2' : '0') + '"/>';
+    var yLabel = v >= 0 ? (yTop - 5) : (yBot + 12);
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + yLabel.toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + v.toFixed(0) + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + (i === bucketIdx ? ' (couvert)' : '') + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerVaR(); calculerKR01(); };
+</script>
+</body>
+</html>

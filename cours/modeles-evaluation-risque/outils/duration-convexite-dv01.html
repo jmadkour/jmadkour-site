@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Duration, convexité et DV01 — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Application : duration, convexité et DV01</h1>
+<p class="sous-titre">Calculatrice interactive — approximation duration/convexité du prix (exercice 5), agrégation de portefeuille et couverture en DV01 (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Duration, convexité et approximation du prix</h2>
+  <p class="aide">$D=(\text{DV01}/P)\times 10\,000$. Approximation : $\Delta P \approx -D\,P\,\Delta r + \tfrac{1}{2}\,C\,P\,(\Delta r)^2$.</p>
+  <div class="ligne">
+    <div><label for="c11_p">Prix $P$</label><input type="number" id="c11_p" value="1037922" step="1000"></div>
+    <div><label for="c11_dv01">DV01</label><input type="number" id="c11_dv01" value="265.72" step="1"></div>
+    <div><label for="c11_c">Convexité effective $C$</label><input type="number" id="c11_c" value="7.50" step="0.5"></div>
+    <div><label for="c11_dr">Déplacement de taux $\Delta r$ (%, points de pourcentage)</label><input type="number" id="c11_dr" value="0.75" step="0.05"></div>
+  </div>
+  <button onclick="calculerDuration()">Calculer</button>
+  <div id="resultatDuration" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Agrégation de portefeuille et couverture en DV01</h2>
+  <p class="aide">$\text{DV01}_i = D_i\,V_i\times 0{,}0001$. Le DV01 d'un portefeuille s'additionne ; sa duration se moyenne, pondérée par la valeur. Montant de couverture : $N=1\,000\,000\times \text{DV01}_p/\text{DV01}_{\text{couv}}$.</p>
+  <div class="ligne">
+    <div><label for="c11b_va">Valeur de marché, obligation A</label><input type="number" id="c11b_va" value="5100000" step="100000"></div>
+    <div><label for="c11b_da">Duration effective $D_A$</label><input type="number" id="c11b_da" value="1.75" step="0.05"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c11b_vb">Valeur de marché, obligation B</label><input type="number" id="c11b_vb" value="3150000" step="100000"></div>
+    <div><label for="c11b_db">Duration effective $D_B$</label><input type="number" id="c11b_db" value="4.10" step="0.05"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c11b_dv01couv">DV01 de l'instrument de couverture (par million)</label><input type="number" id="c11b_dv01couv" value="265.72" step="1"></div>
+  </div>
+  <button onclick="calculerPortefeuille()">Calculer</button>
+  <div id="resultatPortefeuille" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerDuration() {
+  var resDiv = document.getElementById('resultatDuration');
+  var P = parseFloat(document.getElementById('c11_p').value);
+  var DV01 = parseFloat(document.getElementById('c11_dv01').value);
+  var C = parseFloat(document.getElementById('c11_c').value);
+  var drPct = parseFloat(document.getElementById('c11_dr').value);
+
+  if ([P, DV01, C, drPct].some(isNaN) || P <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : le prix doit être strictement positif et tous les champs numériques.</p>';
+    return;
+  }
+
+  var D = (DV01 / P) * 10000;
+  var dr = drPct / 100;
+  var dP_dur = -D * P * dr;
+  var terme_conv = 0.5 * C * P * dr * dr;
+  var dP_full = dP_dur + terme_conv;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Duration effective $D$</th><td>' + D.toFixed(4) + '</td></tr>';
+  html += '<tr><th>$\\Delta P$ (duration seule)</th><td>' + dP_dur.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '<tr><th>Terme correctif de convexité</th><td>' + terme_conv.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '<tr><th>$\\Delta P$ (duration + convexité)</th><td><strong>' + dP_full.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</strong></td></tr>';
+  html += '</table>';
+  var sensCorrection = terme_conv >= 0 ? 'atténue la perte (ou amplifie le gain) prédite par la duration seule' : 'accentue la perte (ou réduit le gain) prédite par la duration seule';
+  html += '<div class="valeur mid">le terme de convexité ' + sensCorrection + ', conformément à la convexité de la relation prix-taux</div>';
+  html += dessinerCourbeDuration(D, P, C, drPct);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCourbeDuration(D, P, C, drPctPoint) {
+  var largeur = 340, hauteur = 240, margeG = 55, margeD = 20, margeH = 20, margeB = 45;
+  var xBorne = Math.max(Math.abs(drPctPoint) * 1.8, 1.2);
+
+  function dPlin(xPct) { return -D * P * (xPct / 100); }
+  function dPquad(xPct) { return dPlin(xPct) + 0.5 * C * P * Math.pow(xPct / 100, 2); }
+
+  var yCandidats = [dPlin(-xBorne), dPlin(xBorne), dPquad(-xBorne), dPquad(xBorne), dPlin(drPctPoint), dPquad(drPctPoint)];
+  var yMax = Math.max.apply(null, yCandidats.concat([0])) * 1.15;
+  var yMin = Math.min.apply(null, yCandidats.concat([0])) * 1.15;
+  if (yMax === yMin) { yMax = 1; yMin = -1; }
+
+  function xPix(xPct) { return margeG + (xPct + xBorne) / (2 * xBorne) * (largeur - margeG - margeD); }
+  function yPix(y) { return margeH + (yMax - y) / (yMax - yMin) * (hauteur - margeH - margeB); }
+
+  var n = 40;
+  var ptsLin = '', ptsQuad = '';
+  for (var i = 0; i <= n; i++) {
+    var xPct = -xBorne + (2 * xBorne) * i / n;
+    ptsLin += xPix(xPct).toFixed(1) + ',' + yPix(dPlin(xPct)).toFixed(1) + ' ';
+    ptsQuad += xPix(xPct).toFixed(1) + ',' + yPix(dPquad(xPct)).toFixed(1) + ' ';
+  }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="260">';
+  svg += '<line x1="' + margeG + '" y1="' + yPix(0).toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yPix(0).toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + xPix(0).toFixed(1) + '" y1="' + margeH + '" x2="' + xPix(0).toFixed(1) + '" y2="' + (hauteur - margeB) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<polyline points="' + ptsLin + '" fill="none" stroke="var(--cdef, #4A3B8C)" stroke-width="1.8"/>';
+  svg += '<polyline points="' + ptsQuad + '" fill="none" stroke="var(--cintu, #E08000)" stroke-width="1.8" stroke-dasharray="5,3"/>';
+  var xm = xPix(drPctPoint).toFixed(1), ym = yPix(dPquad(drPctPoint)).toFixed(1);
+  svg += '<circle cx="' + xm + '" cy="' + ym + '" r="3.2" fill="var(--cex, #2E8B57)"/>';
+  svg += '<text x="' + xm + '" y="' + (parseFloat(ym) - 8).toFixed(1) + '" font-size="9" text-anchor="middle" fill="var(--cex, #2E8B57)">&#916;r=' + drPctPoint.toFixed(2) + ' %</text>';
+  svg += '<text x="' + (margeG + 4) + '" y="' + (margeH + 10) + '" font-size="9" fill="var(--cdef, #4A3B8C)">— duration seule</text>';
+  svg += '<text x="' + (margeG + 4) + '" y="' + (margeH + 22) + '" font-size="9" fill="var(--cintu, #E08000)">- - duration + convexité</text>';
+  svg += '<text x="' + ((margeG + largeur - margeD) / 2).toFixed(1) + '" y="' + (hauteur - 6) + '" font-size="9" text-anchor="middle" fill="currentColor">&#916;r (points de pourcentage)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerPortefeuille() {
+  var resDiv = document.getElementById('resultatPortefeuille');
+  var VA = parseFloat(document.getElementById('c11b_va').value);
+  var DA = parseFloat(document.getElementById('c11b_da').value);
+  var VB = parseFloat(document.getElementById('c11b_vb').value);
+  var DB = parseFloat(document.getElementById('c11b_db').value);
+  var dv01Couv = parseFloat(document.getElementById('c11b_dv01couv').value);
+
+  if ([VA, DA, VB, DB, dv01Couv].some(isNaN) || VA < 0 || VB < 0 || dv01Couv <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : les valeurs de marché doivent être positives ou nulles, et le DV01 de couverture strictement positif.</p>';
+    return;
+  }
+
+  var dv01A = DA * VA * 0.0001;
+  var dv01B = DB * VB * 0.0001;
+  var dv01P = dv01A + dv01B;
+  var VP = VA + VB;
+  var DP = VP > 0 ? (VA * DA + VB * DB) / VP : 0;
+  var verif = DP * VP * 0.0001;
+  var notionalCouv = dv01P / dv01Couv * 1000000;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>DV01 obligation A</th><td>' + dv01A.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '<tr><th>DV01 obligation B</th><td>' + dv01B.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '<tr><th>DV01 du portefeuille (somme)</th><td><strong>' + dv01P.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</strong></td></tr>';
+  html += '<tr><th>Duration du portefeuille (moyenne pondérée)</th><td>' + DP.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Vérification : $D_p V_p \\times 0{,}0001$</th><td>' + verif.toLocaleString('fr-FR', {maximumFractionDigits: 2}) + '</td></tr>';
+  html += '<tr><th>Montant nominal de couverture à vendre</th><td><strong>' + notionalCouv.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' €</strong></td></tr>';
+  html += '</table>';
+  var ecartVerif = Math.abs(verif - dv01P) < 0.01;
+  html += '<div class="valeur ' + (ecartVerif ? 'ok' : 'ko') + '">' + (ecartVerif ? 'cohérence vérifiée' : 'écart de vérification') + ' entre le DV01 obtenu par sommation et celui obtenu via la duration moyenne pondérée</div>';
+  html += dessinerBarresDV01(dv01A, dv01B, dv01P);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresDV01(dv01A, dv01B, dv01P) {
+  var largeur = 300, hauteur = 230, margeG = 50, margeD = 15, margeH = 15, margeB = 45;
+  var valeurs = [dv01A, dv01B, dv01P];
+  var yMax = Math.max(0.001, Math.max.apply(null, valeurs)) * 1.2;
+  function yPix(y) { return margeH + (yMax - y) / yMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 55;
+  var espace = (largeur - margeG - margeD) / 3;
+  var noms = ['Obligation A', 'Obligation B', 'Portefeuille'];
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--cintu, #E08000)', 'var(--cex, #2E8B57)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var x = margeG + i * espace + (espace - largeurBarre) / 2;
+    var v = Math.max(valeurs[i], 0);
+    var yTop = yPix(v);
+    var h = Math.max(yZero - yTop, 1);
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yTop - 5).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + Math.round(valeurs[i]).toLocaleString('fr-FR') + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerDuration(); calculerPortefeuille(); };
+</script>
+</body>
+</html>

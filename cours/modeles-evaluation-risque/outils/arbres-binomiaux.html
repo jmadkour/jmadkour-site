@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Les arbres binomiaux — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text], select {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — Application : les arbres binomiaux</h1>
+<p class="sous-titre">Calculatrice interactive — arbre à une période (exercice 5), arbre à deux périodes avec option américaine (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Arbre à une période : réplication et évaluation risque-neutre</h2>
+  <p class="aide">$\Delta=(f_u-f_d)/(S_u-S_d)$ ; $p=(e^{r\Delta t}-d)/(u-d)$ ; $f=e^{-r\Delta t}[pf_u+(1-p)f_d]$.</p>
+  <div class="ligne">
+    <div><label for="c13_s0">Prix du sous-jacent $S_0$</label><input type="number" id="c13_s0" value="100" step="1"></div>
+    <div><label for="c13_u">Facteur de hausse $u$</label><input type="number" id="c13_u" value="1.12" step="0.01"></div>
+    <div><label for="c13_d">Facteur de baisse $d$</label><input type="number" id="c13_d" value="0.90" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c13_k">Prix d'exercice $K$</label><input type="number" id="c13_k" value="100" step="1"></div>
+    <div><label for="c13_r">Taux sans risque continu $r$ (%)</label><input type="number" id="c13_r" value="5" step="0.1"></div>
+    <div><label for="c13_dt">Durée de la période $\Delta t$ (années)</label><input type="number" id="c13_dt" value="0.5" step="0.05"></div>
+    <div><label for="c13_type">Type d'option</label>
+      <select id="c13_type"><option value="call">Call</option><option value="put">Put</option></select>
+    </div>
+  </div>
+  <button onclick="calculerUnePeriode()">Calculer</button>
+  <div id="resultatUnePeriode" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Arbre à deux périodes : option américaine ou européenne</h2>
+  <p class="aide">Calcul à rebours ; à chaque nœud d'une option américaine, on retient $\max(\text{continuation},\ \text{valeur intrinsèque})$.</p>
+  <div class="ligne">
+    <div><label for="c13b_s0">Prix du sous-jacent $S_0$</label><input type="number" id="c13b_s0" value="100" step="1"></div>
+    <div><label for="c13b_u">Facteur de hausse $u$</label><input type="number" id="c13b_u" value="1.12" step="0.01"></div>
+    <div><label for="c13b_d">Facteur de baisse $d$</label><input type="number" id="c13b_d" value="0.90" step="0.01"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c13b_k">Prix d'exercice $K$</label><input type="number" id="c13b_k" value="100" step="1"></div>
+    <div><label for="c13b_r">Taux sans risque continu $r$ (%)</label><input type="number" id="c13b_r" value="5" step="0.1"></div>
+    <div><label for="c13b_dt">Durée d'une période $\Delta t$ (années)</label><input type="number" id="c13b_dt" value="0.5" step="0.05"></div>
+    <div><label for="c13b_type">Type d'option</label>
+      <select id="c13b_type"><option value="put">Put</option><option value="call">Call</option></select>
+    </div>
+  </div>
+  <button onclick="calculerDeuxPeriodes()">Calculer</button>
+  <div id="resultatDeuxPeriodes" class="resultat-zone"></div>
+</div>
+
+<script>
+function payoff(type, S, K) {
+  return type === 'call' ? Math.max(S - K, 0) : Math.max(K - S, 0);
+}
+
+function calculerUnePeriode() {
+  var resDiv = document.getElementById('resultatUnePeriode');
+  var S0 = parseFloat(document.getElementById('c13_s0').value);
+  var u = parseFloat(document.getElementById('c13_u').value);
+  var d = parseFloat(document.getElementById('c13_d').value);
+  var K = parseFloat(document.getElementById('c13_k').value);
+  var rPct = parseFloat(document.getElementById('c13_r').value);
+  var dt = parseFloat(document.getElementById('c13_dt').value);
+  var type = document.getElementById('c13_type').value;
+
+  if ([S0, u, d, K, rPct, dt].some(isNaN) || S0 <= 0 || u <= d || d <= 0 || dt <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : il faut $S_0>0$, $u>d>0$ et $\\Delta t>0$.</p>';
+    return;
+  }
+
+  var r = rPct / 100;
+  var Su = S0 * u, Sd = S0 * d;
+  var fu = payoff(type, Su, K), fd = payoff(type, Sd, K);
+  var Delta = (fu - fd) / (Su - Sd);
+  var p = (Math.exp(r * dt) - d) / (u - d);
+  var f = Math.exp(-r * dt) * (p * fu + (1 - p) * fd);
+  var B = (Delta * Su - fu) / Math.exp(r * dt);
+  var fRepl = Delta * S0 - B;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$S_u$ / $S_d$</th><td>' + Su.toFixed(4) + ' / ' + Sd.toFixed(4) + '</td></tr>';
+  html += '<tr><th>$f_u$ / $f_d$</th><td>' + fu.toFixed(4) + ' / ' + fd.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Delta $\\Delta$</th><td>' + Delta.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Probabilité risque-neutre $p$</th><td>' + p.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Prix (évaluation risque-neutre)</th><td><strong>' + f.toFixed(4) + '</strong></td></tr>';
+  html += '<tr><th>Placement sans risque $B$</th><td>' + B.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Prix (réplication directe)</th><td><strong>' + fRepl.toFixed(4) + '</strong></td></tr>';
+  html += '</table>';
+  var coherent = Math.abs(f - fRepl) < 0.01;
+  html += '<div class="valeur ' + (coherent ? 'ok' : 'ko') + '">' + (coherent ? 'cohérence vérifiée' : 'écart de vérification') + ' entre l\'évaluation risque-neutre et la réplication directe</div>';
+  html += dessinerArbreUnePeriode(S0, Su, Sd, fu, fd, f, p, u, d);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerArbreUnePeriode(S0, Su, Sd, fu, fd, f, p, u, d) {
+  var largeur = 340, hauteur = 200;
+  var x0 = 55, x1 = 280;
+  var y0 = 100, yU = 40, yD = 160;
+
+  function noeud(x, y, l1, l2, coul) {
+    var w = 90, h = 34;
+    var s = '<rect x="' + (x - w/2).toFixed(1) + '" y="' + (y - h/2).toFixed(1) + '" width="' + w + '" height="' + h + '" rx="6" fill="' + coul + '" fill-opacity="0.12" stroke="' + coul + '" stroke-width="1.2"/>';
+    s += '<text x="' + x.toFixed(1) + '" y="' + (y - 3).toFixed(1) + '" font-size="9.5" text-anchor="middle" fill="currentColor">' + l1 + '</text>';
+    s += '<text x="' + x.toFixed(1) + '" y="' + (y + 11).toFixed(1) + '" font-size="9.5" text-anchor="middle" fill="currentColor">' + l2 + '</text>';
+    return s;
+  }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="230">';
+  svg += '<line x1="' + x0 + '" y1="' + y0 + '" x2="' + (x1 - 46) + '" y2="' + yU + '" stroke="#999" stroke-width="1.3"/>';
+  svg += '<line x1="' + x0 + '" y1="' + y0 + '" x2="' + (x1 - 46) + '" y2="' + yD + '" stroke="#999" stroke-width="1.3"/>';
+  svg += '<text x="' + ((x0 + x1) / 2 - 20) + '" y="' + ((y0 + yU) / 2 - 6) + '" font-size="8.5" fill="currentColor">u=' + u.toFixed(3) + '</text>';
+  svg += '<text x="' + ((x0 + x1) / 2 - 20) + '" y="' + ((y0 + yD) / 2 + 12) + '" font-size="8.5" fill="currentColor">d=' + d.toFixed(3) + '</text>';
+  svg += noeud(x0, y0, 'S0=' + S0.toFixed(2), 'f=' + f.toFixed(4), '#4A3B8C');
+  svg += noeud(x1, yU, 'Su=' + Su.toFixed(2), 'fu=' + fu.toFixed(4), '#2E8B57');
+  svg += noeud(x1, yD, 'Sd=' + Sd.toFixed(2), 'fd=' + fd.toFixed(4), '#E08000');
+  svg += '<text x="' + ((x0 + x1) / 2) + '" y="' + (y0 - 32) + '" font-size="8.5" text-anchor="middle" fill="currentColor">p=' + p.toFixed(4) + ' (risque-neutre)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerDeuxPeriodes() {
+  var resDiv = document.getElementById('resultatDeuxPeriodes');
+  var S0 = parseFloat(document.getElementById('c13b_s0').value);
+  var u = parseFloat(document.getElementById('c13b_u').value);
+  var d = parseFloat(document.getElementById('c13b_d').value);
+  var K = parseFloat(document.getElementById('c13b_k').value);
+  var rPct = parseFloat(document.getElementById('c13b_r').value);
+  var dt = parseFloat(document.getElementById('c13b_dt').value);
+  var type = document.getElementById('c13b_type').value;
+
+  if ([S0, u, d, K, rPct, dt].some(isNaN) || S0 <= 0 || u <= d || d <= 0 || dt <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : il faut $S_0>0$, $u>d>0$ et $\\Delta t>0$.</p>';
+    return;
+  }
+
+  var r = rPct / 100;
+  var p = (Math.exp(r * dt) - d) / (u - d);
+  var disc = Math.exp(-r * dt);
+
+  var Su = S0 * u, Sd = S0 * d;
+  var Suu = S0 * u * u, Sud = S0 * u * d, Sdd = S0 * d * d;
+  var payUU = payoff(type, Suu, K), payUD = payoff(type, Sud, K), payDD = payoff(type, Sdd, K);
+
+  var contSu = disc * (p * payUU + (1 - p) * payUD);
+  var intrSu = payoff(type, Su, K);
+  var valSuAm = Math.max(contSu, intrSu);
+  var valSuEur = contSu;
+
+  var contSd = disc * (p * payUD + (1 - p) * payDD);
+  var intrSd = payoff(type, Sd, K);
+  var valSdAm = Math.max(contSd, intrSd);
+  var valSdEur = contSd;
+
+  var priceAm = disc * (p * valSuAm + (1 - p) * valSdAm);
+  var priceEur = disc * (p * valSuEur + (1 - p) * valSdEur);
+  var premium = priceAm - priceEur;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>$S_{uu}$ / $S_{ud}$ / $S_{dd}$</th><td>' + Suu.toFixed(4) + ' / ' + Sud.toFixed(4) + ' / ' + Sdd.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Paiements terminaux</th><td>' + payUU.toFixed(4) + ' / ' + payUD.toFixed(4) + ' / ' + payDD.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Nœud $S_u$ : continuation / intrinsèque</th><td>' + contSu.toFixed(4) + ' / ' + intrSu.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Nœud $S_d$ : continuation / intrinsèque</th><td>' + contSd.toFixed(4) + ' / ' + intrSd.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Prix américain</th><td><strong>' + priceAm.toFixed(4) + '</strong></td></tr>';
+  html += '<tr><th>Prix européen</th><td><strong>' + priceEur.toFixed(4) + '</strong></td></tr>';
+  html += '<tr><th>Prime d\'exercice anticipé</th><td>' + premium.toFixed(4) + '</td></tr>';
+  html += '</table>';
+  var exerciceSu = intrSu > contSu + 1e-9;
+  var exerciceSd = intrSd > contSd + 1e-9;
+  var texteExercice = (exerciceSu || exerciceSd)
+    ? 'exercice anticipé optimal au(x) nœud(s) : ' + [exerciceSu ? 'Su' : null, exerciceSd ? 'Sd' : null].filter(Boolean).join(', ')
+    : 'aucun nœud intermédiaire n\'appelle un exercice anticipé pour ces paramètres';
+  html += '<div class="valeur ' + ((exerciceSu || exerciceSd) ? 'mid' : 'ok') + '">' + texteExercice + '</div>';
+  html += dessinerArbreDeuxPeriodes(S0, Su, Sd, Suu, Sud, Sdd, payUU, payUD, payDD, valSuAm, valSdAm, contSu, contSd, priceAm, priceEur, exerciceSu, exerciceSd);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerArbreDeuxPeriodes(S0, Su, Sd, Suu, Sud, Sdd, payUU, payUD, payDD, valSuAm, valSdAm, contSu, contSd, priceAm, priceEur, exSu, exSd) {
+  var largeur = 380, hauteur = 260;
+  var x0 = 50, x1 = 200, x2 = 340;
+  var y0 = 130, yU = 55, yD = 205, yUU = 25, yUD = 130, yDD = 235;
+
+  function noeud(x, y, lignes, coul) {
+    var w = 96, h = 12 * lignes.length + 10;
+    var s = '<rect x="' + (x - w/2).toFixed(1) + '" y="' + (y - h/2).toFixed(1) + '" width="' + w + '" height="' + h + '" rx="6" fill="' + coul + '" fill-opacity="0.12" stroke="' + coul + '" stroke-width="1.1"/>';
+    for (var i = 0; i < lignes.length; i++) {
+      s += '<text x="' + x.toFixed(1) + '" y="' + (y - h/2 + 11 + i * 12).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + lignes[i] + '</text>';
+    }
+    return s;
+  }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="290">';
+  var edges = [[x0,y0,x1,yU],[x0,y0,x1,yD],[x1,yU,x2,yUU],[x1,yU,x2,yUD],[x1,yD,x2,yUD],[x1,yD,x2,yDD]];
+  edges.forEach(function (e) {
+    svg += '<line x1="' + e[0] + '" y1="' + e[1] + '" x2="' + (e[2]-48) + '" y2="' + e[3] + '" stroke="#999" stroke-width="1.1"/>';
+  });
+  svg += noeud(x0, y0, ['S0=' + S0.toFixed(2), 'am:' + priceAm.toFixed(3), 'eur:' + priceEur.toFixed(3)], '#4A3B8C');
+  svg += noeud(x1, yU, ['Su=' + Su.toFixed(2), (exSu ? 'val:' + valSuAm.toFixed(3) + '*' : 'val:' + valSuAm.toFixed(3))], exSu ? '#2E8B57' : '#E08000');
+  svg += noeud(x1, yD, ['Sd=' + Sd.toFixed(2), (exSd ? 'val:' + valSdAm.toFixed(3) + '*' : 'val:' + valSdAm.toFixed(3))], exSd ? '#2E8B57' : '#E08000');
+  svg += noeud(x2, yUU, ['Suu=' + Suu.toFixed(2), 'pay=' + payUU.toFixed(3)], '#5A5A5A');
+  svg += noeud(x2, yUD, ['Sud=' + Sud.toFixed(2), 'pay=' + payUD.toFixed(3)], '#5A5A5A');
+  svg += noeud(x2, yDD, ['Sdd=' + Sdd.toFixed(2), 'pay=' + payDD.toFixed(3)], '#5A5A5A');
+  svg += '<text x="10" y="' + (hauteur - 6) + '" font-size="7.5" fill="currentColor">* exercice anticipé optimal (valeur intrinsèque &gt; continuation)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerUnePeriode(); calculerDeuxPeriodes(); };
+</script>
+</body>
+</html>

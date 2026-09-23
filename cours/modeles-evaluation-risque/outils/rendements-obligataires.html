@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 10 — Rendements obligataires et calculs de rentabilité — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 10 — Application : rendements obligataires et calculs de rentabilité</h1>
+<p class="sous-titre">Calculatrice interactive — rendement réalisé brut et net (exercice 5), écart et décomposition du résultat en portage / effet de taux / effet d'écart (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Rendement réalisé brut et net</h2>
+  <p class="aide">Gain brut = $(P_1-P_0)$ + coupons, le premier coupon étant réinvesti jusqu'à la fin de la période. Gain net = gain brut − coût de financement. On divise toujours par $P_0$, jamais par la mise nette.</p>
+  <div class="ligne">
+    <div><label for="c10_p0">Prix d'achat $P_0$</label><input type="number" id="c10_p0" value="97.00" step="0.1"></div>
+    <div><label for="c10_c1">Coupon $c_1$ (6 mois)</label><input type="number" id="c10_c1" value="2.00" step="0.1"></div>
+    <div><label for="c10_p05">Prix à 6 mois $P_{0,5}$</label><input type="number" id="c10_p05" value="97.80" step="0.1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c10_reinv">Taux de réinvestissement de $c_1$ (%, semestriel simple)</label><input type="number" id="c10_reinv" value="1.2" step="0.1"></div>
+    <div><label for="c10_c2">Coupon $c_2$ (1 an)</label><input type="number" id="c10_c2" value="2.00" step="0.1"></div>
+    <div><label for="c10_p1">Prix à 1 an $P_1$</label><input type="number" id="c10_p1" value="97.50" step="0.1"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c10_fin">Taux de financement (%, annuel simple)</label><input type="number" id="c10_fin" value="2.8" step="0.1"></div>
+  </div>
+  <button onclick="calculerRendement()">Calculer</button>
+  <div id="resultatRendement" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Écart et décomposition du résultat</h2>
+  <p class="aide">Portage (hypothèse 1) $= f\times P_{\text{marché}}$. Gain total sur la période $=(P_{\text{fin}}-P_{\text{marché}})+\text{coupon}$. Effet d'écart $=$ gain total $-$ portage $-$ effet de taux.</p>
+  <div class="ligne">
+    <div><label for="c10b_theo">Valeur théorique (courbe)</label><input type="number" id="c10b_theo" value="102.80" step="0.1"></div>
+    <div><label for="c10b_mkt">Prix de marché</label><input type="number" id="c10b_mkt" value="102.20" step="0.1"></div>
+    <div><label for="c10b_f">Taux à terme 6 mois $f$ (%)</label><input type="number" id="c10b_f" value="0.40" step="0.05"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c10b_pfin">Prix 6 mois plus tard (coupon détaché)</label><input type="number" id="c10b_pfin" value="102.05" step="0.1"></div>
+    <div><label for="c10b_coupon">Coupon reçu entre-temps</label><input type="number" id="c10b_coupon" value="1.50" step="0.1"></div>
+    <div><label for="c10b_taux">Effet de taux donné (révision de courbe)</label><input type="number" id="c10b_taux" value="0.62" step="0.05"></div>
+  </div>
+  <button onclick="calculerEcart()">Calculer</button>
+  <div id="resultatEcart" class="resultat-zone"></div>
+</div>
+
+<script>
+function calculerRendement() {
+  var resDiv = document.getElementById('resultatRendement');
+  var P0 = parseFloat(document.getElementById('c10_p0').value);
+  var c1 = parseFloat(document.getElementById('c10_c1').value);
+  var P05 = parseFloat(document.getElementById('c10_p05').value);
+  var reinv = parseFloat(document.getElementById('c10_reinv').value) / 100;
+  var c2 = parseFloat(document.getElementById('c10_c2').value);
+  var P1 = parseFloat(document.getElementById('c10_p1').value);
+  var fin = parseFloat(document.getElementById('c10_fin').value) / 100;
+
+  if ([P0, c1, P05, reinv, c2, P1, fin].some(isNaN) || P0 <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : vérifier que $P_0$ est strictement positif et que tous les champs sont numériques.</p>';
+    return;
+  }
+
+  var gain6m = (P05 - P0) + c1;
+  var r6m = gain6m / P0;
+  var rAnnualise = r6m * 2;
+
+  var c1Grandi = c1 * (1 + reinv);
+  var revenu = c1Grandi + c2;
+  var gainBrutAnnuel = (P1 - P0) + revenu;
+  var rBrutAnnuel = gainBrutAnnuel / P0;
+
+  var coutFinancement = P0 * fin;
+  var gainNet = gainBrutAnnuel - coutFinancement;
+  var rNet = gainNet / P0;
+
+  var composantePrix = (P1 - P0) / P0;
+  var composanteRevenu = revenu / P0;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Gain sur 6 mois</th><td>' + gain6m.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Rendement 6 mois</th><td>' + (r6m * 100).toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>Rendement annualisé (doublement simple)</th><td>' + (rAnnualise * 100).toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>Valeur acquise de $c_1$ réinvesti</th><td>' + c1Grandi.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Revenu total (coupons + réinvestissement)</th><td>' + revenu.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Gain brut annuel</th><td>' + gainBrutAnnuel.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Rendement réalisé brut annuel</th><td><strong>' + (rBrutAnnuel * 100).toFixed(4) + ' %</strong></td></tr>';
+  html += '<tr><th>Coût de financement</th><td>' + coutFinancement.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Gain net annuel</th><td>' + gainNet.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Rendement réalisé net annuel</th><td><strong>' + (rNet * 100).toFixed(4) + ' %</strong></td></tr>';
+  html += '</table>';
+  html += '<div class="valeur mid">décomposition du gain brut : variation de prix ' + (composantePrix * 100).toFixed(4) + ' % + revenu ' + (composanteRevenu * 100).toFixed(4) + ' % de $P_0$ = ' + (rBrutAnnuel * 100).toFixed(4) + ' %</div>';
+  html += dessinerBarresRendement(rBrutAnnuel * 100, fin * 100, rNet * 100);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresRendement(brut, cout, net) {
+  var largeur = 300, hauteur = 230, margeG = 45, margeD = 15, margeH = 15, margeB = 45;
+  var valeurs = [brut, cout, net];
+  var yMax = Math.max(0.001, Math.max.apply(null, valeurs)) * 1.2;
+  function yPix(y) { return margeH + (yMax - y) / yMax * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 55;
+  var espace = (largeur - margeG - margeD) / 3;
+  var noms = ['Gain brut annuel', 'Coût de financement', 'Gain net annuel'];
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--cgris, #5A5A5A)', 'var(--cex, #2E8B57)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 3; i++) {
+    var x = margeG + i * espace + (espace - largeurBarre) / 2;
+    var v = Math.max(valeurs[i], 0);
+    var yTop = yPix(v);
+    var h = Math.max(yZero - yTop, 1);
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yTop - 5).toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(2) + ' %</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerEcart() {
+  var resDiv = document.getElementById('resultatEcart');
+  var theo = parseFloat(document.getElementById('c10b_theo').value);
+  var mkt = parseFloat(document.getElementById('c10b_mkt').value);
+  var f = parseFloat(document.getElementById('c10b_f').value) / 100;
+  var pfin = parseFloat(document.getElementById('c10b_pfin').value);
+  var coupon = parseFloat(document.getElementById('c10b_coupon').value);
+  var effetTauxDonne = parseFloat(document.getElementById('c10b_taux').value);
+
+  if ([theo, mkt, f, pfin, coupon, effetTauxDonne].some(isNaN) || mkt <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides : vérifier que le prix de marché est strictement positif et que tous les champs sont numériques.</p>';
+    return;
+  }
+
+  var ecartPrix = theo - mkt;
+  var cherOuBonMarche = ecartPrix > 0 ? 'bon marché' : (ecartPrix < 0 ? 'chère' : 'à la valeur théorique');
+
+  var portage = f * mkt;
+  var gainTotal = (pfin - mkt) + coupon;
+  var effetEcart = gainTotal - portage - effetTauxDonne;
+
+  var portagePct = portage / mkt * 100;
+  var tauxPct = effetTauxDonne / mkt * 100;
+  var ecartPct = effetEcart / mkt * 100;
+  var totalPct = gainTotal / mkt * 100;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Écart de prix (théorique − marché)</th><td>' + ecartPrix.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Portage (hypothèse 1 : taux à terme réalisés)</th><td>' + portage.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Gain total sur la période</th><td>' + gainTotal.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Effet de taux (donné)</th><td>' + effetTauxDonne.toFixed(3) + '</td></tr>';
+  html += '<tr><th>Effet d\'écart (déduit par différence)</th><td><strong>' + effetEcart.toFixed(4) + '</strong></td></tr>';
+  html += '<tr><th>Portage, en % de $P_0$</th><td>' + portagePct.toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>Effet de taux, en % de $P_0$</th><td>' + tauxPct.toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>Effet d\'écart, en % de $P_0$</th><td>' + ecartPct.toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>Rendement brut total, en % de $P_0$</th><td><strong>' + totalPct.toFixed(4) + ' %</strong></td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (ecartPrix > 0 ? 'ok' : (ecartPrix < 0 ? 'ko' : 'mid')) + '">l\'obligation se négocie ' + cherOuBonMarche + ' par rapport à la courbe de référence</div>';
+  html += dessinerBarresEcart(portagePct, tauxPct, ecartPct, totalPct);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresEcart(portage, taux, ecart, total) {
+  var largeur = 340, hauteur = 230, margeG = 45, margeD = 15, margeH = 15, margeB = 48;
+  var valeurs = [portage, taux, ecart, total];
+  var yMaxBrut = Math.max.apply(null, valeurs);
+  var yMinBrut = Math.min(0, Math.min.apply(null, valeurs));
+  var yMax = (yMaxBrut === 0 ? 1 : yMaxBrut) * 1.25;
+  var yMin = yMinBrut * 1.25;
+  function yPix(y) { return margeH + (yMax - y) / (yMax - yMin) * (hauteur - margeH - margeB); }
+  var yZero = yPix(0);
+  var largeurBarre = 42;
+  var espace = (largeur - margeG - margeD) / 4;
+  var noms = ['Portage', 'Effet de taux', "Effet d'écart", 'Gain total'];
+  var couleurs = ['var(--cdef, #4A3B8C)', 'var(--cintu, #E08000)', 'var(--ceco, #1F6FB2)', 'var(--cex, #2E8B57)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yZero.toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yZero.toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 4; i++) {
+    var x = margeG + i * espace + (espace - largeurBarre) / 2;
+    var v = valeurs[i];
+    var yTop = yPix(Math.max(v, 0));
+    var yBot = yPix(Math.min(v, 0));
+    var h = Math.max(yBot - yTop, 1);
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    var yLabel = v >= 0 ? (yTop - 5) : (yBot + 12);
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + yLabel.toFixed(1) + '" font-size="8" text-anchor="middle" fill="currentColor">' + v.toFixed(2) + ' %</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerRendement(); calculerEcart(); };
+</script>
+</body>
+</html>

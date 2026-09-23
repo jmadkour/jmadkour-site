@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 8 — Actualisation et arbitrage — Calculatrice interactive</title>
+<style>
+  :root { --cdef: #4A3B8C; --cintu: #E08000; --cex: #2E8B57; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 1150px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.85em; color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; }
+  input[type=number], input[type=text] { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; }
+  .ligne { display: flex; gap: 1em; flex-wrap: wrap; align-items: flex-start; }
+  .ligne > div { flex: 1; min-width: 130px; }
+  button { margin-top: 1em; margin-right: 0.5em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #372c69; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  .aide { font-size: 0.85em; color: var(--cgris); margin-top: 0; }
+  .valeur { font-size: 1.0em; padding: 0.4em 0.7em; background: var(--cdef); color: white; border-radius: 5px; display: inline-block; margin: 0.2em 0.3em 0.2em 0; }
+  .valeur.ok { background: var(--cex); }
+  .valeur.ko { background: #b00020; }
+  .valeur.mid { background: var(--cintu); }
+  table.tabres { border-collapse: collapse; margin-top: 0.7em; font-size: 0.85em; font-family: "Courier New", monospace; width: 100%; }
+  table.tabres th, table.tabres td { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: right; }
+  table.tabres th { background: #f0f0f0; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table.tabres td:first-child, table.tabres th:first-child { text-align: left; }
+  svg.graphique { background: white; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 0.8em; }
+  .ligne3 { display: flex; gap: 1em; flex-wrap: wrap; }
+  .ligne3 > .bloc { flex: 1; min-width: 220px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.6em 0.8em; }
+  .bloc h3 { margin: 0 0 0.4em; font-size: 0.9em; font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cgris); }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus). */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label, .bloc h3 { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+.bloc { border-color: var(--border) !important; }
+input[type=number], input[type=text] {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+.valeur.mid { background: var(--cintu) !important; }
+table.tabres th, table.tabres td { border-color: var(--border) !important; color: var(--fg) !important; }
+table.tabres th { background: var(--code-bg) !important; }
+svg.graphique { background: var(--card-bg) !important; border-color: var(--border) !important; }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 8 — Application : actualisation et arbitrage</h1>
+<p class="sous-titre">Calculatrice interactive — bootstrapping des facteurs d'actualisation (exercice 5), détection et exploitation d'un arbitrage par réplication (exercice 6)</p>
+
+<div class="panneau">
+  <h2>Bootstrapping des facteurs d'actualisation</h2>
+  <p class="aide">Zéro-coupon à 1 an : $d(1)=P_1/N$. Obligation à 2 ans (coupon annuel $c_2\,\%$ du nominal) : $P_2=c_2 N\,d(1)+(1+c_2)N\,d(2)$, d'où $d(2)$. Taux actuariels : $d(t)=(1+r(t))^{-t}$.</p>
+  <div class="ligne">
+    <div><label for="c8_nominal">Nominal $N$</label><input type="number" id="c8_nominal" value="100" step="10"></div>
+    <div><label for="c8_p1">Prix du zéro-coupon 1 an $P_1$</label><input type="number" id="c8_p1" value="96" step="0.5"></div>
+  </div>
+  <div class="ligne">
+    <div><label for="c8_p2">Prix de l'obligation 2 ans $P_2$</label><input type="number" id="c8_p2" value="100.50" step="0.5"></div>
+    <div><label for="c8_c2">Coupon annuel de l'obligation 2 ans (%)</label><input type="number" id="c8_c2" value="5" step="0.5"></div>
+  </div>
+  <button onclick="calculerBootstrapping()">Calculer</button>
+  <div id="resultatBootstrap" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Détecter et exploiter un arbitrage par réplication</h2>
+  <p class="aide">Prix théorique de la 3<sup>e</sup> obligation (coupon $c_3\,\%$) : $P^{\text{théo}}=c_3 N\,d(1)+(1+c_3)N\,d(2)$. Portefeuille de réplication : $x$ zéro-coupons $+$ $y$ obligations 2 ans (celles du panneau ci-dessus) reproduisant exactement les flux de la 3<sup>e</sup> obligation.</p>
+  <div class="ligne">
+    <div><label for="c8b_c3">Coupon annuel de la 3<sup>e</sup> obligation (%)</label><input type="number" id="c8b_c3" value="8" step="0.5"></div>
+    <div><label for="c8b_p3">Prix de marché de la 3<sup>e</sup> obligation</label><input type="number" id="c8b_p3" value="108" step="0.5"></div>
+  </div>
+  <button onclick="calculerArbitrage()">Calculer</button>
+  <div id="resultatArbitrage" class="resultat-zone"></div>
+</div>
+
+<script>
+var etatBootstrap = null; // mémorise d(1), d(2), nominal, c2, P2 pour le panneau 2
+
+function calculerBootstrapping() {
+  var resDiv = document.getElementById('resultatBootstrap');
+  var N = parseFloat(document.getElementById('c8_nominal').value);
+  var P1 = parseFloat(document.getElementById('c8_p1').value);
+  var P2 = parseFloat(document.getElementById('c8_p2').value);
+  var c2 = parseFloat(document.getElementById('c8_c2').value) / 100;
+
+  if ([N, P1, P2, c2].some(isNaN) || N <= 0 || P1 <= 0 || P2 <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    etatBootstrap = null;
+    return;
+  }
+
+  var d1 = P1 / N;
+  var coupon2 = c2 * N;
+  var d2 = (P2 - coupon2 * d1) / (N + coupon2);
+
+  if (d2 <= 0 || d2 >= 1 || d1 >= 1) {
+    resDiv.innerHTML = '<p class="erreur">Les prix saisis donnent un facteur d\'actualisation hors de l\'intervalle (0,1) : vérifier les données (taux implicites négatifs ou aberrants).</p>';
+    etatBootstrap = null;
+    return;
+  }
+
+  var r1 = 1 / d1 - 1;
+  var r2 = Math.pow(1 / d2, 1 / 2) - 1;
+  var decroissant = d2 < d1 && d1 < 1;
+
+  etatBootstrap = { N: N, d1: d1, d2: d2, c2: c2, P2: P2 };
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>d(0)</th><td>1,000000</td></tr>';
+  html += '<tr><th>d(1)</th><td>' + d1.toFixed(6) + '</td></tr>';
+  html += '<tr><th>d(2)</th><td>' + d2.toFixed(6) + '</td></tr>';
+  html += '<tr><th>r(1)</th><td>' + (r1 * 100).toFixed(4) + ' %</td></tr>';
+  html += '<tr><th>r(2)</th><td>' + (r2 * 100).toFixed(4) + ' %</td></tr>';
+  html += '</table>';
+  html += '<div class="valeur ' + (decroissant ? 'ok' : 'ko') + '">fonction d\'actualisation ' + (decroissant ? 'décroissante — cohérent avec l\'absence d\'arbitrage' : 'NON décroissante — incohérence, vérifier les prix saisis') + '</div>';
+  html += dessinerCourbeActualisation(d1, d2);
+
+  resDiv.innerHTML = html;
+}
+
+function dessinerCourbeActualisation(d1, d2) {
+  var largeur = 320, hauteur = 220, margeG = 45, margeD = 15, margeH = 15, margeB = 35;
+  var yMin = Math.min(d2, 0.85) - 0.02, yMax = 1.03;
+  function xPix(x) { return margeG + (x / 2) * (largeur - margeG - margeD); }
+  function yPix(y) { return (hauteur - margeB) - ((y - yMin) / (yMax - yMin)) * (hauteur - margeB - margeH); }
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + xPix(0) + '" y1="' + yPix(yMin) + '" x2="' + xPix(0) + '" y2="' + yPix(yMax) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<line x1="' + xPix(0) + '" y1="' + yPix(yMin) + '" x2="' + xPix(2) + '" y2="' + yPix(yMin) + '" stroke="#888" stroke-width="1"/>';
+  svg += '<polyline points="' + xPix(0) + ',' + yPix(1).toFixed(1) + ' ' + xPix(1) + ',' + yPix(d1).toFixed(1) + ' ' + xPix(2) + ',' + yPix(d2).toFixed(1) + '" fill="none" stroke="var(--cdef, #4A3B8C)" stroke-width="2"/>';
+  [[0, 1, 'd(0)=1'], [1, d1, 'd(1)=' + d1.toFixed(4)], [2, d2, 'd(2)=' + d2.toFixed(4)]].forEach(function (p) {
+    svg += '<circle cx="' + xPix(p[0]).toFixed(1) + '" cy="' + yPix(p[1]).toFixed(1) + '" r="3" fill="var(--cdef, #4A3B8C)"/>';
+    svg += '<text x="' + xPix(p[0]).toFixed(1) + '" y="' + (yPix(p[1]) - 7).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + p[2] + '</text>';
+  });
+  svg += '<text x="' + margeG + '" y="' + (hauteur - 5) + '" font-size="9" fill="currentColor">maturité t (années)</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+function calculerArbitrage() {
+  var resDiv = document.getElementById('resultatArbitrage');
+  if (!etatBootstrap) {
+    resDiv.innerHTML = '<p class="erreur">Calculer d\'abord le panneau ci-dessus (d(1) et d(2) sont nécessaires).</p>';
+    return;
+  }
+  var N = etatBootstrap.N, d1 = etatBootstrap.d1, d2 = etatBootstrap.d2, c2 = etatBootstrap.c2, P2 = etatBootstrap.P2;
+  var c3 = parseFloat(document.getElementById('c8b_c3').value) / 100;
+  var P3 = parseFloat(document.getElementById('c8b_p3').value);
+
+  if ([c3, P3].some(isNaN) || P3 <= 0) {
+    resDiv.innerHTML = '<p class="erreur">Valeurs invalides.</p>';
+    return;
+  }
+
+  var coupon3 = c3 * N;
+  var prixTheorique = coupon3 * d1 + (N + coupon3) * d2;
+  var ecart = P3 - prixTheorique;
+
+  // Portefeuille de réplication : x zéro-coupons (flux N en t=1) + y obligations 2 ans
+  // (flux c2*N en t=1, (N+c2*N) en t=2) reproduisant (coupon3 en t=1, N+coupon3 en t=2).
+  var coupon2 = c2 * N;
+  var y = coupon3 !== 0 || (N + coupon2) !== 0 ? (N + coupon3) / (N + coupon2) : 0;
+  var x = (coupon3 - y * coupon2) / N;
+  var coutReplication = x * (d1 * N) /* prix du zéro-coupon = N*d1 */ + y * P2;
+
+  var html = '<table class="tabres">';
+  html += '<tr><th>Prix théorique (réplication)</th><td>' + prixTheorique.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Prix de marché</th><td>' + P3.toFixed(4) + '</td></tr>';
+  html += '<tr><th>Écart (marché − théorique)</th><td>' + ecart.toFixed(4) + '</td></tr>';
+  html += '<tr><th>x (quantité de zéro-coupon)</th><td>' + x.toFixed(6) + '</td></tr>';
+  html += '<tr><th>y (quantité d\'obligation 2 ans)</th><td>' + y.toFixed(6) + '</td></tr>';
+  html += '<tr><th>Coût du portefeuille de réplication</th><td>' + coutReplication.toFixed(4) + '</td></tr>';
+  html += '</table>';
+
+  if (Math.abs(ecart) < 1e-6) {
+    html += '<div class="valeur ok">aucune opportunité d\'arbitrage détectable (prix de marché ≈ prix théorique)</div>';
+  } else if (ecart > 0) {
+    html += '<div class="valeur ko">obligation SURÉVALUÉE : vendre à découvert la 3<sup>e</sup> obligation (encaisser ' + P3.toFixed(4) + '), acheter le portefeuille de réplication (coût ' + coutReplication.toFixed(4) + ') — profit sans risque de ' + ecart.toFixed(4) + ' par obligation</div>';
+  } else {
+    html += '<div class="valeur ko">obligation SOUS-ÉVALUÉE : acheter la 3<sup>e</sup> obligation (' + P3.toFixed(4) + '), vendre à découvert le portefeuille de réplication (encaisser ' + coutReplication.toFixed(4) + ') — profit sans risque de ' + (-ecart).toFixed(4) + ' par obligation</div>';
+  }
+
+  html += dessinerBarresArbitrage(P3, prixTheorique);
+  resDiv.innerHTML = html;
+}
+
+function dessinerBarresArbitrage(pMarche, pTheo) {
+  var largeur = 300, hauteur = 230, margeG = 42, margeD = 15, margeH = 15, margeB = 40;
+  var valeurs = [pMarche, pTheo];
+  var yMax = Math.max.apply(null, valeurs) * 1.05;
+  var yMin = Math.min.apply(null, valeurs) * 0.95;
+  function yPix(y) { return margeH + (yMax - y) / (yMax - yMin) * (hauteur - margeH - margeB); }
+  var largeurBarre = 60;
+  var espace = (largeur - margeG - margeD) / 2;
+  var noms = ['Prix de marché', 'Prix théorique'];
+  var couleurs = ['var(--cintu, #E08000)', 'var(--cdef, #4A3B8C)'];
+
+  var svg = '<svg class="graphique" viewBox="0 0 ' + largeur + ' ' + hauteur + '" width="100%" height="240">';
+  svg += '<line x1="' + margeG + '" y1="' + yPix(yMin).toFixed(1) + '" x2="' + (largeur - margeD) + '" y2="' + yPix(yMin).toFixed(1) + '" stroke="#888" stroke-width="1"/>';
+  for (var i = 0; i < 2; i++) {
+    var x = margeG + i * espace + (espace - largeurBarre) / 2;
+    var yTop = yPix(valeurs[i]);
+    var h = yPix(yMin) - yTop;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + largeurBarre + '" height="' + h.toFixed(1) + '" fill="' + couleurs[i] + '" opacity="0.85"/>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (yTop - 5).toFixed(1) + '" font-size="9" text-anchor="middle" fill="currentColor">' + valeurs[i].toFixed(4) + '</text>';
+    svg += '<text x="' + (x + largeurBarre / 2).toFixed(1) + '" y="' + (hauteur - margeB + 14) + '" font-size="8" text-anchor="middle" fill="currentColor">' + noms[i] + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
+window.onload = function () { calculerBootstrapping(); calculerArbitrage(); };
+</script>
+</body>
+</html>
