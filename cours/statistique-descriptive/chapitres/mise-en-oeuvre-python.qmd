@@ -1,0 +1,650 @@
+---
+title: "Statistique descriptive"
+subtitle: "Mise en œuvre sur Python"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Statistique descriptive</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="objet-de-la-statistique.qmd">1. Qu&#x27;est-ce que la statistique ?</a></li>
+<li><a class="" href="population-variable-modalite.qmd">2. Population, variable, modalité</a></li>
+<li><a class="" href="tableau-statistique.qmd">3. Le tableau statistique</a></li>
+<li><a class="" href="regroupement-en-classes.qmd">4. Le regroupement en classes</a></li>
+<li><a class="" href="representations-graphiques.qmd">5. Une colonne, un graphique</a></li>
+<li><a class="" href="tendance-centrale.qmd">6. Les indicateurs de tendance centrale</a></li>
+<li><a class="" href="quantiles.qmd">7. Les quantiles</a></li>
+<li><a class="" href="dispersion.qmd">8. Les indicateurs de dispersion</a></li>
+<li><a class="" href="forme.qmd">9. Les indicateurs de forme</a></li>
+<li><a class="" href="concentration.qmd">10. La concentration</a></li>
+<li><a class="" href="croiser-deux-variables.qmd">11. Croiser deux variables</a></li>
+<li><a class="" href="distributions-conditionnelles.qmd">12. Distributions conjointe, marginales, conditionnelles</a></li>
+<li><a class="" href="covariance.qmd">13. La covariance</a></li>
+<li><a class="" href="correlation-et-ajustement.qmd">14. Corrélation et droite d&#x27;ajustement</a></li>
+<li><a class="" href="mise-en-oeuvre-r.qmd">15. Mise en œuvre sur R</a></li>
+<li><a class="jm-actif" href="mise-en-oeuvre-python.qmd">16. Mise en œuvre sur Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Statistique descriptive</h1>
+<p class="subtitle lead">Chapitre 15 : Mise en œuvre sur Python</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">24 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="la-même-chaîne-un-autre-outil">
+<h1>La même chaîne, un autre outil</h1>
+<section class="level2" id="ce-qui-change-ce-qui-ne-change-pas">
+<h2 class="anchored" data-anchor-id="ce-qui-change-ce-qui-ne-change-pas">Ce qui change, ce qui ne change pas</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Les trois bibliothèques</summary>
+<div class="pedago-body">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Bibliothèque</th>
+<th>Rôle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>pandas</code></td>
+<td>tableaux de données, tableaux croisés</td>
+</tr>
+<tr class="even">
+<td><code>numpy</code></td>
+<td>calcul numérique</td>
+</tr>
+<tr class="odd">
+<td><code>matplotlib</code></td>
+<td>graphiques</td>
+</tr>
+</tbody>
+</table>
+<p><code>scipy.stats</code> complète pour les coefficients de forme.</p>
+</div>
+</details>
+</section>
+<section class="level2" id="ce-qui-change-ce-qui-ne-change-pas-suite">
+<h2 class="anchored" data-anchor-id="ce-qui-change-ce-qui-ne-change-pas-suite">Ce qui change, ce qui ne change pas (suite)</h2>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">Le seul vrai piège du chapitre</summary>
+<div class="pedago-body">
+<p>Là où R divise par <span class="math inline">n-1</span> <strong>partout</strong>, pandas et numpy ne font <strong>pas le même choix</strong> :</p>
+<ul>
+<li><code>numpy</code> divise par <span class="math inline">n</span> par défaut ;</li>
+<li><code>pandas</code> divise par <span class="math inline">n-1</span> par défaut.</li>
+</ul>
+<p><strong>Deux bibliothèques du même écosystème, deux conventions opposées.</strong> C’est la source d’erreur numéro un, et elle explique la plupart des écarts inexpliqués entre un calcul manuel et un résultat Python.</p>
+</div>
+</details>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np, pandas <span class="im">as</span> pd</span>
+<span id="cb1-2"><a aria-hidden="true" href="#cb1-2" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-3"><a aria-hidden="true" href="#cb1-3" tabindex="-1"></a><span class="im">from</span> scipy <span class="im">import</span> stats</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section class="level1" id="charger-et-explorer">
+<h1>Charger et explorer</h1>
+<section class="level2" id="limport">
+<h2 class="anchored" data-anchor-id="limport">L’import</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a aria-hidden="true" href="#cb2-1" tabindex="-1"></a>sal <span class="op">=</span> pd.read_csv(<span class="st">"salaires.csv"</span>)</span>
+<span id="cb2-2"><a aria-hidden="true" href="#cb2-2" tabindex="-1"></a></span>
+<span id="cb2-3"><a aria-hidden="true" href="#cb2-3" tabindex="-1"></a>sal.info()          <span class="co"># types et valeurs manquantes</span></span>
+<span id="cb2-4"><a aria-hidden="true" href="#cb2-4" tabindex="-1"></a>sal.head()</span>
+<span id="cb2-5"><a aria-hidden="true" href="#cb2-5" tabindex="-1"></a>sal.describe()      <span class="co"># quantitatives seulement</span></span>
+<span id="cb2-6"><a aria-hidden="true" href="#cb2-6" tabindex="-1"></a>sal.describe(include<span class="op">=</span><span class="st">"object"</span>)   <span class="co"># qualitatives</span></span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+<details class="definitionbox" open="">
+<summary class="pedago-title">La sortie de describe()</summary>
+<div class="pedago-body">
+<pre><code>             salaire  anciennete
+count    500.000000  500.000000
+mean    7158.260000   10.142000
+std     2600.701688    5.970354
+min     2810.000000    0.000000
+25%     5317.500000    6.000000
+50%     6770.000000    9.000000
+75%     8330.000000   13.000000
+max    19050.000000   35.000000</code></pre>
+</div>
+</details>
+</section>
+<section class="level2" id="limport-suite">
+<h2 class="anchored" data-anchor-id="limport-suite">L’import (suite)</h2>
+<details class="ecobox" open="">
+<summary class="pedago-title">Lire cette sortie avec l’œil du chapitre 7</summary>
+<div class="pedago-body">
+<p><code>std</code> vaut <span class="math inline">2\,600{,}70</span> et non <span class="math inline">2\,598{,}10</span> : <strong>pandas divise par <span class="math inline">n-1</span></strong>.</p>
+<p>Pour l’écart-type <strong>descriptif</strong> du cours, il faut écrire <code>sal.salaire.std(ddof=0)</code>.</p>
+<p>L’argument <code>ddof</code> — <em>delta degrees of freedom</em> — vaut <span class="math inline">1</span> par défaut dans pandas et <span class="math inline">0</span> dans numpy. <strong>Le préciser explicitement est la seule façon de ne jamais se tromper.</strong></p>
+</div>
+</details>
+</section>
+<section class="level2" id="le-contrôle-des-types">
+<h2 class="anchored" data-anchor-id="le-contrôle-des-types">Le contrôle des types</h2>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a aria-hidden="true" href="#cb4-1" tabindex="-1"></a>sal.isna().<span class="bu">sum</span>()                  <span class="co"># valeurs manquantes par colonne</span></span>
+<span id="cb4-2"><a aria-hidden="true" href="#cb4-2" tabindex="-1"></a>sal.salaire.nunique()             <span class="co"># 381 valeurs distinctes</span></span>
+<span id="cb4-3"><a aria-hidden="true" href="#cb4-3" tabindex="-1"></a>sal.diplome.value_counts()</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section class="level1" id="le-tableau-statistique">
+<h1>Le tableau statistique</h1>
+<section class="level2" id="variable-qualitative">
+<h2 class="anchored" data-anchor-id="variable-qualitative">Variable qualitative</h2>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a aria-hidden="true" href="#cb5-1" tabindex="-1"></a>n  <span class="op">=</span> <span class="bu">len</span>(sal)</span>
+<span id="cb5-2"><a aria-hidden="true" href="#cb5-2" tabindex="-1"></a>ni <span class="op">=</span> sal.diplome.value_counts().sort_index()</span>
+<span id="cb5-3"><a aria-hidden="true" href="#cb5-3" tabindex="-1"></a>fi <span class="op">=</span> ni <span class="op">/</span> n</span>
+<span id="cb5-4"><a aria-hidden="true" href="#cb5-4" tabindex="-1"></a></span>
+<span id="cb5-5"><a aria-hidden="true" href="#cb5-5" tabindex="-1"></a>tableau <span class="op">=</span> pd.DataFrame({<span class="st">"ni"</span>: ni, <span class="st">"fi"</span>: fi,</span>
+<span id="cb5-6"><a aria-hidden="true" href="#cb5-6" tabindex="-1"></a>                        <span class="st">"Ni"</span>: ni.cumsum(), <span class="st">"Fi"</span>: fi.cumsum()})</span>
+<span id="cb5-7"><a aria-hidden="true" href="#cb5-7" tabindex="-1"></a><span class="bu">print</span>(tableau.<span class="bu">round</span>(<span class="dv">3</span>))</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Le résultat</summary>
+<div class="pedago-body">
+<pre><code>        ni     fi   Ni     Fi
+Bac    219  0.438  219  0.438
+Bac+2  174  0.348  393  0.786
+Bac+5  107  0.214  500  1.000</code></pre>
+</div>
+</details>
+</section>
+<section class="level2" id="variable-qualitative-suite">
+<h2 class="anchored" data-anchor-id="variable-qualitative-suite">Variable qualitative (suite)</h2>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">Trier l’index n’est pas décoratif</summary>
+<div class="pedago-body">
+<p><code>value_counts()</code> trie par effectif <strong>décroissant</strong> par défaut. Sur une variable <strong>ordinale</strong>, cela détruit l’ordre — et les cumuls deviennent absurdes.</p>
+<p><code>sort_index()</code> rétablit l’ordre alphabétique, qui coïncide ici avec l’ordre des diplômes. Pour d’autres modalités, il faudrait déclarer un type <code>Categorical</code> ordonné.</p>
+</div>
+</details>
+</section>
+<section class="level2" id="variable-continue">
+<h2 class="anchored" data-anchor-id="variable-continue">Variable continue</h2>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a aria-hidden="true" href="#cb7-1" tabindex="-1"></a>bornes <span class="op">=</span> [<span class="dv">2000</span>, <span class="dv">4000</span>, <span class="dv">6000</span>, <span class="dv">8000</span>, <span class="dv">10000</span>, <span class="dv">14000</span>, <span class="dv">20000</span>]</span>
+<span id="cb7-2"><a aria-hidden="true" href="#cb7-2" tabindex="-1"></a>cl <span class="op">=</span> pd.cut(sal.salaire, bins<span class="op">=</span>bornes, right<span class="op">=</span><span class="va">False</span>)   <span class="co"># [a ; b[</span></span>
+<span id="cb7-3"><a aria-hidden="true" href="#cb7-3" tabindex="-1"></a>ni <span class="op">=</span> cl.value_counts().sort_index()</span>
+<span id="cb7-4"><a aria-hidden="true" href="#cb7-4" tabindex="-1"></a>ai <span class="op">=</span> np.diff(bornes)</span>
+<span id="cb7-5"><a aria-hidden="true" href="#cb7-5" tabindex="-1"></a></span>
+<span id="cb7-6"><a aria-hidden="true" href="#cb7-6" tabindex="-1"></a>pd.DataFrame({<span class="st">"ni"</span>: ni.values, <span class="st">"fi"</span>: ni.values<span class="op">/</span>n,</span>
+<span id="cb7-7"><a aria-hidden="true" href="#cb7-7" tabindex="-1"></a>              <span class="st">"ai"</span>: ai, <span class="st">"di"</span>: ni.values<span class="op">/</span>ai},</span>
+<span id="cb7-8"><a aria-hidden="true" href="#cb7-8" tabindex="-1"></a>             index<span class="op">=</span>ni.index).<span class="bu">round</span>(<span class="dv">4</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+<details class="ecobox" open="">
+<summary class="pedago-title">right=False, encore</summary>
+<div class="pedago-body">
+<p>Comme dans R, la convention par défaut est <span class="math inline">]a\,;\,b]</span>. <code>right=False</code> donne <span class="math inline">[a\,;\,b[</span>.</p>
+<p>Deux logiciels, deux langages, le même piège au même endroit.</p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="les-graphiques">
+<h1>Les graphiques</h1>
+<section class="level2" id="les-quatre-représentations">
+<h2 class="anchored" data-anchor-id="les-quatre-représentations">Les quatre représentations</h2>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a aria-hidden="true" href="#cb8-1" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="dv">7</span>))</span>
+<span id="cb8-2"><a aria-hidden="true" href="#cb8-2" tabindex="-1"></a></span>
+<span id="cb8-3"><a aria-hidden="true" href="#cb8-3" tabindex="-1"></a>sal.diplome.value_counts().sort_index().plot.bar(</span>
+<span id="cb8-4"><a aria-hidden="true" href="#cb8-4" tabindex="-1"></a>    ax<span class="op">=</span>ax[<span class="dv">0</span>,<span class="dv">0</span>], color<span class="op">=</span><span class="st">"steelblue"</span>, rot<span class="op">=</span><span class="dv">0</span>, title<span class="op">=</span><span class="st">"Diplôme"</span>)</span>
+<span id="cb8-5"><a aria-hidden="true" href="#cb8-5" tabindex="-1"></a></span>
+<span id="cb8-6"><a aria-hidden="true" href="#cb8-6" tabindex="-1"></a>sal.region.value_counts().plot.pie(</span>
+<span id="cb8-7"><a aria-hidden="true" href="#cb8-7" tabindex="-1"></a>    ax<span class="op">=</span>ax[<span class="dv">0</span>,<span class="dv">1</span>], autopct<span class="op">=</span><span class="st">"%1.0f</span><span class="sc">%%</span><span class="st">"</span>, ylabel<span class="op">=</span><span class="st">""</span>, title<span class="op">=</span><span class="st">"Région"</span>)</span>
+<span id="cb8-8"><a aria-hidden="true" href="#cb8-8" tabindex="-1"></a></span>
+<span id="cb8-9"><a aria-hidden="true" href="#cb8-9" tabindex="-1"></a>ax[<span class="dv">1</span>,<span class="dv">0</span>].hist(sal.salaire, bins<span class="op">=</span>bornes, density<span class="op">=</span><span class="va">True</span>, color<span class="op">=</span><span class="st">"steelblue"</span>)</span>
+<span id="cb8-10"><a aria-hidden="true" href="#cb8-10" tabindex="-1"></a>ax[<span class="dv">1</span>,<span class="dv">0</span>].<span class="bu">set</span>(title<span class="op">=</span><span class="st">"Salaire"</span>, xlabel<span class="op">=</span><span class="st">"dirhams"</span>, ylabel<span class="op">=</span><span class="st">"densité"</span>)</span>
+<span id="cb8-11"><a aria-hidden="true" href="#cb8-11" tabindex="-1"></a></span>
+<span id="cb8-12"><a aria-hidden="true" href="#cb8-12" tabindex="-1"></a>x <span class="op">=</span> np.sort(sal.salaire)</span>
+<span id="cb8-13"><a aria-hidden="true" href="#cb8-13" tabindex="-1"></a>ax[<span class="dv">1</span>,<span class="dv">1</span>].step(x, np.arange(<span class="dv">1</span>, n<span class="op">+</span><span class="dv">1</span>)<span class="op">/</span>n, color<span class="op">=</span><span class="st">"orange"</span>)</span>
+<span id="cb8-14"><a aria-hidden="true" href="#cb8-14" tabindex="-1"></a>ax[<span class="dv">1</span>,<span class="dv">1</span>].<span class="bu">set</span>(title<span class="op">=</span><span class="st">"Cumulative croissante"</span>, xlabel<span class="op">=</span><span class="st">"dirhams"</span>, ylabel<span class="op">=</span><span class="st">"F(x)"</span>)</span>
+<span id="cb8-15"><a aria-hidden="true" href="#cb8-15" tabindex="-1"></a></span>
+<span id="cb8-16"><a aria-hidden="true" href="#cb8-16" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+<details class="definitionbox" open="">
+<summary class="pedago-title">L’argument density=True</summary>
+<div class="pedago-body">
+<p>C’est l’équivalent exact de <code>freq = FALSE</code> en R : il trace la <strong>densité</strong>, seule hauteur correcte pour des classes d’amplitudes inégales.</p>
+<p>Sans lui, l’histogramme est faux dès la cinquième classe.</p>
+</div>
+</details>
+</section>
+<section class="level2" id="les-boîtes-à-moustaches">
+<h2 class="anchored" data-anchor-id="les-boîtes-à-moustaches">Les boîtes à moustaches</h2>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a aria-hidden="true" href="#cb9-1" tabindex="-1"></a>sal.boxplot(column<span class="op">=</span><span class="st">"salaire"</span>, by<span class="op">=</span><span class="st">"diplome"</span>, grid<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb9-2"><a aria-hidden="true" href="#cb9-2" tabindex="-1"></a>plt.suptitle(<span class="st">""</span>)<span class="op">;</span> plt.title(<span class="st">"Salaire selon le diplôme"</span>)</span>
+<span id="cb9-3"><a aria-hidden="true" href="#cb9-3" tabindex="-1"></a>plt.ylabel(<span class="st">"dirhams"</span>)<span class="op">;</span> plt.show()</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section class="level1" id="les-indicateurs-univariés">
+<h1>Les indicateurs univariés</h1>
+<section class="level2" id="tendance-centrale-dispersion-forme">
+<h2 class="anchored" data-anchor-id="tendance-centrale-dispersion-forme">Tendance centrale, dispersion, forme</h2>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a aria-hidden="true" href="#cb10-1" tabindex="-1"></a>x <span class="op">=</span> sal.salaire</span>
+<span id="cb10-2"><a aria-hidden="true" href="#cb10-2" tabindex="-1"></a></span>
+<span id="cb10-3"><a aria-hidden="true" href="#cb10-3" tabindex="-1"></a>resume <span class="op">=</span> {</span>
+<span id="cb10-4"><a aria-hidden="true" href="#cb10-4" tabindex="-1"></a>    <span class="st">"moyenne"</span>:     x.mean(),</span>
+<span id="cb10-5"><a aria-hidden="true" href="#cb10-5" tabindex="-1"></a>    <span class="st">"mediane"</span>:     x.median(),</span>
+<span id="cb10-6"><a aria-hidden="true" href="#cb10-6" tabindex="-1"></a>    <span class="st">"ecart_type"</span>:  x.std(ddof<span class="op">=</span><span class="dv">0</span>),</span>
+<span id="cb10-7"><a aria-hidden="true" href="#cb10-7" tabindex="-1"></a>    <span class="st">"CV"</span>:          x.std(ddof<span class="op">=</span><span class="dv">0</span>)<span class="op">/</span>x.mean(),</span>
+<span id="cb10-8"><a aria-hidden="true" href="#cb10-8" tabindex="-1"></a>    <span class="st">"D1"</span>:          x.quantile(<span class="fl">0.10</span>),</span>
+<span id="cb10-9"><a aria-hidden="true" href="#cb10-9" tabindex="-1"></a>    <span class="st">"Q1"</span>:          x.quantile(<span class="fl">0.25</span>),</span>
+<span id="cb10-10"><a aria-hidden="true" href="#cb10-10" tabindex="-1"></a>    <span class="st">"Q3"</span>:          x.quantile(<span class="fl">0.75</span>),</span>
+<span id="cb10-11"><a aria-hidden="true" href="#cb10-11" tabindex="-1"></a>    <span class="st">"D9"</span>:          x.quantile(<span class="fl">0.90</span>),</span>
+<span id="cb10-12"><a aria-hidden="true" href="#cb10-12" tabindex="-1"></a>    <span class="st">"IQ"</span>:          x.quantile(<span class="fl">0.75</span>) <span class="op">-</span> x.quantile(<span class="fl">0.25</span>),</span>
+<span id="cb10-13"><a aria-hidden="true" href="#cb10-13" tabindex="-1"></a>    <span class="st">"asymetrie"</span>:   stats.skew(x),</span>
+<span id="cb10-14"><a aria-hidden="true" href="#cb10-14" tabindex="-1"></a>    <span class="st">"aplatissement"</span>: stats.kurtosis(x, fisher<span class="op">=</span><span class="va">False</span>),</span>
+<span id="cb10-15"><a aria-hidden="true" href="#cb10-15" tabindex="-1"></a>}</span>
+<span id="cb10-16"><a aria-hidden="true" href="#cb10-16" tabindex="-1"></a>pd.Series(resume).<span class="bu">round</span>(<span class="dv">3</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Le résultat</summary>
+<div class="pedago-body">
+<pre><code>moyenne          7158.260
+mediane          6770.000
+ecart_type       2598.100
+CV                  0.363
+D1               4348.000
+Q1               5317.500
+Q3               8330.000
+D9              10473.000
+IQ               3012.500
+asymetrie           1.164
+aplatissement       4.837</code></pre>
+</div>
+</details>
+</section>
+<section class="level2" id="tendance-centrale-dispersion-forme-suite">
+<h2 class="anchored" data-anchor-id="tendance-centrale-dispersion-forme-suite">Tendance centrale, dispersion, forme (suite)</h2>
+<details class="ecobox" open="">
+<summary class="pedago-title">fisher=False, l’argument à ne jamais oublier</summary>
+<div class="pedago-body">
+<p>Par défaut, <code>scipy.stats.kurtosis</code> renvoie l’<strong>excès</strong> <span class="math inline">\gamma_2 - 3</span>, soit <span class="math inline">1{,}837</span> ici.</p>
+<p><code>fisher=False</code> renvoie <span class="math inline">\gamma_2</span> lui-même, <span class="math inline">4{,}837</span>, la convention du chapitre 8.</p>
+<p>Une valeur d’aplatissement lue sans savoir quelle convention a été employée est <strong>ininterprétable</strong> : <span class="math inline">1{,}84</span> peut vouloir dire « queues plus fines que la normale » ou « queues nettement plus épaisses ».</p>
+</div>
+</details>
+</section>
+<section class="level2" id="concentration">
+<h2 class="anchored" data-anchor-id="concentration">Concentration</h2>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a aria-hidden="true" href="#cb12-1" tabindex="-1"></a><span class="kw">def</span> gini(v):</span>
+<span id="cb12-2"><a aria-hidden="true" href="#cb12-2" tabindex="-1"></a>    v <span class="op">=</span> np.sort(np.asarray(v, dtype<span class="op">=</span><span class="bu">float</span>))<span class="op">;</span> m <span class="op">=</span> <span class="bu">len</span>(v)</span>
+<span id="cb12-3"><a aria-hidden="true" href="#cb12-3" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">2</span><span class="op">*</span>np.<span class="bu">sum</span>(np.arange(<span class="dv">1</span>, m<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>v)<span class="op">/</span>(m<span class="op">*</span>v.<span class="bu">sum</span>()) <span class="op">-</span> (m<span class="op">+</span><span class="dv">1</span>)<span class="op">/</span>m</span>
+<span id="cb12-4"><a aria-hidden="true" href="#cb12-4" tabindex="-1"></a></span>
+<span id="cb12-5"><a aria-hidden="true" href="#cb12-5" tabindex="-1"></a>gini(x)                       <span class="co"># 0.1954</span></span>
+<span id="cb12-6"><a aria-hidden="true" href="#cb12-6" tabindex="-1"></a></span>
+<span id="cb12-7"><a aria-hidden="true" href="#cb12-7" tabindex="-1"></a><span class="co"># Courbe de Lorenz</span></span>
+<span id="cb12-8"><a aria-hidden="true" href="#cb12-8" tabindex="-1"></a>v <span class="op">=</span> np.sort(x)<span class="op">;</span> F <span class="op">=</span> np.arange(<span class="dv">1</span>, n<span class="op">+</span><span class="dv">1</span>)<span class="op">/</span>n<span class="op">;</span> Q <span class="op">=</span> np.cumsum(v)<span class="op">/</span>v.<span class="bu">sum</span>()</span>
+<span id="cb12-9"><a aria-hidden="true" href="#cb12-9" tabindex="-1"></a>plt.plot([<span class="dv">0</span>,<span class="dv">1</span>], [<span class="dv">0</span>,<span class="dv">1</span>], color<span class="op">=</span><span class="st">"grey"</span>)</span>
+<span id="cb12-10"><a aria-hidden="true" href="#cb12-10" tabindex="-1"></a>plt.plot(np.r_[<span class="dv">0</span>,F], np.r_[<span class="dv">0</span>,Q], color<span class="op">=</span><span class="st">"steelblue"</span>, lw<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb12-11"><a aria-hidden="true" href="#cb12-11" tabindex="-1"></a>plt.fill_between(np.r_[<span class="dv">0</span>,F], np.r_[<span class="dv">0</span>,Q], np.r_[<span class="dv">0</span>,F], alpha<span class="op">=</span><span class="fl">.15</span>)</span>
+<span id="cb12-12"><a aria-hidden="true" href="#cb12-12" tabindex="-1"></a>plt.xlabel(<span class="st">"part cumulée des salariés"</span>)</span>
+<span id="cb12-13"><a aria-hidden="true" href="#cb12-13" tabindex="-1"></a>plt.ylabel(<span class="st">"part cumulée de la masse salariale"</span>)<span class="op">;</span> plt.show()</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section class="level1" id="le-bivarié">
+<h1>Le bivarié</h1>
+<section class="level2" id="contingence">
+<h2 class="anchored" data-anchor-id="contingence">Contingence</h2>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a aria-hidden="true" href="#cb13-1" tabindex="-1"></a>T <span class="op">=</span> pd.crosstab(sal.diplome, sal.region)</span>
+<span id="cb13-2"><a aria-hidden="true" href="#cb13-2" tabindex="-1"></a>pd.crosstab(sal.diplome, sal.region, margins<span class="op">=</span><span class="va">True</span>)          <span class="co"># avec marges</span></span>
+<span id="cb13-3"><a aria-hidden="true" href="#cb13-3" tabindex="-1"></a>pd.crosstab(sal.diplome, sal.region, normalize<span class="op">=</span><span class="st">"index"</span>)     <span class="co"># profils-lignes</span></span>
+<span id="cb13-4"><a aria-hidden="true" href="#cb13-4" tabindex="-1"></a>pd.crosstab(sal.diplome, sal.region, normalize<span class="op">=</span><span class="st">"columns"</span>)   <span class="co"># profils-colonnes</span></span>
+<span id="cb13-5"><a aria-hidden="true" href="#cb13-5" tabindex="-1"></a></span>
+<span id="cb13-6"><a aria-hidden="true" href="#cb13-6" tabindex="-1"></a><span class="co"># effectifs théoriques sous indépendance</span></span>
+<span id="cb13-7"><a aria-hidden="true" href="#cb13-7" tabindex="-1"></a>E <span class="op">=</span> np.outer(T.<span class="bu">sum</span>(<span class="dv">1</span>), T.<span class="bu">sum</span>(<span class="dv">0</span>)) <span class="op">/</span> n</span>
+<span id="cb13-8"><a aria-hidden="true" href="#cb13-8" tabindex="-1"></a>pd.DataFrame(E, index<span class="op">=</span>T.index, columns<span class="op">=</span>T.columns).<span class="bu">round</span>(<span class="dv">1</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">normalize, en trois valeurs</summary>
+<div class="pedago-body">
+<p><code>"index"</code> divise par les totaux de ligne, <code>"columns"</code> par ceux de colonne, <code>"all"</code> par le total général.</p>
+<p>Les trois lectures du chapitre 10, en un seul argument.</p>
+</div>
+</details>
+</section>
+<section class="level2" id="conditionnelles-et-décomposition">
+<h2 class="anchored" data-anchor-id="conditionnelles-et-décomposition">Conditionnelles et décomposition</h2>
+<div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a aria-hidden="true" href="#cb14-1" tabindex="-1"></a>sal.groupby(<span class="st">"diplome"</span>).salaire.agg(</span>
+<span id="cb14-2"><a aria-hidden="true" href="#cb14-2" tabindex="-1"></a>    n<span class="op">=</span><span class="st">"size"</span>, moyenne<span class="op">=</span><span class="st">"mean"</span>, ecart_type<span class="op">=</span><span class="kw">lambda</span> v: v.std(ddof<span class="op">=</span><span class="dv">0</span>),</span>
+<span id="cb14-3"><a aria-hidden="true" href="#cb14-3" tabindex="-1"></a>    mediane<span class="op">=</span><span class="st">"median"</span>).<span class="bu">round</span>(<span class="dv">1</span>)</span>
+<span id="cb14-4"><a aria-hidden="true" href="#cb14-4" tabindex="-1"></a></span>
+<span id="cb14-5"><a aria-hidden="true" href="#cb14-5" tabindex="-1"></a><span class="co"># Décomposition de la variance</span></span>
+<span id="cb14-6"><a aria-hidden="true" href="#cb14-6" tabindex="-1"></a>g  <span class="op">=</span> sal.groupby(<span class="st">"diplome"</span>).salaire</span>
+<span id="cb14-7"><a aria-hidden="true" href="#cb14-7" tabindex="-1"></a>nj <span class="op">=</span> g.size()<span class="op">;</span> mj <span class="op">=</span> g.mean()<span class="op">;</span> vj <span class="op">=</span> g.<span class="bu">apply</span>(<span class="kw">lambda</span> v: v.var(ddof<span class="op">=</span><span class="dv">0</span>))</span>
+<span id="cb14-8"><a aria-hidden="true" href="#cb14-8" tabindex="-1"></a>mg <span class="op">=</span> sal.salaire.mean()</span>
+<span id="cb14-9"><a aria-hidden="true" href="#cb14-9" tabindex="-1"></a></span>
+<span id="cb14-10"><a aria-hidden="true" href="#cb14-10" tabindex="-1"></a>intra <span class="op">=</span> (nj<span class="op">*</span>vj).<span class="bu">sum</span>()<span class="op">/</span>n                     <span class="co"># 5010426</span></span>
+<span id="cb14-11"><a aria-hidden="true" href="#cb14-11" tabindex="-1"></a>inter <span class="op">=</span> (nj<span class="op">*</span>(mj<span class="op">-</span>mg)<span class="op">**</span><span class="dv">2</span>).<span class="bu">sum</span>()<span class="op">/</span>n             <span class="co"># 1739696</span></span>
+<span id="cb14-12"><a aria-hidden="true" href="#cb14-12" tabindex="-1"></a>eta2  <span class="op">=</span> inter<span class="op">/</span>(intra<span class="op">+</span>inter)                 <span class="co"># 0.2577</span></span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+</section>
+<section class="level2" id="conditionnelles-et-décomposition-suite">
+<h2 class="anchored" data-anchor-id="conditionnelles-et-décomposition-suite">Conditionnelles et décomposition (suite)</h2>
+<details class="ecobox" open="">
+<summary class="pedago-title">Le ddof=0 dans le lambda</summary>
+<div class="pedago-body">
+<p>Sans lui, <code>vj</code> serait calculé en <span class="math inline">n_j-1</span> et la somme <code>intra + inter</code> ne redonnerait pas la variance totale.</p>
+<p><strong>Le contrôle est toujours le même :</strong> <code>intra + inter</code> doit valoir <code>sal.salaire.var(ddof=0)</code>, soit <span class="math inline">6\,750\,122</span>.</p>
+</div>
+</details>
+</section>
+<section class="level2" id="covariance-corrélation-ajustement">
+<h2 class="anchored" data-anchor-id="covariance-corrélation-ajustement">Covariance, corrélation, ajustement</h2>
+<div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a aria-hidden="true" href="#cb15-1" tabindex="-1"></a>z <span class="op">=</span> sal.anciennete</span>
+<span id="cb15-2"><a aria-hidden="true" href="#cb15-2" tabindex="-1"></a></span>
+<span id="cb15-3"><a aria-hidden="true" href="#cb15-3" tabindex="-1"></a>cov <span class="op">=</span> np.cov(z, x, ddof<span class="op">=</span><span class="dv">0</span>)[<span class="dv">0</span>, <span class="dv">1</span>]        <span class="co"># 9859.91</span></span>
+<span id="cb15-4"><a aria-hidden="true" href="#cb15-4" tabindex="-1"></a>r   <span class="op">=</span> np.corrcoef(z, x)[<span class="dv">0</span>, <span class="dv">1</span>]           <span class="co"># 0.6363</span></span>
+<span id="cb15-5"><a aria-hidden="true" href="#cb15-5" tabindex="-1"></a>r2  <span class="op">=</span> r<span class="op">**</span><span class="dv">2</span>                              <span class="co"># 0.4049</span></span>
+<span id="cb15-6"><a aria-hidden="true" href="#cb15-6" tabindex="-1"></a></span>
+<span id="cb15-7"><a aria-hidden="true" href="#cb15-7" tabindex="-1"></a>b <span class="op">=</span> cov <span class="op">/</span> z.var(ddof<span class="op">=</span><span class="dv">0</span>)                 <span class="co"># 277.17</span></span>
+<span id="cb15-8"><a aria-hidden="true" href="#cb15-8" tabindex="-1"></a>a <span class="op">=</span> x.mean() <span class="op">-</span> b<span class="op">*</span>z.mean()               <span class="co"># 4347.2</span></span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+<details class="definitionbox" open="">
+<summary class="pedago-title">La version statsmodels, pour la sortie complète</summary>
+<div class="pedago-body">
+<div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a aria-hidden="true" href="#cb16-1" tabindex="-1"></a><span class="im">import</span> statsmodels.formula.api <span class="im">as</span> smf</span>
+<span id="cb16-2"><a aria-hidden="true" href="#cb16-2" tabindex="-1"></a>mod <span class="op">=</span> smf.ols(<span class="st">"salaire ~ anciennete"</span>, data<span class="op">=</span>sal).fit()</span>
+<span id="cb16-3"><a aria-hidden="true" href="#cb16-3" tabindex="-1"></a><span class="bu">print</span>(mod.summary())</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+<pre><code>                 coef
+Intercept    4347.2
+anciennete    277.17
+
+R-squared:      0.405</code></pre>
+</div>
+</details>
+</section>
+<section class="level2" id="covariance-corrélation-ajustement-suite">
+<h2 class="anchored" data-anchor-id="covariance-corrélation-ajustement-suite">Covariance, corrélation, ajustement (suite)</h2>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">La syntaxe formule, à nouveau</summary>
+<div class="pedago-body">
+<p><code>"salaire ~ anciennete"</code> est <strong>exactement</strong> la syntaxe de R. <code>statsmodels</code> l’a reprise volontairement, pour que le passage d’un langage à l’autre soit immédiat.</p>
+</div>
+</details>
+</section>
+<section class="level2" id="le-graphique-final">
+<h2 class="anchored" data-anchor-id="le-graphique-final">Le graphique final</h2>
+<div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a aria-hidden="true" href="#cb18-1" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">8</span>,<span class="dv">5</span>))</span>
+<span id="cb18-2"><a aria-hidden="true" href="#cb18-2" tabindex="-1"></a>plt.scatter(z, x, s<span class="op">=</span><span class="dv">8</span>, alpha<span class="op">=</span><span class="fl">.35</span>, color<span class="op">=</span><span class="st">"steelblue"</span>)</span>
+<span id="cb18-3"><a aria-hidden="true" href="#cb18-3" tabindex="-1"></a>xx <span class="op">=</span> np.linspace(<span class="dv">0</span>, <span class="dv">35</span>, <span class="dv">2</span>)</span>
+<span id="cb18-4"><a aria-hidden="true" href="#cb18-4" tabindex="-1"></a>plt.plot(xx, a <span class="op">+</span> b<span class="op">*</span>xx, color<span class="op">=</span><span class="st">"orange"</span>, lw<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb18-5"><a aria-hidden="true" href="#cb18-5" tabindex="-1"></a>plt.scatter(z.mean(), x.mean(), s<span class="op">=</span><span class="dv">60</span>, color<span class="op">=</span><span class="st">"darkviolet"</span>, zorder<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb18-6"><a aria-hidden="true" href="#cb18-6" tabindex="-1"></a>plt.xlabel(<span class="st">"ancienneté (années)"</span>)<span class="op">;</span> plt.ylabel(<span class="st">"salaire (dirhams)"</span>)</span>
+<span id="cb18-7"><a aria-hidden="true" href="#cb18-7" tabindex="-1"></a>plt.show()</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section class="level1" id="comparaison-des-deux-langages">
+<h1>Comparaison des deux langages</h1>
+<section class="level2" id="le-tableau-de-correspondance">
+<h2 class="anchored" data-anchor-id="le-tableau-de-correspondance">Le tableau de correspondance</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">R et Python, côte à côte</summary>
+<div class="pedago-body">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Opération</th>
+<th>R</th>
+<th>Python</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Importer</td>
+<td><code>read.csv()</code></td>
+<td><code>pd.read_csv()</code></td>
+</tr>
+<tr class="even">
+<td>Structure</td>
+<td><code>str()</code></td>
+<td><code>.info()</code></td>
+</tr>
+<tr class="odd">
+<td>Résumé</td>
+<td><code>summary()</code></td>
+<td><code>.describe()</code></td>
+</tr>
+<tr class="even">
+<td>Effectifs</td>
+<td><code>table()</code></td>
+<td><code>.value_counts()</code></td>
+</tr>
+<tr class="odd">
+<td>Classes</td>
+<td><code>cut(right=FALSE)</code></td>
+<td><code>pd.cut(right=False)</code></td>
+</tr>
+<tr class="even">
+<td>Histogramme</td>
+<td><code>hist(freq=FALSE)</code></td>
+<td><code>.hist(density=True)</code></td>
+</tr>
+<tr class="odd">
+<td>Écart-type descriptif</td>
+<td><code>sd()*sqrt((n-1)/n)</code></td>
+<td><code>.std(ddof=0)</code></td>
+</tr>
+<tr class="even">
+<td>Asymétrie</td>
+<td><code>moments::skewness()</code></td>
+<td><code>stats.skew()</code></td>
+</tr>
+<tr class="odd">
+<td>Aplatissement</td>
+<td><code>moments::kurtosis()</code></td>
+<td><code>stats.kurtosis(fisher=False)</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+</section>
+<section class="level2" id="le-tableau-de-correspondance-bivarié">
+<h2 class="anchored" data-anchor-id="le-tableau-de-correspondance-bivarié">Le tableau de correspondance (bivarié)</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">R et Python, côte à côte</summary>
+<div class="pedago-body">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Opération</th>
+<th>R</th>
+<th>Python</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Croisement</td>
+<td><code>table(a, b)</code></td>
+<td><code>pd.crosstab(a, b)</code></td>
+</tr>
+<tr class="even">
+<td>Par groupe</td>
+<td><code>aggregate(y ~ x, ...)</code></td>
+<td><code>.groupby("x").y.agg()</code></td>
+</tr>
+<tr class="odd">
+<td>Corrélation</td>
+<td><code>cor()</code></td>
+<td><code>np.corrcoef()</code></td>
+</tr>
+<tr class="even">
+<td>Régression</td>
+<td><code>lm(y ~ x)</code></td>
+<td><code>smf.ols("y ~ x")</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+</section>
+<section class="level2" id="le-tableau-de-correspondance-suite">
+<h2 class="anchored" data-anchor-id="le-tableau-de-correspondance-suite">Le tableau de correspondance (suite)</h2>
+<details class="ecobox" open="">
+<summary class="pedago-title">Lequel choisir</summary>
+<div class="pedago-body">
+<p>Les deux donnent <strong>les mêmes nombres</strong>, ce qui est le seul point réellement important.</p>
+<p><strong>R</strong> est plus direct pour la statistique : <code>lm</code>, <code>aggregate</code>, <code>boxplot</code> prennent la syntaxe formule sans rien installer.</p>
+<p><strong>Python</strong> est plus polyvalent : le même langage sert à récupérer les données, les nettoyer, les analyser et publier le résultat.</p>
+<p>En Licence, apprenez celui que vos enseignants emploient. En pratique professionnelle, vous rencontrerez les deux.</p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="bilan-des-seize-chapitres">
+<h1>Bilan des seize chapitres</h1>
+<section class="level2" id="ce-que-le-cours-a-établi">
+<h2 class="anchored" data-anchor-id="ce-que-le-cours-a-établi">Ce que le cours a établi</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Le fil complet</summary>
+<div class="pedago-body">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Étape</th>
+<th>Chapitres</th>
+<th>Résultat sur nos données</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Définir</td>
+<td>1, 2</td>
+<td><span class="math inline">500</span> salariés, six variables typées</td>
+</tr>
+<tr class="even">
+<td>Résumer</td>
+<td>3, 4</td>
+<td>six classes de salaire</td>
+</tr>
+<tr class="odd">
+<td>Représenter</td>
+<td>5</td>
+<td>quatre graphiques</td>
+</tr>
+<tr class="even">
+<td>Situer</td>
+<td>6, 7</td>
+<td>moyenne <span class="math inline">7\,158</span>, médiane <span class="math inline">6\,770</span></td>
+</tr>
+<tr class="odd">
+<td>Disperser</td>
+<td>8</td>
+<td><span class="math inline">\sigma = 2\,598</span>, <span class="math inline">CV = 0{,}36</span></td>
+</tr>
+<tr class="even">
+<td>Décrire la forme</td>
+<td>9</td>
+<td><span class="math inline">\gamma_1 = 1{,}16</span>, <span class="math inline">\gamma_2 = 4{,}84</span></td>
+</tr>
+<tr class="odd">
+<td>Mesurer le partage</td>
+<td>10</td>
+<td>Gini <span class="math inline">= 0{,}195</span></td>
+</tr>
+<tr class="even">
+<td>Croiser</td>
+<td>11, 12</td>
+<td><span class="math inline">\eta^2 = 0{,}258</span> pour le diplôme</td>
+</tr>
+<tr class="odd">
+<td>Lier</td>
+<td>13, 14</td>
+<td><span class="math inline">r = 0{,}636</span>, <span class="math inline">r^2 = 0{,}405</span></td>
+</tr>
+<tr class="even">
+<td>Automatiser</td>
+<td>15, 16</td>
+<td>quinze lignes de code</td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+</section>
+<section class="level2" id="ce-que-le-cours-a-établi-suite">
+<h2 class="anchored" data-anchor-id="ce-que-le-cours-a-établi-suite">Ce que le cours a établi (suite)</h2>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">La phrase qui résume le semestre</summary>
+<div class="pedago-body">
+<p><strong>Un tableau de mille lignes ne dit rien tant qu’on ne l’a pas résumé — et un résumé ne vaut rien tant qu’on ne sait pas ce qu’il a laissé de côté.</strong></p>
+<p>Vous savez maintenant faire les deux.</p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Six points</summary>
+<div class="pedago-body">
+<ol type="1">
+<li><code>pandas</code> divise par <span class="math inline">n-1</span>, <code>numpy</code> par <span class="math inline">n</span> : <strong>toujours préciser <code>ddof</code></strong>.</li>
+<li><code>pd.cut(..., right=False)</code> pour des classes <span class="math inline">[a\,;\,b[</span>.</li>
+<li><code>density=True</code> dans <code>hist</code> : la densité, jamais l’effectif.</li>
+<li><code>stats.kurtosis(..., fisher=False)</code> pour obtenir <span class="math inline">\gamma_2</span> et non l’excès.</li>
+<li><code>pd.crosstab(..., normalize=)</code> : <code>"index"</code>, <code>"columns"</code> ou <code>"all"</code>.</li>
+<li><code>statsmodels</code> reprend la syntaxe formule de R : <code>"y ~ x"</code>.</li>
+</ol>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">La suite du parcours</summary>
+<div class="pedago-body">
+<p>Ce cours s’est arrêté au constat. Il reste trois questions, et trois cours pour y répondre :</p>
+<ul>
+<li><strong>Probabilités</strong>, pour modéliser le hasard ;</li>
+<li><strong>Statistique inférentielle</strong>, pour généraliser au-delà de l’échantillon ;</li>
+<li><strong>Introduction à l’économétrie</strong>, pour passer de la corrélation à l’explication.</li>
+</ul>
+<p>Ces trois cours travaillent tous sur les objets que celui-ci a construits.</p>
+</div>
+</details>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="mise-en-oeuvre-r.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Mise en œuvre sur R</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/mise-en-oeuvre-python.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/mise-en-oeuvre-python-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/mise-en-oeuvre-python-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/mise-en-oeuvre-python.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```
