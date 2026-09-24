@@ -1,0 +1,336 @@
+---
+title: "Recherche opérationnelle"
+subtitle: "Le flot maximal"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Recherche opérationnelle</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="qu-est-ce-que-la-ro.qmd">1. Qu&#x27;est-ce que la recherche opérationnelle</a></li>
+<li><a class="" href="modeliser-une-decision.qmd">2. Modéliser un problème de décision</a></li>
+<li><a class="" href="programme-lineaire.qmd">3. Le programme linéaire et ses formes</a></li>
+<li><a class="" href="resolution-graphique.qmd">4. La résolution graphique</a></li>
+<li><a class="" href="simplexe-methode.qmd">5. Le simplexe, la méthode</a></li>
+<li><a class="" href="simplexe-cas-particuliers.qmd">6. Le simplexe, les cas particuliers</a></li>
+<li><a class="" href="dualite.qmd">7. La dualité</a></li>
+<li><a class="" href="analyse-de-sensibilite.qmd">8. L&#x27;analyse de sensibilité</a></li>
+<li><a class="" href="probleme-de-transport.qmd">9. Le problème de transport</a></li>
+<li><a class="" href="probleme-affectation.qmd">10. Le problème d&#x27;affectation</a></li>
+<li><a class="" href="graphes-vocabulaire.qmd">11. Les graphes, vocabulaire et représentation</a></li>
+<li><a class="" href="plus-court-chemin.qmd">12. Le plus court chemin</a></li>
+<li><a class="jm-actif" href="flot-maximal.qmd">13. Le flot maximal</a></li>
+<li><a class="" href="ordonnancement.qmd">14. L&#x27;ordonnancement de projet</a></li>
+<li><a class="" href="nombres-entiers.qmd">15. La programmation en nombres entiers</a></li>
+<li><a class="" href="stocks-et-files.qmd">16. Gestion des stocks et files d&#x27;attente</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Recherche opérationnelle</h1>
+<p class="subtitle lead">Chapitre 12 : Le flot maximal</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">24 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="le-problème">
+<h1>Le problème</h1>
+<section class="level2" id="les-données">
+<h2 class="anchored" data-anchor-id="les-données">Les données</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Un réseau de transport</summary>
+<div class="pedago-body">
+<p>Un graphe orienté, une <strong>source</strong> <span class="math inline">s</span>, un <strong>puits</strong> <span class="math inline">t</span>, et sur chaque arc une <strong>capacité</strong> <span class="math inline">c(i,j) \geq 0</span>.</p>
+</div>
+</details>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Un flot</summary>
+<div class="pedago-body">
+<p>Une fonction <span class="math inline">f(i,j)</span> vérifiant deux conditions :</p>
+<p><strong>Capacité</strong> : <span class="math inline">0 \leq f(i,j) \leq c(i,j)</span> sur chaque arc.</p>
+<p><strong>Conservation</strong> : en tout sommet autre que <span class="math inline">s</span> et <span class="math inline">t</span>, ce qui entre est égal à ce qui sort.</p>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">La valeur du flot</summary>
+<div class="pedago-body">
+<p>C’est ce qui sort de <span class="math inline">s</span> — ou, ce qui revient au même, ce qui entre en <span class="math inline">t</span>.</p>
+<p><strong>Le problème : la rendre maximale.</strong></p>
+</div>
+</details>
+</section>
+<section class="level2" id="lexemple">
+<h2 class="anchored" data-anchor-id="lexemple">L’exemple</h2>
+<details class="examplebox" open="">
+<summary class="pedago-title">Le même réseau, valué en capacités</summary>
+<div class="pedago-body">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Arc</th>
+<th style="text-align: right;">capacité</th>
+<th></th>
+<th>Arc</th>
+<th style="text-align: right;">capacité</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">A \to B</span></td>
+<td style="text-align: right;"><span class="math inline">10</span></td>
+<td></td>
+<td><span class="math inline">C \to E</span></td>
+<td style="text-align: right;"><span class="math inline">10</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">A \to C</span></td>
+<td style="text-align: right;"><span class="math inline">\phantom{0}8</span></td>
+<td></td>
+<td><span class="math inline">E \to D</span></td>
+<td style="text-align: right;"><span class="math inline">\phantom{0}6</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">B \to C</span></td>
+<td style="text-align: right;"><span class="math inline">\phantom{0}2</span></td>
+<td></td>
+<td><span class="math inline">E \to F</span></td>
+<td style="text-align: right;"><span class="math inline">\phantom{0}4</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">B \to D</span></td>
+<td style="text-align: right;"><span class="math inline">\phantom{0}5</span></td>
+<td></td>
+<td><span class="math inline">D \to F</span></td>
+<td style="text-align: right;"><span class="math inline">\phantom{0}7</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="ford-et-fulkerson">
+<h1>Ford et Fulkerson</h1>
+<section class="level2" id="lalgorithme">
+<h2 class="anchored" data-anchor-id="lalgorithme">L’algorithme</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Les chaînes améliorantes</summary>
+<div class="pedago-body">
+<p>Tant qu’il existe un chemin de <span class="math inline">s</span> à <span class="math inline">t</span> <strong>dont tous les arcs ont de la capacité résiduelle</strong>, y pousser le maximum possible.</p>
+<p>Le maximum est le <strong>minimum des capacités résiduelles</strong> le long du chemin.</p>
+</div>
+</details>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Le graphe résiduel</summary>
+<div class="pedago-body">
+<p>Pousser <span class="math inline">\varphi</span> unités sur l’arc <span class="math inline">(i,j)</span> crée un arc <strong>retour</strong> <span class="math inline">(j,i)</span> de capacité <span class="math inline">\varphi</span>.</p>
+<p>Cet arc retour permet d’annuler plus tard une décision qui s’avérerait mauvaise.</p>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">Pourquoi l’arc retour est indispensable</summary>
+<div class="pedago-body">
+<p>Sans lui, l’algorithme dépendrait de l’ordre dans lequel on choisit les chemins, et pourrait s’arrêter avant l’optimum.</p>
+<p><strong>L’arc retour rend l’algorithme correct quel que soit l’ordre.</strong></p>
+</div>
+</details>
+</section>
+<section class="level2" id="le-déroulement-sur-lexemple">
+<h2 class="anchored" data-anchor-id="le-déroulement-sur-lexemple">Le déroulement sur l’exemple</h2>
+<details class="examplebox" open="">
+<summary class="pedago-title">Trois chaînes</summary>
+<div class="pedago-body">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Chaîne</th>
+<th>Goulot</th>
+<th style="text-align: right;">Flot poussé</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">A \to B \to D \to F</span></td>
+<td><span class="math inline">B \to D</span></td>
+<td style="text-align: right;"><span class="math inline">5</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">A \to C \to E \to F</span></td>
+<td><span class="math inline">E \to F</span></td>
+<td style="text-align: right;"><span class="math inline">4</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">A \to C \to E \to D \to F</span></td>
+<td><span class="math inline">D \to F</span></td>
+<td style="text-align: right;"><span class="math inline">2</span></td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td style="text-align: right;"><strong><span class="math inline">11</span></strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">Pourquoi on s’arrête là</summary>
+<div class="pedago-body">
+<p>Le puits <span class="math inline">F</span> n’est atteignable que par <span class="math inline">D \to F</span> et <span class="math inline">E \to F</span>.</p>
+<p><span class="math inline">D \to F</span> transporte <span class="math inline">5 + 2 = 7</span>, sa capacité entière. <span class="math inline">E \to F</span> transporte <span class="math inline">4</span>, sa capacité entière. <strong>Plus rien ne peut entrer en <span class="math inline">F</span>.</strong></p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="le-théorème-du-flot-maximal">
+<h1>Le théorème du flot maximal</h1>
+<section class="level2" id="lénoncé">
+<h2 class="anchored" data-anchor-id="lénoncé">L’énoncé</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Une coupe</summary>
+<div class="pedago-body">
+<p>Une partition des sommets en deux ensembles <span class="math inline">S \ni s</span> et <span class="math inline">T \ni t</span>. Sa <strong>capacité</strong> est la somme des capacités des arcs allant de <span class="math inline">S</span> vers <span class="math inline">T</span>.</p>
+</div>
+</details>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Ford-Fulkerson, 1956</summary>
+<div class="pedago-body">
+<p><span class="math display">\max_{\text{flots}} \; |f| \;=\; \min_{\text{coupes}} \; c(S,T)</span></p>
+<p><strong>La valeur du flot maximal est égale à la capacité de la coupe minimale.</strong></p>
+</div>
+</details>
+<details class="examplebox" open="">
+<summary class="pedago-title">Vérification</summary>
+<div class="pedago-body">
+<p>Prenons <span class="math inline">S = \{A, B, C, D, E\}</span> et <span class="math inline">T = \{F\}</span>. Les arcs qui traversent sont <span class="math inline">D \to F</span> et <span class="math inline">E \to F</span> :</p>
+<p><span class="math display">c(S,T) = 7 + 4 = 11 = |f|</span></p>
+</div>
+</details>
+</section>
+<section class="level2" id="ce-que-le-théorème-signifie">
+<h2 class="anchored" data-anchor-id="ce-que-le-théorème-signifie">Ce que le théorème signifie</h2>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">Un certificat d’optimalité</summary>
+<div class="pedago-body">
+<p>Exhiber une coupe de capacité <span class="math inline">11</span> <strong>prouve</strong> qu’aucun flot ne peut dépasser <span class="math inline">11</span> — sans avoir à examiner les autres flots.</p>
+<p>C’est la dualité du chapitre 6 sous une autre forme : le flot est le primal, la coupe est le dual, et leurs valeurs coïncident.</p>
+</div>
+</details>
+<details class="ecobox" open="">
+<summary class="pedago-title">La lecture de gestion</summary>
+<div class="pedago-body">
+<p><strong>La coupe minimale désigne les goulots d’étranglement.</strong> Ici, les deux liaisons qui aboutissent à <span class="math inline">F</span>.</p>
+<p>Investir ailleurs ne servirait à rien. <strong>Élargir un arc qui n’est pas dans la coupe minimale n’augmente pas d’une unité la capacité du réseau.</strong></p>
+</div>
+</details>
+</section>
+<section class="level2" id="que-se-passe-t-il-si-lon-élargit">
+<h2 class="anchored" data-anchor-id="que-se-passe-t-il-si-lon-élargit">Que se passe-t-il si l’on élargit</h2>
+<details class="examplebox" open="">
+<summary class="pedago-title">Deux investissements comparés</summary>
+<div class="pedago-body">
+<p>Élargir <span class="math inline">A \to B</span> de <span class="math inline">10</span> à <span class="math inline">20</span> : le flot reste <span class="math inline">11</span>. <strong>Zéro gain.</strong></p>
+<p>Élargir <span class="math inline">D \to F</span> de <span class="math inline">7</span> à <span class="math inline">9</span> : la coupe passe à <span class="math inline">13</span>, mais d’autres arcs deviennent limitants — <span class="math inline">B \to D</span> à <span class="math inline">5</span> et <span class="math inline">E \to D</span> à <span class="math inline">6</span> bornent l’entrée de <span class="math inline">D</span>.</p>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">La leçon</summary>
+<div class="pedago-body">
+<p>Lever un goulot en révèle un autre. <strong>La capacité d’un réseau ne s’améliore que par une suite d’investissements ciblés</strong>, chacun recalculé après le précédent.</p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="les-variantes">
+<h1>Les variantes</h1>
+<section class="level2" id="ce-que-le-modèle-sait-aussi-traiter">
+<h2 class="anchored" data-anchor-id="ce-que-le-modèle-sait-aussi-traiter">Ce que le modèle sait aussi traiter</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Trois extensions</summary>
+<div class="pedago-body">
+<p><strong>Plusieurs sources ou puits</strong> : on ajoute une super-source reliée à toutes les sources par des arcs de capacité infinie.</p>
+<p><strong>Capacité sur un sommet</strong> : on le dédouble en deux sommets reliés par un arc de cette capacité.</p>
+<p><strong>Flot minimal imposé</strong> : borne inférieure sur un arc, traitée par un problème auxiliaire.</p>
+</div>
+</details>
+<details class="ecobox" open="">
+<summary class="pedago-title">Trois domaines d’application</summary>
+<div class="pedago-body">
+<p>Réseaux électriques et hydrauliques, trafic routier, capacité d’un système d’information.</p>
+<p>Et, plus inattendu : le <strong>couplage maximal</strong> dans un graphe biparti — donc le problème d’affectation du chapitre 9, qui se résout aussi comme un flot.</p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Six points</summary>
+<div class="pedago-body">
+<ol type="1">
+<li>Un <strong>flot</strong> respecte les capacités et conserve la matière en chaque sommet interne.</li>
+<li><strong>Ford-Fulkerson</strong> pousse des unités le long de chaînes améliorantes.</li>
+<li>Les <strong>arcs retour</strong> rendent l’algorithme correct quel que soit l’ordre des chemins.</li>
+<li>Sur l’exemple : trois chaînes, flot maximal de <span class="math inline">\mathbf{11}</span>.</li>
+<li><strong>Flot maximal = coupe minimale</strong> : la coupe est un certificat d’optimalité.</li>
+<li>La coupe minimale désigne les <strong>goulots</strong> : investir ailleurs ne rapporte rien.</li>
+</ol>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">La suite</summary>
+<div class="pedago-body">
+<p>Le chapitre 13 applique le plus long chemin à un graphe de tâches, et en tire l’outil de gestion de projet le plus répandu au monde.</p>
+</div>
+</details>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="plus-court-chemin.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Le plus court chemin</span></a>
+<a class="jm-nav-suivant" href="ordonnancement.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">L&#x27;ordonnancement de projet</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/flot-maximal.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/flot-maximal-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/flot-maximal-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/flot-maximal.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

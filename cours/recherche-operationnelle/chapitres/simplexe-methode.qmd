@@ -1,0 +1,382 @@
+---
+title: "Recherche opérationnelle"
+subtitle: "Le simplexe, la méthode"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Recherche opérationnelle</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="qu-est-ce-que-la-ro.qmd">1. Qu&#x27;est-ce que la recherche opérationnelle</a></li>
+<li><a class="" href="modeliser-une-decision.qmd">2. Modéliser un problème de décision</a></li>
+<li><a class="" href="programme-lineaire.qmd">3. Le programme linéaire et ses formes</a></li>
+<li><a class="" href="resolution-graphique.qmd">4. La résolution graphique</a></li>
+<li><a class="jm-actif" href="simplexe-methode.qmd">5. Le simplexe, la méthode</a></li>
+<li><a class="" href="simplexe-cas-particuliers.qmd">6. Le simplexe, les cas particuliers</a></li>
+<li><a class="" href="dualite.qmd">7. La dualité</a></li>
+<li><a class="" href="analyse-de-sensibilite.qmd">8. L&#x27;analyse de sensibilité</a></li>
+<li><a class="" href="probleme-de-transport.qmd">9. Le problème de transport</a></li>
+<li><a class="" href="probleme-affectation.qmd">10. Le problème d&#x27;affectation</a></li>
+<li><a class="" href="graphes-vocabulaire.qmd">11. Les graphes, vocabulaire et représentation</a></li>
+<li><a class="" href="plus-court-chemin.qmd">12. Le plus court chemin</a></li>
+<li><a class="" href="flot-maximal.qmd">13. Le flot maximal</a></li>
+<li><a class="" href="ordonnancement.qmd">14. L&#x27;ordonnancement de projet</a></li>
+<li><a class="" href="nombres-entiers.qmd">15. La programmation en nombres entiers</a></li>
+<li><a class="" href="stocks-et-files.qmd">16. Gestion des stocks et files d&#x27;attente</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Recherche opérationnelle</h1>
+<p class="subtitle lead">Chapitre 4 : Le simplexe, la méthode</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">24 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="lidée-avant-lalgorithme">
+<h1>L’idée avant l’algorithme</h1>
+<section class="level2" id="ce-que-fait-le-simplexe">
+<h2 class="anchored" data-anchor-id="ce-que-fait-le-simplexe">Ce que fait le simplexe</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">En une phrase</summary>
+<div class="pedago-body">
+<p>Partir d’un sommet du polyèdre, <strong>passer à un sommet voisin qui améliore l’objectif</strong>, recommencer, s’arrêter quand aucun voisin n’améliore.</p>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">Pourquoi cela suffit</summary>
+<div class="pedago-body">
+<p>Le polyèdre est <strong>convexe</strong> : un sommet dont aucun voisin n’est meilleur est le meilleur de tous.</p>
+<p>Il y a un nombre <strong>fini</strong> de sommets, et l’objectif augmente strictement à chaque étape : l’algorithme s’arrête.</p>
+</div>
+</details>
+</section>
+<section class="level2" id="le-vocabulaire-du-tableau">
+<h2 class="anchored" data-anchor-id="le-vocabulaire-du-tableau">Le vocabulaire du tableau</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Trois notions</summary>
+<div class="pedago-body">
+<p>Les variables <strong>de base</strong> sont celles qu’on calcule ; les <strong>hors base</strong> sont mises à zéro.</p>
+<p>Le <strong>coût réduit</strong> <span class="math inline">c_j - z_j</span> d’une variable hors base est ce que l’objectif gagnerait si on l’augmentait d’une unité.</p>
+<p>Un coût réduit <strong>positif</strong> signale un voisin meilleur.</p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="le-tableau-initial">
+<h1>Le tableau initial</h1>
+<section class="level2" id="le-point-de-départ">
+<h2 class="anchored" data-anchor-id="le-point-de-départ">Le point de départ</h2>
+<details class="examplebox" open="">
+<summary class="pedago-title">L’atelier, forme standard</summary>
+<div class="pedago-body">
+<p><span class="math display">\max Z = 30x + 25y \qquad
+\begin{cases} 2x + y + e_1 = 100\\ x + y + e_2 = 80 \end{cases}</span></p>
+<p>Base de départ : <span class="math inline">e_1</span> et <span class="math inline">e_2</span>, donc <span class="math inline">x = y = 0</span>. <strong>C’est le sommet <span class="math inline">(0,0)</span></strong> — on ne produit rien.</p>
+</div>
+</details>
+<details class="examplebox" open="">
+<summary class="pedago-title">Le tableau</summary>
+<div class="pedago-body">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Base</th>
+<th style="text-align: right;"><span class="math inline">x</span></th>
+<th style="text-align: right;"><span class="math inline">y</span></th>
+<th style="text-align: right;"><span class="math inline">e_1</span></th>
+<th style="text-align: right;"><span class="math inline">e_2</span></th>
+<th style="text-align: right;"><span class="math inline">b</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">e_1</span></td>
+<td style="text-align: right;"><span class="math inline">2</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">100</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">e_2</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">80</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">c_j - z_j</span></td>
+<td style="text-align: right;"><span class="math inline">30</span></td>
+<td style="text-align: right;"><span class="math inline">25</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">Z = 0</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+</section>
+<section class="level2" id="les-deux-règles-de-pivotage">
+<h2 class="anchored" data-anchor-id="les-deux-règles-de-pivotage">Les deux règles de pivotage</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Qui entre</summary>
+<div class="pedago-body">
+<p>La variable de <strong>coût réduit le plus grand</strong> — ici <span class="math inline">x</span>, avec <span class="math inline">30</span>.</p>
+<p>C’est celle qui rapporte le plus par unité.</p>
+</div>
+</details>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Qui sort</summary>
+<div class="pedago-body">
+<p>Le <strong>plus petit rapport positif</strong> <span class="math inline">b_i / a_{ik}</span> sur la colonne entrante :</p>
+<p><span class="math display">\frac{100}{2} = 50 \qquad \frac{80}{1} = 80 \qquad\Longrightarrow\qquad e_1 \text{ sort}</span></p>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">Pourquoi le plus petit rapport</summary>
+<div class="pedago-body">
+<p><span class="math inline">x</span> ne peut croître que jusqu’à ce qu’une ressource s’épuise. La découpe s’épuise à <span class="math inline">50</span> sacs, la couture à <span class="math inline">80</span>.</p>
+<p><strong>C’est la première qui bloque.</strong> Aller au-delà rendrait <span class="math inline">e_1</span> négative — donc sortirait du domaine.</p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="la-première-itération">
+<h1>La première itération</h1>
+<section class="level2" id="le-pivotage">
+<h2 class="anchored" data-anchor-id="le-pivotage">Le pivotage</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Deux opérations</summary>
+<div class="pedago-body">
+<ol type="1">
+<li>Diviser la ligne du pivot par le pivot — ici <span class="math inline">2</span>.</li>
+<li>Retrancher aux autres lignes le multiple qui annule leur coefficient dans la colonne entrante.</li>
+</ol>
+</div>
+</details>
+<details class="examplebox" open="">
+<summary class="pedago-title">Le tableau après la première itération</summary>
+<div class="pedago-body">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Base</th>
+<th style="text-align: right;"><span class="math inline">x</span></th>
+<th style="text-align: right;"><span class="math inline">y</span></th>
+<th style="text-align: right;"><span class="math inline">e_1</span></th>
+<th style="text-align: right;"><span class="math inline">e_2</span></th>
+<th style="text-align: right;"><span class="math inline">b</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">x</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">0{,}5</span></td>
+<td style="text-align: right;"><span class="math inline">0{,}5</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">50</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">e_2</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">0{,}5</span></td>
+<td style="text-align: right;"><span class="math inline">-0{,}5</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">30</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">c_j - z_j</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">10</span></td>
+<td style="text-align: right;"><span class="math inline">-15</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">Z = 1\,500</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+</section>
+<section class="level2" id="ce-que-ce-tableau-dit">
+<h2 class="anchored" data-anchor-id="ce-que-ce-tableau-dit">Ce que ce tableau dit</h2>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">On est au sommet (50, 0)</summary>
+<div class="pedago-body">
+<p><span class="math inline">x = 50</span>, <span class="math inline">y = 0</span>, <span class="math inline">e_1 = 0</span> — toute la découpe est consommée — et <span class="math inline">e_2 = 30</span> : il reste trente heures de couture.</p>
+<p><strong>La marge est passée de <span class="math inline">0</span> à <span class="math inline">1\,500</span> DH.</strong></p>
+</div>
+</details>
+<details class="ecobox" open="">
+<summary class="pedago-title">Le coût réduit de y vaut encore 10</summary>
+<div class="pedago-body">
+<p>Produire un sac <span class="math inline">B</span> rapporte <span class="math inline">25</span> DH, mais oblige à renoncer à une demi-unité de <span class="math inline">A</span>, soit <span class="math inline">15</span> DH.</p>
+<p><span class="math display">25 - 15 = 10 &gt; 0 \qquad\Longrightarrow\qquad \text{on n'a pas fini}</span></p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="la-seconde-itération">
+<h1>La seconde itération</h1>
+<section class="level2" id="le-pivotage-1">
+<h2 class="anchored" data-anchor-id="le-pivotage-1">Le pivotage</h2>
+<details class="examplebox" open="">
+<summary class="pedago-title">Qui entre, qui sort</summary>
+<div class="pedago-body">
+<p><span class="math inline">y</span> entre : c’est le seul coût réduit positif.</p>
+<p>Rapports : <span class="math inline">50 / 0{,}5 = 100</span> et <span class="math inline">30 / 0{,}5 = 60</span>. <strong>Le plus petit est <span class="math inline">60</span> : <span class="math inline">e_2</span> sort.</strong></p>
+</div>
+</details>
+<details class="examplebox" open="">
+<summary class="pedago-title">Le tableau final</summary>
+<div class="pedago-body">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Base</th>
+<th style="text-align: right;"><span class="math inline">x</span></th>
+<th style="text-align: right;"><span class="math inline">y</span></th>
+<th style="text-align: right;"><span class="math inline">e_1</span></th>
+<th style="text-align: right;"><span class="math inline">e_2</span></th>
+<th style="text-align: right;"><span class="math inline">b</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">x</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">-1</span></td>
+<td style="text-align: right;"><span class="math inline">20</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">y</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">-1</span></td>
+<td style="text-align: right;"><span class="math inline">2</span></td>
+<td style="text-align: right;"><span class="math inline">60</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">c_j - z_j</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">-5</span></td>
+<td style="text-align: right;"><span class="math inline">-20</span></td>
+<td style="text-align: right;"><span class="math inline">Z = 2\,100</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+</section>
+<section class="level2" id="le-critère-darrêt">
+<h2 class="anchored" data-anchor-id="le-critère-darrêt">Le critère d’arrêt</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Quand s’arrêter</summary>
+<div class="pedago-body">
+<p><strong>Tous les coûts réduits sont négatifs ou nuls</strong> : aucun voisin n’améliore. La solution courante est optimale.</p>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">Le résultat, identique au chapitre 3</summary>
+<div class="pedago-body">
+<p><span class="math display">x = 20, \qquad y = 60, \qquad Z = 2\,100 \text{ DH}</span></p>
+<p>Deux itérations, deux sommets parcourus : <span class="math inline">(0,0) \to (50,0) \to (20,60)</span>. <strong>C’est exactement le trajet que l’œil suivait sur le dessin.</strong></p>
+</div>
+</details>
+</section>
+<section class="level2" id="ce-que-la-dernière-ligne-contient-en-plus">
+<h2 class="anchored" data-anchor-id="ce-que-la-dernière-ligne-contient-en-plus">Ce que la dernière ligne contient en plus</h2>
+<details class="ecobox" open="">
+<summary class="pedago-title">Les coûts réduits des variables d’écart</summary>
+<div class="pedago-body">
+<p><span class="math inline">e_1</span> vaut <span class="math inline">-5</span> et <span class="math inline">e_2</span> vaut <span class="math inline">-20</span>.</p>
+<p>Au signe près, ce sont les <strong>prix des ressources</strong> : une heure de découpe supplémentaire rapporterait <span class="math inline">5</span> DH, une heure de couture <span class="math inline">20</span> DH.</p>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">Une information que le dessin ne donnait pas</summary>
+<div class="pedago-body">
+<p>Le graphique donnait la solution ; le tableau donne <strong>la solution et sa valeur marginale</strong>.</p>
+<p>C’est cette information que les chapitres 6 et 7 exploitent — et c’est ce qui, en pratique, intéresse le gestionnaire.</p>
+</div>
+</details>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<details class="definitionbox" open="">
+<summary class="pedago-title">Six points</summary>
+<div class="pedago-body">
+<ol type="1">
+<li>Le simplexe <strong>parcourt les sommets</strong> en améliorant l’objectif à chaque pas.</li>
+<li>La variable entrante est celle de <strong>plus grand coût réduit</strong>.</li>
+<li>La variable sortante est donnée par le <strong>plus petit rapport positif</strong>.</li>
+<li>On s’arrête quand <strong>tous les coûts réduits sont <span class="math inline">\leq 0</span></strong>.</li>
+<li>Sur l’atelier : deux itérations, <span class="math inline">x=20</span>, <span class="math inline">y=60</span>, <span class="math inline">Z = 2\,100</span> DH.</li>
+<li>La dernière ligne livre en prime les <strong>prix des ressources</strong> : <span class="math inline">5</span> et <span class="math inline">20</span> DH.</li>
+</ol>
+</div>
+</details>
+<details class="intuitionbox" open="">
+<summary class="pedago-title">La suite</summary>
+<div class="pedago-body">
+<p>Le chapitre 5 examine les quatre situations où l’algorithme ne se déroule pas comme ici : optimum multiple, dégénérescence, solution non bornée, domaine vide.</p>
+</div>
+</details>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="resolution-graphique.qmd">&larr; Chapitre précédent<span class="jm-nav-label">La résolution graphique</span></a>
+<a class="jm-nav-suivant" href="simplexe-cas-particuliers.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Le simplexe, les cas particuliers</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/simplexe-methode.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/simplexe-methode-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/simplexe-methode-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/simplexe-methode.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```
