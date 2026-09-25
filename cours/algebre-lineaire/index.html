@@ -86,17 +86,247 @@ ul.task-list li input[type="checkbox"] {
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
+<!-- Lecteur de chapitres à 3 volets : styles partagés par toutes les pages de cours restructurées (volets gauche/droit sur mesure, encadrés pédagogiques repliables) et rendu KaTeX des fragments de chapitre. Voir claude/plan-refonte-pages-cours.md dans le projet Claude pour le contexte. -->
+<style>
+/* =====================================================================
+   Lecteur de chapitres à 3 volets — pages de cours restructurées
+   Palette identique aux diapositives et à la palette pédagogique de
+   l'atelier (preamble.tex / preamble-article.tex / custom.scss) :
+     cdef  #4A3B8C  définition
+     cintu #E08000  intuition
+     cex   #2E8B57  exemple
+     ceco  #1F6FB2  application économique (= $primary du site)
+   Couleurs de thème (fond, bordures, cartes) reprises de
+   theme-light.scss / theme-dark.scss, sélectionnées via les classes
+   body.quarto-light / body.quarto-dark déjà posées par Quarto.
+   ===================================================================== */
+
+/* Quarto ajoute automatiquement les classes .page-columns.page-full à tout
+   bloc de premier niveau dans .content (grid.content-mode: standard, actif
+   sur tout le site) — leur grille (colonnes nommées pour marge/TOC) prend
+   sinon le pas sur la nôtre, à spécificité CSS égale et chargée après.
+   D'où les !important ci-dessous, uniquement sur les deux propriétés en
+   conflit direct.
+   Largeurs : avec page-layout: full (et un DOM valide — voir la note sur
+   les <summary> dans pedago-blocks.lua), .content atteint ~1135px sur ce
+   site, indépendamment de la largeur de la fenêtre (grille à colonnes
+   nommées, non proportionnelle au viewport). Volets latéraux à 240px,
+   assez larges pour les intitulés de chapitre et de ressource sur une ou
+   deux lignes, le volet central se partageant le reste (~590px, proche
+   de la largeur de lecture par défaut de Quarto). */
+.jm-lecteur {
+  display: grid !important;
+  grid-template-columns: 240px minmax(0, 1fr) 240px !important;
+  gap: 1.75rem;
+  align-items: start;
+  margin-top: .6rem;
+  max-width: none !important;
+}
+/* Bootstrap (.page-columns>*{grid-column:body-content-start/body-content-end})
+   place autrement tous les enfants directs dans la même colonne nommée —
+   même spécificité (classe + combinateur enfant), donc on rétablit le
+   placement automatique (1er, 2e, 3e enfant -> colonnes 1, 2, 3). */
+.jm-lecteur > * { grid-column: auto !important; }
+
+@media (max-width: 991px) {
+  .jm-lecteur { grid-template-columns: 1fr !important; }
+  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+}
+
+/* ---------- Volet gauche : sommaire du cours ---------- */
+.jm-lecteur-gauche {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .92rem;
+}
+.jm-lecteur-titre-cours {
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding-bottom: .45rem;
+  margin-bottom: .6rem;
+  border-bottom: 1px solid #dbe6ee;
+}
+.jm-lecteur-gauche ul { list-style: none; padding: 0; margin: 0; }
+.jm-lecteur-gauche li { margin: 0; }
+.jm-lecteur-gauche a {
+  display: block;
+  padding: .4rem .55rem;
+  border-radius: 7px;
+  margin-bottom: .1rem;
+  color: inherit;
+  border-left: 3px solid transparent;
+  line-height: 1.35;
+}
+.jm-lecteur-gauche a:hover { background: rgba(31,111,178,0.08); text-decoration: none; }
+.jm-lecteur-gauche a.jm-actif {
+  background: rgba(31,111,178,0.12);
+  border-left-color: #1f6fb2;
+  color: #1f6fb2;
+  font-weight: 700;
+}
+.jm-lecteur-gauche a.jm-accueil { font-style: italic; }
+
+/* ---------- Volet centre : contenu du chapitre ---------- */
+.jm-lecteur-centre { min-width: 0; }
+.jm-lecteur-centre .quarto-title-block .title { font-size: 1.7rem; }
+.jm-lecteur-centre .quarto-title-block .subtitle { color: #54707f; }
+
+/* ---------- Volet droit : ressources du chapitre ---------- */
+.jm-lecteur-droite {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .88rem;
+  background: #f6f9fb;
+  border: 1px solid #dbe6ee;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+.jm-lecteur-droite h3 {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #54707f;
+  margin: 0 0 .7rem;
+}
+.jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
+.jm-lecteur-droite li { margin-bottom: .55rem; }
+.jm-lecteur-droite a.jm-ressource {
+  color: #1f6fb2;
+  font-weight: 600;
+}
+.jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+.jm-lecteur-droite .jm-indisponible {
+  color: #9aa9b2; font-weight: 500; cursor: default;
+}
+.jm-lecteur-droite .jm-reserve {
+  color: #9aa9b2; font-style: italic;
+}
+
+/* ---------- Navigation précédent / suivant ---------- */
+.jm-lecteur-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin: 2.2rem 0 .5rem; padding-top: 1rem;
+  border-top: 1px solid #dbe6ee;
+  font-size: .92rem;
+}
+.jm-lecteur-nav a { color: #1f6fb2; font-weight: 600; }
+.jm-lecteur-nav .jm-nav-suivant { margin-left: auto; text-align: right; }
+.jm-lecteur-nav .jm-nav-label {
+  display: block; font-size: .76rem; font-weight: 400; color: #54707f;
+}
+
+/* ---------- Encadrés pédagogiques dans le volet centre ---------- */
+/* Reprend le mécanisme de custom.scss (atelier), adapté en <details> */
+.jm-lecteur-centre details.definitionbox,
+.jm-lecteur-centre details.intuitionbox,
+.jm-lecteur-centre details.examplebox,
+.jm-lecteur-centre details.ecobox {
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0.9em 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+.jm-lecteur-centre summary.pedago-title {
+  font-weight: 700;
+  color: #fff;
+  padding: .45em .9em;
+  cursor: pointer;
+  list-style: none;
+}
+.jm-lecteur-centre summary.pedago-title::-webkit-details-marker { display: none; }
+.jm-lecteur-centre summary.pedago-title::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: .5em;
+  transition: transform .15s ease;
+}
+.jm-lecteur-centre details[open] summary.pedago-title::before { transform: rotate(90deg); }
+.jm-lecteur-centre .pedago-body { padding: .7em 1em .9em; }
+.jm-lecteur-centre .pedago-body > *:first-child { margin-top: 0; }
+.jm-lecteur-centre .pedago-body > *:last-child { margin-bottom: 0; }
+
+.jm-lecteur-centre details.definitionbox { background: rgba(74,59,140,0.07); }
+.jm-lecteur-centre details.definitionbox summary.pedago-title { background: #4A3B8C; }
+.jm-lecteur-centre details.intuitionbox  { background: rgba(224,128,0,0.09); }
+.jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #E08000; }
+.jm-lecteur-centre details.examplebox    { background: rgba(46,139,87,0.07); }
+.jm-lecteur-centre details.examplebox summary.pedago-title { background: #2E8B57; }
+.jm-lecteur-centre details.ecobox        { background: rgba(31,111,178,0.07); }
+.jm-lecteur-centre details.ecobox summary.pedago-title { background: #1F6FB2; }
+
+/* Colonnes (definitionbox à côté d'une figure, etc.) : héritées du rendu
+   Quarto (div.columns{display:flex} / inline style width sur div.column). */
+.jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
+.jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
+
+/* =====================================================================
+   Mode sombre — posé par Quarto sur <body class="quarto-dark">
+   ===================================================================== */
+body.quarto-dark .jm-lecteur-titre-cours { border-bottom-color: #20455a; }
+body.quarto-dark .jm-lecteur-gauche a:hover { background: rgba(58,160,230,0.12); }
+body.quarto-dark .jm-lecteur-gauche a.jm-actif {
+  background: rgba(58,160,230,0.16);
+  border-left-color: #3aa0e6;
+  color: #3aa0e6;
+}
+body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite {
+  background: #13303d;
+  border-color: #20455a;
+}
+body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-droite .jm-indisponible,
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
+body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
+
+body.quarto-dark .jm-lecteur-centre details.definitionbox { background: rgba(122,104,206,0.16); }
+body.quarto-dark .jm-lecteur-centre details.definitionbox summary.pedago-title { background: #6252a8; }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox  { background: rgba(224,148,74,0.16); }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #c47a2e; }
+body.quarto-dark .jm-lecteur-centre details.examplebox    { background: rgba(55,180,126,0.14); }
+body.quarto-dark .jm-lecteur-centre details.examplebox summary.pedago-title { background: #37b47e; }
+body.quarto-dark .jm-lecteur-centre details.ecobox        { background: rgba(58,160,230,0.14); }
+body.quarto-dark .jm-lecteur-centre details.ecobox summary.pedago-title { background: #3aa0e6; }
+</style>
+<!-- Rendu KaTeX pour le volet central : les fragments de chapitre sont
+     extraits (BeautifulSoup) du rendu Quarto de l'atelier et insérés tels
+     quels en HTML brut dans la page du site. Le contenu mathématique y est
+     déjà mis en forme (spans <span class="math inline|display">…</span>,
+     source LaTeX brute), mais Quarto ne le détecte pas à la compilation de
+     CETTE page (le bloc {=html} n'est pas réanalysé comme du Markdown), et
+     n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
+     ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
+     pages où il détecte des maths (cf. html-math-method: katex du site) :
+     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     de tous les éléments .math qui les rend en place. -->
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+</script>
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
 
 
 <meta property="og:title" content="Algèbre linéaire – Jaouad Madkour">
-<meta property="og:description" content="Jaouad Madkour — statistique, économétrie et gestion des risques financiers : un manuel vivant, interactif et gratuit.">
 <meta property="og:site_name" content="Jaouad Madkour">
 <meta name="twitter:title" content="Algèbre linéaire – Jaouad Madkour">
-<meta name="twitter:description" content="Jaouad Madkour — statistique, économétrie et gestion des risques financiers : un manuel vivant, interactif et gratuit.">
 <meta name="twitter:card" content="summary_large_image">
 </head>
 
-<body class="nav-sidebar floating nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -357,72 +587,14 @@ ul.task-list li input[type="checkbox"] {
 </div>
       </div> <!-- /container-fluid -->
     </nav>
-  <nav class="quarto-secondary-nav">
-    <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Basculer la barre latérale" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
-        <i class="bi bi-layout-text-sidebar-reverse"></i>
-      </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../cours/algebre-lineaire/index.html">Algèbre linéaire</a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Basculer la barre latérale" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
-        </a>
-    </div>
-  </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
-    <div class="sidebar-menu-container"> 
-    <ul class="list-unstyled mt-1">
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a href="../../cours/algebre-lineaire/index.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Algèbre linéaire</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Basculer la section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
- <span class="menu-text">1. Opérations sur les matrices</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">2. Matrices particulières et sous-matrices</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">3. Trace, déterminant et rang</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">4. Inversion de matrices carrées</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">5. Systèmes linéaires</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">6. Diagonalisation des matrices carrées</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">7. Formes quadratiques</span>
-  </li>
-      </ul>
-  </li>
-    </ul>
-    </div>
-</nav>
-<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">Sur cette page</h2>
-   
-  <ul>
-  <li><a href="#syllabus" id="toc-syllabus" class="nav-link active" data-scroll-target="#syllabus">Syllabus</a></li>
-  <li><a href="#chapitres-et-documents" id="toc-chapitres-et-documents" class="nav-link" data-scroll-target="#chapitres-et-documents">Chapitres et documents</a></li>
-  </ul>
-</nav>
-    </div>
+    
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content column-page" id="quarto-document-content">
 
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -432,7 +604,7 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<div class="quarto-title-meta">
+<div class="quarto-title-meta column-page">
 
     
   
@@ -444,6 +616,21 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<div class="jm-lecteur jm-lecteur-accueil">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Algèbre linéaire</div>
+<ul>
+<li><a class="jm-accueil jm-actif" href="../../cours/algebre-lineaire/index.html">Présentation du cours</a></li>
+<li><a class="" href="../../cours/algebre-lineaire/chapitres/operations-matrices.html">1. Opérations sur les matrices</a></li>
+<li><a class="" href="../../cours/algebre-lineaire/chapitres/matrices-particulieres.html">2. Matrices particulières et sous-matrices</a></li>
+<li><a class="" href="../../cours/algebre-lineaire/chapitres/trace-determinant-rang.html">3. Trace, déterminant et rang</a></li>
+<li><a class="" href="../../cours/algebre-lineaire/chapitres/inversion-matrices.html">4. Inversion de matrices carrées</a></li>
+<li><a class="" href="../../cours/algebre-lineaire/chapitres/systemes-lineaires.html">5. Systèmes linéaires</a></li>
+<li><a class="" href="../../cours/algebre-lineaire/chapitres/diagonalisation.html">6. Diagonalisation des matrices carrées</a></li>
+<li><a class="" href="../../cours/algebre-lineaire/chapitres/formes-quadratiques.html">7. Formes quadratiques</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
 <p>Dès qu’on manipule plusieurs variables à la fois, écrire les équations une par une devient impraticable. La matrice est l’outil qui permet de traiter tout un système d’un seul geste — et c’est pourquoi elle est partout en économie quantitative.</p>
 <p>L’estimateur des moindres carrés s’écrit en une ligne matricielle. Un tableau entrées-sorties, une matrice de corrélations entre actifs, un modèle de croissance à plusieurs secteurs : tous sont des objets de ce cours. Sans lui, l’économétrie et la finance quantitative restent des recettes à appliquer sans les comprendre.</p>
 <p>Deuxième cours de la séquence mathématique, niveau Licence, après l’analyse mathématique.</p>
@@ -469,104 +656,12 @@ ul.task-list li input[type="checkbox"] {
 </tr>
 </tbody>
 </table>
-<p>Chaque chapitre est un diaporama en PDF. Le tableau ci-dessous rassemble, chapitre par chapitre, les diapositives et le reste du matériel — polycopié, exercices, vidéo — au fur et à mesure de leur mise en ligne.</p>
-<!-- TABLEAU:DEBUT -->
-<!-- Bloc produit par scripts/generer-ressources.py. -->
-<!-- Ne pas modifier à la main : déposez les fichiers selon -->
-<!-- les conventions décrites en tête du script, puis relancez. -->
+<p>Chaque chapitre du sommaire, à gauche, ouvre sa page de lecture : le contenu détaillé au centre, les diapositives, le polycopié, les exercices corrigés, l’application interactive et la vidéo dans le panneau de droite.</p>
 </section>
-<section id="chapitres-et-documents" class="level2">
-<h2 class="anchored" data-anchor-id="chapitres-et-documents">Chapitres et documents</h2>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th style="text-align: right;">#</th>
-<th>Chapitre</th>
-<th>Diapositives</th>
-<th>Polycopié</th>
-<th>Exercices</th>
-<th>Corrigé</th>
-<th>Application</th>
-<th>Vidéo</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: right;">1</td>
-<td>Opérations sur les matrices</td>
-<td><a href="slides/operations-matrices.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/operations-matrices-exercices.pdf">PDF</a></td>
-<td><a href="ressources/operations-matrices-corrections.pdf">PDF</a></td>
-<td><a href="outils/operations-matrices.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">2</td>
-<td>Matrices particulières et sous-matrices</td>
-<td><a href="slides/matrices-particulieres.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/matrices-particulieres-exercices.pdf">PDF</a></td>
-<td><a href="ressources/matrices-particulieres-corrections.pdf">PDF</a></td>
-<td><a href="outils/matrices-particulieres.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">3</td>
-<td>Trace, déterminant et rang</td>
-<td><a href="slides/trace-determinant-rang.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/trace-determinant-rang-exercices.pdf">PDF</a></td>
-<td><a href="ressources/trace-determinant-rang-corrections.pdf">PDF</a></td>
-<td><a href="outils/trace-determinant-rang.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">4</td>
-<td>Inversion de matrices carrées</td>
-<td><a href="slides/inversion-matrices.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/inversion-matrices-exercices.pdf">PDF</a></td>
-<td><a href="ressources/inversion-matrices-corrections.pdf">PDF</a></td>
-<td><a href="outils/inversion-matrices.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">5</td>
-<td>Systèmes linéaires</td>
-<td><a href="slides/systemes-lineaires.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/systemes-lineaires-exercices.pdf">PDF</a></td>
-<td><a href="ressources/systemes-lineaires-corrections.pdf">PDF</a></td>
-<td><a href="outils/systemes-lineaires.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">6</td>
-<td>Diagonalisation des matrices carrées</td>
-<td><a href="slides/diagonalisation.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/diagonalisation-exercices.pdf">PDF</a></td>
-<td><a href="ressources/diagonalisation-corrections.pdf">PDF</a></td>
-<td><a href="outils/diagonalisation.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">7</td>
-<td>Formes quadratiques</td>
-<td><a href="slides/formes-quadratiques.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/formes-quadratiques-exercices.pdf">PDF</a></td>
-<td><a href="ressources/formes-quadratiques-corrections.pdf">PDF</a></td>
-<td><a href="outils/formes-quadratiques.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-</tbody>
-</table>
-<!-- TABLEAU:FIN -->
+</div>
+</div>
 
 
-</section>
 
 </main> <!-- /main -->
 <!-- Mémorise le thème réellement appliqué par Quarto (clair ou sombre) afin
