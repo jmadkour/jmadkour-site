@@ -1,0 +1,311 @@
+---
+title: "Apprentissage statistique"
+subtitle: "La régression pénalisée : ridge et lasso"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage statistique</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="expliquer-prevoir.qmd">1. Expliquer ou prévoir : deux objectifs distincts</a></li>
+<li><a class="" href="biais-variance.qmd">2. Le compromis biais-variance</a></li>
+<li><a class="" href="validation-croisee.qmd">3. Rééchantillonnage et validation croisée</a></li>
+<li><a class="jm-actif" href="regression-penalisee.qmd">4. La régression pénalisée : ridge et lasso</a></li>
+<li><a class="" href="selection-variables.qmd">5. Sélection de variables et grande dimension</a></li>
+<li><a class="" href="classification.qmd">6. La classification : logistique et analyse discriminante</a></li>
+<li><a class="" href="evaluer-classifieur.qmd">7. Évaluer un classifieur : matrice de confusion, ROC, AUC</a></li>
+<li><a class="" href="arbres-decision.qmd">8. Les arbres de décision</a></li>
+<li><a class="" href="forets-aleatoires.qmd">9. Forêts aléatoires et bagging</a></li>
+<li><a class="" href="boosting.qmd">10. Le boosting de gradient</a></li>
+<li><a class="" href="svm.qmd">11. Les machines à vecteurs de support</a></li>
+<li><a class="" href="interpreter-modele.qmd">12. Interpréter un modèle de prévision</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage statistique</h1>
+<p class="subtitle lead">Chapitre 3 : La régression pénalisée : ridge et lasso</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="pourquoi-pénaliser">
+<h1>Pourquoi pénaliser</h1>
+<section class="level2" id="le-défaut-des-moindres-carrés-en-prévision">
+<h2 class="anchored" data-anchor-id="le-défaut-des-moindres-carrés-en-prévision">Le défaut des moindres carrés en prévision</h2>
+<div class="definitionbox" title="Ce que font les MCO">
+<div class="pedago-title">
+Ce que font les MCO
+</div>
+<p>Les moindres carrés minimisent la somme des carrés des résidus : <span class="math display">\sum_{i=1}^{n} \left(y_i - \hat y_i\right)^2</span></p>
+<p>Ils fournissent l’estimateur <strong>sans biais</strong> de variance minimale parmi les estimateurs linéaires — c’est le théorème de Gauss-Markov.</p>
+</div>
+<div class="intuitionbox" title="Sans biais n'est pas ce qu'on veut ici">
+<div class="pedago-title">
+Sans biais n’est pas ce qu’on veut ici
+</div>
+<p>Gauss-Markov garantit la variance minimale <strong>parmi les estimateurs sans biais</strong>. Rien n’interdit qu’un estimateur légèrement biaisé ait une variance bien plus faible, et donc une erreur totale inférieure.</p>
+<p>C’est exactement ce que fait la pénalisation. Le chapitre 1 l’avait annoncé : <strong>accepter du biais pour retrancher de la variance.</strong></p>
+</div>
+</section>
+<section class="level2" id="deux-situations-où-les-mco-échouent">
+<h2 class="anchored" data-anchor-id="deux-situations-où-les-mco-échouent">Deux situations où les MCO échouent</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<ol type="1">
+<li><strong>La multicolinéarité</strong> — des variables très corrélées rendent les coefficients instables et énormes, de signes parfois absurdes.</li>
+<li><strong>La grande dimension</strong> — si <span class="math inline">p &gt; n</span>, la solution des MCO n’est même pas unique.</li>
+</ol>
+</div>
+</section>
+</section>
+<section class="level1" id="la-régression-ridge">
+<h1>La régression ridge</h1>
+<section class="level2" id="contraindre-la-taille-des-coefficients">
+<h2 class="anchored" data-anchor-id="contraindre-la-taille-des-coefficients">Contraindre la taille des coefficients</h2>
+<div class="definitionbox" title="Le critère ridge">
+<div class="pedago-title">
+Le critère ridge
+</div>
+<p><span class="math display">\sum_{i=1}^{n}\left(y_i - \hat y_i\right)^2 \;+\; \lambda \sum_{j=1}^{p} \beta_j^2</span></p>
+<p>Le second terme <strong>pénalise</strong> les coefficients trop grands. <span class="math inline">\lambda \geq 0</span> règle la sévérité.</p>
+</div>
+</section>
+<section class="level2" id="le-rôle-de-lambda">
+<h2 class="anchored" data-anchor-id="le-rôle-de-lambda">Le rôle de lambda</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\lambda</span></th>
+<th>Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">0</span></td>
+<td>on retrouve les MCO</td>
+</tr>
+<tr class="even">
+<td>croissant</td>
+<td>les coefficients <strong>rétrécissent</strong> vers zéro</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\to \infty</span></td>
+<td>tous tendent vers zéro, le modèle devient une constante</td>
+</tr>
+</tbody>
+</table>
+<p>Le biais <strong>augmente</strong> avec <span class="math inline">\lambda</span>, la variance <strong>diminue</strong>. Il existe donc un <span class="math inline">\lambda</span> optimal, qu’on choisit par <strong>validation croisée</strong>.</p>
+</div>
+</section>
+<section class="level2" id="pourquoi-cela-stabilise">
+<h2 class="anchored" data-anchor-id="pourquoi-cela-stabilise">Pourquoi cela stabilise</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Deux variables très corrélées peuvent recevoir des coefficients de <span class="math inline">+500</span> et <span class="math inline">-498</span> : leur somme est stable, chacun ne l’est pas.</p>
+<p>Ridge interdit cette compensation en punissant le carré des coefficients. Il les <strong>répartit</strong> entre variables corrélées plutôt que d’en gonfler un.</p>
+</div>
+</section>
+<section class="level2" id="deux-précautions-obligatoires">
+<h2 class="anchored" data-anchor-id="deux-précautions-obligatoires">Deux précautions obligatoires</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<ol type="1">
+<li><strong>Standardiser</strong> les variables. La pénalité porte sur l’échelle : une variable en dirhams et une en milliers de dirhams seraient traitées différemment sans cela.</li>
+<li><strong>Ne pas pénaliser la constante</strong>. Elle ne mesure aucun effet, et la pénaliser rendrait le modèle dépendant du centrage de <span class="math inline">Y</span>.</li>
+</ol>
+<p>Ces deux points sont la source d’erreur la plus fréquente dans les premières mises en œuvre.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-lasso">
+<h1>Le lasso</h1>
+<section class="level2" id="une-pénalité-qui-sélectionne">
+<h2 class="anchored" data-anchor-id="une-pénalité-qui-sélectionne">Une pénalité qui sélectionne</h2>
+<div class="definitionbox" title="Le critère lasso">
+<div class="pedago-title">
+Le critère lasso
+</div>
+<p><span class="math display">\sum_{i=1}^{n}\left(y_i - \hat y_i\right)^2 \;+\; \lambda \sum_{j=1}^{p} \left|\beta_j\right|</span></p>
+<p>La seule différence est la <strong>valeur absolue</strong> au lieu du carré. Sa conséquence est considérable.</p>
+</div>
+<div class="definitionbox" title="La différence décisive">
+<div class="pedago-title">
+La différence décisive
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>Pénalité</th>
+<th>Coefficients</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Ridge</strong></td>
+<td><span class="math inline">\sum \beta_j^2</span></td>
+<td>rétrécissent, <strong>jamais nuls</strong></td>
+</tr>
+<tr class="even">
+<td><strong>Lasso</strong></td>
+<td><span class="math inline">\sum \lvert\beta_j\rvert</span></td>
+<td>certains deviennent <strong>exactement nuls</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Le lasso fait donc de la sélection de variables</strong>, ridge non.</p>
+</div>
+</section>
+<section class="level2" id="pourquoi-la-valeur-absolue-annule">
+<h2 class="anchored" data-anchor-id="pourquoi-la-valeur-absolue-annule">Pourquoi la valeur absolue annule</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Géométriquement, la contrainte du lasso a des <strong>coins</strong> sur les axes — un losange en dimension deux — tandis que celle de ridge est un cercle, sans angle.</p>
+<p>La solution touche la contrainte, et il est bien plus probable de toucher un losange à un coin qu’un cercle en un point particulier. Or être sur un coin signifie qu’une coordonnée est nulle.</p>
+</div>
+</section>
+<section class="level2" id="choisir-entre-les-deux">
+<h2 class="anchored" data-anchor-id="choisir-entre-les-deux">Choisir entre les deux</h2>
+<div class="definitionbox" title="Quand préférer l'un ou l'autre">
+<div class="pedago-title">
+Quand préférer l’un ou l’autre
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Situation</th>
+<th>Méthode</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Beaucoup de variables faiblement utiles</td>
+<td><strong>ridge</strong></td>
+</tr>
+<tr class="even">
+<td>Peu de variables vraiment utiles</td>
+<td><strong>lasso</strong></td>
+</tr>
+<tr class="odd">
+<td>Variables corrélées par blocs</td>
+<td><strong>elastic net</strong></td>
+</tr>
+<tr class="even">
+<td>Modèle à interpréter et présenter</td>
+<td><strong>lasso</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="definitionbox" title="L'elastic net">
+<div class="pedago-title">
+L’elastic net
+</div>
+<p>Il combine les deux pénalités. Il sélectionne comme le lasso, tout en répartissant entre variables corrélées comme ridge.</p>
+<p>Le lasso, entre deux variables très corrélées, en garde <strong>une au hasard</strong> et annule l’autre — ce qui rend son résultat instable d’un échantillon à l’autre. L’elastic net corrige ce défaut.</p>
+</div>
+</section>
+<section class="level2" id="une-mise-en-garde-sur-linterprétation">
+<h2 class="anchored" data-anchor-id="une-mise-en-garde-sur-linterprétation">Une mise en garde sur l’interprétation</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Qu’une variable soit retenue par le lasso ne prouve <strong>pas</strong> qu’elle cause quoi que ce soit. Elle peut être retenue parce qu’elle est corrélée à la vraie cause, ou parce qu’elle est une conséquence.</p>
+<p>Le lasso sélectionne pour <strong>prévoir</strong>, pas pour expliquer. Lire ses variables retenues comme des facteurs causaux est l’erreur que le chapitre 11, puis tout le cours d’<em>Inférence causale</em>, s’emploieront à écarter.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>Les MCO sont optimaux <strong>parmi les sans-biais</strong> — ce qui n’est pas le critère en prévision.</li>
+<li><strong>Ridge</strong> pénalise <span class="math inline">\sum \beta_j^2</span> : les coefficients rétrécissent sans jamais s’annuler.</li>
+<li><strong>Lasso</strong> pénalise <span class="math inline">\sum \lvert\beta_j\rvert</span> : certains deviennent exactement nuls, d’où une <strong>sélection</strong>.</li>
+<li><span class="math inline">\lambda</span> se choisit par <strong>validation croisée</strong> ; il faut <strong>standardiser</strong> et ne pas pénaliser la constante.</li>
+<li>La sélection du lasso est <strong>prédictive</strong>, jamais causale.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Le lasso a introduit la sélection de variables. Le chapitre 4 examine ce que devient ce problème quand les variables sont plus nombreuses que les observations.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="validation-croisee.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Rééchantillonnage et validation croisée</span></a>
+<a class="jm-nav-suivant" href="selection-variables.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Sélection de variables et grande dimension</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/regression-penalisee.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/regression-penalisee-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/regression-penalisee-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/regression-penalisee.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

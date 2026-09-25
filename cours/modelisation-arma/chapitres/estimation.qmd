@@ -1,0 +1,315 @@
+---
+title: "Modélisation ARMA des rentabilités financières"
+subtitle: "L'estimation : moindres carrés et maximum de vraisemblance"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation ARMA des rentabilités financières</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="processus-stochastique.qmd">1. Variable aléatoire et processus stochastique</a></li>
+<li><a class="" href="stationnarite.qmd">2. La stationnarité</a></li>
+<li><a class="" href="bruit-blanc.qmd">3. Le bruit blanc</a></li>
+<li><a class="" href="operateur-retard.qmd">4. L&#x27;opérateur retard et l&#x27;écriture polynomiale</a></li>
+<li><a class="" href="processus-ar.qmd">5. Les processus autorégressifs AR(p)</a></li>
+<li><a class="" href="processus-ma.qmd">6. Les processus de moyenne mobile MA(q)</a></li>
+<li><a class="" href="processus-arma.qmd">7. Les processus mixtes ARMA(p,q)</a></li>
+<li><a class="" href="conditions-stationnarite.qmd">8. Conditions de stationnarité et d&#x27;inversibilité</a></li>
+<li><a class="" href="racine-unitaire.qmd">9. Les tests de racine unitaire</a></li>
+<li><a class="" href="autocovariance.qmd">10. Espérance, variance et fonction d&#x27;autocovariance</a></li>
+<li><a class="" href="autocorrelogramme.qmd">11. Autocorrélation, autocorrélogramme et mémoire</a></li>
+<li><a class="" href="identification.qmd">12. Box et Jenkins : l&#x27;identification</a></li>
+<li><a class="" href="criteres-information.qmd">13. Le choix du modèle par les critères d&#x27;information</a></li>
+<li><a class="jm-actif" href="estimation.qmd">14. L&#x27;estimation : moindres carrés et maximum de vraisemblance</a></li>
+<li><a class="" href="validation.qmd">15. La validation, et ce que les résidus révèlent</a></li>
+<li><a class="" href="prevision.qmd">16. La prévision : ponctuelle, par intervalle, par densité</a></li>
+<li><a class="" href="mise-en-oeuvre-r.qmd">17. Mise en œuvre sur R</a></li>
+<li><a class="" href="mise-en-oeuvre-python.qmd">18. Mise en œuvre sur Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation ARMA des rentabilités financières</h1>
+<p class="subtitle lead">Chapitre 13 : L’estimation — moindres carrés et maximum de vraisemblance</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="le-problème">
+<h2 class="anchored" data-anchor-id="le-problème">Le problème</h2>
+<p>Les ordres <span class="math inline">p</span> et <span class="math inline">q</span> sont fixés. Il reste à chiffrer les coefficients <span class="math inline">\alpha_1,\dots,\alpha_p</span>, <span class="math inline">\beta_1,\dots,\beta_q</span>, la constante et <span class="math inline">\sigma_\varepsilon^2</span>.</p>
+<div class="intuitionbox" title="Une difficulté propre aux modèles MA">
+<div class="pedago-title">
+Une difficulté propre aux modèles MA
+</div>
+<p>Un AR se régresse sur des variables <strong>observées</strong>. Un MA se régresse sur des chocs <strong>inobservables</strong>. Cette différence commande tout le chapitre.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-moindres-carrés">
+<h1>Les moindres carrés</h1>
+<section class="level2" id="le-cas-autorégressif">
+<h2 class="anchored" data-anchor-id="le-cas-autorégressif">Le cas autorégressif</h2>
+<div class="definitionbox" title="MCO sur un AR(p)">
+<div class="pedago-title">
+MCO sur un AR(p)
+</div>
+<p><span class="math display"> y_t = \theta + \alpha_1y_{t-1} + \dots + \alpha_py_{t-p} + \varepsilon_t </span> est une régression linéaire ordinaire : les régresseurs sont des valeurs passées de la série, toutes observées.</p>
+</div>
+<div class="definitionbox" title="Propriétés">
+<div class="pedago-title">
+Propriétés
+</div>
+<p>L’estimateur des MCO est <strong>biaisé</strong> à distance finie — les régresseurs ne sont pas exogènes au sens strict — mais <strong>convergent</strong> et asymptotiquement normal, si le processus est stationnaire.</p>
+</div>
+<div class="examplebox" title="L'ordre de grandeur du biais">
+<div class="pedago-title">
+L’ordre de grandeur du biais
+</div>
+<p>Pour un AR(1), <span class="math inline">\mathrm{E}(\hat\alpha) \approx \alpha - (1+3\alpha)/T</span>. Avec <span class="math inline">T=1000</span>, le biais est de l’ordre de <span class="math inline">0{,}003</span> : négligeable sur données financières, sensible sur données annuelles.</p>
+</div>
+</section>
+<section class="level2" id="pourquoi-cela-échoue-pour-un-ma">
+<h2 class="anchored" data-anchor-id="pourquoi-cela-échoue-pour-un-ma">Pourquoi cela échoue pour un MA</h2>
+<div class="definitionbox" title="L'obstacle">
+<div class="pedago-title">
+L’obstacle
+</div>
+<p><span class="math display"> y_t = \theta + \varepsilon_t + \beta\varepsilon_{t-1} </span> Le régresseur <span class="math inline">\varepsilon_{t-1}</span> n’est pas observé. Et il ne peut pas l’être : il dépend de <span class="math inline">\beta</span>, que l’on cherche précisément à estimer.</p>
+</div>
+<div class="intuitionbox" title="La solution : la récursion">
+<div class="pedago-title">
+La solution : la récursion
+</div>
+<p>On peut <strong>reconstruire</strong> les chocs si l’on se donne une valeur de <span class="math inline">\beta</span> et une valeur initiale : <span class="math display"> \varepsilon_0 = 0, \qquad \varepsilon_t = y_t - \theta - \beta\,\varepsilon_{t-1}. </span> On obtient alors la somme des carrés <span class="math inline">S(\beta) = \sum_t\varepsilon_t^2</span>, que l’on minimise <strong>numériquement</strong> sur <span class="math inline">\beta</span>. Le problème n’est plus linéaire : il n’y a pas de formule fermée.</p>
+</div>
+</section>
+<section class="level2" id="moindres-carrés-conditionnels">
+<h2 class="anchored" data-anchor-id="moindres-carrés-conditionnels">Moindres carrés conditionnels</h2>
+<div class="definitionbox" title="La méthode">
+<div class="pedago-title">
+La méthode
+</div>
+<p>Fixer les chocs initiaux à zéro, reconstruire les <span class="math inline">\varepsilon_t</span> par récursion, minimiser <span class="math inline">S(\alpha,\beta)</span> par un algorithme d’optimisation.</p>
+</div>
+<div class="intuitionbox" title="Son défaut">
+<div class="pedago-title">
+Son défaut
+</div>
+<p>Le résultat dépend de l’initialisation arbitraire <span class="math inline">\varepsilon_0 = 0</span>. L’effet s’estompe quand <span class="math inline">T</span> grandit — d’autant plus vite que le modèle est inversible — mais il reste sensible sur petits échantillons.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-maximum-de-vraisemblance">
+<h1>Le maximum de vraisemblance</h1>
+<section class="level2" id="le-principe">
+<h2 class="anchored" data-anchor-id="le-principe">Le principe</h2>
+<div class="definitionbox" title="Vraisemblance">
+<div class="pedago-title">
+Vraisemblance
+</div>
+<p>On se donne une loi pour les innovations, en général <span class="math inline">\varepsilon_t \sim \mathcal{N}(0,\sigma_\varepsilon^2)</span>, et l’on cherche les paramètres qui rendent l’échantillon observé <strong>le plus probable</strong> : <span class="math display"> \hat{\vartheta} = \arg\max_{\vartheta}\ L(\vartheta \mid x_1,\dots,x_T). </span></p>
+</div>
+</section>
+<section class="level2" id="sa-forme-sur-un-modèle-arma">
+<h2 class="anchored" data-anchor-id="sa-forme-sur-un-modèle-arma">Sa forme sur un modèle ARMA</h2>
+<p>En décomposant la loi jointe en produit de lois conditionnelles :</p>
+<p><span class="math display"> \ln L = -\frac{T}{2}\ln(2\pi) - \frac{1}{2}\sum_{t=1}^{T}\ln v_t - \frac{1}{2}\sum_{t=1}^{T}\frac{(x_t - \hat{x}_{t|t-1})^2}{v_t}, </span></p>
+<p>où <span class="math inline">\hat{x}_{t|t-1}</span> est la prévision à un pas et <span class="math inline">v_t</span> sa variance.</p>
+<div class="intuitionbox" title="Comment la lire">
+<div class="pedago-title">
+Comment la lire
+</div>
+<p>La vraisemblance récompense les paramètres qui <strong>prévoient bien à un pas</strong>. Elle est calculée en pratique par le filtre de Kalman, qui produit les <span class="math inline">\hat{x}_{t|t-1}</span> et les <span class="math inline">v_t</span> de proche en proche.</p>
+</div>
+</section>
+<section class="level2" id="exacte-ou-conditionnelle">
+<h2 class="anchored" data-anchor-id="exacte-ou-conditionnelle">Exacte ou conditionnelle</h2>
+<div class="definitionbox" title="Deux variantes">
+<div class="pedago-title">
+Deux variantes
+</div>
+<ul>
+<li><strong>Exacte</strong> : traite correctement les premières observations, dont la loi diffère. Plus coûteuse, meilleure sur petits échantillons.</li>
+<li><strong>Conditionnelle</strong> : conditionne aux premières valeurs, comme les moindres carrés conditionnels. Plus rapide.</li>
+</ul>
+</div>
+<div class="ecobox" title="Le choix, en pratique">
+<div class="pedago-title">
+Le choix, en pratique
+</div>
+<p>Avec <span class="math inline">T</span> de l’ordre de plusieurs milliers — le cas des données financières quotidiennes — les deux coïncident à la troisième décimale. La question ne se pose vraiment que sur données annuelles.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-lon-obtient">
+<h2 class="anchored" data-anchor-id="ce-que-lon-obtient">Ce que l’on obtient</h2>
+<div class="definitionbox" title="Propriétés asymptotiques">
+<div class="pedago-title">
+Propriétés asymptotiques
+</div>
+<p>Sous stationnarité, inversibilité et bonne spécification : <span class="math display"> \sqrt{T}\big(\hat{\vartheta} - \vartheta\big) \ \xrightarrow{\ d\ }\ \mathcal{N}\big(0,\ \mathcal{I}(\vartheta)^{-1}\big), </span> où <span class="math inline">\mathcal{I}</span> est la matrice d’information de Fisher.</p>
+</div>
+<p>L’estimateur est convergent, asymptotiquement normal, et <strong>efficace</strong> : aucun estimateur sans biais ne fait mieux asymptotiquement.</p>
+</section>
+<section class="level2" id="un-point-rassurant-sur-la-normalité">
+<h2 class="anchored" data-anchor-id="un-point-rassurant-sur-la-normalité">Un point rassurant sur la normalité</h2>
+<div class="intuitionbox" title="La quasi-vraisemblance">
+<div class="pedago-title">
+La quasi-vraisemblance
+</div>
+<p>On suppose des innovations gaussiennes pour écrire <span class="math inline">L</span>. Si elles ne le sont pas — et les rentabilités ne le sont jamais — l’estimateur reste <strong>convergent</strong>. On parle de quasi-maximum de vraisemblance.</p>
+<p>Seuls les écarts-types demandent une correction, dite « robuste ». C’est ce qui rend la méthode utilisable sur des données à queues épaisses.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="comparaison-des-méthodes">
+<h1>Comparaison des méthodes</h1>
+<section class="level2" id="le-tableau">
+<h2 class="anchored" data-anchor-id="le-tableau">Le tableau</h2>
+<div class="definitionbox" title="Quelle méthode pour quel modèle">
+<div class="pedago-title">
+Quelle méthode pour quel modèle
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Méthode</th>
+<th style="text-align: center;">AR pur</th>
+<th style="text-align: center;">MA / ARMA</th>
+<th>Coût</th>
+<th>Propriétés</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MCO</td>
+<td style="text-align: center;">direct</td>
+<td style="text-align: center;">impossible</td>
+<td>faible</td>
+<td>convergent</td>
+</tr>
+<tr class="even">
+<td>Yule-Walker</td>
+<td style="text-align: center;">direct</td>
+<td style="text-align: center;">non</td>
+<td>très faible</td>
+<td>convergent, moins précis</td>
+</tr>
+<tr class="odd">
+<td>MC conditionnels</td>
+<td style="text-align: center;">oui</td>
+<td style="text-align: center;">oui</td>
+<td>moyen</td>
+<td>dépend de l’initialisation</td>
+</tr>
+<tr class="even">
+<td>MV conditionnelle</td>
+<td style="text-align: center;">oui</td>
+<td style="text-align: center;">oui</td>
+<td>moyen</td>
+<td>très bonne</td>
+</tr>
+<tr class="odd">
+<td>MV exacte</td>
+<td style="text-align: center;">oui</td>
+<td style="text-align: center;">oui</td>
+<td>élevé</td>
+<td>optimale</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="ecobox" title="Ce que font les logiciels">
+<div class="pedago-title">
+Ce que font les logiciels
+</div>
+<p>EViews, R (<code>arima</code>) et Python (<code>statsmodels</code>) emploient par défaut le <strong>maximum de vraisemblance exact</strong> via le filtre de Kalman. Les autres méthodes servent surtout à fournir les valeurs initiales de l’optimisation.</p>
+</div>
+</section>
+<section class="level2" id="deux-difficultés-numériques">
+<h2 class="anchored" data-anchor-id="deux-difficultés-numériques">Deux difficultés numériques</h2>
+<div class="intuitionbox" title="Ce qui peut mal se passer">
+<div class="pedago-title">
+Ce qui peut mal se passer
+</div>
+<ul>
+<li><strong>Non-convergence.</strong> Souvent le signe d’une racine commune (chapitre 6) ou d’un modèle trop grand. Remède : réduire les ordres.</li>
+<li><strong>Racine sur le cercle unité.</strong> Un <span class="math inline">\hat\beta</span> estimé à <span class="math inline">0{,}999</span> indique une série sur-différenciée. Remède : différencier une fois de moins.</li>
+</ul>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 13">
+<div class="pedago-title">
+L’essentiel du chapitre 13
+</div>
+<ul>
+<li>Un AR s’estime par MCO : régression sur des valeurs observées, estimateur convergent.</li>
+<li>Un MA ne le peut pas : ses régresseurs sont des chocs inobservables.</li>
+<li>On reconstruit les chocs par récursion et l’on minimise <strong>numériquement</strong> — pas de formule fermée.</li>
+<li>Le <strong>maximum de vraisemblance</strong>, calculé par le filtre de Kalman, est la méthode de référence.</li>
+<li>L’estimateur est convergent même si les innovations ne sont pas gaussiennes : c’est la quasi-vraisemblance.</li>
+<li>Non-convergence ou racine proche de 1 : le modèle est mal spécifié, pas l’algorithme.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers le chapitre 14">
+<div class="pedago-title">
+Vers le chapitre 14
+</div>
+<p>Reste l’étape décisive. Un modèle estimé n’est pas un modèle valide : il faut interroger ses résidus. Et c’est là que les rentabilités financières vont révéler ce qu’un ARMA ne peut pas capturer.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="criteres-information.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Le choix du modèle par les critères d&#x27;information</span></a>
+<a class="jm-nav-suivant" href="validation.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">La validation, et ce que les résidus révèlent</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/estimation.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/estimation-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/estimation-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/estimation.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

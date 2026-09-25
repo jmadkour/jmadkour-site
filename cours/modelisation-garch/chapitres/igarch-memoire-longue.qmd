@@ -1,0 +1,339 @@
+---
+title: "Modélisation GARCH de la volatilité"
+subtitle: "IGARCH, GARCH-M et la mémoire longue"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="faits-stylises.qmd">1. Mandelbrot et les faits stylisés des rentabilités</a></li>
+<li><a class="" href="clusters-effet-levier.qmd">2. Regroupement de la volatilité et effet de levier</a></li>
+<li><a class="" href="variance-conditionnelle.qmd">3. Le cadre de la variance conditionnelle</a></li>
+<li><a class="" href="modele-arch.qmd">4. Le modèle ARCH(q) d&#x27;Engle</a></li>
+<li><a class="" href="proprietes-arch.qmd">5. Propriétés statistiques de l&#x27;ARCH</a></li>
+<li><a class="" href="detecter-arch.qmd">6. Détecter et identifier un effet ARCH</a></li>
+<li><a class="" href="modele-garch.qmd">7. Le modèle GARCH(p,q) de Bollerslev</a></li>
+<li><a class="" href="persistance.qmd">8. Stationnarité, persistance et variance de long terme</a></li>
+<li><a class="" href="dualite-arma.qmd">9. La dualité GARCH et ARMA sur les carrés</a></li>
+<li><a class="" href="loi-innovations.qmd">10. La loi des innovations</a></li>
+<li><a class="" href="egarch.qmd">11. L&#x27;effet de levier et l&#x27;EGARCH de Nelson</a></li>
+<li><a class="" href="gjr-tgarch.qmd">12. GJR-GARCH, TGARCH et la courbe d&#x27;impact</a></li>
+<li><a class="jm-actif" href="igarch-memoire-longue.qmd">13. IGARCH, GARCH-M et la mémoire longue</a></li>
+<li><a class="" href="estimation.qmd">14. L&#x27;estimation par quasi-maximum de vraisemblance</a></li>
+<li><a class="" href="validation.qmd">15. La validation d&#x27;un modèle de volatilité</a></li>
+<li><a class="" href="prevision-volatilite.qmd">16. La prévision de volatilité</a></li>
+<li><a class="" href="value-at-risk.qmd">17. De la volatilité à la Value at Risk</a></li>
+<li><a class="" href="mise-en-oeuvre-r.qmd">18. Mise en œuvre sur R</a></li>
+<li><a class="" href="mise-en-oeuvre-python.qmd">19. Mise en œuvre sur Python</a></li>
+<li><a class="" href="etude-de-cas-r.qmd">20. Étude de cas sur données réelles — R</a></li>
+<li><a class="" href="etude-de-cas-python.qmd">21. Étude de cas sur données réelles — Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Chapitre 12 : IGARCH, GARCH-M et la mémoire longue</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="le-fait-empirique-qui-pose-problème">
+<h2 class="anchored" data-anchor-id="le-fait-empirique-qui-pose-problème">Le fait empirique qui pose problème</h2>
+<div class="intuitionbox" title="Une persistance qui touche la borne">
+<div class="pedago-title">
+Une persistance qui touche la borne
+</div>
+<p>Sur presque toute série financière, la persistance estimée se situe entre <span class="math inline">0{,}97</span> et <span class="math inline">0{,}995</span>. Son écart-type d’estimation est de l’ordre de <span class="math inline">0{,}01</span>.</p>
+<p>On ne peut donc <strong>pas rejeter</strong> <span class="math inline">\pi = 1</span>. Or à <span class="math inline">\pi = 1</span> la variance inconditionnelle n’existe plus. Ce chapitre examine trois réponses à cette situation.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-modèle-igarch">
+<h1>Le modèle IGARCH</h1>
+<section class="level2" id="la-spécification">
+<h2 class="anchored" data-anchor-id="la-spécification">La spécification</h2>
+<div class="definitionbox" title="Engle et Bollerslev (1986)">
+<div class="pedago-title">
+Engle et Bollerslev (1986)
+</div>
+<p>On impose la contrainte <span class="math inline">\alpha_1 + \beta_1 = 1</span> : <span class="math display"> h_t = \omega + \alpha_1\varepsilon_{t-1}^2 + (1-\alpha_1)\,h_{t-1} . </span> Un paramètre de moins à estimer.</p>
+</div>
+<div class="intuitionbox" title="Ce que « I » signifie">
+<div class="pedago-title">
+Ce que « I » signifie
+</div>
+<p><em>Integrated</em> — par analogie avec l’ARIMA. En termes de la dualité du chapitre 8, l’ARMA sur les carrés a une <strong>racine unitaire</strong>.</p>
+<p>Un choc de volatilité ne s’estompe jamais : il déplace définitivement le niveau de la variance.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-ligarch-implique">
+<h2 class="anchored" data-anchor-id="ce-que-ligarch-implique">Ce que l’IGARCH implique</h2>
+<div class="definitionbox" title="Trois conséquences">
+<div class="pedago-title">
+Trois conséquences
+</div>
+<ol type="1">
+<li>Pas de variance inconditionnelle finie : <span class="math inline">\sigma^2 = \omega/0</span>.</li>
+<li>Le processus reste <strong>strictement stationnaire</strong> — la condition du chapitre 7 est satisfaite.</li>
+<li>La prévision de volatilité ne converge vers <strong>aucun</strong> niveau : elle reste au niveau courant, avec une dérive due à <span class="math inline">\omega</span>.</li>
+</ol>
+</div>
+<div class="ecobox" title="Un cas particulier célèbre">
+<div class="pedago-title">
+Un cas particulier célèbre
+</div>
+<p>Avec <span class="math inline">\omega = 0</span> et <span class="math inline">\alpha_1 = 0{,}06</span> : <span class="math display"> h_t = 0{,}94\,h_{t-1} + 0{,}06\,\varepsilon_{t-1}^2 . </span> C’est <strong>exactement</strong> le lissage exponentiel de RiskMetrics, la méthode que J.P. Morgan a diffusée en 1994 et qui reste la référence pratique dans beaucoup de salles de marché.</p>
+<p>RiskMetrics est donc un IGARCH aux paramètres imposés, non estimés.</p>
+</div>
+</section>
+<section class="level2" id="faut-il-y-croire">
+<h2 class="anchored" data-anchor-id="faut-il-y-croire">Faut-il y croire ?</h2>
+<div class="intuitionbox" title="Deux lectures du même résultat">
+<div class="pedago-title">
+Deux lectures du même résultat
+</div>
+<p><strong>Prise au sérieux</strong> : la volatilité n’a pas de niveau de long terme, les chocs sont permanents.</p>
+<p><strong>Prise comme un symptôme</strong> : la persistance apparente est un artefact. Si le niveau de volatilité change de régime au cours de l’échantillon — crise de 2008, pandémie de 2020 — un GARCH à paramètres constants interprète ces changements comme une persistance extrême.</p>
+</div>
+<div class="ecobox" title="La seconde lecture est la mieux étayée">
+<div class="pedago-title">
+La seconde lecture est la mieux étayée
+</div>
+<p>Lamoureux et Lastrapes (1990) montrent qu’en introduisant des ruptures de niveau, la persistance estimée chute nettement.</p>
+<p>C’est le même piège qu’au chapitre 8 du cours ARMA : une <strong>rupture structurelle</strong> se fait passer pour une racine unitaire. Le remède est identique — regarder la série, découper l’échantillon.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-modèle-garch-m">
+<h1>Le modèle GARCH-M</h1>
+<section class="level2" id="lidée">
+<h2 class="anchored" data-anchor-id="lidée">L’idée</h2>
+<div class="definitionbox" title="Engle, Lilien et Robins (1987)">
+<div class="pedago-title">
+Engle, Lilien et Robins (1987)
+</div>
+<p>Le risque entre dans l’<strong>équation de moyenne</strong> : <span class="math display"> r_t = \mu + \delta\,g(h_t) + \varepsilon_t , \qquad \varepsilon_t = \sqrt{h_t}\,z_t , </span> avec <span class="math inline">g(h_t) = h_t</span>, <span class="math inline">\sqrt{h_t}</span> ou <span class="math inline">\ln h_t</span> selon les auteurs.</p>
+</div>
+<div class="intuitionbox" title="Ce que cela dit économiquement">
+<div class="pedago-title">
+Ce que cela dit économiquement
+</div>
+<p>Un actif plus risqué doit rapporter davantage. <span class="math inline">\delta</span> <strong>est</strong> la prime de risque, mesurée : le supplément de rentabilité exigé par unité de volatilité.</p>
+<p>C’est le seul modèle du cours où l’équation de variance influence l’équation de moyenne — donc où le risque est rémunéré.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-les-données-en-disent">
+<h2 class="anchored" data-anchor-id="ce-que-les-données-en-disent">Ce que les données en disent</h2>
+<div class="ecobox" title="Un résultat décevant, et instructif">
+<div class="pedago-title">
+Un résultat décevant, et instructif
+</div>
+<p><span class="math inline">\hat\delta</span> est le plus souvent <strong>positif mais non significatif</strong> sur données quotidiennes. Le signe est conforme à la théorie, l’ampleur est indiscernable de zéro.</p>
+<p>Deux explications : la prime de risque se manifeste à des horizons longs — mensuels ou annuels — alors que le GARCH travaille au jour ; et le rapport signal sur bruit est très défavorable, puisqu’on a montré au cours précédent que <span class="math inline">\mu</span> ne s’estime pas.</p>
+</div>
+<div class="intuitionbox" title="Pourquoi l'enseigner malgré tout">
+<div class="pedago-title">
+Pourquoi l’enseigner malgré tout
+</div>
+<p>Parce que c’est le lien formel entre ce cours et la théorie financière — le MEDAF, la frontière efficiente. Et parce que son échec empirique est en soi un résultat : la relation risque-rendement n’est pas mesurable à l’échelle quotidienne.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-mémoire-longue">
+<h1>La mémoire longue</h1>
+<section class="level2" id="le-constat">
+<h2 class="anchored" data-anchor-id="le-constat">Le constat</h2>
+<div class="definitionbox" title="Ce que l'ACF des carrés montre vraiment">
+<div class="pedago-title">
+Ce que l’ACF des carrés montre vraiment
+</div>
+<p>Sur séries longues, l’ACF de <span class="math inline">\varepsilon_t^2</span> décroît <strong>plus lentement</strong> qu’une exponentielle : elle suit une décroissance en puissance, <span class="math display"> \rho_k \ \sim\ k^{-\theta}, \qquad 0 &lt; \theta &lt; 1 . </span></p>
+</div>
+<div class="intuitionbox" title="Un GARCH ne peut pas produire cela">
+<div class="pedago-title">
+Un GARCH ne peut pas produire cela
+</div>
+<p>Un GARCH stationnaire décroît en <span class="math inline">\pi^k</span> — géométriquement. Une décroissance en <span class="math inline">k^{-\theta}</span> est bien plus lente.</p>
+<p>C’est ce qui explique que la persistance estimée soit toujours poussée vers 1 : le modèle tente d’imiter, avec une exponentielle, une décroissance qui n’en est pas une.</p>
+</div>
+</section>
+<section class="level2" id="le-modèle-figarch">
+<h2 class="anchored" data-anchor-id="le-modèle-figarch">Le modèle FIGARCH</h2>
+<div class="definitionbox" title="Baillie, Bollerslev et Mikkelsen (1996)">
+<div class="pedago-title">
+Baillie, Bollerslev et Mikkelsen (1996)
+</div>
+<p>On introduit une différenciation <strong>fractionnaire</strong> <span class="math inline">d \in\, ]0,1[</span> dans l’ARMA sur les carrés : <span class="math display"> \phi(L)\,(1-L)^d\,\varepsilon_t^2 = \omega + \big[1-\beta(L)\big]v_t . </span></p>
+</div>
+<div class="definitionbox" title="L'opérateur $(1-L)^d$">
+<div class="pedago-title">
+L’opérateur <span class="math inline">(1-L)^d</span>
+</div>
+<p>Défini par son développement en série : <span class="math display"> (1-L)^d = \sum_{j\ge0}\binom{d}{j}(-L)^j = 1 - dL - \frac{d(1-d)}{2}L^2 - \cdots </span></p>
+</div>
+</section>
+<section class="level2" id="le-modèle-figarch-suite">
+<h2 class="anchored" data-anchor-id="le-modèle-figarch-suite">Le modèle FIGARCH (suite)</h2>
+<div class="intuitionbox" title="Le paramètre $d$ interpole">
+<div class="pedago-title">
+Le paramètre <span class="math inline">d</span> interpole
+</div>
+<p><span class="math inline">d = 0</span> : GARCH ordinaire, mémoire géométrique.</p>
+<p><span class="math inline">d = 1</span> : IGARCH, chocs permanents.</p>
+<p><span class="math inline">0 &lt; d &lt; 1</span> : mémoire <strong>longue</strong> — les chocs s’estompent, mais lentement, en puissance. C’est le régime intermédiaire qui manquait.</p>
+</div>
+</section>
+<section class="level2" id="ce-quil-faut-en-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-en-retenir">Ce qu’il faut en retenir</h2>
+<div class="ecobox" title="Un modèle à connaître, rarement à employer">
+<div class="pedago-title">
+Un modèle à connaître, rarement à employer
+</div>
+<p>Le FIGARCH est difficile à estimer, coûteux en calcul, et son gain en prévision reste modeste sur des horizons courts.</p>
+<p>Son intérêt est <strong>conceptuel</strong> : il montre que la persistance quasi unitaire des GARCH n’est pas nécessairement une racine unitaire, mais peut être la trace d’une mémoire longue — deux choses très différentes pour la prévision à long horizon.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-tableau-de-la-famille">
+<h1>Le tableau de la famille</h1>
+<section class="level2" id="récapitulatif">
+<h2 class="anchored" data-anchor-id="récapitulatif">Récapitulatif</h2>
+<div class="definitionbox" title="Les modèles vus dans ce cours">
+<div class="pedago-title">
+Les modèles vus dans ce cours
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Modèle</th>
+<th>Ce qu’il ajoute</th>
+<th>À employer quand</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ARCH(q)</td>
+<td>variance conditionnelle</td>
+<td>jamais seul, en pratique</td>
+</tr>
+<tr class="even">
+<td>GARCH(p,q)</td>
+<td>persistance à peu de paramètres</td>
+<td><strong>cas de référence</strong></td>
+</tr>
+<tr class="odd">
+<td>GARCH-t</td>
+<td>queues épaisses résiduelles</td>
+<td><strong>toujours en finance</strong></td>
+</tr>
+<tr class="even">
+<td>GJR / EGARCH</td>
+<td>effet de levier</td>
+<td>actions et indices</td>
+</tr>
+<tr class="odd">
+<td>IGARCH</td>
+<td>persistance unitaire imposée</td>
+<td>VaR rapide, style RiskMetrics</td>
+</tr>
+<tr class="even">
+<td>GARCH-M</td>
+<td>prime de risque</td>
+<td>horizons longs</td>
+</tr>
+<tr class="odd">
+<td>FIGARCH</td>
+<td>mémoire longue</td>
+<td>recherche, séries très longues</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="intuitionbox" title="La règle qui résume la partie IV">
+<div class="pedago-title">
+La règle qui résume la partie IV
+</div>
+<p>Un <strong>GJR-GARCH(1,1) à innovations de Student</strong> couvre l’essentiel des besoins. Tout le reste est une réponse à un diagnostic précis — et doit être justifié par ce diagnostic, non choisi par goût de la nouveauté.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 12">
+<div class="pedago-title">
+L’essentiel du chapitre 12
+</div>
+<ul>
+<li><strong>IGARCH</strong> : <span class="math inline">\alpha_1+\beta_1=1</span>. Chocs permanents, pas de variance de long terme, mais stationnarité stricte préservée.</li>
+<li>RiskMetrics (<span class="math inline">\lambda = 0{,}94</span>) est un IGARCH à paramètres imposés.</li>
+<li>Une persistance proche de 1 est souvent l’ombre d’une <strong>rupture de régime</strong>, comme une racine unitaire l’était au cours précédent.</li>
+<li><strong>GARCH-M</strong> : le risque entre dans l’équation de moyenne ; <span class="math inline">\delta</span> est la prime de risque, rarement significative au jour le jour.</li>
+<li>L’ACF des carrés décroît en <strong>puissance</strong>, non en exponentielle : c’est la mémoire longue.</li>
+<li><strong>FIGARCH</strong> interpole entre GARCH (<span class="math inline">d=0</span>) et IGARCH (<span class="math inline">d=1</span>).</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers la partie V">
+<div class="pedago-title">
+Vers la partie V
+</div>
+<p>Les modèles sont posés. Il reste à les estimer, à les valider, à s’en servir pour prévoir — et à transformer cette prévision en un chiffre de risque.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="gjr-tgarch.qmd">&larr; Chapitre précédent<span class="jm-nav-label">GJR-GARCH, TGARCH et la courbe d&#x27;impact</span></a>
+<a class="jm-nav-suivant" href="estimation.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">L&#x27;estimation par quasi-maximum de vraisemblance</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/igarch-memoire-longue.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/igarch-memoire-longue-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/igarch-memoire-longue-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/igarch-memoire-longue.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

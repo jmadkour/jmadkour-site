@@ -1,0 +1,295 @@
+---
+title: "Modélisation GARCH de la volatilité"
+subtitle: "Propriétés statistiques de l'ARCH"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="faits-stylises.qmd">1. Mandelbrot et les faits stylisés des rentabilités</a></li>
+<li><a class="" href="clusters-effet-levier.qmd">2. Regroupement de la volatilité et effet de levier</a></li>
+<li><a class="" href="variance-conditionnelle.qmd">3. Le cadre de la variance conditionnelle</a></li>
+<li><a class="" href="modele-arch.qmd">4. Le modèle ARCH(q) d&#x27;Engle</a></li>
+<li><a class="jm-actif" href="proprietes-arch.qmd">5. Propriétés statistiques de l&#x27;ARCH</a></li>
+<li><a class="" href="detecter-arch.qmd">6. Détecter et identifier un effet ARCH</a></li>
+<li><a class="" href="modele-garch.qmd">7. Le modèle GARCH(p,q) de Bollerslev</a></li>
+<li><a class="" href="persistance.qmd">8. Stationnarité, persistance et variance de long terme</a></li>
+<li><a class="" href="dualite-arma.qmd">9. La dualité GARCH et ARMA sur les carrés</a></li>
+<li><a class="" href="loi-innovations.qmd">10. La loi des innovations</a></li>
+<li><a class="" href="egarch.qmd">11. L&#x27;effet de levier et l&#x27;EGARCH de Nelson</a></li>
+<li><a class="" href="gjr-tgarch.qmd">12. GJR-GARCH, TGARCH et la courbe d&#x27;impact</a></li>
+<li><a class="" href="igarch-memoire-longue.qmd">13. IGARCH, GARCH-M et la mémoire longue</a></li>
+<li><a class="" href="estimation.qmd">14. L&#x27;estimation par quasi-maximum de vraisemblance</a></li>
+<li><a class="" href="validation.qmd">15. La validation d&#x27;un modèle de volatilité</a></li>
+<li><a class="" href="prevision-volatilite.qmd">16. La prévision de volatilité</a></li>
+<li><a class="" href="value-at-risk.qmd">17. De la volatilité à la Value at Risk</a></li>
+<li><a class="" href="mise-en-oeuvre-r.qmd">18. Mise en œuvre sur R</a></li>
+<li><a class="" href="mise-en-oeuvre-python.qmd">19. Mise en œuvre sur Python</a></li>
+<li><a class="" href="etude-de-cas-r.qmd">20. Étude de cas sur données réelles — R</a></li>
+<li><a class="" href="etude-de-cas-python.qmd">21. Étude de cas sur données réelles — Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Chapitre 4 : Propriétés statistiques de l’ARCH</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="ce-que-ce-chapitre-établit">
+<h2 class="anchored" data-anchor-id="ce-que-ce-chapitre-établit">Ce que ce chapitre établit</h2>
+<p>Quatre résultats, tous démontrés sur l’ARCH(1), tous valables plus généralement : l’absence d’autocorrélation, la stationnarité, le kurtosis, et la nature de la mémoire.</p>
+</section>
+</section>
+<section class="level1" id="les-moments-dordre-un-et-deux">
+<h1>Les moments d’ordre un et deux</h1>
+<section class="level2" id="espérance">
+<h2 class="anchored" data-anchor-id="espérance">Espérance</h2>
+<p><span class="math display"> \mathrm{E}(\varepsilon_t) = \mathrm{E}\big[\mathrm{E}(\varepsilon_t \mid \Omega_{t-1})\big] = \mathrm{E}\big[\sqrt{h_t}\,\mathrm{E}(z_t)\big] = 0 . </span></p>
+<div class="intuitionbox" title="La technique, employée partout dans ce chapitre">
+<div class="pedago-title">
+La technique, employée partout dans ce chapitre
+</div>
+<p>On conditionne d’abord — <span class="math inline">h_t</span> devient alors une constante qu’on peut sortir — puis on prend l’espérance du résultat. C’est la <strong>loi des espérances itérées</strong>, et c’est le seul outil dont nous aurons besoin.</p>
+</div>
+</section>
+<section class="level2" id="absence-dautocorrélation">
+<h2 class="anchored" data-anchor-id="absence-dautocorrélation">Absence d’autocorrélation</h2>
+<p>Pour <span class="math inline">k \ge 1</span> :</p>
+<p><span class="math display"> \mathrm{Cov}(\varepsilon_t, \varepsilon_{t-k}) = \mathrm{E}\big[\varepsilon_t\,\varepsilon_{t-k}\big] = \mathrm{E}\big[\varepsilon_{t-k}\,\mathrm{E}(\varepsilon_t\mid\Omega_{t-1})\big] = 0 . </span></p>
+<div class="definitionbox" title="Un ARCH est un bruit blanc">
+<div class="pedago-title">
+Un ARCH est un bruit blanc
+</div>
+<p>Le processus <span class="math inline">(\varepsilon_t)</span> est un bruit blanc <strong>faible</strong> : non corrélé à tout retard.</p>
+<p>Il n’est <strong>pas</strong> un bruit blanc fort : <span class="math inline">\varepsilon_t</span> et <span class="math inline">\varepsilon_{t-1}</span> sont manifestement dépendants, puisque le second détermine la variance du premier.</p>
+</div>
+<div class="ecobox" title="Le fait 1 est reproduit sans effort">
+<div class="pedago-title">
+Le fait 1 est reproduit sans effort
+</div>
+<p>Le modèle satisfait automatiquement l’absence d’autocorrélation des rentabilités — le premier fait stylisé. On n’a rien eu à imposer : c’est une conséquence de la structure.</p>
+</div>
+</section>
+<section class="level2" id="variance-et-stationnarité">
+<h2 class="anchored" data-anchor-id="variance-et-stationnarité">Variance et stationnarité</h2>
+<p>En itérant l’équation <span class="math inline">h_t = \omega + \alpha_1\varepsilon_{t-1}^2</span> vers le passé :</p>
+<p><span class="math display"> h_t = \omega\big(1 + \alpha_1 z_{t-1}^2 + \alpha_1^2 z_{t-1}^2z_{t-2}^2 + \cdots\big) </span></p>
+<p>En espérance, avec <span class="math inline">\mathrm{E}(z^2) = 1</span> :</p>
+<p><span class="math display"> \mathrm{E}(h_t) = \omega\sum_{j\ge0}\alpha_1^{\,j} = \frac{\omega}{1-\alpha_1} \qquad \text{si } \alpha_1 &lt; 1 . </span></p>
+<div class="definitionbox" title="Condition de stationnarité au second ordre">
+<div class="pedago-title">
+Condition de stationnarité au second ordre
+</div>
+<p><span class="math display"> \boxed{\ 0 \le \alpha_1 &lt; 1\ } \qquad \Longrightarrow \qquad \sigma^2 = \frac{\omega}{1-\alpha_1} . </span></p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-kurtosis">
+<h1>Le kurtosis</h1>
+<section class="level2" id="le-résultat-central">
+<h2 class="anchored" data-anchor-id="le-résultat-central">Le résultat central</h2>
+<p>Sous <span class="math inline">z_t \sim \mathcal{N}(0,1)</span>, donc <span class="math inline">\mathrm{E}(z^4) = 3</span> :</p>
+<p><span class="math display"> \mathrm{E}(\varepsilon_t^4) = \mathrm{E}\big[h_t^2\,z_t^4\big] = 3\,\mathrm{E}(h_t^2) . </span></p>
+<p>Un calcul de même nature sur <span class="math inline">h_t^2</span> donne, si <span class="math inline">3\alpha_1^2 &lt; 1</span> :</p>
+<div class="definitionbox" title="Kurtosis d'un ARCH(1) à innovations gaussiennes">
+<div class="pedago-title">
+Kurtosis d’un ARCH(1) à innovations gaussiennes
+</div>
+<p><span class="math display"> \kappa = \frac{\mathrm{E}(\varepsilon_t^4)}{\big[\mathrm{E}(\varepsilon_t^2)\big]^2} = 3\,\frac{1-\alpha_1^2}{1-3\alpha_1^2} \ \ &gt; \ 3 \quad \text{dès que } \alpha_1 &gt; 0 . </span></p>
+</div>
+</section>
+<section class="level2" id="le-résultat-le-plus-important-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résultat-le-plus-important-du-chapitre">Le résultat le plus important du chapitre</h2>
+<div class="intuitionbox" title="Les queues épaisses n'ont pas été demandées">
+<div class="pedago-title">
+Les queues épaisses n’ont pas été demandées
+</div>
+<p>L’innovation <span class="math inline">z_t</span> est <strong>gaussienne</strong>. Et pourtant le processus <span class="math inline">\varepsilon_t</span> ne l’est pas : son kurtosis dépasse 3.</p>
+<p>Le mélange de variances suffit à produire les queues épaisses. Le fait 2 découle du fait 3 — ce que le chapitre 1 annonçait, et qui se démontre ici en trois lignes.</p>
+</div>
+<div class="examplebox" title="Quelques valeurs">
+<div class="pedago-title">
+Quelques valeurs
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;"><span class="math inline">\alpha_1</span></th>
+<th style="text-align: right;"><span class="math inline">\kappa</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">0{,}1</span></td>
+<td style="text-align: right;"><span class="math inline">3{,}09</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">0{,}3</span></td>
+<td style="text-align: right;"><span class="math inline">4{,}52</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">0{,}5</span></td>
+<td style="text-align: right;"><span class="math inline">18{,}0</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">\ge 1/\sqrt{3} \approx 0{,}577</span></td>
+<td style="text-align: right;">infini</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="deux-conditions-deux-niveaux-dexigence">
+<h2 class="anchored" data-anchor-id="deux-conditions-deux-niveaux-dexigence">Deux conditions, deux niveaux d’exigence</h2>
+<div class="definitionbox" title="Ne pas les confondre">
+<div class="pedago-title">
+Ne pas les confondre
+</div>
+<p><span class="math display"> \alpha_1 &lt; 1 \quad \text{: variance finie (stationnarité au second ordre)} </span> <span class="math display"> 3\alpha_1^2 &lt; 1 \iff \alpha_1 &lt; 0{,}577 \quad \text{: kurtosis fini (moment d'ordre 4)} </span></p>
+</div>
+<div class="ecobox" title="La zone intermédiaire">
+<div class="pedago-title">
+La zone intermédiaire
+</div>
+<p>Pour <span class="math inline">0{,}577 &lt; \alpha_1 &lt; 1</span>, le processus est stationnaire mais son kurtosis est <strong>infini</strong>. La variance existe, la variance de la variance non.</p>
+<p>Ce n’est pas une curiosité : sur données financières réelles, l’existence du moment d’ordre quatre est douteuse, et c’est l’une des raisons pour lesquelles les écarts-types d’estimation doivent être calculés de façon robuste — chapitre 13.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-nature-de-la-mémoire">
+<h1>La nature de la mémoire</h1>
+<section class="level2" id="lacf-des-carrés">
+<h2 class="anchored" data-anchor-id="lacf-des-carrés">L’ACF des carrés</h2>
+<div class="definitionbox" title="Résultat">
+<div class="pedago-title">
+Résultat
+</div>
+<p>Pour un ARCH(1), <span class="math display"> \mathrm{Corr}\big(\varepsilon_t^2,\ \varepsilon_{t-k}^2\big) = \alpha_1^{\,k} . </span></p>
+</div>
+<div class="intuitionbox" title="Une décroissance géométrique — la signature d'un AR(1)">
+<div class="pedago-title">
+Une décroissance géométrique — la signature d’un AR(1)
+</div>
+<p>C’est exactement le résultat du cours ARMA pour un AR(1) : <span class="math inline">\rho_k = \alpha^k</span>.</p>
+<p>Le carré du choc se comporte comme un processus autorégressif d’ordre 1. Le chapitre 8 montrera que ce n’est pas une analogie, mais une identité.</p>
+</div>
+</section>
+<section class="level2" id="le-problème-pratique">
+<h2 class="anchored" data-anchor-id="le-problème-pratique">Le problème pratique</h2>
+<div class="examplebox" title="Un dilemme sans issue">
+<div class="pedago-title">
+Un dilemme sans issue
+</div>
+<p>Pour reproduire une ACF encore significative au retard 20, il faut <span class="math inline">\alpha_1^{20}</span> non négligeable, donc <span class="math inline">\alpha_1</span> proche de <span class="math inline">0{,}9</span>.</p>
+<p>Mais <span class="math inline">\alpha_1 = 0{,}9 &gt; 0{,}577</span> : le kurtosis devient infini, et le modèle produit des trajectoires bien plus extrêmes que les données.</p>
+</div>
+<div class="ecobox" title="Le diagnostic">
+<div class="pedago-title">
+Le diagnostic
+</div>
+<p>L’ARCH(1) ne peut pas être à la fois assez persistant et assez sage. Augmenter <span class="math inline">q</span> répartit la charge, mais impose d’estimer beaucoup de paramètres, tous contraints positifs.</p>
+<p>Le GARCH résoudra ce dilemme en séparant deux choses que l’ARCH confond : la <strong>réaction</strong> au choc et la <strong>persistance</strong> de la variance.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="simuler-un-arch">
+<h1>Simuler un ARCH</h1>
+<section class="level2" id="lalgorithme">
+<h2 class="anchored" data-anchor-id="lalgorithme">L’algorithme</h2>
+<div class="definitionbox" title="En quatre lignes">
+<div class="pedago-title">
+En quatre lignes
+</div>
+<ol type="1">
+<li>Initialiser <span class="math inline">h_1 = \omega/(1-\alpha_1)</span>, la variance de long terme.</li>
+<li>Tirer <span class="math inline">z_t</span> dans la loi choisie.</li>
+<li>Poser <span class="math inline">\varepsilon_t = \sqrt{h_t}\,z_t</span>.</li>
+<li>Calculer <span class="math inline">h_{t+1} = \omega + \alpha_1\varepsilon_t^2</span>, puis revenir en 2.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="Deux précautions">
+<div class="pedago-title">
+Deux précautions
+</div>
+<p>Jeter les premières centaines d’observations — le <em>burn-in</em> — pour effacer l’effet de l’initialisation.</p>
+<p>Et vérifier que la variance empirique de la série simulée est proche de <span class="math inline">\omega/(1-\alpha_1)</span> : c’est le contrôle qui détecte le plus vite une erreur de programmation.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 4">
+<div class="pedago-title">
+L’essentiel du chapitre 4
+</div>
+<ul>
+<li>Un ARCH est un bruit blanc <strong>faible</strong> : <span class="math inline">\mathrm{E}(\varepsilon_t)=0</span> et <span class="math inline">\mathrm{Cov}(\varepsilon_t,\varepsilon_{t-k})=0</span>.</li>
+<li>Stationnarité au second ordre si <span class="math inline">\alpha_1 &lt; 1</span> ; alors <span class="math inline">\sigma^2 = \omega/(1-\alpha_1)</span>.</li>
+<li><strong>Kurtosis</strong> <span class="math inline">= 3(1-\alpha_1^2)/(1-3\alpha_1^2) &gt; 3</span> <strong>même avec des innovations gaussiennes</strong>.</li>
+<li>Deux conditions distinctes : <span class="math inline">\alpha_1&lt;1</span> pour la variance, <span class="math inline">\alpha_1&lt;0{,}577</span> pour le kurtosis.</li>
+<li><span class="math inline">\mathrm{Corr}(\varepsilon_t^2,\varepsilon_{t-k}^2) = \alpha_1^k</span> : décroissance géométrique, comme un AR(1).</li>
+<li>Dilemme de l’ARCH : la persistance nécessaire rend le kurtosis infini.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers le chapitre 5">
+<div class="pedago-title">
+Vers le chapitre 5
+</div>
+<p>Avant de perfectionner le modèle, il faut savoir <strong>détecter</strong> un effet ARCH sur données réelles, et choisir son ordre. C’est l’étape d’identification, transposée à la variance.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="modele-arch.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Le modèle ARCH(q) d&#x27;Engle</span></a>
+<a class="jm-nav-suivant" href="detecter-arch.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Détecter et identifier un effet ARCH</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/proprietes-arch.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/proprietes-arch-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/proprietes-arch-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/proprietes-arch.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

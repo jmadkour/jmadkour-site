@@ -1,0 +1,256 @@
+---
+title: "Apprentissage profond"
+subtitle: "Les réseaux récurrents : RNN, LSTM, GRU"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="jm-actif" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Chapitre 8 : Les réseaux récurrents : RNN, LSTM, GRU</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="traiter-une-séquence">
+<h1>Traiter une séquence</h1>
+<section class="level2" id="ce-qui-manque-aux-architectures-précédentes">
+<h2 class="anchored" data-anchor-id="ce-qui-manque-aux-architectures-précédentes">Ce qui manque aux architectures précédentes</h2>
+<div class="intuitionbox" title="Deux limites">
+<div class="pedago-title">
+Deux limites
+</div>
+<p>Un perceptron exige une entrée de <strong>taille fixe</strong>. Une convolution ne voit qu’une <strong>fenêtre locale</strong>.</p>
+<p>Or une série financière peut exiger de se souvenir d’un choc survenu cent séances plus tôt, et les séquences n’ont pas toutes la même longueur.</p>
+</div>
+<div class="definitionbox" title="Le réseau récurrent">
+<div class="pedago-title">
+Le réseau récurrent
+</div>
+<p>Un <strong>réseau récurrent</strong> maintient un <strong>état caché</strong> <span class="math inline">h_t</span>, mis à jour à chaque pas de temps :</p>
+<p><span class="math display">h_t = g\!\left(W_h\, h_{t-1} + W_x\, x_t + b\right)</span></p>
+<p><span class="math inline">h_t</span> résume tout ce qui a été vu jusqu’à <span class="math inline">t</span>. Les <strong>mêmes</strong> poids servent à chaque pas.</p>
+</div>
+<div class="ecobox" title="La parenté avec les processus autorégressifs">
+<div class="pedago-title">
+La parenté avec les processus autorégressifs
+</div>
+<p>Un AR(<span class="math inline">1</span>) du chapitre 4 de <em>Modélisation ARMA</em> s’écrit <span class="math inline">y_t = \phi y_{t-1} + \varepsilon_t</span>.</p>
+<p>Un réseau récurrent obéit à la même structure : l’état présent dépend de l’état précédent. Deux différences seulement — l’état est un <strong>vecteur</strong> et non un scalaire, et la mise à jour est <strong>non linéaire</strong>.</p>
+<p><strong>Un RNN est un AR non linéaire à état caché multidimensionnel.</strong> Cette lecture rend l’architecture immédiatement familière.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-mémoire-longue">
+<h1>La mémoire longue</h1>
+<section class="level2" id="pourquoi-le-rnn-simple-échoue">
+<h2 class="anchored" data-anchor-id="pourquoi-le-rnn-simple-échoue">Pourquoi le RNN simple échoue</h2>
+<div class="definitionbox" title="La rétropropagation dans le temps">
+<div class="pedago-title">
+La rétropropagation dans le temps
+</div>
+<p>Pour entraîner, on <strong>déplie</strong> le réseau sur toute la longueur de la séquence, puis on rétropropage.</p>
+<p>Une séquence de cent pas devient un réseau de <strong>cent couches</strong>.</p>
+</div>
+<div class="intuitionbox" title="Le chapitre 4, appliqué au temps">
+<div class="pedago-title">
+Le chapitre 4, appliqué au temps
+</div>
+<p>Remonter cent pas multiplie cent facteurs. Le gradient <strong>s’évanouit</strong> ou <strong>explose</strong>, comme dans un réseau profond ordinaire.</p>
+<p>Conséquence pratique : un RNN simple retient efficacement une dizaine de pas, guère plus. <strong>Il oublie exactement ce qu’on voulait qu’il retienne.</strong></p>
+</div>
+<div class="definitionbox" title="Un remède partiel">
+<div class="pedago-title">
+Un remède partiel
+</div>
+<p>L’<strong>écrêtage du gradient</strong> traite l’explosion, en plafonnant la norme avant la mise à jour.</p>
+<p>Il ne traite <strong>pas</strong> l’évanouissement, qui exige un changement d’architecture.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-lstm">
+<h1>Le LSTM</h1>
+<section class="level2" id="une-mémoire-quon-peut-ne-pas-toucher">
+<h2 class="anchored" data-anchor-id="une-mémoire-quon-peut-ne-pas-toucher">Une mémoire qu’on peut ne pas toucher</h2>
+<div class="definitionbox" title="L'idée centrale">
+<div class="pedago-title">
+L’idée centrale
+</div>
+<p>Le <strong>LSTM</strong> ajoute un <strong>état de cellule</strong> <span class="math inline">C_t</span>, qui traverse le temps en subissant surtout des opérations <strong>additives</strong>.</p>
+<p>Trois <strong>portes</strong> contrôlent ce qui s’y passe.</p>
+</div>
+<div class="definitionbox" title="Les trois portes">
+<div class="pedago-title">
+Les trois portes
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Porte</th>
+<th>Décide</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Oubli</strong></td>
+<td>quelle part de la mémoire effacer</td>
+</tr>
+<tr class="even">
+<td><strong>Entrée</strong></td>
+<td>quelle information nouvelle écrire</td>
+</tr>
+<tr class="odd">
+<td><strong>Sortie</strong></td>
+<td>quelle part de la mémoire exposer</td>
+</tr>
+</tbody>
+</table>
+<p>Chacune est un neurone à sortie sigmoïde : une valeur entre <span class="math inline">0</span> — tout fermer — et <span class="math inline">1</span> — tout laisser passer.</p>
+</div>
+</section>
+<section class="level2" id="pourquoi-cela-résout-lévanouissement">
+<h2 class="anchored" data-anchor-id="pourquoi-cela-résout-lévanouissement">Pourquoi cela résout l’évanouissement</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Dans un RNN simple, l’information est <strong>multipliée</strong> par des poids à chaque pas : elle se dégrade géométriquement.</p>
+<p>Dans un LSTM, si la porte d’oubli reste ouverte, l’état de cellule est simplement <strong>transporté</strong> — le gradient circule sans facteur multiplicatif.</p>
+<p>C’est la même idée que les connexions résiduelles du chapitre 7 : <strong>ménager au gradient un chemin sans multiplication</strong>.</p>
+</div>
+</section>
+<section class="level2" id="le-gru">
+<h2 class="anchored" data-anchor-id="le-gru">Le GRU</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<p>Le <strong>GRU</strong> simplifie : deux portes au lieu de trois, pas d’état de cellule séparé.</p>
+<p>Il compte moins de paramètres, s’entraîne plus vite, et obtient des performances généralement comparables. C’est un bon point de départ sur des séries de taille modeste.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="en-pratique-série-financière">
+<h1>En pratique, série financière</h1>
+<section class="level2" id="ce-quil-faut-faire-et-ne-pas-faire">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-faire-et-ne-pas-faire">Ce qu’il faut faire, et ne pas faire</h2>
+<div class="definitionbox" title="La préparation des données">
+<div class="pedago-title">
+La préparation des données
+</div>
+<ol type="1">
+<li>Travailler sur les <strong>rendements</strong>, non sur les prix — la stationnarité du chapitre 1 de <em>Modélisation ARMA</em>.</li>
+<li>Découper en <strong>fenêtres glissantes</strong> : les <span class="math inline">T</span> dernières valeurs prédisent la suivante.</li>
+<li>Normaliser avec les statistiques de la période d’<strong>apprentissage seulement</strong>.</li>
+<li>Découper <strong>chronologiquement</strong>, jamais au hasard.</li>
+</ol>
+</div>
+<div class="ecobox" title="Le piège le plus coûteux">
+<div class="pedago-title">
+Le piège le plus coûteux
+</div>
+<p>Normaliser sur toute la série avant de découper introduit dans la période d’apprentissage une information sur la volatilité <strong>future</strong>.</p>
+<p>Le modèle paraît excellent en validation et échoue en production. C’est la fuite de données de l’introduction d’<em>Apprentissage statistique</em>, dans sa forme la plus difficile à repérer — parce que rien dans le code ne semble anormal.</p>
+</div>
+</section>
+<section class="level2" id="une-attente-à-calibrer">
+<h2 class="anchored" data-anchor-id="une-attente-à-calibrer">Une attente à calibrer</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Sur les rendements quotidiens d’un indice liquide, aucun modèle — récurrent ou non — ne prévoit le <strong>signe</strong> de façon exploitable après coûts de transaction.</p>
+<p>Ce qui se prévoit bien, en revanche, c’est la <strong>volatilité</strong>. Un LSTM peut y rivaliser avec un GARCH, sans le battre nettement, et à un coût de calcul très supérieur.</p>
+<p><strong>Le chapitre 10 chiffrera cette comparaison.</strong> Il vaut mieux aborder ces architectures sans en attendre ce qu’elles ne donneront pas.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>Un <strong>RNN</strong> maintient un état caché <span class="math inline">h_t</span> ; c’est un <strong>AR non linéaire</strong> à état vectoriel.</li>
+<li>La rétropropagation dans le temps transforme une séquence de <span class="math inline">T</span> pas en un réseau de <span class="math inline">T</span> couches.</li>
+<li>Le gradient s’évanouit : un RNN simple ne retient qu’une <strong>dizaine</strong> de pas.</li>
+<li>Le <strong>LSTM</strong> transporte un état de cellule par des opérations additives, contrôlé par trois <strong>portes</strong>.</li>
+<li>Sur séries financières : rendements, fenêtres glissantes, normalisation sur l’apprentissage <strong>seulement</strong>.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Le récurrent traite la séquence <strong>pas à pas</strong>, ce qui interdit la parallélisation et limite encore la portée mémoire.</p>
+<p>Le chapitre 9 présente l’architecture qui a résolu les deux problèmes d’un coup.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="reseaux-convolutifs.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Les réseaux convolutifs</span></a>
+<a class="jm-nav-suivant" href="attention-transformeurs.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">L&#x27;attention et les transformeurs</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/reseaux-recurrents.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/reseaux-recurrents-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/reseaux-recurrents-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/reseaux-recurrents.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

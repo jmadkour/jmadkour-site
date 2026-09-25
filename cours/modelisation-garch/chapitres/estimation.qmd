@@ -1,0 +1,330 @@
+---
+title: "Modélisation GARCH de la volatilité"
+subtitle: "L'estimation par quasi-maximum de vraisemblance"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="faits-stylises.qmd">1. Mandelbrot et les faits stylisés des rentabilités</a></li>
+<li><a class="" href="clusters-effet-levier.qmd">2. Regroupement de la volatilité et effet de levier</a></li>
+<li><a class="" href="variance-conditionnelle.qmd">3. Le cadre de la variance conditionnelle</a></li>
+<li><a class="" href="modele-arch.qmd">4. Le modèle ARCH(q) d&#x27;Engle</a></li>
+<li><a class="" href="proprietes-arch.qmd">5. Propriétés statistiques de l&#x27;ARCH</a></li>
+<li><a class="" href="detecter-arch.qmd">6. Détecter et identifier un effet ARCH</a></li>
+<li><a class="" href="modele-garch.qmd">7. Le modèle GARCH(p,q) de Bollerslev</a></li>
+<li><a class="" href="persistance.qmd">8. Stationnarité, persistance et variance de long terme</a></li>
+<li><a class="" href="dualite-arma.qmd">9. La dualité GARCH et ARMA sur les carrés</a></li>
+<li><a class="" href="loi-innovations.qmd">10. La loi des innovations</a></li>
+<li><a class="" href="egarch.qmd">11. L&#x27;effet de levier et l&#x27;EGARCH de Nelson</a></li>
+<li><a class="" href="gjr-tgarch.qmd">12. GJR-GARCH, TGARCH et la courbe d&#x27;impact</a></li>
+<li><a class="" href="igarch-memoire-longue.qmd">13. IGARCH, GARCH-M et la mémoire longue</a></li>
+<li><a class="jm-actif" href="estimation.qmd">14. L&#x27;estimation par quasi-maximum de vraisemblance</a></li>
+<li><a class="" href="validation.qmd">15. La validation d&#x27;un modèle de volatilité</a></li>
+<li><a class="" href="prevision-volatilite.qmd">16. La prévision de volatilité</a></li>
+<li><a class="" href="value-at-risk.qmd">17. De la volatilité à la Value at Risk</a></li>
+<li><a class="" href="mise-en-oeuvre-r.qmd">18. Mise en œuvre sur R</a></li>
+<li><a class="" href="mise-en-oeuvre-python.qmd">19. Mise en œuvre sur Python</a></li>
+<li><a class="" href="etude-de-cas-r.qmd">20. Étude de cas sur données réelles — R</a></li>
+<li><a class="" href="etude-de-cas-python.qmd">21. Étude de cas sur données réelles — Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Chapitre 13 : L’estimation par quasi-maximum de vraisemblance</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="pourquoi-les-moindres-carrés-ne-conviennent-pas">
+<h2 class="anchored" data-anchor-id="pourquoi-les-moindres-carrés-ne-conviennent-pas">Pourquoi les moindres carrés ne conviennent pas</h2>
+<div class="intuitionbox" title="Le chapitre 8 a fermé cette voie">
+<div class="pedago-title">
+Le chapitre 8 a fermé cette voie
+</div>
+<p>Le GARCH est un ARMA sur les carrés — on pourrait donc l’estimer par MCO. Mais l’innovation <span class="math inline">v_t = \varepsilon_t^2 - h_t</span> est fortement hétéroscédastique, très asymétrique, et rien ne garantirait la positivité des coefficients.</p>
+<p>La méthode de référence est le <strong>maximum de vraisemblance</strong>.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-vraisemblance">
+<h1>La vraisemblance</h1>
+<section class="level2" id="sa-construction">
+<h2 class="anchored" data-anchor-id="sa-construction">Sa construction</h2>
+<div class="definitionbox" title="Décomposition en produit de lois conditionnelles">
+<div class="pedago-title">
+Décomposition en produit de lois conditionnelles
+</div>
+<p><span class="math display"> L(\vartheta) = \prod_{t=1}^{T} f\big(r_t \mid \Omega_{t-1};\vartheta\big) . </span></p>
+</div>
+<p>Sous <span class="math inline">z_t \sim \mathcal{N}(0,1)</span>, la loi de <span class="math inline">r_t</span> sachant le passé est <span class="math inline">\mathcal{N}(\mu, h_t)</span>, d’où :</p>
+<p><span class="math display"> \ln L(\vartheta) = -\frac{T}{2}\ln(2\pi) - \frac{1}{2}\sum_{t=1}^{T}\left[\ln h_t + \frac{(r_t-\mu)^2}{h_t}\right] . </span></p>
+<div class="intuitionbox" title="Comment lire cette expression">
+<div class="pedago-title">
+Comment lire cette expression
+</div>
+<p>Deux termes qui s’opposent. <span class="math inline">\ln h_t</span> <strong>pénalise</strong> les variances élevées : le modèle ne peut pas gonfler <span class="math inline">h_t</span> partout pour se mettre à l’abri. Et <span class="math inline">\varepsilon_t^2/h_t</span> <strong>pénalise</strong> les variances trop faibles là où le choc a été grand.</p>
+<p>L’optimum réalise l’équilibre : <span class="math inline">h_t</span> doit être grande exactement les jours où <span class="math inline">\varepsilon_t^2</span> l’est.</p>
+</div>
+</section>
+<section class="level2" id="le-rôle-de-la-récursion">
+<h2 class="anchored" data-anchor-id="le-rôle-de-la-récursion">Le rôle de la récursion</h2>
+<div class="definitionbox" title="Le point technique central">
+<div class="pedago-title">
+Le point technique central
+</div>
+<p><span class="math inline">h_t</span> n’est pas un paramètre : c’est une <strong>fonction récursive</strong> des paramètres et des données passées. <span class="math display"> h_t(\vartheta) = \omega + \alpha_1\varepsilon_{t-1}^2 + \beta_1 h_{t-1}(\vartheta) . </span></p>
+</div>
+<div class="intuitionbox" title="La conséquence pratique">
+<div class="pedago-title">
+La conséquence pratique
+</div>
+<p>Chaque évaluation de la vraisemblance exige de parcourir toute la série, de <span class="math inline">t=1</span> à <span class="math inline">t=T</span>. Il n’existe <strong>aucune</strong> formule fermée : l’optimisation est nécessairement numérique.</p>
+<p>C’est pourquoi l’estimation d’un GARCH est instantanée sur 2 500 points, et sensiblement plus lente sur un million.</p>
+</div>
+</section>
+<section class="level2" id="linitialisation">
+<h2 class="anchored" data-anchor-id="linitialisation">L’initialisation</h2>
+<div class="definitionbox" title="Il faut une valeur pour $h_1$">
+<div class="pedago-title">
+Il faut une valeur pour <span class="math inline">h_1</span>
+</div>
+<p>Trois conventions courantes :</p>
+<ul>
+<li><span class="math inline">h_1 = \hat\sigma^2</span>, la variance empirique de l’échantillon — la plus employée ;</li>
+<li><span class="math inline">h_1 = \omega/(1-\alpha_1-\beta_1)</span>, la variance de long terme du modèle ;</li>
+<li><span class="math inline">h_1</span> traitée comme un paramètre supplémentaire à estimer.</li>
+</ul>
+</div>
+<div class="ecobox" title="L'effet, et il est mesurable">
+<div class="pedago-title">
+L’effet, et il est mesurable
+</div>
+<p>L’influence de <span class="math inline">h_1</span> décroît en <span class="math inline">\beta_1^{\,t}</span>. Avec <span class="math inline">\beta_1 = 0{,}89</span>, elle est divisée par 100 au bout de 40 périodes.</p>
+<p>Sur 2 500 observations, le choix est sans conséquence. Sur 200, il change la troisième décimale — et c’est pourquoi les logiciels ne donnent pas tous exactement les mêmes chiffres.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-quasi-maximum">
+<h1>Le quasi-maximum</h1>
+<section class="level2" id="le-problème">
+<h2 class="anchored" data-anchor-id="le-problème">Le problème</h2>
+<div class="intuitionbox" title="Une incohérence apparente">
+<div class="pedago-title">
+Une incohérence apparente
+</div>
+<p>Le chapitre 9 a établi que <span class="math inline">z_t</span> n’est pas gaussienne. Or nous venons d’écrire la vraisemblance <strong>sous hypothèse gaussienne</strong>.</p>
+<p>Est-ce que cela invalide l’estimation ?</p>
+</div>
+</section>
+<section class="level2" id="le-théorème">
+<h2 class="anchored" data-anchor-id="le-théorème">Le théorème</h2>
+<div class="definitionbox" title="Bollerslev et Wooldridge (1992)">
+<div class="pedago-title">
+Bollerslev et Wooldridge (1992)
+</div>
+<p>Si l’équation de variance est <strong>correctement spécifiée</strong>, l’estimateur du maximum de vraisemblance <strong>gaussien</strong> est convergent et asymptotiquement normal, <strong>même si la vraie loi de <span class="math inline">z_t</span> n’est pas normale</strong>.</p>
+<p>On l’appelle estimateur du <strong>quasi-maximum de vraisemblance</strong> (QMV).</p>
+</div>
+<div class="intuitionbox" title="Pourquoi cela fonctionne">
+<div class="pedago-title">
+Pourquoi cela fonctionne
+</div>
+<p>La vraisemblance gaussienne ne fait intervenir que les deux premiers moments conditionnels. Tant que <span class="math inline">\mathrm{E}(\varepsilon_t\mid\Omega_{t-1}) = 0</span> et <span class="math inline">\mathrm{V}(\varepsilon_t\mid\Omega_{t-1}) = h_t</span> sont exacts, les équations de score sont satisfaites en moyenne — quelle que soit la forme de la loi.</p>
+</div>
+</section>
+<section class="level2" id="ce-quil-faut-corriger">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-corriger">Ce qu’il faut corriger</h2>
+<div class="definitionbox" title="Écarts-types robustes (sandwich)">
+<div class="pedago-title">
+Écarts-types robustes (sandwich)
+</div>
+<p><span class="math display"> \widehat{\mathrm{V}}(\hat\vartheta) = \mathbf{A}^{-1}\,\mathbf{B}\,\mathbf{A}^{-1} , </span> où <span class="math inline">\mathbf{A}</span> est le hessien et <span class="math inline">\mathbf{B}</span> la matrice des produits de scores. Sous normalité, <span class="math inline">\mathbf{A}=\mathbf{B}</span> et l’expression se simplifie ; sinon, non.</p>
+</div>
+<div class="ecobox" title="Un réglage à ne jamais négliger">
+<div class="pedago-title">
+Un réglage à ne jamais négliger
+</div>
+<p>Les écarts-types non robustes sont <strong>sous-estimés</strong> — souvent de 20 à 40 % sur données financières. On conclurait à tort à la significativité.</p>
+<p>En R : <code>ugarchfit(..., solver.control = list(...))</code> fournit les deux jeux, sous les intitulés « Std.Error » et « Robust Std.Error ». <strong>Toujours lire la seconde colonne.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="une-loi-non-gaussienne">
+<h1>Une loi non gaussienne</h1>
+<section class="level2" id="lalternative">
+<h2 class="anchored" data-anchor-id="lalternative">L’alternative</h2>
+<div class="definitionbox" title="Vraisemblance de Student">
+<div class="pedago-title">
+Vraisemblance de Student
+</div>
+<p><span class="math display"> \ln L = \sum_{t=1}^{T}\left[\ln\Gamma\!\Big(\tfrac{\nu+1}{2}\Big) - \ln\Gamma\!\Big(\tfrac{\nu}{2}\Big) - \tfrac12\ln\big(\pi(\nu-2)\big) - \tfrac12\ln h_t - \tfrac{\nu+1}{2}\ln\Big(1+\tfrac{\varepsilon_t^2}{h_t(\nu-2)}\Big)\right] </span> Le paramètre <span class="math inline">\nu</span> est estimé <strong>conjointement</strong> avec les autres.</p>
+</div>
+<div class="intuitionbox" title="Le compromis">
+<div class="pedago-title">
+Le compromis
+</div>
+<p>Si la loi est bien spécifiée, l’estimateur est <strong>efficace</strong> : il fait mieux que le QMV gaussien.</p>
+<p>Si elle est mal spécifiée, la propriété de convergence est <strong>perdue</strong> — contrairement au QMV gaussien, qui reste robuste.</p>
+<p>En pratique : la Student est presque toujours meilleure que la normale sur données financières, donc le risque de mauvaise spécification est faible, et on l’emploie.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-difficultés-numériques">
+<h1>Les difficultés numériques</h1>
+<section class="level2" id="ce-qui-peut-mal-se-passer">
+<h2 class="anchored" data-anchor-id="ce-qui-peut-mal-se-passer">Ce qui peut mal se passer</h2>
+<div class="definitionbox" title="Quatre symptômes et leurs causes">
+<div class="pedago-title">
+Quatre symptômes et leurs causes
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Symptôme</th>
+<th>Cause probable</th>
+<th>Remède</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>non-convergence</td>
+<td>mauvaises valeurs initiales</td>
+<td>partir d’un GARCH(1,1) simple</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\hat\alpha_1</span> ou <span class="math inline">\hat\beta_1</span> collé à zéro</td>
+<td>modèle sur-paramétré</td>
+<td>réduire <span class="math inline">p</span> et <span class="math inline">q</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\hat\pi</span> estimé à <span class="math inline">0{,}9999</span></td>
+<td>rupture de régime</td>
+<td>découper l’échantillon</td>
+</tr>
+<tr class="even">
+<td>écarts-types absurdes</td>
+<td>quasi-non-identification</td>
+<td>simplifier le modèle</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="deux-précautions-de-mise-à-léchelle">
+<h2 class="anchored" data-anchor-id="deux-précautions-de-mise-à-léchelle">Deux précautions de mise à l’échelle</h2>
+<div class="ecobox" title="Travailler en pourcentage">
+<div class="pedago-title">
+Travailler en pourcentage
+</div>
+<p>Si les rentabilités sont exprimées en décimal — <span class="math inline">0{,}012</span> pour 1,2 % — alors <span class="math inline">\omega</span> est de l’ordre de <span class="math inline">10^{-6}</span>. L’optimiseur travaille alors sur des échelles très différentes selon les paramètres, et converge mal.</p>
+<p><strong>Multiplier les rentabilités par 100</strong> avant estimation. Les logiciels le font parfois automatiquement, et affichent un avertissement quand ils ne le font pas — il faut le lire.</p>
+</div>
+<div class="intuitionbox" title="Vérifier la contrainte de stationnarité après coup">
+<div class="pedago-title">
+Vérifier la contrainte de stationnarité après coup
+</div>
+<p>Un optimiseur non contraint peut renvoyer <span class="math inline">\hat\alpha_1+\hat\beta_1 &gt; 1</span>. Ce n’est pas nécessairement une erreur de calcul : c’est le signe que le modèle n’est pas adapté, ou que l’échantillon contient une rupture.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-propriétés-asymptotiques">
+<h1>Les propriétés asymptotiques</h1>
+<section class="level2" id="le-résultat">
+<h2 class="anchored" data-anchor-id="le-résultat">Le résultat</h2>
+<div class="definitionbox" title="Convergence et normalité asymptotique">
+<div class="pedago-title">
+Convergence et normalité asymptotique
+</div>
+<p>Sous stationnarité stricte, identification et existence de moments suffisants : <span class="math display"> \sqrt{T}\big(\hat\vartheta - \vartheta_0\big) \ \xrightarrow{\ d\ }\ \mathcal{N}\big(0,\ \mathbf{A}^{-1}\mathbf{B}\mathbf{A}^{-1}\big) . </span></p>
+</div>
+<div class="intuitionbox" title="Une réserve à connaître">
+<div class="pedago-title">
+Une réserve à connaître
+</div>
+<p>Les conditions de régularité exigent l’existence de moments d’ordre élevé de <span class="math inline">\varepsilon_t</span> — que le chapitre 7 a montrés souvent absents en finance.</p>
+<p>La théorie asymptotique du GARCH repose donc sur des hypothèses plus fragiles qu’il n’y paraît. C’est une raison de plus d’employer les écarts-types robustes, et de se méfier de la troisième décimale.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 13">
+<div class="pedago-title">
+L’essentiel du chapitre 13
+</div>
+<ul>
+<li>La vraisemblance équilibre deux pénalités : <span class="math inline">\ln h_t</span> contre <span class="math inline">\varepsilon_t^2/h_t</span>.</li>
+<li><span class="math inline">h_t</span> est une <strong>fonction récursive</strong> des paramètres : pas de formule fermée, optimisation numérique obligatoire.</li>
+<li><strong>QMV</strong> : le maximum de vraisemblance gaussien reste convergent même si <span class="math inline">z_t</span> n’est pas gaussienne.</li>
+<li>Il faut alors des <strong>écarts-types robustes</strong> (sandwich) : les autres sont sous-estimés de 20 à 40 %.</li>
+<li>La vraisemblance de Student est plus efficace, et presque toujours préférable en finance.</li>
+<li>Précautions : rentabilités en pourcentage, bonnes valeurs initiales, vérification de <span class="math inline">\hat\pi&lt;1</span>.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers le chapitre 14">
+<div class="pedago-title">
+Vers le chapitre 14
+</div>
+<p>Un modèle estimé n’est pas un modèle valide. Il faut interroger ses résidus standardisés — et le critère sera exactement celui du cours ARMA, transposé aux carrés.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="igarch-memoire-longue.qmd">&larr; Chapitre précédent<span class="jm-nav-label">IGARCH, GARCH-M et la mémoire longue</span></a>
+<a class="jm-nav-suivant" href="validation.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">La validation d&#x27;un modèle de volatilité</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/estimation.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/estimation-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/estimation-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/estimation.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

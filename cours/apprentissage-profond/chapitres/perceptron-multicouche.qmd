@@ -1,0 +1,327 @@
+---
+title: "Apprentissage profond"
+subtitle: "Le perceptron multicouche"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="jm-actif" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Chapitre 1 : Le perceptron multicouche</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="larchitecture">
+<h1>L’architecture</h1>
+<section class="level2" id="comment-les-couches-senchaînent">
+<h2 class="anchored" data-anchor-id="comment-les-couches-senchaînent">Comment les couches s’enchaînent</h2>
+<div class="definitionbox" title="Perceptron multicouche">
+<div class="pedago-title">
+Perceptron multicouche
+</div>
+<p>Un <strong>perceptron multicouche</strong> est une suite de couches <strong>entièrement connectées</strong> : chaque neurone d’une couche reçoit toutes les sorties de la précédente.</p>
+</div>
+<div class="definitionbox" title="L'écriture matricielle">
+<div class="pedago-title">
+L’écriture matricielle
+</div>
+<p>Pour la couche <span class="math inline">\ell</span> : <span class="math display">z^{(\ell)} = W^{(\ell)} a^{(\ell-1)} + b^{(\ell)} \qquad\qquad a^{(\ell)} = g\!\left(z^{(\ell)}\right)</span></p>
+<p><span class="math inline">W^{(\ell)}</span> est une matrice, <span class="math inline">b^{(\ell)}</span> un vecteur, et <span class="math inline">g</span> s’applique terme à terme.</p>
+</div>
+<div class="ecobox" title="C'est l'algèbre linéaire du niveau Licence">
+<div class="pedago-title">
+C’est l’algèbre linéaire du niveau Licence
+</div>
+<p>Le produit matrice-vecteur du chapitre 9 de <em>Mathématiques pour la gestion</em> est exactement l’opération élémentaire d’un réseau.</p>
+<p>Un réseau profond n’est qu’une <strong>composition</strong> de ces produits, entrecoupée de non-linéarités. Sans elles, la composition de fonctions linéaires resterait linéaire — et toute la profondeur serait perdue.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="compter-les-paramètres">
+<h1>Compter les paramètres</h1>
+<section class="level2" id="un-calcul-à-savoir-faire">
+<h2 class="anchored" data-anchor-id="un-calcul-à-savoir-faire">Un calcul à savoir faire</h2>
+<div class="definitionbox" title="La formule par couche">
+<div class="pedago-title">
+La formule par couche
+</div>
+<p>Pour une couche de <span class="math inline">e</span> entrées vers <span class="math inline">s</span> sorties : <span class="math display">\text{paramètres} = \underbrace{e \times s}_{\text{poids}} + \underbrace{s}_{\text{biais}}</span></p>
+</div>
+<div class="examplebox" title="Un réseau pour notre série financière">
+<div class="pedago-title">
+Un réseau pour notre série financière
+</div>
+<p>Vingt indicateurs en entrée, deux couches cachées, une sortie :</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Couche</th>
+<th>Calcul</th>
+<th style="text-align: right;">Paramètres</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">20 \to 32</span></td>
+<td><span class="math inline">20 \times 32 + 32</span></td>
+<td style="text-align: right;"><span class="math inline">672</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">32 \to 16</span></td>
+<td><span class="math inline">32 \times 16 + 16</span></td>
+<td style="text-align: right;"><span class="math inline">528</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">16 \to 1</span></td>
+<td><span class="math inline">16 \times 1 + 1</span></td>
+<td style="text-align: right;"><span class="math inline">17</span></td>
+</tr>
+<tr class="even">
+<td><strong>Total</strong></td>
+<td></td>
+<td style="text-align: right;"><span class="math inline">\mathbf{1\,217}</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="pourquoi-ce-comptage-est-une-discipline">
+<h2 class="anchored" data-anchor-id="pourquoi-ce-comptage-est-une-discipline">Pourquoi ce comptage est une discipline</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Mille deux cent dix-sept paramètres pour vingt variables d’entrée. Une régression linéaire en aurait eu <strong>vingt et un</strong>.</p>
+<p>Si l’on dispose de mille observations, il y a <strong>plus de paramètres que de données</strong>. Le chapitre 4 d’<em>Apprentissage statistique</em> l’a établi : dans ce régime, l’ajustement parfait est automatique et sans valeur.</p>
+<p><strong>Compter les paramètres avant d’entraîner est le premier réflexe de prudence.</strong> Un réseau surdimensionné pour les données disponibles ne peut que mémoriser.</p>
+</div>
+</section>
+<section class="level2" id="les-ordres-de-grandeur-usuels">
+<h2 class="anchored" data-anchor-id="les-ordres-de-grandeur-usuels">Les ordres de grandeur usuels</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Contexte</th>
+<th>Paramètres</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Réseau tabulaire modeste</td>
+<td>quelques milliers</td>
+</tr>
+<tr class="even">
+<td>Réseau convolutif classique</td>
+<td>quelques millions</td>
+</tr>
+<tr class="odd">
+<td>Grand modèle de langue</td>
+<td>des milliards</td>
+</tr>
+</tbody>
+</table>
+<p>Chacun exige un volume de données à l’avenant.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="choisir-une-architecture">
+<h1>Choisir une architecture</h1>
+<section class="level2" id="profondeur-et-largeur">
+<h2 class="anchored" data-anchor-id="profondeur-et-largeur">Profondeur et largeur</h2>
+<div class="definitionbox" title="Deux leviers">
+<div class="pedago-title">
+Deux leviers
+</div>
+<p>La <strong>largeur</strong> est le nombre de neurones par couche. La <strong>profondeur</strong> est le nombre de couches.</p>
+<p>À nombre de paramètres égal, la profondeur permet des représentations plus abstraites ; la largeur, davantage de descripteurs au même niveau.</p>
+</div>
+<div class="ecobox" title="Ce qui se pratique">
+<div class="pedago-title">
+Ce qui se pratique
+</div>
+<p>Pour des données tabulaires, deux à quatre couches suffisent presque toujours. Aller au-delà n’améliore rien et complique l’entraînement.</p>
+<p>Les architectures très profondes ne se justifient que pour l’image, le texte et le son, où la hiérarchie des représentations a un sens naturel.</p>
+<p><strong>La forme en entonnoir</strong> — des couches de plus en plus étroites, comme <span class="math inline">32</span> puis <span class="math inline">16</span> ci-dessus — est un point de départ raisonnable, non une règle.</p>
+</div>
+<div class="intuitionbox" title="Une architecture ne se devine pas">
+<div class="pedago-title">
+Une architecture ne se devine pas
+</div>
+<p>Le nombre de couches et leur largeur sont des <strong>hyperparamètres</strong>, au même titre que <span class="math inline">\lambda</span> dans ridge ou <span class="math inline">\alpha</span> dans l’élagage.</p>
+<p>Ils se choisissent par <strong>validation</strong>, avec le protocole du chapitre 2 d’<em>Apprentissage statistique</em>. La seule différence est le coût : chaque essai demande un entraînement complet.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-sortie">
+<h1>La sortie</h1>
+<section class="level2" id="adapter-la-dernière-couche-à-la-tâche">
+<h2 class="anchored" data-anchor-id="adapter-la-dernière-couche-à-la-tâche">Adapter la dernière couche à la tâche</h2>
+<div class="definitionbox" title="Trois cas">
+<div class="pedago-title">
+Trois cas
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Tâche</th>
+<th>Neurones de sortie</th>
+<th>Activation finale</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Régression</td>
+<td><span class="math inline">1</span></td>
+<td><strong>aucune</strong></td>
+</tr>
+<tr class="even">
+<td>Classification binaire</td>
+<td><span class="math inline">1</span></td>
+<td><strong>sigmoïde</strong></td>
+</tr>
+<tr class="odd">
+<td>Classification à <span class="math inline">K</span> classes</td>
+<td><span class="math inline">K</span></td>
+<td><strong>softmax</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="definitionbox" title="La fonction softmax">
+<div class="pedago-title">
+La fonction softmax
+</div>
+<p><span class="math display">\text{softmax}(z)_k = \frac{e^{z_k}}{\sum_j e^{z_j}}</span></p>
+<p>Elle transforme des scores quelconques en probabilités : toutes positives, de somme <span class="math inline">1</span>.</p>
+</div>
+<div class="examplebox" title="Trois régimes de marché">
+<div class="pedago-title">
+Trois régimes de marché
+</div>
+<p>Scores en sortie : <span class="math inline">2{,}0</span> ; <span class="math inline">1{,}0</span> ; <span class="math inline">0{,}1</span>.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Régime</th>
+<th style="text-align: right;">Probabilité</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Hausse</td>
+<td style="text-align: right;"><span class="math inline">0{,}659</span></td>
+</tr>
+<tr class="even">
+<td>Stable</td>
+<td style="text-align: right;"><span class="math inline">0{,}242</span></td>
+</tr>
+<tr class="odd">
+<td>Baisse</td>
+<td style="text-align: right;"><span class="math inline">0{,}099</span></td>
+</tr>
+</tbody>
+</table>
+<p>La somme vaut <span class="math inline">1</span>. Le softmax <strong>amplifie</strong> les écarts : un score deux fois plus élevé donne une probabilité bien plus de deux fois supérieure.</p>
+</div>
+<div class="intuitionbox" title="Une erreur fréquente">
+<div class="pedago-title">
+Une erreur fréquente
+</div>
+<p>Placer une activation sur la couche de sortie d’une <strong>régression</strong> borne les prédictions et empêche le réseau d’atteindre les valeurs extrêmes.</p>
+<p>La règle est simple : <strong>la sortie est libre en régression</strong>, contrainte en classification.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>Un perceptron multicouche enchaîne <span class="math inline">z = Wa + b</span> puis <span class="math inline">a = g(z)</span>.</li>
+<li>Une couche de <span class="math inline">e</span> vers <span class="math inline">s</span> coûte <span class="math inline">e \times s + s</span> paramètres.</li>
+<li>Notre réseau <span class="math inline">20</span>–<span class="math inline">32</span>–<span class="math inline">16</span>–<span class="math inline">1</span> en compte <strong><span class="math inline">1\,217</span></strong> : bien plus qu’une régression, à comparer au nombre d’observations.</li>
+<li>Deux à quatre couches suffisent sur données tabulaires ; l’architecture est un <strong>hyperparamètre</strong>.</li>
+<li>Sortie <strong>libre</strong> en régression, <strong>sigmoïde</strong> en binaire, <strong>softmax</strong> à <span class="math inline">K</span> classes.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>L’architecture est posée. Le chapitre 2 examine les deux choix qui la font fonctionner ou échouer : la fonction de perte et les activations.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="lineaire-au-neurone.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Du modèle linéaire au neurone</span></a>
+<a class="jm-nav-suivant" href="perte-activation.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Fonctions de perte et d&#x27;activation</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/perceptron-multicouche.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/perceptron-multicouche-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/perceptron-multicouche-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/perceptron-multicouche.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

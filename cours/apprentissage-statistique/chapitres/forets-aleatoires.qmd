@@ -1,0 +1,237 @@
+---
+title: "Apprentissage statistique"
+subtitle: "Forêts aléatoires et bagging"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage statistique</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="expliquer-prevoir.qmd">1. Expliquer ou prévoir : deux objectifs distincts</a></li>
+<li><a class="" href="biais-variance.qmd">2. Le compromis biais-variance</a></li>
+<li><a class="" href="validation-croisee.qmd">3. Rééchantillonnage et validation croisée</a></li>
+<li><a class="" href="regression-penalisee.qmd">4. La régression pénalisée : ridge et lasso</a></li>
+<li><a class="" href="selection-variables.qmd">5. Sélection de variables et grande dimension</a></li>
+<li><a class="" href="classification.qmd">6. La classification : logistique et analyse discriminante</a></li>
+<li><a class="" href="evaluer-classifieur.qmd">7. Évaluer un classifieur : matrice de confusion, ROC, AUC</a></li>
+<li><a class="" href="arbres-decision.qmd">8. Les arbres de décision</a></li>
+<li><a class="jm-actif" href="forets-aleatoires.qmd">9. Forêts aléatoires et bagging</a></li>
+<li><a class="" href="boosting.qmd">10. Le boosting de gradient</a></li>
+<li><a class="" href="svm.qmd">11. Les machines à vecteurs de support</a></li>
+<li><a class="" href="interpreter-modele.qmd">12. Interpréter un modèle de prévision</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage statistique</h1>
+<p class="subtitle lead">Chapitre 8 : Forêts aléatoires et bagging</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="moyenner-pour-stabiliser">
+<h1>Moyenner pour stabiliser</h1>
+<section class="level2" id="le-résultat-qui-fonde-le-chapitre">
+<h2 class="anchored" data-anchor-id="le-résultat-qui-fonde-le-chapitre">Le résultat qui fonde le chapitre</h2>
+<div class="definitionbox" title="La variance d'une moyenne">
+<div class="pedago-title">
+La variance d’une moyenne
+</div>
+<p>Pour <span class="math inline">B</span> variables indépendantes de variance <span class="math inline">\sigma^2</span>, la moyenne a pour variance <span class="math display">\frac{\sigma^2}{B}</span></p>
+<p>Moyenner <span class="math inline">100</span> modèles indépendants divise donc la variance par <span class="math inline">100</span> — <strong>sans toucher au biais</strong>.</p>
+</div>
+<div class="intuitionbox" title="Pourquoi c'est exactement ce qu'il fallait">
+<div class="pedago-title">
+Pourquoi c’est exactement ce qu’il fallait
+</div>
+<p>L’arbre du chapitre 7 avait peu de biais et beaucoup de variance.</p>
+<p>Moyenner ne change pas le biais et écrase la variance : l’opération est taillée sur mesure pour lui. C’est la raison pour laquelle les méthodes d’ensemble reposent sur des arbres et non sur des régressions.</p>
+</div>
+<div class="definitionbox" title="Le bagging">
+<div class="pedago-title">
+Le bagging
+</div>
+<p>Le <strong>bagging</strong> — agrégation bootstrap — consiste à :</p>
+<ol type="1">
+<li>tirer <span class="math inline">B</span> échantillons <strong>bootstrap</strong> de l’échantillon d’origine ;</li>
+<li>construire un arbre <strong>profond, non élagué</strong> sur chacun ;</li>
+<li>moyenner les prédictions, ou voter à la majorité.</li>
+</ol>
+</div>
+<div class="ecobox" title="Pourquoi ne pas élaguer">
+<div class="pedago-title">
+Pourquoi ne pas élaguer
+</div>
+<p>L’élagage servait à réduire la variance d’un arbre isolé. Ici, c’est la moyenne qui s’en charge.</p>
+<p>On laisse donc chaque arbre pousser librement : biais minimal, variance élevée — que l’agrégation traitera. <strong>On n’a plus à régler ce compromis arbre par arbre.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-forêt-aléatoire">
+<h1>La forêt aléatoire</h1>
+<section class="level2" id="le-défaut-du-bagging">
+<h2 class="anchored" data-anchor-id="le-défaut-du-bagging">Le défaut du bagging</h2>
+<div class="definitionbox" title="Le problème de la corrélation">
+<div class="pedago-title">
+Le problème de la corrélation
+</div>
+<p>La division par <span class="math inline">B</span> suppose les modèles <strong>indépendants</strong>. Or les arbres du bagging ne le sont pas : ils voient presque les mêmes données.</p>
+<p>Si une variable domine, <strong>tous</strong> les arbres la choisiront en premier, et se ressembleront. Moyenner des modèles corrélés ne réduit guère la variance.</p>
+</div>
+<div class="definitionbox" title="L'idée de Breiman">
+<div class="pedago-title">
+L’idée de Breiman
+</div>
+<p>À <strong>chaque nœud</strong>, ne considérer qu’un sous-ensemble aléatoire de <span class="math inline">m</span> variables parmi <span class="math inline">p</span>, tiré à nouveau à chaque fois.</p>
+<p>Une variable dominante ne peut donc pas être choisie partout : les arbres sont forcés d’explorer d’autres découpages, et se <strong>décorrèlent</strong>.</p>
+</div>
+<div class="examplebox" title="Le réglage usuel de m">
+<div class="pedago-title">
+Le réglage usuel de m
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Tâche</th>
+<th>Valeur courante</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Classification</td>
+<td><span class="math inline">m \approx \sqrt{p}</span></td>
+</tr>
+<tr class="even">
+<td>Régression</td>
+<td><span class="math inline">m \approx p/3</span></td>
+</tr>
+</tbody>
+</table>
+<p>Pour <span class="math inline">p = 20</span> variables en classification : <span class="math inline">m \approx 4</span>.</p>
+<p><span class="math inline">m</span> petit décorrèle davantage mais affaiblit chaque arbre. <strong>C’est le seul réglage vraiment sensible de la méthode.</strong></p>
+</div>
+<div class="intuitionbox" title="Une méthode remarquablement docile">
+<div class="pedago-title">
+Une méthode remarquablement docile
+</div>
+<p>Contrairement à presque tout le reste, augmenter <span class="math inline">B</span> ne provoque <strong>jamais</strong> de sur-ajustement : l’erreur se stabilise et cesse de bouger.</p>
+<p>On prend donc <span class="math inline">B</span> aussi grand que le temps de calcul le permet — quelques centaines suffisent en général. Il n’y a pas de compromis à arbitrer sur ce paramètre.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="deux-sous-produits-utiles">
+<h1>Deux sous-produits utiles</h1>
+<section class="level2" id="lerreur-out-of-bag">
+<h2 class="anchored" data-anchor-id="lerreur-out-of-bag">L’erreur out-of-bag</h2>
+<div class="definitionbox" title="Out-of-bag">
+<div class="pedago-title">
+Out-of-bag
+</div>
+<p>Un échantillon bootstrap laisse de côté environ <strong>un tiers</strong> des observations. Chaque observation est donc « hors sac » pour environ un tiers des arbres.</p>
+<p>On peut la prédire avec <strong>ces arbres-là seulement</strong> — qui ne l’ont jamais vue.</p>
+</div>
+<div class="examplebox" title="Le calcul de la proportion">
+<div class="pedago-title">
+Le calcul de la proportion
+</div>
+<p>La probabilité qu’une observation ne soit jamais tirée en <span class="math inline">n</span> tirages avec remise : <span class="math display">\left(1 - \frac{1}{n}\right)^{n} \;\xrightarrow[n \to \infty]{}\; e^{-1} \approx 0{,}368</span></p>
+<p>Environ <span class="math inline">36{,}8\,\%</span> des observations sont hors sac pour un arbre donné.</p>
+</div>
+<div class="ecobox" title="Une validation croisée gratuite">
+<div class="pedago-title">
+Une validation croisée gratuite
+</div>
+<p>L’erreur <strong>out-of-bag</strong> estime l’erreur de test sans découpage supplémentaire ni calcul additionnel.</p>
+<p>C’est un avantage pratique considérable sur les méthodes qui exigent une validation croisée explicite — même si celle-ci reste préférable pour comparer des familles de modèles différentes.</p>
+</div>
+</section>
+<section class="level2" id="limportance-des-variables">
+<h2 class="anchored" data-anchor-id="limportance-des-variables">L’importance des variables</h2>
+<div class="definitionbox" title="Deux mesures">
+<div class="pedago-title">
+Deux mesures
+</div>
+<p><strong>Par l’impureté</strong> — cumuler la réduction de Gini apportée par chaque variable sur tous les arbres. Rapide, mais <strong>biaisée</strong> en faveur des variables à nombreuses modalités.</p>
+<p><strong>Par permutation</strong> — mélanger au hasard une variable et mesurer la dégradation de l’erreur out-of-bag. Plus coûteuse, plus fiable.</p>
+</div>
+<div class="intuitionbox" title="Importante ne veut pas dire causale">
+<div class="pedago-title">
+Importante ne veut pas dire causale
+</div>
+<p>Une variable peut être jugée importante parce qu’elle est corrélée à la vraie cause, ou parce qu’elle en est une conséquence.</p>
+<p>De plus, entre deux variables très corrélées, la forêt <strong>répartit</strong> l’importance entre elles, ce qui fait paraître les deux modérément utiles alors que l’une suffirait.</p>
+<p><strong>L’importance mesure la contribution à la prévision, jamais un effet.</strong> C’est le même avertissement qu’au chapitre 3 sur le lasso, et il vaut pour tout ce cours.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>Moyenner <span class="math inline">B</span> modèles indépendants divise la variance par <span class="math inline">B</span>, <strong>sans toucher au biais</strong>.</li>
+<li>Le <strong>bagging</strong> agrège des arbres profonds construits sur échantillons bootstrap.</li>
+<li>La <strong>forêt aléatoire</strong> ajoute un tirage de <span class="math inline">m</span> variables à chaque nœud, ce qui <strong>décorrèle</strong> les arbres.</li>
+<li><span class="math inline">m \approx \sqrt{p}</span> en classification ; augmenter <span class="math inline">B</span> ne sur-ajuste jamais.</li>
+<li>L’erreur <strong>out-of-bag</strong> — sur les <span class="math inline">36{,}8\,\%</span> non tirés — donne une estimation gratuite de l’erreur de test.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Le bagging construit les arbres <strong>en parallèle</strong>, chacun ignorant les autres. Le chapitre 9 les construit <strong>en séquence</strong>, chacun corrigeant les erreurs du précédent.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="arbres-decision.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Les arbres de décision</span></a>
+<a class="jm-nav-suivant" href="boosting.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Le boosting de gradient</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/forets-aleatoires.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/forets-aleatoires-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/forets-aleatoires-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/forets-aleatoires.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

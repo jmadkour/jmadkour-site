@@ -1,0 +1,331 @@
+---
+title: "Modélisation ARMA des rentabilités financières"
+subtitle: "La prévision : ponctuelle, par intervalle, par densité"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation ARMA des rentabilités financières</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="processus-stochastique.qmd">1. Variable aléatoire et processus stochastique</a></li>
+<li><a class="" href="stationnarite.qmd">2. La stationnarité</a></li>
+<li><a class="" href="bruit-blanc.qmd">3. Le bruit blanc</a></li>
+<li><a class="" href="operateur-retard.qmd">4. L&#x27;opérateur retard et l&#x27;écriture polynomiale</a></li>
+<li><a class="" href="processus-ar.qmd">5. Les processus autorégressifs AR(p)</a></li>
+<li><a class="" href="processus-ma.qmd">6. Les processus de moyenne mobile MA(q)</a></li>
+<li><a class="" href="processus-arma.qmd">7. Les processus mixtes ARMA(p,q)</a></li>
+<li><a class="" href="conditions-stationnarite.qmd">8. Conditions de stationnarité et d&#x27;inversibilité</a></li>
+<li><a class="" href="racine-unitaire.qmd">9. Les tests de racine unitaire</a></li>
+<li><a class="" href="autocovariance.qmd">10. Espérance, variance et fonction d&#x27;autocovariance</a></li>
+<li><a class="" href="autocorrelogramme.qmd">11. Autocorrélation, autocorrélogramme et mémoire</a></li>
+<li><a class="" href="identification.qmd">12. Box et Jenkins : l&#x27;identification</a></li>
+<li><a class="" href="criteres-information.qmd">13. Le choix du modèle par les critères d&#x27;information</a></li>
+<li><a class="" href="estimation.qmd">14. L&#x27;estimation : moindres carrés et maximum de vraisemblance</a></li>
+<li><a class="" href="validation.qmd">15. La validation, et ce que les résidus révèlent</a></li>
+<li><a class="jm-actif" href="prevision.qmd">16. La prévision : ponctuelle, par intervalle, par densité</a></li>
+<li><a class="" href="mise-en-oeuvre-r.qmd">17. Mise en œuvre sur R</a></li>
+<li><a class="" href="mise-en-oeuvre-python.qmd">18. Mise en œuvre sur Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation ARMA des rentabilités financières</h1>
+<p class="subtitle lead">Chapitre 15 : La prévision — ponctuelle, par intervalle, par densité</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="ce-que-prévoir-veut-dire">
+<h2 class="anchored" data-anchor-id="ce-que-prévoir-veut-dire">Ce que « prévoir » veut dire</h2>
+<div class="intuitionbox" title="Trois réponses, de plus en plus riches">
+<div class="pedago-title">
+Trois réponses, de plus en plus riches
+</div>
+<p><strong>Ponctuelle</strong> : un nombre. « La rentabilité de demain sera de 0,04 %. »</p>
+<p><strong>Par intervalle</strong> : une fourchette et sa probabilité. « Entre <span class="math inline">-2{,}3\,\%</span> et <span class="math inline">+2{,}4\,\%</span> avec 95 % de chances. »</p>
+<p><strong>Par densité</strong> : toute la loi de <span class="math inline">y_{T+h}</span>. C’est la réponse complète — les deux autres n’en sont que des résumés.</p>
+</div>
+<div class="ecobox" title="En finance, c'est la troisième qui compte">
+<div class="pedago-title">
+En finance, c’est la troisième qui compte
+</div>
+<p>Une VaR est un <strong>quantile</strong> de la densité prévue. Le prix d’une option est une <strong>espérance</strong> sous cette densité. La prévision ponctuelle, elle, n’intéresse presque personne sur données de marché.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-prévision-ponctuelle">
+<h1>La prévision ponctuelle</h1>
+<section class="level2" id="le-critère">
+<h2 class="anchored" data-anchor-id="le-critère">Le critère</h2>
+<div class="definitionbox" title="Meilleure prévision au sens de l'erreur quadratique">
+<div class="pedago-title">
+Meilleure prévision au sens de l’erreur quadratique
+</div>
+<p>La prévision <span class="math inline">\hat{y}_{T+h}</span> qui minimise <span class="math inline">\mathrm{E}\big[(y_{T+h} - \hat{y}_{T+h})^2 \mid \Omega_T\big]</span> est l’<strong>espérance conditionnelle</strong> <span class="math display"> \hat{y}_{T+h|T} = \mathrm{E}\big(y_{T+h} \mid \Omega_T\big) . </span></p>
+</div>
+<div class="intuitionbox" title="Un résultat, pas une convention">
+<div class="pedago-title">
+Un résultat, pas une convention
+</div>
+<p>Ce n’est pas un choix parmi d’autres : sous le critère quadratique, aucune fonction du passé ne fait mieux. Changer de critère changerait la réponse — la médiane conditionnelle minimiserait l’erreur absolue.</p>
+</div>
+</section>
+<section class="level2" id="la-règle-de-calcul">
+<h2 class="anchored" data-anchor-id="la-règle-de-calcul">La règle de calcul</h2>
+<div class="definitionbox" title="Trois substitutions, appliquées à l'équation du modèle">
+<div class="pedago-title">
+Trois substitutions, appliquées à l’équation du modèle
+</div>
+<p>Pour toute date future <span class="math inline">T+h</span>, on remplace :</p>
+<ul>
+<li><span class="math inline">y_{T+j}</span> <strong>connu</strong> (<span class="math inline">j \le 0</span>) par sa valeur observée ;</li>
+<li><span class="math inline">y_{T+j}</span> <strong>futur</strong> (<span class="math inline">j &gt; 0</span>) par sa propre prévision <span class="math inline">\hat{y}_{T+j|T}</span> ;</li>
+<li><span class="math inline">\varepsilon_{T+j}</span> <strong>futur</strong> (<span class="math inline">j &gt; 0</span>) par <strong>zéro</strong> ; <span class="math inline">\varepsilon_{T+j}</span> passé par le résidu <span class="math inline">\hat\varepsilon_{T+j}</span>.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Pourquoi zéro">
+<div class="pedago-title">
+Pourquoi zéro
+</div>
+<p>Un choc futur est par définition imprévisible et centré : sa meilleure prévision est son espérance, qui vaut zéro. C’est là que se loge toute l’incertitude de la prévision.</p>
+</div>
+</section>
+<section class="level2" id="sur-un-ar1">
+<h2 class="anchored" data-anchor-id="sur-un-ar1">Sur un AR(1)</h2>
+<p>Avec <span class="math inline">y_t = \theta + \alpha\,y_{t-1} + \varepsilon_t</span> :</p>
+<p><span class="math display"> \hat{y}_{T+1|T} = \theta + \alpha\,y_T </span> <span class="math display"> \hat{y}_{T+2|T} = \theta + \alpha\,\hat{y}_{T+1|T} = \theta(1+\alpha) + \alpha^2 y_T </span> <span class="math display"> \hat{y}_{T+h|T} = \mu + \alpha^h\,(y_T - \mu), \qquad \mu = \frac{\theta}{1-\alpha} . </span></p>
+<div class="definitionbox" title="La convergence vers la moyenne">
+<div class="pedago-title">
+La convergence vers la moyenne
+</div>
+<p>Comme <span class="math inline">|\alpha| &lt; 1</span>, <span class="math inline">\hat{y}_{T+h|T} \to \mu</span> quand <span class="math inline">h \to \infty</span>. <strong>Au-delà de quelques périodes, un modèle stationnaire ne prévoit plus rien d’autre que la moyenne.</strong></p>
+</div>
+<div class="examplebox" title="Un ordre de grandeur">
+<div class="pedago-title">
+Un ordre de grandeur
+</div>
+<p><span class="math inline">\alpha = 0{,}6</span>, <span class="math inline">y_T - \mu = 10</span>. L’écart prévu vaut <span class="math inline">6</span> à un pas, <span class="math inline">3{,}6</span> à deux pas, <span class="math inline">0{,}6</span> à cinq pas, <span class="math inline">0{,}06</span> à dix pas. La mémoire du modèle s’épuise en une poignée de périodes.</p>
+</div>
+</section>
+<section class="level2" id="sur-un-maq">
+<h2 class="anchored" data-anchor-id="sur-un-maq">Sur un MA(q)</h2>
+<p><span class="math display"> \hat{y}_{T+1|T} = \theta + \beta_1\hat\varepsilon_T + \dots + \beta_q\hat\varepsilon_{T+1-q} </span></p>
+<div class="definitionbox" title="Un horizon strictement borné">
+<div class="pedago-title">
+Un horizon strictement borné
+</div>
+<p>Pour <span class="math inline">h &gt; q</span>, tous les chocs concernés sont futurs, donc remplacés par zéro : <span class="math display"> \hat{y}_{T+h|T} = \theta = \mu \qquad (h &gt; q). </span></p>
+</div>
+<div class="intuitionbox" title="La mémoire finie se voit dans la prévision">
+<div class="pedago-title">
+La mémoire finie se voit dans la prévision
+</div>
+<p>Un MA(2) prévoit quelque chose à un et deux pas, et <strong>strictement rien</strong> au-delà. La coupure de l’ACF au retard <span class="math inline">q</span> et la coupure de la prévision à l’horizon <span class="math inline">q</span> sont le même phénomène.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-prévision-par-intervalle">
+<h1>La prévision par intervalle</h1>
+<section class="level2" id="lerreur-de-prévision">
+<h2 class="anchored" data-anchor-id="lerreur-de-prévision">L’erreur de prévision</h2>
+<div class="definitionbox" title="Décomposition">
+<div class="pedago-title">
+Décomposition
+</div>
+<p>En représentation MA(<span class="math inline">\infty</span>), <span class="math inline">y_t = \mu + \sum_{j\ge0}\psi_j\varepsilon_{t-j}</span>, l’erreur à l’horizon <span class="math inline">h</span> s’écrit <span class="math display"> e_{T+h} = y_{T+h} - \hat{y}_{T+h|T} = \sum_{j=0}^{h-1}\psi_j\,\varepsilon_{T+h-j} . </span></p>
+</div>
+<p>Elle ne contient <strong>que</strong> des chocs futurs — ceux qu’on ne pouvait pas connaître.</p>
+<p><span class="math display"> \mathrm{V}(e_{T+h}) = \sigma_\varepsilon^2\sum_{j=0}^{h-1}\psi_j^2 . </span></p>
+</section>
+<section class="level2" id="lire-cette-variance">
+<h2 class="anchored" data-anchor-id="lire-cette-variance">Lire cette variance</h2>
+<div class="intuitionbox" title="Trois enseignements">
+<div class="pedago-title">
+Trois enseignements
+</div>
+<p>Elle <strong>croît</strong> avec <span class="math inline">h</span> : chaque période supplémentaire ajoute un choc.</p>
+<p>Elle <strong>converge</strong> vers <span class="math inline">\sigma_\varepsilon^2\sum_{j\ge0}\psi_j^2 = \mathrm{V}(y_t)</span>, la variance inconditionnelle. À long horizon, prévoir ne réduit plus l’incertitude du tout.</p>
+<p>À un pas, elle vaut <span class="math inline">\sigma_\varepsilon^2</span> : c’est le <strong>minimum absolu</strong>, l’incertitude irréductible.</p>
+</div>
+<div class="examplebox" title="AR(1) : la formule explicite">
+<div class="pedago-title">
+AR(1) : la formule explicite
+</div>
+<p><span class="math inline">\psi_j = \alpha^j</span>, donc <span class="math display"> \mathrm{V}(e_{T+h}) = \sigma_\varepsilon^2\,\frac{1-\alpha^{2h}}{1-\alpha^2} \ \xrightarrow[h\to\infty]{} \ \frac{\sigma_\varepsilon^2}{1-\alpha^2} = \gamma_0 . </span></p>
+</div>
+</section>
+<section class="level2" id="lintervalle">
+<h2 class="anchored" data-anchor-id="lintervalle">L’intervalle</h2>
+<div class="definitionbox" title="Intervalle de prévision à 95 pour cent">
+<div class="pedago-title">
+Intervalle de prévision à 95 pour cent
+</div>
+<p><span class="math display"> \hat{y}_{T+h|T} \ \pm\ 1{,}96\,\sqrt{\mathrm{V}(e_{T+h})} . </span></p>
+</div>
+<div class="intuitionbox" title="Trois hypothèses, souvent oubliées">
+<div class="pedago-title">
+Trois hypothèses, souvent oubliées
+</div>
+<p>Cet intervalle suppose que les innovations sont <strong>gaussiennes</strong>, que les paramètres sont <strong>connus</strong> (et non estimés), et que le modèle est <strong>bien spécifié</strong>. Chacune est fausse en pratique ; l’intervalle réel est plus large que l’intervalle affiché.</p>
+</div>
+<div class="ecobox" title="Intervalle de prévision, intervalle de confiance">
+<div class="pedago-title">
+Intervalle de prévision, intervalle de confiance
+</div>
+<p>Ne pas confondre. Un intervalle de <strong>confiance</strong> encadre un paramètre inconnu mais fixe. Un intervalle de <strong>prévision</strong> encadre une variable aléatoire non encore réalisée : il est nécessairement plus large, puisqu’il intègre l’aléa futur en plus de l’incertitude d’estimation.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-prévision-par-densité">
+<h1>La prévision par densité</h1>
+<section class="level2" id="de-lintervalle-à-la-loi-entière">
+<h2 class="anchored" data-anchor-id="de-lintervalle-à-la-loi-entière">De l’intervalle à la loi entière</h2>
+<div class="definitionbox" title="Densité prédictive">
+<div class="pedago-title">
+Densité prédictive
+</div>
+<p><span class="math display"> f\big(y_{T+h} \mid \Omega_T\big) . </span> Sous hypothèse gaussienne et paramètres connus : <span class="math display"> y_{T+h} \mid \Omega_T \ \sim\ \mathcal{N}\Big(\hat{y}_{T+h|T},\ \ \sigma_\varepsilon^2\textstyle\sum_{j=0}^{h-1}\psi_j^2\Big). </span></p>
+</div>
+<div class="intuitionbox" title="Ce que la densité apporte de plus">
+<div class="pedago-title">
+Ce que la densité apporte de plus
+</div>
+<p>Elle donne <strong>n’importe quel</strong> quantile, donc la VaR ; la probabilité d’un événement, par exemple <span class="math inline">\mathbb{P}(y_{T+h} &lt; 0)</span> ; et l’espérance de toute fonction du futur, ce dont l’évaluation d’options a besoin.</p>
+</div>
+</section>
+<section class="level2" id="quand-la-forme-fermée-ne-suffit-plus">
+<h2 class="anchored" data-anchor-id="quand-la-forme-fermée-ne-suffit-plus">Quand la forme fermée ne suffit plus</h2>
+<div class="definitionbox" title="Densité par simulation">
+<div class="pedago-title">
+Densité par simulation
+</div>
+<ol type="1">
+<li>Tirer <span class="math inline">N</span> trajectoires de chocs futurs <span class="math inline">(\varepsilon_{T+1},\dots,\varepsilon_{T+h})</span>.</li>
+<li>Propager le modèle sur chacune pour obtenir <span class="math inline">y_{T+h}^{(i)}</span>.</li>
+<li>La distribution empirique des <span class="math inline">y_{T+h}^{(i)}</span> <strong>est</strong> la densité prédictive.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="Les deux façons de tirer les chocs">
+<div class="pedago-title">
+Les deux façons de tirer les chocs
+</div>
+<p><strong>Paramétrique</strong> : tirer dans <span class="math inline">\mathcal{N}(0,\hat\sigma_\varepsilon^2)</span> — simple, mais impose la normalité.</p>
+<p><strong>Bootstrap</strong> : rééchantillonner dans les <strong>résidus observés</strong> — conserve l’asymétrie et les queues épaisses, sans hypothèse de loi. C’est la voie à privilégier en finance.</p>
+</div>
+</section>
+<section class="level2" id="évaluer-une-prévision-de-densité">
+<h2 class="anchored" data-anchor-id="évaluer-une-prévision-de-densité">Évaluer une prévision de densité</h2>
+<div class="definitionbox" title="La transformée en probabilité intégrale">
+<div class="pedago-title">
+La transformée en probabilité intégrale
+</div>
+<p>Si la densité prévue est correcte, les valeurs <span class="math inline">u_t = F_t(y_t)</span> — la fonction de répartition prévue évaluée en la réalisation — sont <strong>uniformes sur <span class="math inline">[0,1]</span> et indépendantes</strong>.</p>
+</div>
+<div class="ecobox" title="Le lien avec la VaR">
+<div class="pedago-title">
+Le lien avec la VaR
+</div>
+<p>C’est exactement le principe du <em>backtesting</em> réglementaire : compter les dépassements de VaR revient à vérifier que <span class="math inline">u_t</span> franchit le seuil <span class="math inline">1\,\%</span> dans <span class="math inline">1\,\%</span> des cas, et sans se regrouper dans le temps. Le cours de Value at Risk y consacre son chapitre 5.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-limite-à-combler">
+<h1>La limite à combler</h1>
+<section class="level2" id="ce-qui-est-juste-et-ce-qui-ne-lest-pas">
+<h2 class="anchored" data-anchor-id="ce-qui-est-juste-et-ce-qui-ne-lest-pas">Ce qui est juste et ce qui ne l’est pas</h2>
+<div class="definitionbox" title="Le diagnostic, sur données financières">
+<div class="pedago-title">
+Le diagnostic, sur données financières
+</div>
+<p>La prévision <strong>ponctuelle</strong> est correcte — et sans intérêt : elle vaut à peu près la moyenne dès le premier pas, puisqu’il n’y a presque pas de mémoire.</p>
+<p>La prévision par <strong>intervalle</strong> et par <strong>densité</strong> est fausse, parce qu’elle suppose une variance constante que le chapitre 14 a montrée changeante.</p>
+</div>
+<div class="intuitionbox" title="Le mécanisme de l'erreur">
+<div class="pedago-title">
+Le mécanisme de l’erreur
+</div>
+<p>En période calme, l’intervalle fondé sur <span class="math inline">\hat\sigma_\varepsilon^2</span> — la volatilité <strong>moyenne</strong> de l’échantillon — est trop large : il ne sert à rien.</p>
+<p>En période agitée, il est beaucoup trop étroit : il sous-estime le risque <strong>précisément au moment où l’on en a besoin</strong>.</p>
+</div>
+<div class="ecobox" title="Ce que les GARCH viennent corriger">
+<div class="pedago-title">
+Ce que les GARCH viennent corriger
+</div>
+<p><span class="math display"> \hat{y}_{T+h|T} \pm 1{,}96\,\sqrt{\hat{h}_{T+h|T}} \qquad \text{au lieu de} \qquad \hat{y}_{T+h|T} \pm 1{,}96\,\hat\sigma_\varepsilon . </span> La prévision ponctuelle est inchangée. C’est la <strong>largeur</strong> de l’intervalle qui devient conditionnelle au passé récent — et c’est tout l’objet du cours suivant.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 15">
+<div class="pedago-title">
+L’essentiel du chapitre 15
+</div>
+<ul>
+<li>La meilleure prévision au sens quadratique est l’espérance conditionnelle <span class="math inline">\mathrm{E}(y_{T+h}\mid\Omega_T)</span>.</li>
+<li>Règle de calcul : chocs futurs remplacés par <strong>zéro</strong>, valeurs futures par leurs prévisions.</li>
+<li>AR : <span class="math inline">\hat{y}_{T+h|T} = \mu + \alpha^h(y_T-\mu)</span>, convergence vers <span class="math inline">\mu</span>. MA(q) : prévision égale à <span class="math inline">\mu</span> dès <span class="math inline">h &gt; q</span>.</li>
+<li><span class="math inline">\mathrm{V}(e_{T+h}) = \sigma_\varepsilon^2\sum_{j&lt;h}\psi_j^2</span> : croissante en <span class="math inline">h</span>, bornée par la variance inconditionnelle.</li>
+<li>Densité prédictive : gaussienne sous hypothèse forte, <strong>bootstrap des résidus</strong> sinon.</li>
+<li>Sur données financières, le point est bon mais l’intervalle est faux : c’est la variance conditionnelle qu’il faut modéliser.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers les chapitres 16 et 17">
+<div class="pedago-title">
+Vers les chapitres 16 et 17
+</div>
+<p>Toute la démarche est en place. Il reste à l’exécuter — sur un vrai jeu de données, avec un vrai logiciel. R d’abord, Python ensuite.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="validation.qmd">&larr; Chapitre précédent<span class="jm-nav-label">La validation, et ce que les résidus révèlent</span></a>
+<a class="jm-nav-suivant" href="mise-en-oeuvre-r.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Mise en œuvre sur R</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/prevision.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/prevision-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/prevision-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/prevision.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

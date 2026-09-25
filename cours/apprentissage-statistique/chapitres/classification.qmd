@@ -1,0 +1,263 @@
+---
+title: "Apprentissage statistique"
+subtitle: "La classification : logistique et analyse discriminante"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage statistique</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="expliquer-prevoir.qmd">1. Expliquer ou prévoir : deux objectifs distincts</a></li>
+<li><a class="" href="biais-variance.qmd">2. Le compromis biais-variance</a></li>
+<li><a class="" href="validation-croisee.qmd">3. Rééchantillonnage et validation croisée</a></li>
+<li><a class="" href="regression-penalisee.qmd">4. La régression pénalisée : ridge et lasso</a></li>
+<li><a class="" href="selection-variables.qmd">5. Sélection de variables et grande dimension</a></li>
+<li><a class="jm-actif" href="classification.qmd">6. La classification : logistique et analyse discriminante</a></li>
+<li><a class="" href="evaluer-classifieur.qmd">7. Évaluer un classifieur : matrice de confusion, ROC, AUC</a></li>
+<li><a class="" href="arbres-decision.qmd">8. Les arbres de décision</a></li>
+<li><a class="" href="forets-aleatoires.qmd">9. Forêts aléatoires et bagging</a></li>
+<li><a class="" href="boosting.qmd">10. Le boosting de gradient</a></li>
+<li><a class="" href="svm.qmd">11. Les machines à vecteurs de support</a></li>
+<li><a class="" href="interpreter-modele.qmd">12. Interpréter un modèle de prévision</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage statistique</h1>
+<p class="subtitle lead">Chapitre 5 : La classification : logistique et analyse discriminante</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="régression-linéaire-limites">
+<h1>Régression linéaire, limites</h1>
+<section class="level2" id="deux-objections">
+<h2 class="anchored" data-anchor-id="deux-objections">Deux objections</h2>
+<div class="definitionbox" title="Le problème">
+<div class="pedago-title">
+Le problème
+</div>
+<p>La cible est <strong>qualitative</strong> : défaut ou non. On code <span class="math inline">Y = 1</span> pour le défaut, <span class="math inline">Y = 0</span> sinon.</p>
+<p>Régresser directement <span class="math inline">Y</span> sur <span class="math inline">X</span> par les MCO pose deux difficultés.</p>
+</div>
+<div class="definitionbox" title="Les deux objections">
+<div class="pedago-title">
+Les deux objections
+</div>
+<ol type="1">
+<li>Les prédictions <strong>sortent de l’intervalle <span class="math inline">[0,1]</span></strong> : on obtient des « probabilités » négatives ou supérieures à un.</li>
+<li>Avec plus de deux catégories <strong>non ordonnées</strong>, le codage numérique impose un ordre arbitraire qui n’existe pas.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="Ce qu'il faut donc">
+<div class="pedago-title">
+Ce qu’il faut donc
+</div>
+<p>Une fonction qui prenne n’importe quelle combinaison linéaire de <span class="math inline">X</span> et la ramène <strong>dans <span class="math inline">[0,1]</span></strong>.</p>
+<p>C’est exactement ce que fait la fonction logistique.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-régression-logistique">
+<h1>La régression logistique</h1>
+<section class="level2" id="le-modèle">
+<h2 class="anchored" data-anchor-id="le-modèle">Le modèle</h2>
+<div class="definitionbox" title="La fonction logistique">
+<div class="pedago-title">
+La fonction logistique
+</div>
+<p><span class="math display">p(X) = \frac{e^{\beta_0 + \beta_1 X}}{1 + e^{\beta_0 + \beta_1 X}}</span></p>
+<p>Elle vaut toujours entre <span class="math inline">0</span> et <span class="math inline">1</span>, quelle que soit la valeur de <span class="math inline">\beta_0 + \beta_1 X</span>.</p>
+</div>
+<div class="definitionbox" title="La forme linéaire cachée">
+<div class="pedago-title">
+La forme linéaire cachée
+</div>
+<p>En isolant, on obtient la <strong>cote</strong> puis son logarithme :</p>
+<p><span class="math display">\frac{p(X)}{1 - p(X)} = e^{\beta_0 + \beta_1 X} \qquad\Longrightarrow\qquad \ln\!\left(\frac{p(X)}{1-p(X)}\right) = \beta_0 + \beta_1 X</span></p>
+<p><strong>Le logarithme de la cote est linéaire en <span class="math inline">X</span>.</strong> C’est ce qui rend le modèle maniable.</p>
+</div>
+<div class="definitionbox" title="Interpréter un coefficient">
+<div class="pedago-title">
+Interpréter un coefficient
+</div>
+<p><span class="math inline">\beta_1</span> n’est <strong>pas</strong> l’effet sur la probabilité, qui dépend du point où l’on se place.</p>
+<p><span class="math inline">e^{\beta_1}</span> est le facteur par lequel la <strong>cote</strong> est multipliée quand <span class="math inline">X</span> augmente d’une unité.</p>
+</div>
+<div class="examplebox" title="Sur le portefeuille de crédit">
+<div class="pedago-title">
+Sur le portefeuille de crédit
+</div>
+<p>Un coefficient de <span class="math inline">0{,}7</span> sur le ratio d’endettement donne <span class="math inline">e^{0{,}7} \approx 2{,}01</span>.</p>
+<p>Une unité d’endettement supplémentaire <strong>double</strong> approximativement la cote du défaut — non sa probabilité.</p>
+</div>
+<div class="ecobox" title="L'estimation, et son lien avec le cours de statistique">
+<div class="pedago-title">
+L’estimation, et son lien avec le cours de statistique
+</div>
+<p>Les coefficients s’estiment par <strong>maximum de vraisemblance</strong>, méthode introduite au chapitre 7 de <em>Statistique inférentielle</em>.</p>
+<p>Il n’y a pas de formule fermée : la solution s’obtient numériquement. C’est le premier modèle du cours qui ne se résout pas d’un calcul direct.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="lanalyse-discriminante">
+<h1>L’analyse discriminante</h1>
+<section class="level2" id="une-approche-par-les-distributions">
+<h2 class="anchored" data-anchor-id="une-approche-par-les-distributions">Une approche par les distributions</h2>
+<div class="definitionbox" title="Le renversement du problème">
+<div class="pedago-title">
+Le renversement du problème
+</div>
+<p>La logistique modélise directement <span class="math inline">P(Y \mid X)</span>.</p>
+<p>L’<strong>analyse discriminante</strong> modélise la distribution de <span class="math inline">X</span> <strong>dans chaque classe</strong>, puis retourne le raisonnement par le théorème de Bayes : <span class="math display">P(Y = k \mid X) \;\propto\; \pi_k \, f_k(X)</span></p>
+<p>où <span class="math inline">\pi_k</span> est la proportion de la classe <span class="math inline">k</span> et <span class="math inline">f_k</span> la densité de <span class="math inline">X</span> dans cette classe.</p>
+</div>
+<div class="ecobox" title="C'est le théorème de Bayes du chapitre 7 des Probabilités">
+<div class="pedago-title">
+C’est le théorème de Bayes du chapitre 7 des Probabilités
+</div>
+<p>La structure est identique à celle du test médical : on connaît la probabilité du symptôme sachant la maladie, on veut celle de la maladie sachant le symptôme.</p>
+<p>Ici, on connaît la distribution des revenus chez les défaillants, on veut la probabilité de défaut sachant le revenu.</p>
+</div>
+<div class="definitionbox" title="Linéaire ou quadratique">
+<div class="pedago-title">
+Linéaire ou quadratique
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th>Hypothèse sur les covariances</th>
+<th>Frontière</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>ADL</strong></td>
+<td>identiques entre classes</td>
+<td><strong>linéaire</strong></td>
+</tr>
+<tr class="even">
+<td><strong>ADQ</strong></td>
+<td>propres à chaque classe</td>
+<td><strong>quadratique</strong></td>
+</tr>
+</tbody>
+</table>
+<p>L’ADQ est plus flexible et exige beaucoup plus de données : c’est encore le compromis biais-variance.</p>
+</div>
+<div class="intuitionbox" title="Quand préférer l'une ou l'autre">
+<div class="pedago-title">
+Quand préférer l’une ou l’autre
+</div>
+<p>La <strong>logistique</strong> fait moins d’hypothèses et résiste mieux aux distributions non normales. C’est le choix par défaut.</p>
+<p>L’<strong>analyse discriminante</strong> est plus efficace quand les classes sont bien séparées — cas où la logistique devient instable — et quand <span class="math inline">X</span> est effectivement à peu près normal.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-seuil-de-décision">
+<h1>Le seuil de décision</h1>
+<section class="level2" id="une-probabilité-nest-pas-une-décision">
+<h2 class="anchored" data-anchor-id="une-probabilité-nest-pas-une-décision">Une probabilité n’est pas une décision</h2>
+<div class="definitionbox" title="Deux étapes distinctes">
+<div class="pedago-title">
+Deux étapes distinctes
+</div>
+<p>Le modèle produit une <strong>probabilité</strong>. La décision exige un <strong>seuil</strong> au-delà duquel on classe en défaut.</p>
+<p>Le seuil de <span class="math inline">0{,}5</span> est un choix par défaut, presque toujours mauvais.</p>
+</div>
+<div class="examplebox" title="Pourquoi 0,5 ne convient pas ici">
+<div class="pedago-title">
+Pourquoi 0,5 ne convient pas ici
+</div>
+<p>Sur notre portefeuille, les défauts représentent <span class="math inline">10\,\%</span> des dossiers. Peu de clients atteindront une probabilité supérieure à <span class="math inline">0{,}5</span> : le modèle classera presque tout le monde en « bon ».</p>
+<p>Il faut donc <strong>abaisser le seuil</strong> si l’on veut détecter des défauts.</p>
+</div>
+</section>
+<section class="level2" id="le-seuil-est-une-décision-de-gestion-pas-de-statistique">
+<h2 class="anchored" data-anchor-id="le-seuil-est-une-décision-de-gestion-pas-de-statistique">Le seuil est une décision de gestion, pas de statistique</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Le bon seuil dépend du coût des deux erreurs :</p>
+<ul>
+<li>refuser un bon client coûte une marge perdue ;</li>
+<li>accorder un crédit à un futur défaillant coûte le capital.</li>
+</ul>
+<p>Le second coût dépasse largement le premier dans la plupart des portefeuilles. Le seuil optimal est donc <strong>bien inférieur à <span class="math inline">0{,}5</span></strong>.</p>
+<p>Aucune méthode statistique ne fixe ce seuil : il vient de l’économie du problème. Le chapitre 6 donne les outils pour le choisir en connaissance de cause.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>La régression linéaire donne des probabilités <strong>hors de <span class="math inline">[0,1]</span></strong> : elle ne convient pas.</li>
+<li>La <strong>logistique</strong> modélise <span class="math inline">\ln(p/(1-p))</span> comme une fonction linéaire de <span class="math inline">X</span>.</li>
+<li><span class="math inline">e^{\beta}</span> est un facteur multiplicatif sur la <strong>cote</strong>, non sur la probabilité.</li>
+<li>L’<strong>analyse discriminante</strong> passe par les distributions de <span class="math inline">X</span> et le théorème de Bayes.</li>
+<li>Le <strong>seuil</strong> de décision est un choix économique, pas statistique — et <span class="math inline">0{,}5</span> est rarement le bon.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Il faut maintenant savoir mesurer la qualité d’un classifieur — et le chapitre 6 montrera que la mesure la plus naturelle est aussi la plus trompeuse.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="selection-variables.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Sélection de variables et grande dimension</span></a>
+<a class="jm-nav-suivant" href="evaluer-classifieur.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Évaluer un classifieur : matrice de confusion, ROC, AUC</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/classification.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/classification-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/classification-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/classification.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

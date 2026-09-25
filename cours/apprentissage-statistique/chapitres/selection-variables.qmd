@@ -1,0 +1,315 @@
+---
+title: "Apprentissage statistique"
+subtitle: "Sélection de variables et grande dimension"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage statistique</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="expliquer-prevoir.qmd">1. Expliquer ou prévoir : deux objectifs distincts</a></li>
+<li><a class="" href="biais-variance.qmd">2. Le compromis biais-variance</a></li>
+<li><a class="" href="validation-croisee.qmd">3. Rééchantillonnage et validation croisée</a></li>
+<li><a class="" href="regression-penalisee.qmd">4. La régression pénalisée : ridge et lasso</a></li>
+<li><a class="jm-actif" href="selection-variables.qmd">5. Sélection de variables et grande dimension</a></li>
+<li><a class="" href="classification.qmd">6. La classification : logistique et analyse discriminante</a></li>
+<li><a class="" href="evaluer-classifieur.qmd">7. Évaluer un classifieur : matrice de confusion, ROC, AUC</a></li>
+<li><a class="" href="arbres-decision.qmd">8. Les arbres de décision</a></li>
+<li><a class="" href="forets-aleatoires.qmd">9. Forêts aléatoires et bagging</a></li>
+<li><a class="" href="boosting.qmd">10. Le boosting de gradient</a></li>
+<li><a class="" href="svm.qmd">11. Les machines à vecteurs de support</a></li>
+<li><a class="" href="interpreter-modele.qmd">12. Interpréter un modèle de prévision</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage statistique</h1>
+<p class="subtitle lead">Chapitre 4 : Sélection de variables et grande dimension</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="sélectionner-un-sous-ensemble">
+<h1>Sélectionner un sous-ensemble</h1>
+<section class="level2" id="trois-familles-de-méthodes">
+<h2 class="anchored" data-anchor-id="trois-familles-de-méthodes">Trois familles de méthodes</h2>
+<div class="definitionbox" title="Les approches classiques">
+<div class="pedago-title">
+Les approches classiques
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Méthode</th>
+<th>Principe</th>
+<th>Coût</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Exhaustive</strong></td>
+<td>essayer tous les sous-ensembles</td>
+<td><span class="math inline">2^p</span> modèles</td>
+</tr>
+<tr class="even">
+<td><strong>Ascendante</strong></td>
+<td>partir de rien, ajouter la meilleure variable</td>
+<td><span class="math inline">\approx p^2/2</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Descendante</strong></td>
+<td>partir de tout, retirer la moins utile</td>
+<td><span class="math inline">\approx p^2/2</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="pourquoi-lexhaustive-est-impraticable">
+<h2 class="anchored" data-anchor-id="pourquoi-lexhaustive-est-impraticable">Pourquoi l’exhaustive est impraticable</h2>
+<div class="examplebox">
+<div class="pedago-title">
+Exemple
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;"><span class="math inline">p</span></th>
+<th style="text-align: right;">Nombre de modèles</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">10</span></td>
+<td style="text-align: right;"><span class="math inline">1\,024</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">20</span></td>
+<td style="text-align: right;"><span class="math inline">1\,048\,576</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">40</span></td>
+<td style="text-align: right;">plus de mille milliards</td>
+</tr>
+</tbody>
+</table>
+<p>Vingt variables sont déjà à la limite ; quarante sont hors de portée.</p>
+</div>
+</section>
+<section class="level2" id="le-défaut-plus-grave-que-le-coût">
+<h2 class="anchored" data-anchor-id="le-défaut-plus-grave-que-le-coût">Le défaut plus grave que le coût</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Explorer un grand nombre de modèles et retenir le meilleur revient à <strong>choisir le plus chanceux</strong>.</p>
+<p>Avec assez de candidats, un sous-ensemble paraîtra excellent par pur hasard. C’est une forme de sur-ajustement qui porte non sur les paramètres mais sur le <strong>choix du modèle</strong> — et elle est invisible si l’on ne réévalue pas sur des données à part.</p>
+<p><strong>La sélection fait partie de l’apprentissage</strong> : elle doit être refaite à l’intérieur de chaque bloc de validation croisée, jamais une fois pour toutes en amont.</p>
+</div>
+</section>
+<section class="level2" id="les-critères-de-comparaison">
+<h2 class="anchored" data-anchor-id="les-critères-de-comparaison">Les critères de comparaison</h2>
+<div class="definitionbox" title="Pénaliser la complexité">
+<div class="pedago-title">
+Pénaliser la complexité
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Critère</th>
+<th>Pénalité par paramètre</th>
+<th>Tendance</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">R^2</span> ajusté</td>
+<td>faible</td>
+<td>modèles larges</td>
+</tr>
+<tr class="even">
+<td><strong>AIC</strong></td>
+<td><span class="math inline">2</span></td>
+<td>orienté prévision</td>
+</tr>
+<tr class="odd">
+<td><strong>BIC</strong></td>
+<td><span class="math inline">\ln(n)</span></td>
+<td>plus sévère, modèles parcimonieux</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="ecobox" title="Ces critères vous sont déjà connus">
+<div class="pedago-title">
+Ces critères vous sont déjà connus
+</div>
+<p>Le cours <em>Modélisation ARMA</em> les emploie au chapitre 12 pour choisir les ordres <span class="math inline">p</span> et <span class="math inline">q</span>.</p>
+<p>L’idée est identique : l’ajustement seul favorise toujours le modèle le plus large, il faut donc lui opposer un prix. La <strong>validation croisée</strong> fait la même chose de manière directe, sans hypothèse de forme.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-grande-dimension">
+<h1>La grande dimension</h1>
+<section class="level2" id="quand-p-dépasse-n">
+<h2 class="anchored" data-anchor-id="quand-p-dépasse-n">Quand p dépasse n</h2>
+<div class="definitionbox" title="Le régime p &gt; n">
+<div class="pedago-title">
+Le régime p &gt; n
+</div>
+<p>Lorsque les variables sont plus nombreuses que les observations, les moindres carrés admettent une <strong>infinité</strong> de solutions ajustant parfaitement les données.</p>
+<p>L’ajustement parfait n’a alors aucune valeur : il est atteint par construction, non par découverte.</p>
+</div>
+<div class="ecobox" title="Des situations fréquentes">
+<div class="pedago-title">
+Des situations fréquentes
+</div>
+<ul>
+<li>Texte : chaque mot est une variable, des dizaines de milliers.</li>
+<li>Génomique : des milliers de gènes, quelques centaines de patients.</li>
+<li>Finance : indicateurs techniques et fondamentaux démultipliés.</li>
+<li>Toute base enrichie d’interactions et de transformations.</li>
+</ul>
+</div>
+<div class="definitionbox" title="Ce qui rend le problème soluble">
+<div class="pedago-title">
+Ce qui rend le problème soluble
+</div>
+<p>L’hypothèse de <strong>parcimonie</strong> : seul un petit nombre de variables importe réellement.</p>
+<p>Sans elle, rien n’est estimable. Avec elle, le <strong>lasso</strong> retrouve les bonnes variables sous certaines conditions — c’est le résultat qui a fait son succès.</p>
+</div>
+</section>
+<section class="level2" id="trois-pièges-de-la-grande-dimension">
+<h2 class="anchored" data-anchor-id="trois-pièges-de-la-grande-dimension">Trois pièges de la grande dimension</h2>
+<div class="definitionbox" title="Ce qui cesse d'être fiable">
+<div class="pedago-title">
+Ce qui cesse d’être fiable
+</div>
+<ol type="1">
+<li>Les <strong>p-values</strong> et intervalles de confiance classiques, calculés après sélection, sont invalides — le modèle a été choisi sur les mêmes données.</li>
+<li>La <strong>multicolinéarité</strong> est quasi certaine : avec <span class="math inline">p</span> grand, des variables sont mécaniquement corrélées.</li>
+<li>Le <strong><span class="math inline">R^2</span></strong> perd tout sens : il peut valoir <span class="math inline">1</span> sur des données pures bruit.</li>
+</ol>
+</div>
+<div class="examplebox" title="L'illusion la plus simple à produire">
+<div class="pedago-title">
+L’illusion la plus simple à produire
+</div>
+<p>Avec <span class="math inline">100</span> observations et <span class="math inline">200</span> variables <strong>tirées au hasard</strong>, sans aucun lien avec <span class="math inline">Y</span>, on obtient un ajustement parfait.</p>
+<p>Un praticien qui ne regarderait que le <span class="math inline">R^2</span> conclurait à un modèle excellent. L’erreur de test le détromperait immédiatement.</p>
+</div>
+</section>
+<section class="level2" id="linférence-après-sélection">
+<h2 class="anchored" data-anchor-id="linférence-après-sélection">L’inférence après sélection</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Publier un coefficient et son écart-type après avoir choisi les variables sur les mêmes données produit des résultats sur-optimistes.</p>
+<p>Des méthodes existent — inférence post-sélection, division de l’échantillon — mais la solution la plus sûre reste de <strong>séparer les données</strong> : sélectionner sur une moitié, estimer sur l’autre.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="réduire-plutôt-que-choisir">
+<h1>Réduire plutôt que choisir</h1>
+<section class="level2" id="une-autre-voie">
+<h2 class="anchored" data-anchor-id="une-autre-voie">Une autre voie</h2>
+<div class="definitionbox" title="Régression sur composantes principales">
+<div class="pedago-title">
+Régression sur composantes principales
+</div>
+<p>Remplacer les <span class="math inline">p</span> variables par un petit nombre de <strong>composantes principales</strong>, puis régresser sur celles-ci.</p>
+</div>
+<div class="ecobox" title="Vous savez déjà le faire">
+<div class="pedago-title">
+Vous savez déjà le faire
+</div>
+<p>C’est l’ACP du cours d’<strong>Analyse des données</strong>, employée ici comme prétraitement.</p>
+<p>Son défaut : les composantes sont construites pour résumer <span class="math inline">X</span>, <strong>sans regarder <span class="math inline">Y</span></strong>. Rien ne garantit que les axes de plus forte variance soient les plus prédictifs. La <strong>régression des moindres carrés partiels</strong> corrige ce point en tenant compte de <span class="math inline">Y</span> dans la construction des axes.</p>
+</div>
+<div class="intuitionbox" title="Sélection ou réduction">
+<div class="pedago-title">
+Sélection ou réduction
+</div>
+<p>La <strong>sélection</strong> garde des variables d’origine : le modèle reste lisible.</p>
+<p>La <strong>réduction</strong> crée des combinaisons : elle exploite toute l’information, au prix de l’interprétabilité.</p>
+<p>Le choix dépend de ce qu’on fera du modèle — le présenter, ou seulement s’en servir.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>La sélection <strong>exhaustive</strong> coûte <span class="math inline">2^p</span> modèles : impraticable au-delà de vingt variables.</li>
+<li>Explorer beaucoup de modèles et garder le meilleur est une forme de <strong>sur-ajustement</strong>.</li>
+<li>La sélection doit être <strong>incluse dans la validation croisée</strong>, jamais faite en amont.</li>
+<li>Si <span class="math inline">p &gt; n</span>, l’ajustement parfait est automatique ; seule la <strong>parcimonie</strong> rend le problème soluble.</li>
+<li>Après sélection, <strong>p-values et <span class="math inline">R^2</span> ne sont plus fiables</strong>.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Tout ce qui précède supposait une cible quantitative. Le chapitre 5 passe à la classification — et c’est la situation de notre portefeuille de crédit.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="regression-penalisee.qmd">&larr; Chapitre précédent<span class="jm-nav-label">La régression pénalisée : ridge et lasso</span></a>
+<a class="jm-nav-suivant" href="classification.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">La classification : logistique et analyse discriminante</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/selection-variables.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/selection-variables-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/selection-variables-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/selection-variables.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

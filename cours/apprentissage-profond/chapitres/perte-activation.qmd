@@ -1,0 +1,279 @@
+---
+title: "Apprentissage profond"
+subtitle: "Fonctions de perte et d'activation"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="jm-actif" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Chapitre 2 : Fonctions de perte et d’activation</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="la-fonction-de-perte">
+<h1>La fonction de perte</h1>
+<section class="level2" id="ce-que-le-réseau-cherche-à-minimiser">
+<h2 class="anchored" data-anchor-id="ce-que-le-réseau-cherche-à-minimiser">Ce que le réseau cherche à minimiser</h2>
+<div class="definitionbox" title="Les pertes usuelles">
+<div class="pedago-title">
+Les pertes usuelles
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tâche</th>
+<th>Perte</th>
+<th>Formule</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Régression</td>
+<td>erreur quadratique</td>
+<td><span class="math inline">\frac{1}{n}\sum (y_i - \hat y_i)^2</span></td>
+</tr>
+<tr class="even">
+<td>Régression robuste</td>
+<td>erreur absolue</td>
+<td><span class="math inline">\frac{1}{n}\sum \lvert y_i - \hat y_i \rvert</span></td>
+</tr>
+<tr class="odd">
+<td>Classification binaire</td>
+<td>entropie croisée</td>
+<td><span class="math inline">-\frac{1}{n}\sum \left[y_i \ln \hat p_i + (1-y_i)\ln(1-\hat p_i)\right]</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="ecobox" title="L'entropie croisée n'est pas une nouveauté">
+<div class="pedago-title">
+L’entropie croisée n’est pas une nouveauté
+</div>
+<p>Minimiser l’entropie croisée revient exactement à <strong>maximiser la vraisemblance</strong> du modèle logistique.</p>
+<p>C’est le maximum de vraisemblance du chapitre 7 de <em>Statistique inférentielle</em>, sous un autre nom. Le vocabulaire change ; le critère est identique.</p>
+</div>
+<div class="intuitionbox" title="Pourquoi l'entropie croisée plutôt que l'erreur quadratique">
+<div class="pedago-title">
+Pourquoi l’entropie croisée plutôt que l’erreur quadratique
+</div>
+<p>En classification, l’erreur quadratique produit des gradients qui <strong>s’annulent</strong> quand le réseau se trompe avec assurance — précisément quand il faudrait corriger le plus fort.</p>
+<p>L’entropie croisée, au contraire, pénalise très lourdement une prédiction confiante et fausse : <span class="math inline">-\ln(0{,}01)</span> vaut plus de <span class="math inline">4{,}6</span>. Le gradient reste vif, et l’apprentissage progresse.</p>
+</div>
+<div class="definitionbox" title="Choisir la perte selon le problème">
+<div class="pedago-title">
+Choisir la perte selon le problème
+</div>
+<p>L’erreur <strong>quadratique</strong> punit fortement les grands écarts : elle est sensible aux valeurs aberrantes.</p>
+<p>L’erreur <strong>absolue</strong> les traite plus doucement : elle convient aux rendements financiers, dont les queues sont épaisses — un fait établi à l’introduction de <em>Modélisation GARCH</em>.</p>
+<p><strong>La perte encode ce qui compte pour vous.</strong> Ce n’est pas un détail technique.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-activations">
+<h1>Les activations</h1>
+<section class="level2" id="la-sigmoïde-et-son-défaut">
+<h2 class="anchored" data-anchor-id="la-sigmoïde-et-son-défaut">La sigmoïde et son défaut</h2>
+<div class="definitionbox" title="La sigmoïde">
+<div class="pedago-title">
+La sigmoïde
+</div>
+<p><span class="math display">\sigma(z) = \frac{1}{1 + e^{-z}}</span></p>
+<p>Elle ramène toute valeur dans <span class="math inline">]0,1[</span>. Sa dérivée vaut <span class="math inline">\sigma(z)\left(1 - \sigma(z)\right)</span>.</p>
+</div>
+<div class="examplebox" title="Le problème, chiffré">
+<div class="pedago-title">
+Le problème, chiffré
+</div>
+<p>La dérivée de la sigmoïde est <strong>maximale en <span class="math inline">z = 0</span></strong>, où elle vaut <span class="math inline">0{,}25</span>. Elle est plus faible partout ailleurs.</p>
+<p>Or la rétropropagation <strong>multiplie</strong> ces dérivées couche après couche :</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Couches</th>
+<th style="text-align: right;">Facteur au mieux</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">0{,}25</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">5</span></td>
+<td style="text-align: right;"><span class="math inline">9{,}8 \times 10^{-4}</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">10</span></td>
+<td style="text-align: right;"><span class="math inline">9{,}5 \times 10^{-7}</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">20</span></td>
+<td style="text-align: right;"><span class="math inline">9{,}1 \times 10^{-13}</span></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Après dix couches, le gradient est divisé par plus d’un million</strong> — et c’est le cas le plus favorable.</p>
+</div>
+<div class="definitionbox" title="Le gradient qui s'évanouit">
+<div class="pedago-title">
+Le gradient qui s’évanouit
+</div>
+<p>Les couches profondes ne reçoivent plus de signal d’apprentissage : leurs poids ne bougent pratiquement pas.</p>
+<p>C’est la raison technique pour laquelle les réseaux profonds sont restés inutilisables pendant des décennies.</p>
+</div>
+</section>
+<section class="level2" id="relu-et-pourquoi-elle-a-tout-changé">
+<h2 class="anchored" data-anchor-id="relu-et-pourquoi-elle-a-tout-changé">ReLU, et pourquoi elle a tout changé</h2>
+<div class="definitionbox" title="ReLU">
+<div class="pedago-title">
+ReLU
+</div>
+<p><span class="math display">\text{ReLU}(z) = \max(0, z)</span></p>
+<p>Sa dérivée vaut <span class="math inline">1</span> pour <span class="math inline">z &gt; 0</span> et <span class="math inline">0</span> sinon.</p>
+</div>
+<div class="intuitionbox" title="La dérivée de 1 est décisive">
+<div class="pedago-title">
+La dérivée de 1 est décisive
+</div>
+<p>Multiplier des <span class="math inline">1</span> ne diminue rien. Le gradient traverse donc les couches sans s’atténuer, et l’entraînement de réseaux profonds devient possible.</p>
+<p>À cela s’ajoutent deux avantages : le calcul est trivial, et la <strong>parcimonie</strong> — les neurones à sortie nulle ne participent pas, ce qui allège le réseau.</p>
+<p><strong>Le passage de la sigmoïde à ReLU est l’une des raisons principales du succès de l’apprentissage profond</strong>, davantage qu’une astuce d’implémentation.</p>
+</div>
+</section>
+<section class="level2" id="son-défaut-et-ses-variantes">
+<h2 class="anchored" data-anchor-id="son-défaut-et-ses-variantes">Son défaut, et ses variantes</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<p>Un neurone dont l’entrée reste négative a un gradient nul en permanence : il est <strong>mort</strong>, définitivement.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Variante</th>
+<th>Correction</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Leaky ReLU</strong></td>
+<td>pente faible du côté négatif</td>
+</tr>
+<tr class="even">
+<td><strong>ELU</strong></td>
+<td>transition douce, sortie négative bornée</td>
+</tr>
+<tr class="odd">
+<td><strong>GELU</strong></td>
+<td>version lissée, usuelle dans les transformeurs</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="ce-quil-faut-faire-en-pratique">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-faire-en-pratique">Ce qu’il faut faire en pratique</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Commencer par <strong>ReLU</strong> dans les couches cachées. Passer à une variante seulement si l’on observe des neurones morts.</p>
+<p>Ne jamais mettre de sigmoïde ou de tangente hyperbolique dans les couches cachées d’un réseau profond — sauf dans les portes des architectures récurrentes du chapitre 8, où leur bornage est justement ce qu’on recherche.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>La <strong>perte</strong> encode l’objectif : quadratique, absolue, ou entropie croisée.</li>
+<li>L’<strong>entropie croisée</strong> est le maximum de vraisemblance logistique, sous un autre nom.</li>
+<li>La dérivée de la sigmoïde plafonne à <span class="math inline">0{,}25</span> : après dix couches, le gradient est divisé par un million.</li>
+<li><strong>ReLU</strong> a une dérivée de <span class="math inline">1</span> : le gradient traverse sans s’atténuer.</li>
+<li>ReLU dans les couches cachées ; sigmoïde ou softmax <strong>uniquement en sortie</strong>.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Perte et activations sont choisies. Le chapitre 3 aborde l’algorithme qui minimise effectivement cette perte.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="perceptron-multicouche.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Le perceptron multicouche</span></a>
+<a class="jm-nav-suivant" href="descente-gradient.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">La descente de gradient et ses variantes</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/perte-activation.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/perte-activation-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/perte-activation-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/perte-activation.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

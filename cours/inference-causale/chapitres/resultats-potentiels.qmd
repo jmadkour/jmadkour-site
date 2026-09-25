@@ -1,0 +1,357 @@
+---
+title: "Inférence causale"
+subtitle: "Le cadre des résultats potentiels"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Inférence causale</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="correlation-causalite.qmd">1. Corrélation et causalité : ce que la régression ne dit pas</a></li>
+<li><a class="jm-actif" href="resultats-potentiels.qmd">2. Le cadre des résultats potentiels</a></li>
+<li><a class="" href="graphes-causaux.qmd">3. Graphes causaux et variables à ne pas contrôler</a></li>
+<li><a class="" href="experience-aleatoire.qmd">4. L&#x27;expérience aléatoire, référence de toutes les méthodes</a></li>
+<li><a class="" href="score-propension.qmd">5. Appariement et pondération par le score de propension</a></li>
+<li><a class="" href="doubles-differences.qmd">6. Les doubles différences</a></li>
+<li><a class="" href="discontinuite.qmd">7. La régression sur discontinuité</a></li>
+<li><a class="" href="variables-instrumentales.qmd">8. Les variables instrumentales, revisitées</a></li>
+<li><a class="" href="controle-synthetique.qmd">9. Le contrôle synthétique</a></li>
+<li><a class="" href="double-ml.qmd">10. Le double machine learning</a></li>
+<li><a class="" href="forets-causales.qmd">11. Effets hétérogènes et forêts causales</a></li>
+<li><a class="" href="decider-incertitude.qmd">12. Décider sous incertitude : de l&#x27;effet estimé à la politique</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Inférence causale et machine learning</h1>
+<p class="subtitle lead">Chapitre 1 : Le cadre des résultats potentiels</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="la-notation">
+<h1>La notation</h1>
+<section class="level2" id="deux-mondes-pour-chaque-individu">
+<h2 class="anchored" data-anchor-id="deux-mondes-pour-chaque-individu">Deux mondes pour chaque individu</h2>
+<div class="definitionbox" title="Résultats potentiels">
+<div class="pedago-title">
+Résultats potentiels
+</div>
+<p>Pour chaque individu <span class="math inline">i</span> :</p>
+<ul>
+<li><span class="math inline">Y_i(1)</span> — ce qu’il obtiendrait <strong>s’il était traité</strong> ;</li>
+<li><span class="math inline">Y_i(0)</span> — ce qu’il obtiendrait <strong>s’il ne l’était pas</strong>.</li>
+</ul>
+<p>L’<strong>effet causal individuel</strong> est <span class="math display">\tau_i = Y_i(1) - Y_i(0)</span></p>
+</div>
+<div class="definitionbox" title="Le problème fondamental">
+<div class="pedago-title">
+Le problème fondamental
+</div>
+<p>On n’observe <strong>jamais</strong> les deux. Si <span class="math inline">T_i = 1</span>, on voit <span class="math inline">Y_i(1)</span> ; sinon, <span class="math inline">Y_i(0)</span>.</p>
+<p><span class="math display">Y_i = T_i \, Y_i(1) + (1 - T_i)\, Y_i(0)</span></p>
+<p><strong>L’effet individuel n’est jamais observable.</strong> C’est un problème de données manquantes, et il est irréparable au niveau individuel.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-cette-notation-apporte-immédiatement">
+<h2 class="anchored" data-anchor-id="ce-que-cette-notation-apporte-immédiatement">Ce que cette notation apporte immédiatement</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Elle sépare ce qu’on <strong>veut</strong> de ce qu’on <strong>voit</strong>. Écrire <span class="math inline">Y_i(1) - Y_i(0)</span> définit l’objet d’intérêt sans rien supposer sur les données.</p>
+<p>C’est le geste décisif : <strong>d’abord dire ce qu’on cherche, ensuite examiner si les données permettent de l’atteindre.</strong> La démarche inverse — estimer d’abord, interpréter après — est la source de la plupart des erreurs.</p>
+</div>
+</section>
+<section class="level2" id="ce-qui-reste-estimable">
+<h2 class="anchored" data-anchor-id="ce-qui-reste-estimable">Ce qui reste estimable</h2>
+<div class="definitionbox" title="Les effets moyens">
+<div class="pedago-title">
+Les effets moyens
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Paramètre</th>
+<th>Définition</th>
+<th>Population</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>ATE</strong></td>
+<td><span class="math inline">E[Y(1) - Y(0)]</span></td>
+<td>tout le monde</td>
+</tr>
+<tr class="even">
+<td><strong>ATT</strong></td>
+<td><span class="math inline">E[Y(1) - Y(0) \mid T = 1]</span></td>
+<td>les traités</td>
+</tr>
+<tr class="odd">
+<td><strong>ATU</strong></td>
+<td><span class="math inline">E[Y(1) - Y(0) \mid T = 0]</span></td>
+<td>les non traités</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="ecobox" title="Lequel intéresse le décideur">
+<div class="pedago-title">
+Lequel intéresse le décideur
+</div>
+<p>L’<strong>ATT</strong> répond à : le programme a-t-il servi à ceux qui l’ont suivi ?</p>
+<p>L’<strong>ATE</strong> répond à : faudrait-il l’étendre à tous ?</p>
+<p>Ce sont deux questions distinctes, et les deux réponses diffèrent dès que l’effet varie d’un individu à l’autre. <strong>Annoncer un chiffre sans préciser lequel des trois est incomplet.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-décomposition-du-biais">
+<h1>La décomposition du biais</h1>
+<section class="level2" id="ce-que-la-comparaison-naïve-mesure-vraiment">
+<h2 class="anchored" data-anchor-id="ce-que-la-comparaison-naïve-mesure-vraiment">Ce que la comparaison naïve mesure vraiment</h2>
+<div class="definitionbox" title="La décomposition">
+<div class="pedago-title">
+La décomposition
+</div>
+<p><span class="math display">\underbrace{E[Y \mid T{=}1] - E[Y \mid T{=}0]}_{\text{différence observée}} \;=\; \underbrace{\text{ATT}}_{\text{ce qu'on cherche}} \;+\; \underbrace{E[Y(0) \mid T{=}1] - E[Y(0) \mid T{=}0]}_{\text{biais de sélection}}</span></p>
+</div>
+<div class="definitionbox" title="Le biais de sélection">
+<div class="pedago-title">
+Le biais de sélection
+</div>
+<p>C’est l’écart entre traités et non traités <strong>en l’absence de traitement</strong>.</p>
+<p>Il vaut zéro si les deux groupes sont comparables au départ. Sinon, la différence observée mélange l’effet et l’écart préexistant.</p>
+</div>
+</section>
+<section class="level2" id="quatre-individus-entièrement-chiffrés">
+<h2 class="anchored" data-anchor-id="quatre-individus-entièrement-chiffrés">Quatre individus, entièrement chiffrés</h2>
+<div class="examplebox">
+<div class="pedago-title">
+Exemple
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Individu</th>
+<th style="text-align: right;"><span class="math inline">Y(0)</span></th>
+<th style="text-align: right;"><span class="math inline">Y(1)</span></th>
+<th style="text-align: right;">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">10</span></td>
+<td style="text-align: right;"><span class="math inline">14</span></td>
+<td style="text-align: right;"><span class="math inline">+4</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">2</span></td>
+<td style="text-align: right;"><span class="math inline">20</span></td>
+<td style="text-align: right;"><span class="math inline">22</span></td>
+<td style="text-align: right;"><span class="math inline">+2</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">3</span></td>
+<td style="text-align: right;"><span class="math inline">30</span></td>
+<td style="text-align: right;"><span class="math inline">36</span></td>
+<td style="text-align: right;"><span class="math inline">+6</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">4</span></td>
+<td style="text-align: right;"><span class="math inline">40</span></td>
+<td style="text-align: right;"><span class="math inline">44</span></td>
+<td style="text-align: right;"><span class="math inline">+4</span></td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display">\text{ATE} = \frac{4+2+6+4}{4} = 4</span></p>
+</div>
+</section>
+<section class="level2" id="le-programme-sélectionne-les-plus-favorisés">
+<h2 class="anchored" data-anchor-id="le-programme-sélectionne-les-plus-favorisés">Le programme sélectionne les plus favorisés</h2>
+<div class="examplebox">
+<div class="pedago-title">
+Exemple
+</div>
+<p>Supposons que les individus <span class="math inline">3</span> et <span class="math inline">4</span> — ceux dont <span class="math inline">Y(0)</span> est le plus élevé — soient traités.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th>Calcul</th>
+<th style="text-align: right;">Valeur</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">E[Y \mid T{=}1]</span></td>
+<td><span class="math inline">(36 + 44)/2</span></td>
+<td style="text-align: right;"><span class="math inline">40</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">E[Y \mid T{=}0]</span></td>
+<td><span class="math inline">(10 + 20)/2</span></td>
+<td style="text-align: right;"><span class="math inline">15</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Différence observée</strong></td>
+<td></td>
+<td style="text-align: right;"><span class="math inline">\mathbf{25}</span></td>
+</tr>
+<tr class="even">
+<td>ATT</td>
+<td><span class="math inline">(6 + 4)/2</span></td>
+<td style="text-align: right;"><span class="math inline">\mathbf{5}</span></td>
+</tr>
+<tr class="odd">
+<td>Biais de sélection</td>
+<td><span class="math inline">35 - 15</span></td>
+<td style="text-align: right;"><span class="math inline">\mathbf{20}</span></td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display">25 = 5 + 20</span></p>
+<p><strong>La comparaison naïve annonce <span class="math inline">25</span> pour un effet réel de <span class="math inline">5</span>.</strong> Les quatre cinquièmes du chiffre sont du biais.</p>
+</div>
+</section>
+<section class="level2" id="le-sens-du-biais-nest-pas-prévisible">
+<h2 class="anchored" data-anchor-id="le-sens-du-biais-nest-pas-prévisible">Le sens du biais n’est pas prévisible</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Ici, les meilleurs ont été traités : le biais <strong>gonfle</strong> l’effet.</p>
+<p>Dans l’exemple de l’introduction, la formation ciblait les peu qualifiés : le biais <strong>inversait</strong> le signe.</p>
+<p><strong>On ne peut pas corriger un biais dont on ignore le sens.</strong> D’où la nécessité d’un argument d’identification, et non d’un ajustement approximatif.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-hypothèses">
+<h1>Les hypothèses</h1>
+<section class="level2" id="ce-quil-faut-pour-identifier">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-pour-identifier">Ce qu’il faut pour identifier</h2>
+<div class="definitionbox" title="Indépendance conditionnelle">
+<div class="pedago-title">
+Indépendance conditionnelle
+</div>
+<p><span class="math display">\left(Y(0), Y(1)\right) \perp T \mid X</span></p>
+<p><strong>À caractéristiques <span class="math inline">X</span> égales, l’affectation au traitement est indépendante des résultats potentiels.</strong></p>
+<p>On l’appelle aussi <em>ignorabilité</em>, ou hypothèse d’absence de confondant non observé.</p>
+</div>
+<div class="definitionbox" title="Support commun">
+<div class="pedago-title">
+Support commun
+</div>
+<p><span class="math display">0 &lt; P(T = 1 \mid X) &lt; 1</span></p>
+<p>Pour chaque profil <span class="math inline">X</span>, il doit exister des traités <strong>et</strong> des non traités. Sans cela, aucune comparaison n’est possible pour ce profil.</p>
+</div>
+</section>
+<section class="level2" id="sutva">
+<h2 class="anchored" data-anchor-id="sutva">SUTVA</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<p>Deux exigences souvent oubliées :</p>
+<ol type="1">
+<li><strong>Pas d’interférence</strong> — le traitement d’un individu n’affecte pas le résultat d’un autre.</li>
+<li><strong>Un seul traitement</strong> — la version reçue est la même pour tous.</li>
+</ol>
+</div>
+</section>
+<section class="level2" id="quand-sutva-tombe">
+<h2 class="anchored" data-anchor-id="quand-sutva-tombe">Quand SUTVA tombe</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Une formation qui améliore l’employabilité de ses bénéficiaires peut <strong>réduire</strong> les chances des autres candidats : les emplois ne se multiplient pas.</p>
+<p>L’effet mesuré sur les traités surestime alors l’effet d’une généralisation — le gain individuel était en partie un déplacement.</p>
+<p>C’est l’<strong>effet d’équilibre général</strong>, et c’est la limite la plus sérieuse de tout ce cours. Aucune des méthodes des chapitres 4 à 10 ne le traite.</p>
+</div>
+</section>
+<section class="level2" id="une-hypothèse-ne-se-teste-pas">
+<h2 class="anchored" data-anchor-id="une-hypothèse-ne-se-teste-pas">Une hypothèse ne se teste pas</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>L’indépendance conditionnelle porte sur des grandeurs <strong>non observées</strong> : les <span class="math inline">Y(0)</span> des traités.</p>
+<p>Aucun test ne la valide. Elle se défend par l’argument, le contexte institutionnel, et des vérifications indirectes.</p>
+<p><strong>C’est pourquoi une bonne étude causale consacre plus de place à justifier ses hypothèses qu’à présenter ses coefficients.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li><span class="math inline">Y_i(1)</span> et <span class="math inline">Y_i(0)</span> définissent l’effet ; on n’en observe <strong>jamais</strong> qu’un.</li>
+<li><strong>ATE</strong>, <strong>ATT</strong>, <strong>ATU</strong> diffèrent dès que l’effet est hétérogène.</li>
+<li>Différence observée <span class="math inline">=</span> <strong>ATT</strong> <span class="math inline">+</span> <strong>biais de sélection</strong> — ici <span class="math inline">25 = 5 + 20</span>.</li>
+<li>Identifier exige <strong>indépendance conditionnelle</strong>, <strong>support commun</strong> et <strong>SUTVA</strong>.</li>
+<li>Ces hypothèses ne se <strong>testent pas</strong> : elles se défendent.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>L’indépendance conditionnelle exige de savoir <strong>quelles</strong> variables conditionner. Le chapitre 2 donne l’outil qui répond — et montre que certains contrôles sont nuisibles.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="correlation-causalite.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Corrélation et causalité : ce que la régression ne dit pas</span></a>
+<a class="jm-nav-suivant" href="graphes-causaux.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Graphes causaux et variables à ne pas contrôler</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/resultats-potentiels.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/resultats-potentiels-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/resultats-potentiels-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/resultats-potentiels.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

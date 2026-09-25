@@ -1,0 +1,265 @@
+---
+title: "Apprentissage profond"
+subtitle: "Régularisation : décrochage, pénalisation, arrêt précoce"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="jm-actif" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Chapitre 5 : Régularisation : décrochage, pénalisation, arrêt précoce</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="le-problème-des-chiffres">
+<h1>Le problème des chiffres</h1>
+<section class="level2" id="trop-de-paramètres-pour-trop-peu-de-données">
+<h2 class="anchored" data-anchor-id="trop-de-paramètres-pour-trop-peu-de-données">Trop de paramètres pour trop peu de données</h2>
+<div class="intuitionbox" title="Ce que le chapitre 1 a montré">
+<div class="pedago-title">
+Ce que le chapitre 1 a montré
+</div>
+<p>Notre réseau modeste compte <strong><span class="math inline">1\,217</span> paramètres</strong> pour vingt variables d’entrée.</p>
+<p>Avec mille observations, il y a davantage de paramètres que de données. Le chapitre 4 d’<em>Apprentissage statistique</em> l’a établi : dans ce régime, l’ajustement parfait est <strong>automatique</strong> et sans valeur.</p>
+</div>
+<div class="definitionbox" title="Le diagnostic">
+<div class="pedago-title">
+Le diagnostic
+</div>
+<p>Tracer les deux courbes de perte, en apprentissage et en validation, à chaque époque.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Configuration</th>
+<th>Diagnostic</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Les deux baissent ensemble</td>
+<td>apprentissage sain</td>
+</tr>
+<tr class="even">
+<td>Apprentissage baisse, validation <strong>remonte</strong></td>
+<td><strong>sur-ajustement</strong></td>
+</tr>
+<tr class="odd">
+<td>Les deux stagnent haut</td>
+<td>sous-ajustement, ou taux inadapté</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Le point où la validation remonte est le point d’arrêt.</strong> Tout ce chapitre découle de cette observation.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="larrêt-précoce">
+<h1>L’arrêt précoce</h1>
+<section class="level2" id="le-plus-simple-et-le-plus-efficace">
+<h2 class="anchored" data-anchor-id="le-plus-simple-et-le-plus-efficace">Le plus simple, et le plus efficace</h2>
+<div class="definitionbox" title="Arrêt précoce">
+<div class="pedago-title">
+Arrêt précoce
+</div>
+<p>Surveiller la perte de validation à chaque époque, conserver les poids du <strong>meilleur</strong> point, et cesser l’entraînement lorsqu’elle ne s’améliore plus pendant un nombre fixé d’époques — la <strong>patience</strong>.</p>
+</div>
+<div class="intuitionbox" title="Pourquoi cela régularise">
+<div class="pedago-title">
+Pourquoi cela régularise
+</div>
+<p>Les poids partent de valeurs petites et grandissent au fil de l’entraînement.</p>
+<p>Arrêter tôt, c’est <strong>limiter leur amplitude</strong> — donc faire, indirectement, ce que fait une pénalité <span class="math inline">L_2</span>. La différence est qu’aucun coefficient n’est à régler.</p>
+</div>
+<div class="ecobox" title="Le réflexe à installer">
+<div class="pedago-title">
+Le réflexe à installer
+</div>
+<p>L’arrêt précoce est <strong>gratuit</strong> : il n’exige aucun réglage, réduit le temps de calcul, et évite le sur-ajustement.</p>
+<p>Il doit être activé par défaut sur tout entraînement, avant même d’envisager les autres techniques.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-pénalisation-des-poids">
+<h1>La pénalisation des poids</h1>
+<section class="level2" id="le-chapitre-3-dapprentissage-statistique-transposé">
+<h2 class="anchored" data-anchor-id="le-chapitre-3-dapprentissage-statistique-transposé">Le chapitre 3 d’Apprentissage statistique, transposé</h2>
+<div class="definitionbox" title="Décroissance des poids">
+<div class="pedago-title">
+Décroissance des poids
+</div>
+<p>On ajoute à la perte une pénalité sur l’amplitude des paramètres : <span class="math display">L_{\text{total}} = L + \lambda \sum_j w_j^2</span></p>
+<p>C’est exactement la régression <strong>ridge</strong>, appliquée à un réseau. On l’appelle ici <em>weight decay</em>.</p>
+</div>
+<div class="definitionbox" title="Ce que cela produit">
+<div class="pedago-title">
+Ce que cela produit
+</div>
+<p>Des poids <strong>petits</strong> signifient des sorties peu sensibles à de petites variations des entrées — donc une fonction plus lisse, moins capable d’épouser le bruit.</p>
+<p><span class="math inline">\lambda</span> se choisit par validation, comme toujours. Les valeurs usuelles vont de <span class="math inline">10^{-5}</span> à <span class="math inline">10^{-3}</span>.</p>
+</div>
+<div class="intuitionbox" title="Une précaution">
+<div class="pedago-title">
+Une précaution
+</div>
+<p>On ne pénalise <strong>pas les biais</strong>, pour la même raison qu’on ne pénalisait pas la constante en régression : ils ne mesurent aucune sensibilité, et les contraindre déplace inutilement le modèle.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-décrochage">
+<h1>Le décrochage</h1>
+<section class="level2" id="une-idée-qui-surprend">
+<h2 class="anchored" data-anchor-id="une-idée-qui-surprend">Une idée qui surprend</h2>
+<div class="definitionbox" title="Décrochage">
+<div class="pedago-title">
+Décrochage
+</div>
+<p>À chaque passage, <strong>désactiver au hasard</strong> une fraction <span class="math inline">p</span> des neurones d’une couche — typiquement <span class="math inline">p = 0{,}2</span> à <span class="math inline">0{,}5</span>.</p>
+<p>À l’inférence, tous les neurones sont actifs, et les sorties sont mises à l’échelle pour compenser.</p>
+</div>
+<div class="intuitionbox" title="Deux façons de comprendre pourquoi cela marche">
+<div class="pedago-title">
+Deux façons de comprendre pourquoi cela marche
+</div>
+<p><strong>Interdire la co-adaptation</strong> — un neurone ne peut plus compter sur la présence d’un voisin particulier, puisque celui-ci peut disparaître. Chacun doit donc porter une information utile par lui-même.</p>
+<p><strong>Un ensemble implicite</strong> — chaque passage entraîne un sous-réseau différent, et l’inférence les moyenne tous.</p>
+<p>Cette seconde lecture relie directement le décrochage au <strong>bagging</strong> du chapitre 8 d’<em>Apprentissage statistique</em> : moyenner des modèles différents réduit la variance. Ici, l’ensemble est obtenu sans coût.</p>
+</div>
+</section>
+<section class="level2" id="où-le-placer-et-où-ne-pas">
+<h2 class="anchored" data-anchor-id="où-le-placer-et-où-ne-pas">Où le placer, et où ne pas</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Le décrochage se place sur les couches <strong>entièrement connectées</strong>, jamais sur la couche de sortie.</p>
+<p>Il est peu employé dans les réseaux convolutifs modernes, où la normalisation par lot du chapitre 6 remplit un rôle voisin, et où les deux ensemble se gênent parfois.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-autres-leviers">
+<h1>Les autres leviers</h1>
+<section class="level2" id="trois-compléments">
+<h2 class="anchored" data-anchor-id="trois-compléments">Trois compléments</h2>
+<div class="definitionbox" title="L'augmentation des données">
+<div class="pedago-title">
+L’augmentation des données
+</div>
+<p>Créer artificiellement des observations nouvelles par transformations qui <strong>préservent l’étiquette</strong> : rotations et recadrages pour une image, décalages temporels pour une série.</p>
+<p>C’est la régularisation la plus efficace de toutes, parce qu’elle attaque la cause — le manque de données — et non le symptôme.</p>
+</div>
+<div class="definitionbox" title="Réduire le modèle">
+<div class="pedago-title">
+Réduire le modèle
+</div>
+<p>Un réseau plus petit ne peut pas mémoriser. C’est une régularisation directe, souvent négligée par réflexe d’ambition.</p>
+<p>Devant un sur-ajustement, <strong>essayer un réseau plus petit avant d’empiler les techniques</strong> est une démarche saine.</p>
+</div>
+<div class="definitionbox" title="Le bruit">
+<div class="pedago-title">
+Le bruit
+</div>
+<p>Ajouter un léger bruit aux entrées ou aux poids agit comme une régularisation, en interdisant au modèle de s’appuyer sur des détails précis.</p>
+</div>
+<div class="ecobox" title="En quel ordre procéder">
+<div class="pedago-title">
+En quel ordre procéder
+</div>
+<ol type="1">
+<li><strong>Arrêt précoce</strong> — toujours, gratuitement.</li>
+<li>Plus de <strong>données</strong>, ou augmentation.</li>
+<li>Un réseau <strong>plus petit</strong>.</li>
+<li><strong>Weight decay</strong>, puis <strong>décrochage</strong>.</li>
+</ol>
+<p>Empiler les techniques sans ordre rend le diagnostic impossible : on ne sait plus laquelle agit. <strong>Une à la fois, et l’on regarde la courbe.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>Le <strong>diagnostic</strong> se lit sur les deux courbes de perte : la validation qui remonte signale le sur-ajustement.</li>
+<li>L’<strong>arrêt précoce</strong> est gratuit et doit être systématique.</li>
+<li>Le <strong>weight decay</strong> est la régression ridge transposée ; on ne pénalise pas les biais.</li>
+<li>Le <strong>décrochage</strong> empêche la co-adaptation et constitue un ensemble implicite.</li>
+<li><strong>L’augmentation des données</strong> est la plus efficace, car elle traite la cause.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Ces techniques supposent que l’entraînement démarre correctement. Le chapitre 6 traite des deux conditions qui le permettent : initialisation et normalisation.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="retropropagation.qmd">&larr; Chapitre précédent<span class="jm-nav-label">La rétropropagation</span></a>
+<a class="jm-nav-suivant" href="initialisation-normalisation.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Initialisation et normalisation</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/regularisation.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/regularisation-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/regularisation-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/regularisation.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

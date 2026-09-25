@@ -1,0 +1,304 @@
+---
+title: "Inférence causale"
+subtitle: "La régression sur discontinuité"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Inférence causale</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="correlation-causalite.qmd">1. Corrélation et causalité : ce que la régression ne dit pas</a></li>
+<li><a class="" href="resultats-potentiels.qmd">2. Le cadre des résultats potentiels</a></li>
+<li><a class="" href="graphes-causaux.qmd">3. Graphes causaux et variables à ne pas contrôler</a></li>
+<li><a class="" href="experience-aleatoire.qmd">4. L&#x27;expérience aléatoire, référence de toutes les méthodes</a></li>
+<li><a class="" href="score-propension.qmd">5. Appariement et pondération par le score de propension</a></li>
+<li><a class="" href="doubles-differences.qmd">6. Les doubles différences</a></li>
+<li><a class="jm-actif" href="discontinuite.qmd">7. La régression sur discontinuité</a></li>
+<li><a class="" href="variables-instrumentales.qmd">8. Les variables instrumentales, revisitées</a></li>
+<li><a class="" href="controle-synthetique.qmd">9. Le contrôle synthétique</a></li>
+<li><a class="" href="double-ml.qmd">10. Le double machine learning</a></li>
+<li><a class="" href="forets-causales.qmd">11. Effets hétérogènes et forêts causales</a></li>
+<li><a class="" href="decider-incertitude.qmd">12. Décider sous incertitude : de l&#x27;effet estimé à la politique</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Inférence causale et machine learning</h1>
+<p class="subtitle lead">Chapitre 6 : La régression sur discontinuité</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="lidée">
+<h1>L’idée</h1>
+<section class="level2" id="un-seuil-administratif-comme-expérience">
+<h2 class="anchored" data-anchor-id="un-seuil-administratif-comme-expérience">Un seuil administratif comme expérience</h2>
+<div class="definitionbox" title="La situation">
+<div class="pedago-title">
+La situation
+</div>
+<p>Le traitement est attribué selon qu’une variable continue — la <strong>variable de forçage</strong> — dépasse ou non un <strong>seuil</strong> fixé.</p>
+<p>Un score d’éligibilité, un âge, un revenu, un nombre d’habitants.</p>
+</div>
+<div class="intuitionbox" title="L'argument, en une phrase">
+<div class="pedago-title">
+L’argument, en une phrase
+</div>
+<p>Deux candidats séparés d’un point de score sont <strong>presque identiques</strong> en tout — motivation, aptitude, situation.</p>
+<p>Le seuil les sépare pourtant : l’un reçoit le programme, l’autre non. <strong>Au voisinage immédiat du seuil, l’attribution est aussi bonne qu’un tirage au sort.</strong></p>
+</div>
+<div class="examplebox" title="Notre programme de formation">
+<div class="pedago-title">
+Notre programme de formation
+</div>
+<p>Il est réservé aux candidats dont le score d’éligibilité atteint <span class="math inline">50</span>.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Position</th>
+<th style="text-align: right;">Taux d’emploi</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Juste <strong>sous</strong> le seuil</td>
+<td style="text-align: right;"><span class="math inline">40\,\%</span></td>
+</tr>
+<tr class="even">
+<td>Juste <strong>au-dessus</strong></td>
+<td style="text-align: right;"><span class="math inline">52\,\%</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Effet local</strong></td>
+<td style="text-align: right;"><span class="math inline">\mathbf{+12}</span> <strong>points</strong></td>
+</tr>
+</tbody>
+</table>
+<p>L’écart ne peut pas s’expliquer par les caractéristiques : à un point de score près, les deux groupes sont comparables.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-deux-variantes">
+<h1>Les deux variantes</h1>
+<section class="level2" id="nette-et-floue">
+<h2 class="anchored" data-anchor-id="nette-et-floue">Nette et floue</h2>
+<div class="definitionbox" title="Discontinuité nette">
+<div class="pedago-title">
+Discontinuité nette
+</div>
+<p>Le seuil détermine <strong>entièrement</strong> le traitement : la probabilité passe de <span class="math inline">0</span> à <span class="math inline">1</span>.</p>
+<p>L’effet est le saut de la variable de résultat au seuil.</p>
+</div>
+<div class="definitionbox" title="Discontinuité floue">
+<div class="pedago-title">
+Discontinuité floue
+</div>
+<p>Le seuil <strong>modifie</strong> la probabilité sans la porter à <span class="math inline">1</span> — des éligibles renoncent, des non-éligibles obtiennent une dérogation.</p>
+<p>On divise alors le saut du résultat par le saut de la probabilité de traitement. C’est un estimateur de variable instrumentale, que le chapitre 7 formalise.</p>
+</div>
+<div class="ecobox" title="Le cas flou est le plus fréquent">
+<div class="pedago-title">
+Le cas flou est le plus fréquent
+</div>
+<p>Peu de dispositifs sont appliqués sans exception. Repérer si la discontinuité est nette ou floue est donc le premier travail — et il se fait en traçant simplement la probabilité de traitement contre la variable de forçage.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-vérifications">
+<h1>Les vérifications</h1>
+<section class="level2" id="ce-qui-rend-la-stratégie-crédible">
+<h2 class="anchored" data-anchor-id="ce-qui-rend-la-stratégie-crédible">Ce qui rend la stratégie crédible</h2>
+<div class="definitionbox" title="Trois contrôles indispensables">
+<div class="pedago-title">
+Trois contrôles indispensables
+</div>
+<ol type="1">
+<li><strong>Continuité des covariables</strong> — les caractéristiques antérieures ne doivent pas sauter au seuil.</li>
+<li><strong>Densité de la variable de forçage</strong> — pas d’accumulation anormale d’un côté.</li>
+<li><strong>Seuils placebo</strong> — appliquer la méthode à de faux seuils ne doit rien montrer.</li>
+</ol>
+</div>
+<div class="definitionbox" title="La manipulation, menace principale">
+<div class="pedago-title">
+La manipulation, menace principale
+</div>
+<p>Si les individus peuvent <strong>contrôler précisément</strong> leur position par rapport au seuil, tout s’effondre : ceux qui parviennent à le franchir diffèrent de ceux qui échouent.</p>
+<p>Le symptôme est visible : un <strong>amoncellement</strong> juste au-dessus du seuil, et un creux juste en dessous.</p>
+</div>
+<div class="intuitionbox" title="Contrôler approximativement ne suffit pas à invalider">
+<div class="pedago-title">
+Contrôler approximativement ne suffit pas à invalider
+</div>
+<p>On peut viser un seuil sans l’atteindre exactement — un candidat sait qu’il doit réviser, il ne sait pas s’il obtiendra <span class="math inline">49</span> ou <span class="math inline">51</span>.</p>
+<p>C’est cette <strong>imprécision résiduelle</strong> qui sauve la méthode : elle recrée du hasard là où l’intention ne suffit pas. La question à poser n’est donc pas « les gens veulent-ils franchir le seuil ? » — évidemment oui — mais « peuvent-ils s’y placer <strong>au point près</strong> ? ».</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-mise-en-œuvre">
+<h1>La mise en œuvre</h1>
+<section class="level2" id="trois-choix-qui-comptent">
+<h2 class="anchored" data-anchor-id="trois-choix-qui-comptent">Trois choix qui comptent</h2>
+<div class="definitionbox" title="La fenêtre">
+<div class="pedago-title">
+La fenêtre
+</div>
+<p>On estime <strong>localement</strong>, sur une bande autour du seuil.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Fenêtre</th>
+<th>Biais</th>
+<th>Variance</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Étroite</td>
+<td>faible</td>
+<td><strong>élevée</strong></td>
+</tr>
+<tr class="even">
+<td>Large</td>
+<td><strong>élevé</strong></td>
+<td>faible</td>
+</tr>
+</tbody>
+</table>
+<p>C’est le compromis biais-variance du chapitre 1 d’<em>Apprentissage statistique</em>, sous une forme nouvelle.</p>
+</div>
+<div class="definitionbox" title="La forme fonctionnelle">
+<div class="pedago-title">
+La forme fonctionnelle
+</div>
+<p>On ajuste séparément de chaque côté du seuil, généralement par un polynôme <strong>de degré un ou deux</strong>.</p>
+<p>Les degrés élevés produisent des artefacts au bord et sont aujourd’hui déconseillés.</p>
+</div>
+</section>
+<section class="level2" id="la-robustesse">
+<h2 class="anchored" data-anchor-id="la-robustesse">La robustesse</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<p>Le résultat doit être présenté pour <strong>plusieurs fenêtres</strong> et plusieurs degrés. Un effet qui disparaît quand on change légèrement la fenêtre n’est pas un effet.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-portée-du-résultat">
+<h1>La portée du résultat</h1>
+<section class="level2" id="un-effet-local-et-il-faut-le-dire">
+<h2 class="anchored" data-anchor-id="un-effet-local-et-il-faut-le-dire">Un effet local, et il faut le dire</h2>
+<div class="definitionbox" title="Effet local au seuil">
+<div class="pedago-title">
+Effet local au seuil
+</div>
+<p>La régression sur discontinuité identifie l’effet <strong>pour les individus situés au voisinage du seuil</strong>, et pour eux seulement.</p>
+</div>
+<div class="ecobox" title="Ce que cela implique concrètement">
+<div class="pedago-title">
+Ce que cela implique concrètement
+</div>
+<p>Notre effet de douze points concerne les candidats dont le score avoisine <span class="math inline">50</span>.</p>
+<p>Il ne dit <strong>rien</strong> de ce que le programme ferait à quelqu’un dont le score est de <span class="math inline">20</span> — dont les besoins et la capacité à en tirer parti sont sans doute très différents.</p>
+<p><strong>Répondre à « faut-il abaisser le seuil ? » exige donc de l’extrapoler</strong>, et cette extrapolation n’est pas garantie par la méthode.</p>
+</div>
+<div class="intuitionbox" title="L'arbitrage entre crédibilité et portée">
+<div class="pedago-title">
+L’arbitrage entre crédibilité et portée
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th>Crédibilité</th>
+<th>Portée</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Discontinuité</td>
+<td><strong>très élevée</strong></td>
+<td><strong>étroite</strong></td>
+</tr>
+<tr class="even">
+<td>Appariement (ch. 5)</td>
+<td>faible</td>
+<td>large</td>
+</tr>
+</tbody>
+</table>
+<p>Cet arbitrage traverse tout le cours. <strong>Les stratégies les plus convaincantes identifient les effets les plus étroits.</strong> Il n’existe pas de méthode à la fois crédible et universelle.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>Un <strong>seuil</strong> administratif sépare des individus quasi identiques : au voisinage, l’attribution est quasi aléatoire.</li>
+<li>Sur notre programme : <span class="math inline">52 - 40 = \mathbf{12}</span> points d’effet local.</li>
+<li><strong>Nette</strong> ou <strong>floue</strong> selon que le seuil détermine ou modifie seulement le traitement.</li>
+<li>Vérifier la <strong>continuité des covariables</strong>, la <strong>densité</strong>, et des <strong>seuils placebo</strong> ; la manipulation est la menace principale.</li>
+<li>L’effet identifié est <strong>local au seuil</strong> — grande crédibilité, portée étroite.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>La discontinuité floue a introduit une division par un saut de probabilité. Le chapitre 7 généralise cette idée : les variables instrumentales.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="doubles-differences.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Les doubles différences</span></a>
+<a class="jm-nav-suivant" href="variables-instrumentales.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Les variables instrumentales, revisitées</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/discontinuite.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/discontinuite-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/discontinuite-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/discontinuite.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

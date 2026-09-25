@@ -1,0 +1,267 @@
+---
+title: "Inférence causale"
+subtitle: "Appariement et pondération par le score de propension"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Inférence causale</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="correlation-causalite.qmd">1. Corrélation et causalité : ce que la régression ne dit pas</a></li>
+<li><a class="" href="resultats-potentiels.qmd">2. Le cadre des résultats potentiels</a></li>
+<li><a class="" href="graphes-causaux.qmd">3. Graphes causaux et variables à ne pas contrôler</a></li>
+<li><a class="" href="experience-aleatoire.qmd">4. L&#x27;expérience aléatoire, référence de toutes les méthodes</a></li>
+<li><a class="jm-actif" href="score-propension.qmd">5. Appariement et pondération par le score de propension</a></li>
+<li><a class="" href="doubles-differences.qmd">6. Les doubles différences</a></li>
+<li><a class="" href="discontinuite.qmd">7. La régression sur discontinuité</a></li>
+<li><a class="" href="variables-instrumentales.qmd">8. Les variables instrumentales, revisitées</a></li>
+<li><a class="" href="controle-synthetique.qmd">9. Le contrôle synthétique</a></li>
+<li><a class="" href="double-ml.qmd">10. Le double machine learning</a></li>
+<li><a class="" href="forets-causales.qmd">11. Effets hétérogènes et forêts causales</a></li>
+<li><a class="" href="decider-incertitude.qmd">12. Décider sous incertitude : de l&#x27;effet estimé à la politique</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Inférence causale et machine learning</h1>
+<p class="subtitle lead">Chapitre 4 : Appariement et pondération par le score de propension</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="comparer-ce-qui-est-comparable">
+<h1>Comparer ce qui est comparable</h1>
+<section class="level2" id="lidée">
+<h2 class="anchored" data-anchor-id="lidée">L’idée</h2>
+<div class="definitionbox" title="Le principe">
+<div class="pedago-title">
+Le principe
+</div>
+<p>Sous indépendance conditionnelle, il suffit de comparer traités et non traités <strong>à caractéristiques <span class="math inline">X</span> égales</strong>, puis d’agréger.</p>
+<p><span class="math display">\text{ATT} = E_X\!\left[\, E[Y \mid T{=}1, X] - E[Y \mid T{=}0, X] \,\middle|\, T = 1 \right]</span></p>
+</div>
+<div class="definitionbox" title="Appariement exact">
+<div class="pedago-title">
+Appariement exact
+</div>
+<p>Pour chaque traité, trouver un non traité ayant <strong>exactement</strong> les mêmes caractéristiques, et comparer.</p>
+</div>
+<div class="intuitionbox" title="Pourquoi cela échoue vite">
+<div class="pedago-title">
+Pourquoi cela échoue vite
+</div>
+<p>Avec cinq variables binaires, il y a déjà <span class="math inline">32</span> profils. Avec dix, plus de mille. Avec une variable continue, aucun appariement exact n’existe.</p>
+<p>C’est la <strong>malédiction de la dimension</strong> du chapitre 1 d’<em>Apprentissage statistique</em>, rencontrée ici sous une autre forme.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-score-de-propension">
+<h1>Le score de propension</h1>
+<section class="level2" id="résumer-x-en-un-seul-nombre">
+<h2 class="anchored" data-anchor-id="résumer-x-en-un-seul-nombre">Résumer X en un seul nombre</h2>
+<div class="definitionbox" title="Score de propension">
+<div class="pedago-title">
+Score de propension
+</div>
+<p><span class="math display">e(X) = P(T = 1 \mid X)</span></p>
+<p>C’est la probabilité d’être traité, compte tenu des caractéristiques observées.</p>
+</div>
+<div class="definitionbox" title="Le théorème de Rosenbaum et Rubin">
+<div class="pedago-title">
+Le théorème de Rosenbaum et Rubin
+</div>
+<p>Si l’indépendance conditionnelle vaut sachant <span class="math inline">X</span>, alors elle vaut sachant <span class="math inline">e(X)</span> seul :</p>
+<p><span class="math display">\left(Y(0), Y(1)\right) \perp T \mid X \;\;\Longrightarrow\;\; \left(Y(0), Y(1)\right) \perp T \mid e(X)</span></p>
+</div>
+<div class="intuitionbox" title="Pourquoi ce résultat est précieux">
+<div class="pedago-title">
+Pourquoi ce résultat est précieux
+</div>
+<p>Il ramène un problème de <strong>dimension quelconque</strong> à un problème de <strong>dimension un</strong>.</p>
+<p>Apparier sur vingt variables est impossible ; apparier sur un score compris entre <span class="math inline">0</span> et <span class="math inline">1</span> est immédiat.</p>
+<p><strong>Le score de propension ne crée aucune information nouvelle</strong> : il réorganise celle de <span class="math inline">X</span>. Si <span class="math inline">X</span> est insuffisant, le score l’est aussi.</p>
+</div>
+</section>
+<section class="level2" id="trois-usages">
+<h2 class="anchored" data-anchor-id="trois-usages">Trois usages</h2>
+<div class="definitionbox" title="Ce qu'on peut en faire">
+<div class="pedago-title">
+Ce qu’on peut en faire
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Méthode</th>
+<th>Principe</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Appariement</strong></td>
+<td>associer chaque traité au non traité de score le plus proche</td>
+</tr>
+<tr class="even">
+<td><strong>Stratification</strong></td>
+<td>découper en tranches de score, comparer dans chacune</td>
+</tr>
+<tr class="odd">
+<td><strong>Pondération</strong></td>
+<td>repondérer les observations pour équilibrer les groupes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="definitionbox" title="La pondération par l'inverse de la probabilité">
+<div class="pedago-title">
+La pondération par l’inverse de la probabilité
+</div>
+<p>On donne à chaque observation un poids <span class="math inline">1/e(X)</span> si elle est traitée, <span class="math inline">1/(1-e(X))</span> sinon.</p>
+<p>Les traités <strong>rares</strong> pour leur profil reçoivent un poids élevé, et réciproquement : la population repondérée ressemble à ce qu’aurait produit un tirage au sort.</p>
+</div>
+</section>
+<section class="level2" id="le-danger-de-cette-pondération">
+<h2 class="anchored" data-anchor-id="le-danger-de-cette-pondération">Le danger de cette pondération</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Un score très proche de <span class="math inline">0</span> ou de <span class="math inline">1</span> produit un poids <strong>immense</strong>.</p>
+<p>Quelques observations dominent alors toute l’estimation, dont la variance explose. Deux remèdes : <strong>écrêter</strong> les poids extrêmes, ou <strong>restreindre</strong> l’analyse à la zone de support commun.</p>
+<p>Un tableau de poids doit toujours être examiné avant de publier un résultat.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-vérification-qui-compte">
+<h1>La vérification qui compte</h1>
+<section class="level2" id="léquilibre-et-non-lajustement-du-score">
+<h2 class="anchored" data-anchor-id="léquilibre-et-non-lajustement-du-score">L’équilibre, et non l’ajustement du score</h2>
+<div class="definitionbox" title="Ce qu'il faut vérifier">
+<div class="pedago-title">
+Ce qu’il faut vérifier
+</div>
+<p>Après appariement ou pondération, comparer la distribution de <strong>chaque</strong> variable entre les deux groupes.</p>
+<p>La <strong>différence standardisée</strong> est l’indicateur usuel : on la souhaite inférieure à <span class="math inline">0{,}1</span> en valeur absolue.</p>
+</div>
+<div class="intuitionbox" title="L'erreur la plus fréquente">
+<div class="pedago-title">
+L’erreur la plus fréquente
+</div>
+<p>On juge parfois le score de propension à sa capacité à <strong>prédire</strong> le traitement — son AUC.</p>
+<p>C’est un contresens. Un score qui prédit parfaitement le traitement signifie qu’il n’existe <strong>aucun</strong> chevauchement : traités et non traités sont parfaitement séparables, donc incomparables.</p>
+<p><strong>Le score doit équilibrer, pas prédire.</strong> Un excellent classifieur fait ici un mauvais score de propension.</p>
+</div>
+<div class="definitionbox" title="Le diagnostic de support commun">
+<div class="pedago-title">
+Le diagnostic de support commun
+</div>
+<p>Tracer les distributions du score dans les deux groupes. Elles doivent <strong>se chevaucher</strong> largement.</p>
+<p>Les zones sans chevauchement doivent être écartées de l’analyse — et cela change la population sur laquelle porte le résultat, ce qu’il faut dire.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-limite-de-fond">
+<h1>La limite de fond</h1>
+<section class="level2" id="ce-que-la-méthode-ne-peut-pas-faire">
+<h2 class="anchored" data-anchor-id="ce-que-la-méthode-ne-peut-pas-faire">Ce que la méthode ne peut pas faire</h2>
+<div class="ecobox" title="Elle ne traite que l'observable">
+<div class="pedago-title">
+Elle ne traite que l’observable
+</div>
+<p>Appariement et pondération reposent entièrement sur l’<strong>indépendance conditionnelle</strong> : toutes les variables qui affectent à la fois le traitement et le résultat doivent être <strong>observées</strong>.</p>
+<p>Si la motivation détermine la participation à la formation <strong>et</strong> l’emploi, et qu’elle n’est pas mesurée, aucune sophistication du score n’y remédie.</p>
+<p><strong>Ces méthodes ne créent pas d’identification : elles exploitent celle qu’on suppose.</strong></p>
+</div>
+<div class="intuitionbox" title="Pourquoi elles restent utiles">
+<div class="pedago-title">
+Pourquoi elles restent utiles
+</div>
+<p>Elles conviennent lorsqu’on dispose de données administratives riches, où les déterminants principaux sont mesurés.</p>
+<p>Elles rendent aussi <strong>transparent</strong> ce qu’une régression fait implicitement : la régression pondère elle aussi, mais sans montrer ses poids ni son support commun. Le score de propension oblige à regarder les deux.</p>
+</div>
+</section>
+<section class="level2" id="le-contraste-avec-les-chapitres-suivants">
+<h2 class="anchored" data-anchor-id="le-contraste-avec-les-chapitres-suivants">Le contraste avec les chapitres suivants</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<p>Les chapitres 5 à 8 changent de stratégie : au lieu de supposer l’observable suffisant, ils exploitent une <strong>source de variation extérieure</strong> — le temps, un seuil, un instrument.</p>
+<p>C’est un argument d’identification plus solide, quand une telle source existe.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>L’appariement <strong>exact</strong> échoue par la dimension.</li>
+<li>Le <strong>score de propension</strong> <span class="math inline">e(X) = P(T{=}1 \mid X)</span> ramène le problème à une dimension.</li>
+<li>Trois usages : appariement, stratification, <strong>pondération</strong> par l’inverse de la probabilité.</li>
+<li>On vérifie l’<strong>équilibre</strong> des covariables, pas la capacité prédictive du score.</li>
+<li>Tout repose sur l’<strong>indépendance conditionnelle</strong> : la méthode ne traite que l’observable.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Le chapitre 5 exploite une autre source de comparaison : non plus des individus semblables, mais <strong>le même individu avant et après</strong>, corrigé de ce qui aurait bougé de toute façon.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="experience-aleatoire.qmd">&larr; Chapitre précédent<span class="jm-nav-label">L&#x27;expérience aléatoire, référence de toutes les méthodes</span></a>
+<a class="jm-nav-suivant" href="doubles-differences.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Les doubles différences</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/score-propension.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/score-propension-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/score-propension-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/score-propension.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

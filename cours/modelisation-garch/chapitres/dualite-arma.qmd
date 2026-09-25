@@ -1,0 +1,338 @@
+---
+title: "Modélisation GARCH de la volatilité"
+subtitle: "La dualité GARCH et ARMA sur les carrés"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="faits-stylises.qmd">1. Mandelbrot et les faits stylisés des rentabilités</a></li>
+<li><a class="" href="clusters-effet-levier.qmd">2. Regroupement de la volatilité et effet de levier</a></li>
+<li><a class="" href="variance-conditionnelle.qmd">3. Le cadre de la variance conditionnelle</a></li>
+<li><a class="" href="modele-arch.qmd">4. Le modèle ARCH(q) d&#x27;Engle</a></li>
+<li><a class="" href="proprietes-arch.qmd">5. Propriétés statistiques de l&#x27;ARCH</a></li>
+<li><a class="" href="detecter-arch.qmd">6. Détecter et identifier un effet ARCH</a></li>
+<li><a class="" href="modele-garch.qmd">7. Le modèle GARCH(p,q) de Bollerslev</a></li>
+<li><a class="" href="persistance.qmd">8. Stationnarité, persistance et variance de long terme</a></li>
+<li><a class="jm-actif" href="dualite-arma.qmd">9. La dualité GARCH et ARMA sur les carrés</a></li>
+<li><a class="" href="loi-innovations.qmd">10. La loi des innovations</a></li>
+<li><a class="" href="egarch.qmd">11. L&#x27;effet de levier et l&#x27;EGARCH de Nelson</a></li>
+<li><a class="" href="gjr-tgarch.qmd">12. GJR-GARCH, TGARCH et la courbe d&#x27;impact</a></li>
+<li><a class="" href="igarch-memoire-longue.qmd">13. IGARCH, GARCH-M et la mémoire longue</a></li>
+<li><a class="" href="estimation.qmd">14. L&#x27;estimation par quasi-maximum de vraisemblance</a></li>
+<li><a class="" href="validation.qmd">15. La validation d&#x27;un modèle de volatilité</a></li>
+<li><a class="" href="prevision-volatilite.qmd">16. La prévision de volatilité</a></li>
+<li><a class="" href="value-at-risk.qmd">17. De la volatilité à la Value at Risk</a></li>
+<li><a class="" href="mise-en-oeuvre-r.qmd">18. Mise en œuvre sur R</a></li>
+<li><a class="" href="mise-en-oeuvre-python.qmd">19. Mise en œuvre sur Python</a></li>
+<li><a class="" href="etude-de-cas-r.qmd">20. Étude de cas sur données réelles — R</a></li>
+<li><a class="" href="etude-de-cas-python.qmd">21. Étude de cas sur données réelles — Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Chapitre 8 : La dualité GARCH et ARMA sur les carrés</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="un-résultat-qui-réutilise-tout-le-cours-précédent">
+<h2 class="anchored" data-anchor-id="un-résultat-qui-réutilise-tout-le-cours-précédent">Un résultat qui réutilise tout le cours précédent</h2>
+<div class="intuitionbox" title="Ce que ce chapitre démontre">
+<div class="pedago-title">
+Ce que ce chapitre démontre
+</div>
+<p>Un GARCH(p,q) sur <span class="math inline">\varepsilon_t</span> <strong>est</strong> un ARMA(<span class="math inline">\max(p,q)</span>, <span class="math inline">p</span>) sur <span class="math inline">\varepsilon_t^2</span>.</p>
+<p>Ce n’est pas une ressemblance : c’est la même équation, réécrite. Toute la théorie du cours ARMA s’applique donc directement, sans rien redémontrer.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-transformation">
+<h1>La transformation</h1>
+<section class="level2" id="linnovation-de-la-variance">
+<h2 class="anchored" data-anchor-id="linnovation-de-la-variance">L’innovation de la variance</h2>
+<div class="definitionbox" title="Définition">
+<div class="pedago-title">
+Définition
+</div>
+<p><span class="math display"> v_t = \varepsilon_t^2 - h_t . </span></p>
+</div>
+<p>Trois propriétés, toutes immédiates :</p>
+<p><span class="math display"> \mathrm{E}\big(v_t \mid \Omega_{t-1}\big) = \mathrm{E}\big(\varepsilon_t^2\mid\Omega_{t-1}\big) - h_t = h_t - h_t = 0 </span></p>
+<p><span class="math display"> \mathrm{Cov}(v_t, v_{t-k}) = 0 \quad (k \ge 1) </span></p>
+<div class="definitionbox" title="$v_t$ est un bruit blanc">
+<div class="pedago-title">
+<span class="math inline">v_t</span> est un bruit blanc
+</div>
+<p>Centré, non corrélé. C’est la <strong>surprise</strong> de la variance : l’écart entre le carré réalisé et ce qu’on en attendait la veille.</p>
+</div>
+</section>
+<section class="level2" id="linnovation-de-la-variance-suite">
+<h2 class="anchored" data-anchor-id="linnovation-de-la-variance-suite">L’innovation de la variance (suite)</h2>
+<div class="intuitionbox" title="Une réserve importante">
+<div class="pedago-title">
+Une réserve importante
+</div>
+<p><span class="math inline">v_t</span> est un bruit blanc <strong>faible</strong>, et sa variance n’est <strong>pas constante</strong> : elle dépend de <span class="math inline">h_t^2</span>. C’est un bruit blanc hétéroscédastique.</p>
+<p>Cela ne gêne pas l’algèbre qui suit, mais explique pourquoi on n’estimera <strong>pas</strong> le GARCH par les moindres carrés sur les carrés — chapitre 13.</p>
+</div>
+</section>
+<section class="level2" id="la-réécriture">
+<h2 class="anchored" data-anchor-id="la-réécriture">La réécriture</h2>
+<p>Partons du GARCH(1,1) et remplaçons <span class="math inline">h_t</span> par <span class="math inline">\varepsilon_t^2 - v_t</span> et <span class="math inline">h_{t-1}</span> par <span class="math inline">\varepsilon_{t-1}^2 - v_{t-1}</span> :</p>
+<p><span class="math display"> \varepsilon_t^2 - v_t = \omega + \alpha_1\varepsilon_{t-1}^2 + \beta_1\big(\varepsilon_{t-1}^2 - v_{t-1}\big) </span></p>
+<p>En regroupant :</p>
+<div class="definitionbox" title="Le résultat">
+<div class="pedago-title">
+Le résultat
+</div>
+<p><span class="math display"> \boxed{\ \varepsilon_t^2 = \omega + (\alpha_1+\beta_1)\,\varepsilon_{t-1}^2 + v_t - \beta_1\,v_{t-1}\ } </span></p>
+</div>
+</section>
+<section class="level2" id="reconnaître-la-forme">
+<h2 class="anchored" data-anchor-id="reconnaître-la-forme">Reconnaître la forme</h2>
+<div class="intuitionbox" title="C'est un ARMA(1,1)">
+<div class="pedago-title">
+C’est un ARMA(1,1)
+</div>
+<p>Avec les notations du cours précédent, en posant <span class="math inline">y_t = \varepsilon_t^2</span> : <span class="math display"> y_t = \theta + \underbrace{(\alpha_1+\beta_1)}_{\text{coefficient AR}}\,y_{t-1} + v_t \underbrace{-\ \beta_1}_{\text{coefficient MA}}\,v_{t-1} . </span></p>
+</div>
+<div class="definitionbox" title="La correspondance des paramètres">
+<div class="pedago-title">
+La correspondance des paramètres
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>GARCH(1,1)</th>
+<th>ARMA(1,1) sur <span class="math inline">\varepsilon_t^2</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\alpha_1 + \beta_1</span></td>
+<td>coefficient autorégressif</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">-\beta_1</span></td>
+<td>coefficient de moyenne mobile</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\omega</span></td>
+<td>constante</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="le-cas-général">
+<h2 class="anchored" data-anchor-id="le-cas-général">Le cas général</h2>
+<div class="definitionbox" title="GARCH(p,q) et ARMA">
+<div class="pedago-title">
+GARCH(p,q) et ARMA
+</div>
+<p><span class="math display"> \varepsilon_t^2 = \omega + \sum_{i=1}^{\max(p,q)}(\alpha_i+\beta_i)\,\varepsilon_{t-i}^2 + v_t - \sum_{j=1}^{p}\beta_j\,v_{t-j} , </span> soit un <strong>ARMA(<span class="math inline">\max(p,q)</span>, <span class="math inline">p</span>)</strong> sur les carrés, avec la convention <span class="math inline">\alpha_i = 0</span> pour <span class="math inline">i&gt;q</span> et <span class="math inline">\beta_j=0</span> pour <span class="math inline">j&gt;p</span>.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-que-montre-la-dualité">
+<h1>Ce que montre la dualité</h1>
+<section class="level2" id="la-condition-de-stationnarité-retrouvée">
+<h2 class="anchored" data-anchor-id="la-condition-de-stationnarité-retrouvée">La condition de stationnarité, retrouvée</h2>
+<div class="intuitionbox" title="Sans aucun calcul nouveau">
+<div class="pedago-title">
+Sans aucun calcul nouveau
+</div>
+<p>Un ARMA(1,1) est stationnaire si son coefficient autorégressif est de module inférieur à 1. Ici ce coefficient vaut <span class="math inline">\alpha_1+\beta_1</span>.</p>
+<p>D’où <span class="math inline">\alpha_1+\beta_1&lt;1</span> — la condition du chapitre 7, obtenue comme corollaire du cours précédent.</p>
+</div>
+</section>
+<section class="level2" id="lacf-des-carrés-retrouvée">
+<h2 class="anchored" data-anchor-id="lacf-des-carrés-retrouvée">L’ACF des carrés, retrouvée</h2>
+<div class="definitionbox" title="Résultat immédiat">
+<div class="pedago-title">
+Résultat immédiat
+</div>
+<p>Un ARMA(1,1) a une ACF qui décroît géométriquement au taux du coefficient AR dès le retard 2. Donc <span class="math display"> \mathrm{Corr}\big(\varepsilon_t^2,\varepsilon_{t-k}^2\big) \ \propto\ (\alpha_1+\beta_1)^{\,k} . </span></p>
+</div>
+<div class="ecobox" title="L'explication du fait 4">
+<div class="pedago-title">
+L’explication du fait 4
+</div>
+<p>Avec <span class="math inline">\pi = 0{,}99</span>, l’ACF des carrés vaut encore <span class="math inline">0{,}82</span> au retard 20. C’est précisément la décroissance lente observée sur toutes les séries financières.</p>
+<p>Le fait stylisé 4 n’est donc pas un fait supplémentaire : c’est la conséquence directe d’une persistance élevée.</p>
+</div>
+</section>
+<section class="level2" id="pourquoi-larch-ne-suffisait-pas">
+<h2 class="anchored" data-anchor-id="pourquoi-larch-ne-suffisait-pas">Pourquoi l’ARCH ne suffisait pas</h2>
+<div class="intuitionbox" title="Le parallèle est complet">
+<div class="pedago-title">
+Le parallèle est complet
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Sur les carrés</th>
+<th>Modèle sur <span class="math inline">\varepsilon_t</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MA(q)</td>
+<td>ARCH(q)</td>
+</tr>
+<tr class="even">
+<td>ARMA(1,1)</td>
+<td>GARCH(1,1)</td>
+</tr>
+</tbody>
+</table>
+<p>Un MA(q) a une mémoire strictement finie ; un ARMA(1,1) a une mémoire infinie avec deux paramètres. Le passage de l’ARCH au GARCH <strong>est</strong> le passage du MA à l’ARMA.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-que-permet-la-dualité">
+<h1>Ce que permet la dualité</h1>
+<section class="level2" id="identifier-les-ordres">
+<h2 class="anchored" data-anchor-id="identifier-les-ordres">Identifier les ordres</h2>
+<div class="definitionbox" title="Une méthode pratique">
+<div class="pedago-title">
+Une méthode pratique
+</div>
+<p>Appliquer aux carrés des résidus la table d’identification du cours ARMA :</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>ACF de <span class="math inline">\hat\varepsilon_t^2</span></th>
+<th>PACF de <span class="math inline">\hat\varepsilon_t^2</span></th>
+<th>Modèle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>coupe après <span class="math inline">q</span></td>
+<td>décroît</td>
+<td>ARCH(q)</td>
+</tr>
+<tr class="even">
+<td>décroît</td>
+<td>décroît</td>
+<td>GARCH(p,q)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="ecobox" title="Ce qu'on observe presque toujours">
+<div class="pedago-title">
+Ce qu’on observe presque toujours
+</div>
+<p>Les deux décroissent. C’est la signature du cas mixte — donc d’un GARCH, non d’un ARCH. Et comme dans le cours ARMA, l’ambiguïté sur <span class="math inline">p</span> et <span class="math inline">q</span> se tranche par les critères d’information.</p>
+</div>
+</section>
+<section class="level2" id="une-estimation-rapide-mais-à-éviter">
+<h2 class="anchored" data-anchor-id="une-estimation-rapide-mais-à-éviter">Une estimation rapide, mais à éviter</h2>
+<div class="intuitionbox" title="La tentation">
+<div class="pedago-title">
+La tentation
+</div>
+<p>Puisque c’est un ARMA, pourquoi ne pas l’estimer comme tel — par moindres carrés sur <span class="math inline">\hat\varepsilon_t^2</span> ?</p>
+</div>
+<div class="definitionbox" title="Trois raisons de ne pas le faire">
+<div class="pedago-title">
+Trois raisons de ne pas le faire
+</div>
+<ol type="1">
+<li><span class="math inline">v_t</span> est <strong>fortement hétéroscédastique</strong> : sa variance dépend de <span class="math inline">h_t^2</span>. Les MCO sont alors très inefficaces.</li>
+<li>Rien ne garantit que les estimations respectent <span class="math inline">\omega&gt;0</span>, <span class="math inline">\alpha_1 \ge 0</span>, <span class="math inline">\beta_1 \ge 0</span>.</li>
+<li>La loi de <span class="math inline">v_t</span> est très asymétrique, ce qui dégrade encore l’inférence.</li>
+</ol>
+</div>
+<div class="ecobox" title="À quoi cela sert quand même">
+<div class="pedago-title">
+À quoi cela sert quand même
+</div>
+<p>À obtenir des <strong>valeurs initiales</strong> pour l’optimiseur du maximum de vraisemblance, et à comprendre pourquoi les logiciels convergent vite : ils partent d’un point déjà raisonnable.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 8">
+<div class="pedago-title">
+L’essentiel du chapitre 8
+</div>
+<ul>
+<li><span class="math inline">v_t = \varepsilon_t^2 - h_t</span> est un bruit blanc <strong>hétéroscédastique</strong> : la surprise de la variance.</li>
+<li>Un GARCH(1,1) sur <span class="math inline">\varepsilon_t</span> <strong>est</strong> un ARMA(1,1) sur <span class="math inline">\varepsilon_t^2</span>, de coefficient AR <span class="math inline">\alpha_1+\beta_1</span> et de coefficient MA <span class="math inline">-\beta_1</span>.</li>
+<li>En général : GARCH(p,q) <span class="math inline">\iff</span> ARMA(<span class="math inline">\max(p,q)</span>, <span class="math inline">p</span>) sur les carrés.</li>
+<li>La condition <span class="math inline">\alpha_1+\beta_1&lt;1</span> et la décroissance en <span class="math inline">\pi^k</span> de l’ACF s’en déduisent sans calcul nouveau.</li>
+<li>ARCH est à GARCH ce que MA est à ARMA.</li>
+<li>On <strong>n’estime pas</strong> par MCO sur les carrés : <span class="math inline">v_t</span> est trop hétéroscédastique, et les contraintes ne seraient pas respectées.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers le chapitre 9">
+<div class="pedago-title">
+Vers le chapitre 9
+</div>
+<p>La dynamique de <span class="math inline">h_t</span> est réglée. Il reste la seconde moitié du modèle, laissée de côté depuis le chapitre 2 : la loi de <span class="math inline">z_t</span>.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="persistance.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Stationnarité, persistance et variance de long terme</span></a>
+<a class="jm-nav-suivant" href="loi-innovations.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">La loi des innovations</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/dualite-arma.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/dualite-arma-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/dualite-arma-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/dualite-arma.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

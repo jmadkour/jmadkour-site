@@ -1,0 +1,331 @@
+---
+title: "Apprentissage profond"
+subtitle: "La descente de gradient et ses variantes"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="jm-actif" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Chapitre 3 : La descente de gradient et ses variantes</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="le-principe">
+<h1>Le principe</h1>
+<section class="level2" id="descendre-dans-le-sens-de-la-pente">
+<h2 class="anchored" data-anchor-id="descendre-dans-le-sens-de-la-pente">Descendre dans le sens de la pente</h2>
+<div class="definitionbox" title="La règle de mise à jour">
+<div class="pedago-title">
+La règle de mise à jour
+</div>
+<p><span class="math display">w \;\leftarrow\; w - \eta \, \frac{\partial L}{\partial w}</span></p>
+<p>Le gradient indique la direction de plus forte <strong>montée</strong> ; on va donc dans le sens opposé. <span class="math inline">\eta</span> est le <strong>taux d’apprentissage</strong>.</p>
+</div>
+<div class="ecobox" title="C'est le chapitre 6 de Mathématiques pour la gestion">
+<div class="pedago-title">
+C’est le chapitre 6 de Mathématiques pour la gestion
+</div>
+<p>Chercher un minimum en annulant les dérivées partielles est exactement la condition du premier ordre à plusieurs variables.</p>
+<p>La différence est qu’ici le système ne se résout pas : il y a des millions de paramètres, et l’on <strong>descend pas à pas</strong> au lieu de résoudre.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-taux-dapprentissage">
+<h1>Le taux d’apprentissage</h1>
+<section class="level2" id="le-paramètre-le-plus-important-du-cours">
+<h2 class="anchored" data-anchor-id="le-paramètre-le-plus-important-du-cours">Le paramètre le plus important du cours</h2>
+<div class="examplebox" title="Une descente entièrement calculable">
+<div class="pedago-title">
+Une descente entièrement calculable
+</div>
+<p>Minimisons <span class="math inline">L(w) = w^2</span>, de dérivée <span class="math inline">2w</span>, en partant de <span class="math inline">w = 1</span>.</p>
+<p>La règle donne <span class="math inline">w \leftarrow w(1 - 2\eta)</span> : chaque pas multiplie <span class="math inline">w</span> par un facteur fixe.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 36%"/>
+<col style="width: 36%"/>
+<col style="width: 27%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;"><span class="math inline">\eta</span></th>
+<th style="text-align: right;">Facteur</th>
+<th>Trajectoire</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">0{,}1</span></td>
+<td style="text-align: right;"><span class="math inline">+0{,}8</span></td>
+<td><span class="math inline">1 \to 0{,}8 \to 0{,}64 \to 0{,}512 \to 0{,}41</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">1{,}1</span></td>
+<td style="text-align: right;"><span class="math inline">-1{,}2</span></td>
+<td><span class="math inline">1 \to -1{,}2 \to 1{,}44 \to -1{,}73 \to 2{,}07</span></td>
+</tr>
+</tbody>
+</table>
+<p>Le premier <strong>converge</strong> vers zéro. Le second <strong>oscille en s’éloignant</strong> : la descente diverge.</p>
+</div>
+<div class="definitionbox" title="La condition de convergence, ici">
+<div class="pedago-title">
+La condition de convergence, ici
+</div>
+<p><span class="math display">\left\lvert 1 - 2\eta \right\rvert &lt; 1 \qquad\Longleftrightarrow\qquad 0 &lt; \eta &lt; 1</span></p>
+<p>Un taux trop grand ne ralentit pas la convergence : <strong>il l’empêche</strong>.</p>
+</div>
+<div class="intuitionbox" title="Comment le régler en pratique">
+<div class="pedago-title">
+Comment le régler en pratique
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Symptôme</th>
+<th>Diagnostic</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>La perte augmente ou oscille violemment</td>
+<td><span class="math inline">\eta</span> <strong>trop grand</strong></td>
+</tr>
+<tr class="even">
+<td>La perte baisse très lentement</td>
+<td><span class="math inline">\eta</span> <strong>trop petit</strong></td>
+</tr>
+<tr class="odd">
+<td>La perte baisse puis stagne haut</td>
+<td><span class="math inline">\eta</span> à réduire en cours de route</td>
+</tr>
+</tbody>
+</table>
+<p>On commence typiquement à <span class="math inline">10^{-3}</span>, et l’on ajuste par facteurs de dix. <strong>Tracer la courbe de perte à chaque époque est le premier geste de diagnostic.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-trois-régimes-de-descente">
+<h1>Les trois régimes de descente</h1>
+<section class="level2" id="combien-dobservations-par-pas">
+<h2 class="anchored" data-anchor-id="combien-dobservations-par-pas">Combien d’observations par pas</h2>
+<div class="definitionbox" title="Batch, stochastique, mini-batch">
+<div class="pedago-title">
+Batch, stochastique, mini-batch
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Régime</th>
+<th>Observations par pas</th>
+<th>Caractère</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Batch</strong></td>
+<td>toutes</td>
+<td>coûteux, trajectoire lisse</td>
+</tr>
+<tr class="even">
+<td><strong>Stochastique</strong></td>
+<td>une seule</td>
+<td>rapide, très bruité</td>
+</tr>
+<tr class="odd">
+<td><strong>Mini-batch</strong></td>
+<td><span class="math inline">32</span> à <span class="math inline">256</span></td>
+<td><strong>le compromis employé partout</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="intuitionbox" title="Pourquoi le bruit est utile">
+<div class="pedago-title">
+Pourquoi le bruit est utile
+</div>
+<p>On pourrait croire que la descente batch, plus précise, est préférable.</p>
+<p>Le bruit du mini-batch aide en réalité à <strong>sortir des minima locaux médiocres</strong> et des plateaux. Il agit comme une régularisation légère.</p>
+<p>De plus, un pas approximatif calculé cent fois vaut mieux qu’un pas exact calculé une fois : à temps égal, le mini-batch progresse davantage.</p>
+</div>
+</section>
+<section class="level2" id="époque">
+<h2 class="anchored" data-anchor-id="époque">Époque</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<p>Une <strong>époque</strong> est un passage complet sur les données d’apprentissage.</p>
+<p>Avec <span class="math inline">1\,000</span> observations et des lots de <span class="math inline">32</span>, une époque compte environ <span class="math inline">32</span> mises à jour.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-optimiseurs">
+<h1>Les optimiseurs</h1>
+<section class="level2" id="trois-améliorations-successives">
+<h2 class="anchored" data-anchor-id="trois-améliorations-successives">Trois améliorations successives</h2>
+<div class="definitionbox" title="Le momentum">
+<div class="pedago-title">
+Le momentum
+</div>
+<p>On accumule une <strong>inertie</strong> : le pas courant garde une part du précédent.</p>
+<p>Cela lisse les oscillations dans les directions instables et accélère dans les directions constantes — comme une bille qui prend de la vitesse dans une vallée.</p>
+</div>
+<div class="definitionbox" title="Le taux adaptatif">
+<div class="pedago-title">
+Le taux adaptatif
+</div>
+<p><strong>RMSProp</strong> ajuste le taux <strong>par paramètre</strong>, en divisant par une moyenne des gradients récents.</p>
+<p>Les paramètres à gradients forts avancent prudemment, ceux à gradients faibles plus franchement.</p>
+</div>
+<div class="definitionbox" title="Adam">
+<div class="pedago-title">
+Adam
+</div>
+<p><strong>Adam</strong> combine les deux : inertie et taux adaptatif par paramètre.</p>
+<p>C’est l’optimiseur par défaut, robuste aux réglages approximatifs. On le lance typiquement avec <span class="math inline">\eta = 10^{-3}</span>.</p>
+</div>
+</section>
+<section class="level2" id="le-choix-pratique-en-une-phrase">
+<h2 class="anchored" data-anchor-id="le-choix-pratique-en-une-phrase">Le choix pratique, en une phrase</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Commencer par <strong>Adam</strong>. Il fonctionne presque toujours correctement du premier coup.</p>
+<p>La descente avec momentum, mieux réglée, atteint parfois une meilleure solution finale sur les grands modèles de vision — c’est une optimisation de dernier ressort, pas un point de départ.</p>
+</div>
+</section>
+<section class="level2" id="lordonnancement-du-taux">
+<h2 class="anchored" data-anchor-id="lordonnancement-du-taux">L’ordonnancement du taux</h2>
+<div class="definitionbox" title="Faire décroître le taux">
+<div class="pedago-title">
+Faire décroître le taux
+</div>
+<p>Un taux élevé au début explore ; un taux faible à la fin affine.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Stratégie</th>
+<th>Principe</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Par paliers</td>
+<td>diviser par dix à intervalles fixés</td>
+</tr>
+<tr class="even">
+<td>Décroissance cosinus</td>
+<td>descente douce et continue</td>
+</tr>
+<tr class="odd">
+<td>Sur plateau</td>
+<td>réduire quand la validation stagne</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="intuitionbox" title="Ce que le chapitre a établi">
+<div class="pedago-title">
+Ce que le chapitre a établi
+</div>
+<p>Le taux d’apprentissage est le paramètre auquel un réseau est <strong>le plus sensible</strong>. Architecture, activation et optimiseur comptent moins que lui.</p>
+<p>Devant un réseau qui n’apprend pas, c’est la première chose à regarder — et souvent la seule à corriger.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li><span class="math inline">w \leftarrow w - \eta \, \partial L / \partial w</span> : on descend dans le sens opposé au gradient.</li>
+<li>Sur <span class="math inline">L(w) = w^2</span> : <span class="math inline">\eta = 0{,}1</span> converge, <span class="math inline">\eta = 1{,}1</span> <strong>diverge</strong> — la condition est <span class="math inline">0 &lt; \eta &lt; 1</span>.</li>
+<li>Le <strong>mini-batch</strong> de <span class="math inline">32</span> à <span class="math inline">256</span> est le régime standard ; son bruit est utile.</li>
+<li><strong>Adam</strong> — momentum et taux adaptatif — est l’optimiseur par défaut, à <span class="math inline">10^{-3}</span>.</li>
+<li>Le <strong>taux d’apprentissage</strong> est le paramètre le plus sensible de tous.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Il reste à savoir comment le gradient est calculé pour des millions de paramètres. C’est la rétropropagation, au chapitre 4.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="perte-activation.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Fonctions de perte et d&#x27;activation</span></a>
+<a class="jm-nav-suivant" href="retropropagation.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">La rétropropagation</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/descente-gradient.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/descente-gradient-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/descente-gradient-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/descente-gradient.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

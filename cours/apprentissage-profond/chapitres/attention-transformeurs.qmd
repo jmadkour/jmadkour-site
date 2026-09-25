@@ -1,0 +1,291 @@
+---
+title: "Apprentissage profond"
+subtitle: "L'attention et les transformeurs"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="jm-actif" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Chapitre 9 : L’attention et les transformeurs</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="lattention">
+<h1>L’attention</h1>
+<section class="level2" id="regarder-directement-plutôt-que-se-souvenir">
+<h2 class="anchored" data-anchor-id="regarder-directement-plutôt-que-se-souvenir">Regarder directement, plutôt que se souvenir</h2>
+<div class="intuitionbox" title="Les deux défauts du récurrent">
+<div class="pedago-title">
+Les deux défauts du récurrent
+</div>
+<ol type="1">
+<li>Le traitement est <strong>séquentiel</strong> : le pas <span class="math inline">t</span> exige que le pas <span class="math inline">t-1</span> soit terminé. Impossible de paralléliser.</li>
+<li>L’information doit <strong>transiter</strong> par tous les pas intermédiaires pour relier deux instants éloignés.</li>
+</ol>
+<p>L’attention supprime les deux : chaque position peut consulter <strong>directement</strong> toutes les autres.</p>
+</div>
+<div class="definitionbox" title="Requête, clé, valeur">
+<div class="pedago-title">
+Requête, clé, valeur
+</div>
+<p>Chaque position produit trois vecteurs :</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Vecteur</th>
+<th>Rôle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Requête</strong> <span class="math inline">q</span></td>
+<td>ce que cette position cherche</td>
+</tr>
+<tr class="even">
+<td><strong>Clé</strong> <span class="math inline">k</span></td>
+<td>ce que cette position propose</td>
+</tr>
+<tr class="odd">
+<td><strong>Valeur</strong> <span class="math inline">v</span></td>
+<td>ce qu’elle transmet si on la retient</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="le-calcul">
+<h2 class="anchored" data-anchor-id="le-calcul">Le calcul</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<p><span class="math display">\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^{\mathsf{T}}}{\sqrt{d}}\right) V</span></p>
+<p>Le produit <span class="math inline">QK^{\mathsf{T}}</span> mesure la <strong>compatibilité</strong> entre chaque requête et chaque clé. Le softmax en fait des poids de somme <span class="math inline">1</span>. On en tire une moyenne pondérée des valeurs.</p>
+</div>
+</section>
+<section class="level2" id="pourquoi-diviser-par-la-racine-de-d">
+<h2 class="anchored" data-anchor-id="pourquoi-diviser-par-la-racine-de-d">Pourquoi diviser par la racine de d</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>En grande dimension, les produits scalaires prennent de grandes valeurs. Le softmax devient alors presque binaire — un poids proche de <span class="math inline">1</span>, tous les autres proches de <span class="math inline">0</span>.</p>
+<p>Les gradients s’évanouissent, comme au chapitre 2. La division par <span class="math inline">\sqrt{d}</span> ramène les scores à une échelle où le softmax reste <strong>doux</strong> et différentiable utilement.</p>
+<p><strong>C’est un détail d’apparence, et sans lui rien ne s’entraîne.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-transformeur">
+<h1>Le transformeur</h1>
+<section class="level2" id="larchitecture">
+<h2 class="anchored" data-anchor-id="larchitecture">L’architecture</h2>
+<div class="definitionbox" title="Les briques d'un bloc">
+<div class="pedago-title">
+Les briques d’un bloc
+</div>
+<ol type="1">
+<li><strong>Attention multi-têtes</strong> — plusieurs attentions en parallèle, chacune apprenant un type de relation.</li>
+<li><strong>Connexion résiduelle</strong> puis <strong>normalisation par couche</strong>.</li>
+<li>Un petit réseau <strong>entièrement connecté</strong>, appliqué position par position.</li>
+<li>Résiduelle et normalisation à nouveau.</li>
+</ol>
+<p>On empile ces blocs.</p>
+</div>
+<div class="ecobox" title="Rien de neuf dans les briques">
+<div class="pedago-title">
+Rien de neuf dans les briques
+</div>
+<p>Les connexions résiduelles viennent du chapitre 7, la normalisation par couche du chapitre 6, le réseau dense du chapitre 1, le softmax du chapitre 1.</p>
+<p><strong>Seule l’attention est nouvelle.</strong> Le transformeur est un assemblage d’éléments déjà vus, autour d’une idée unique — et c’est ce qui le rend intelligible.</p>
+</div>
+<div class="definitionbox" title="L'encodage de position">
+<div class="pedago-title">
+L’encodage de position
+</div>
+<p>L’attention est <strong>insensible à l’ordre</strong> : elle traite la séquence comme un ensemble.</p>
+<p>Il faut donc <strong>injecter la position</strong> dans les vecteurs d’entrée, par des fonctions sinusoïdales ou des vecteurs appris. Sans cela, une série chronologique et sa version mélangée seraient traitées identiquement.</p>
+</div>
+<div class="definitionbox" title="L'attention causale">
+<div class="pedago-title">
+L’attention causale
+</div>
+<p>En prévision, une position ne doit pas voir le futur. On <strong>masque</strong> donc les positions ultérieures avant le softmax.</p>
+<p>C’est la même précaution que la convolution causale du chapitre 7 et le découpage temporel du chapitre 2 d’<em>Apprentissage statistique</em>. <strong>Elle revient à chaque architecture, sous une forme différente.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-que-cela-coûte">
+<h1>Ce que cela coûte</h1>
+<section class="level2" id="une-complexité-quadratique">
+<h2 class="anchored" data-anchor-id="une-complexité-quadratique">Une complexité quadratique</h2>
+<div class="definitionbox" title="Le coût">
+<div class="pedago-title">
+Le coût
+</div>
+<p>Chaque position se compare à toutes : le coût croît comme le <strong>carré</strong> de la longueur de séquence.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Longueur</th>
+<th style="text-align: right;">Comparaisons</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">100</span></td>
+<td style="text-align: right;"><span class="math inline">10\,000</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">1\,000</span></td>
+<td style="text-align: right;"><span class="math inline">1\,000\,000</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">10\,000</span></td>
+<td style="text-align: right;"><span class="math inline">100\,000\,000</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="larbitrage-face-au-récurrent">
+<h2 class="anchored" data-anchor-id="larbitrage-face-au-récurrent">L’arbitrage face au récurrent</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th>Récurrent</th>
+<th>Transformeur</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Coût en longueur</td>
+<td><strong>linéaire</strong></td>
+<td><strong>quadratique</strong></td>
+</tr>
+<tr class="even">
+<td>Parallélisation</td>
+<td>impossible</td>
+<td><strong>totale</strong></td>
+</tr>
+<tr class="odd">
+<td>Portée de la mémoire</td>
+<td>limitée</td>
+<td><strong>directe</strong></td>
+</tr>
+<tr class="even">
+<td>Données requises</td>
+<td>modérées</td>
+<td><strong>beaucoup</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Le transformeur coûte plus cher en calcul par séquence, mais s’entraîne bien plus vite en pratique — parce que tout se calcule <strong>en parallèle</strong> au lieu de pas à pas.</p>
+</div>
+</section>
+<section class="level2" id="une-mise-en-garde-pour-les-séries-financières">
+<h2 class="anchored" data-anchor-id="une-mise-en-garde-pour-les-séries-financières">Une mise en garde pour les séries financières</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Les transformeurs dominent le texte parce que les corpus sont <strong>immenses</strong> — des milliards de mots.</p>
+<p>Une série financière quotidienne sur vingt ans compte environ <strong>cinq mille points</strong>. C’est infime au regard de ce qu’un transformeur exige pour apprendre ses représentations.</p>
+<p>Sur ces volumes, les modèles simples — GARCH, ARMA, boosting sur variables construites — restent le plus souvent supérieurs. <strong>La taille des données commande le choix d’architecture, davantage que la nature du problème.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>L’<strong>attention</strong> permet à chaque position de consulter directement toutes les autres.</li>
+<li><strong>Requête</strong>, <strong>clé</strong>, <strong>valeur</strong> ; le softmax du produit <span class="math inline">QK^{\mathsf{T}}</span> donne les poids.</li>
+<li>La division par <span class="math inline">\sqrt{d}</span> évite la saturation du softmax — indispensable.</li>
+<li>Un bloc de transformeur assemble attention, <strong>résiduelle</strong>, <strong>layer norm</strong> et réseau dense.</li>
+<li>Le coût est <strong>quadratique</strong> en longueur, mais tout se calcule en parallèle.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Toutes les architectures du cours sont en place. Le chapitre 10 les applique à la prévision financière, et les compare honnêtement aux modèles économétriques.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="reseaux-recurrents.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Les réseaux récurrents : RNN, LSTM, GRU</span></a>
+<a class="jm-nav-suivant" href="series-financieres.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Prévision de séries financières par réseaux</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/attention-transformeurs.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/attention-transformeurs-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/attention-transformeurs-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/attention-transformeurs.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

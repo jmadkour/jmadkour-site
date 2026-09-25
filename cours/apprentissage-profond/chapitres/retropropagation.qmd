@@ -1,0 +1,292 @@
+---
+title: "Apprentissage profond"
+subtitle: "La rétropropagation"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="jm-actif" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Chapitre 4 : La rétropropagation</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="le-problème-à-résoudre">
+<h1>Le problème à résoudre</h1>
+<section class="level2" id="un-million-de-dérivées">
+<h2 class="anchored" data-anchor-id="un-million-de-dérivées">Un million de dérivées</h2>
+<div class="intuitionbox" title="Ce que le chapitre 3 a supposé">
+<div class="pedago-title">
+Ce que le chapitre 3 a supposé
+</div>
+<p>La descente de gradient exige <span class="math inline">\partial L / \partial w</span> pour <strong>chaque</strong> paramètre.</p>
+<p>Calculer chacune séparément, en perturbant le paramètre et en refaisant une passe complète, coûterait autant de passes que de paramètres. Pour un million de poids, c’est impossible.</p>
+<p>La <strong>rétropropagation</strong> obtient toutes les dérivées en <strong>une seule</strong> passe supplémentaire.</p>
+</div>
+<div class="definitionbox" title="Le principe">
+<div class="pedago-title">
+Le principe
+</div>
+<p>C’est la <strong>règle de dérivation en chaîne</strong>, appliquée systématiquement, de la sortie vers l’entrée, en réutilisant les calculs intermédiaires.</p>
+</div>
+</section>
+<section class="level2" id="cest-le-chapitre-2-de-mathématiques-pour-la-gestion">
+<h2 class="anchored" data-anchor-id="cest-le-chapitre-2-de-mathématiques-pour-la-gestion">C’est le chapitre 2 de Mathématiques pour la gestion</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>La règle de la chaîne y était illustrée par deux engrenages : si <span class="math inline">y</span> dépend de <span class="math inline">u</span> qui dépend de <span class="math inline">x</span>, alors <span class="math display">\frac{dy}{dx} = \frac{dy}{du} \times \frac{du}{dx}</span></p>
+<p>Un réseau profond est une composition de dizaines de fonctions. La rétropropagation applique cette règle de proche en proche, sans rien calculer deux fois.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-deux-passes">
+<h1>Les deux passes</h1>
+<section class="level2" id="avant-puis-arrière">
+<h2 class="anchored" data-anchor-id="avant-puis-arrière">Avant, puis arrière</h2>
+<div class="definitionbox" title="La passe avant">
+<div class="pedago-title">
+La passe avant
+</div>
+<p>De l’entrée vers la sortie : calculer <span class="math inline">z^{(\ell)}</span> et <span class="math inline">a^{(\ell)}</span> couche par couche, jusqu’à la prédiction, puis la perte.</p>
+<p><strong>On conserve toutes les valeurs intermédiaires</strong> — elles seront nécessaires au retour.</p>
+</div>
+<div class="definitionbox" title="La passe arrière">
+<div class="pedago-title">
+La passe arrière
+</div>
+<p>De la sortie vers l’entrée : propager l’erreur.</p>
+<ol type="1">
+<li>Calculer l’erreur en sortie : <span class="math inline">\delta^{(L)} = \partial L / \partial z^{(L)}</span>.</li>
+<li>Pour chaque couche en remontant : <span class="math display">\delta^{(\ell)} = \left(W^{(\ell+1)}\right)^{\!\mathsf{T}} \delta^{(\ell+1)} \;\odot\; g'\!\left(z^{(\ell)}\right)</span></li>
+<li>En déduire les gradients : <span class="math display">\frac{\partial L}{\partial W^{(\ell)}} = \delta^{(\ell)} \left(a^{(\ell-1)}\right)^{\!\mathsf{T}} \qquad \frac{\partial L}{\partial b^{(\ell)}} = \delta^{(\ell)}</span></li>
+</ol>
+</div>
+</section>
+<section class="level2" id="ce-que-dit-la-formule-de-récurrence">
+<h2 class="anchored" data-anchor-id="ce-que-dit-la-formule-de-récurrence">Ce que dit la formule de récurrence</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Trois opérations, à chaque couche :</p>
+<ul>
+<li><strong>transposer et multiplier</strong> par les poids — l’erreur remonte par les mêmes connexions qu’à l’aller ;</li>
+<li><strong>multiplier par <span class="math inline">g'(z)</span></strong> — un neurone saturé ne transmet pas d’erreur ;</li>
+<li>le gradient d’un poids est le produit de l’<strong>erreur en aval</strong> par l’<strong>activation en amont</strong>.</li>
+</ul>
+<p>Cette dernière règle est la plus parlante : un poids est corrigé proportionnellement à ce qu’il a reçu et à l’erreur qu’il a causée.</p>
+</div>
+</section>
+<section class="level2" id="la-mémoire-coût-caché-de-la-profondeur">
+<h2 class="anchored" data-anchor-id="la-mémoire-coût-caché-de-la-profondeur">La mémoire, coût caché de la profondeur</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Conserver toutes les activations intermédiaires occupe une mémoire proportionnelle à la profondeur <strong>et</strong> à la taille du lot.</p>
+<p>C’est ce qui limite en pratique la taille des lots sur une carte graphique — bien plus que le temps de calcul. Réduire le lot est le premier remède à un dépassement de mémoire.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-gradient-qui-sévanouit">
+<h1>Le gradient qui s’évanouit</h1>
+<section class="level2" id="pourquoi-la-profondeur-pose-problème">
+<h2 class="anchored" data-anchor-id="pourquoi-la-profondeur-pose-problème">Pourquoi la profondeur pose problème</h2>
+<div class="definitionbox" title="Le produit de la récurrence">
+<div class="pedago-title">
+Le produit de la récurrence
+</div>
+<p>Remonter <span class="math inline">L</span> couches multiplie <span class="math inline">L</span> facteurs, chacun contenant <span class="math inline">g'(z)</span> et les poids.</p>
+<p>Si ces facteurs sont <strong>inférieurs à un</strong>, le produit tend vers zéro : gradient <strong>évanoui</strong>. S’ils sont supérieurs à un, il explose.</p>
+</div>
+<div class="examplebox" title="Le chiffrage du chapitre 2, replacé">
+<div class="pedago-title">
+Le chiffrage du chapitre 2, replacé
+</div>
+<p>Avec la sigmoïde, <span class="math inline">g' \leq 0{,}25</span> :</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Couches</th>
+<th style="text-align: right;">Facteur au mieux</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">5</span></td>
+<td style="text-align: right;"><span class="math inline">9{,}8 \times 10^{-4}</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">10</span></td>
+<td style="text-align: right;"><span class="math inline">9{,}5 \times 10^{-7}</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">20</span></td>
+<td style="text-align: right;"><span class="math inline">9{,}1 \times 10^{-13}</span></td>
+</tr>
+</tbody>
+</table>
+<p>Les premières couches ne reçoivent plus rien : elles cessent d’apprendre.</p>
+</div>
+</section>
+<section class="level2" id="les-quatre-remèdes">
+<h2 class="anchored" data-anchor-id="les-quatre-remèdes">Les quatre remèdes</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Remède</th>
+<th>Chapitre</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>ReLU</strong> — dérivée de <span class="math inline">1</span></td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td><strong>Initialisation</strong> adaptée — facteurs proches de <span class="math inline">1</span></td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td><strong>Normalisation</strong> par lot</td>
+<td>7</td>
+</tr>
+<tr class="even">
+<td><strong>Connexions résiduelles</strong> — un chemin direct pour le gradient</td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="le-gradient-qui-explose-et-son-remède">
+<h2 class="anchored" data-anchor-id="le-gradient-qui-explose-et-son-remède">Le gradient qui explose, et son remède</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Le problème inverse existe, surtout dans les réseaux récurrents du chapitre 8 : le produit diverge, les poids partent à l’infini, la perte devient indéfinie.</p>
+<p>Le remède est brutal et efficace : <strong>l’écrêtage du gradient</strong>, qui plafonne sa norme avant la mise à jour.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-différentiation-automatique">
+<h1>La différentiation automatique</h1>
+<section class="level2" id="ce-que-font-les-bibliothèques">
+<h2 class="anchored" data-anchor-id="ce-que-font-les-bibliothèques">Ce que font les bibliothèques</h2>
+<div class="definitionbox" title="Le graphe de calcul">
+<div class="pedago-title">
+Le graphe de calcul
+</div>
+<p>Chaque opération d’un réseau est un nœud d’un graphe. La passe avant le construit ; la passe arrière le parcourt en sens inverse, en appliquant la règle de la chaîne à chaque nœud.</p>
+<p>C’est la <strong>différentiation automatique</strong>, et c’est ce qui rend inutile tout calcul manuel de dérivée.</p>
+</div>
+<div class="ecobox" title="Pourquoi l'étudier malgré tout">
+<div class="pedago-title">
+Pourquoi l’étudier malgré tout
+</div>
+<p>Aucun praticien n’écrit une rétropropagation à la main. Mais on ne diagnostique pas ce qu’on ne comprend pas :</p>
+<ul>
+<li>un gradient nul signale une saturation ou un neurone mort ;</li>
+<li>un gradient explosif signale un taux ou une initialisation inadaptés ;</li>
+<li>une perte indéfinie signale une division par zéro ou un logarithme de zéro.</li>
+</ul>
+<p><strong>Chacun de ces symptômes se lit dans les formules de ce chapitre.</strong> C’est à cela qu’il sert.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>La rétropropagation obtient <strong>tous</strong> les gradients en une seule passe arrière.</li>
+<li>C’est la <strong>règle de la chaîne</strong> appliquée systématiquement, avec réutilisation des calculs.</li>
+<li>Passe <strong>avant</strong> : conserver les activations. Passe <strong>arrière</strong> : propager l’erreur <span class="math inline">\delta</span>.</li>
+<li>Le gradient d’un poids est le produit de l’<strong>erreur en aval</strong> par l’<strong>activation en amont</strong>.</li>
+<li>Le produit des facteurs explique l’<strong>évanouissement</strong> et l’<strong>explosion</strong> du gradient.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Le réseau sait maintenant apprendre. Le chapitre 5 traite du problème inverse : l’empêcher d’apprendre <strong>trop bien</strong> les données d’entraînement.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="descente-gradient.qmd">&larr; Chapitre précédent<span class="jm-nav-label">La descente de gradient et ses variantes</span></a>
+<a class="jm-nav-suivant" href="regularisation.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Régularisation : décrochage, pénalisation, arrêt précoce</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/retropropagation.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/retropropagation-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/retropropagation-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/retropropagation.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

@@ -1,0 +1,269 @@
+---
+title: "Modélisation GARCH de la volatilité"
+subtitle: "Le cadre de la variance conditionnelle"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="faits-stylises.qmd">1. Mandelbrot et les faits stylisés des rentabilités</a></li>
+<li><a class="" href="clusters-effet-levier.qmd">2. Regroupement de la volatilité et effet de levier</a></li>
+<li><a class="jm-actif" href="variance-conditionnelle.qmd">3. Le cadre de la variance conditionnelle</a></li>
+<li><a class="" href="modele-arch.qmd">4. Le modèle ARCH(q) d&#x27;Engle</a></li>
+<li><a class="" href="proprietes-arch.qmd">5. Propriétés statistiques de l&#x27;ARCH</a></li>
+<li><a class="" href="detecter-arch.qmd">6. Détecter et identifier un effet ARCH</a></li>
+<li><a class="" href="modele-garch.qmd">7. Le modèle GARCH(p,q) de Bollerslev</a></li>
+<li><a class="" href="persistance.qmd">8. Stationnarité, persistance et variance de long terme</a></li>
+<li><a class="" href="dualite-arma.qmd">9. La dualité GARCH et ARMA sur les carrés</a></li>
+<li><a class="" href="loi-innovations.qmd">10. La loi des innovations</a></li>
+<li><a class="" href="egarch.qmd">11. L&#x27;effet de levier et l&#x27;EGARCH de Nelson</a></li>
+<li><a class="" href="gjr-tgarch.qmd">12. GJR-GARCH, TGARCH et la courbe d&#x27;impact</a></li>
+<li><a class="" href="igarch-memoire-longue.qmd">13. IGARCH, GARCH-M et la mémoire longue</a></li>
+<li><a class="" href="estimation.qmd">14. L&#x27;estimation par quasi-maximum de vraisemblance</a></li>
+<li><a class="" href="validation.qmd">15. La validation d&#x27;un modèle de volatilité</a></li>
+<li><a class="" href="prevision-volatilite.qmd">16. La prévision de volatilité</a></li>
+<li><a class="" href="value-at-risk.qmd">17. De la volatilité à la Value at Risk</a></li>
+<li><a class="" href="mise-en-oeuvre-r.qmd">18. Mise en œuvre sur R</a></li>
+<li><a class="" href="mise-en-oeuvre-python.qmd">19. Mise en œuvre sur Python</a></li>
+<li><a class="" href="etude-de-cas-r.qmd">20. Étude de cas sur données réelles — R</a></li>
+<li><a class="" href="etude-de-cas-python.qmd">21. Étude de cas sur données réelles — Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Chapitre 2 : Le cadre de la variance conditionnelle</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="la-difficulté-à-surmonter">
+<h2 class="anchored" data-anchor-id="la-difficulté-à-surmonter">La difficulté à surmonter</h2>
+<div class="intuitionbox" title="Une contradiction apparente">
+<div class="pedago-title">
+Une contradiction apparente
+</div>
+<p>La stationnarité au sens faible exige une variance <strong>constante</strong>. Les données exigent une variance <strong>changeante</strong>.</p>
+<p>Il n’y a contradiction que si l’on confond deux objets. Ce chapitre les sépare.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="conditionnel-et-inconditionnel">
+<h1>Conditionnel et inconditionnel</h1>
+<section class="level2" id="les-deux-variances">
+<h2 class="anchored" data-anchor-id="les-deux-variances">Les deux variances</h2>
+<div class="definitionbox" title="Deux quantités distinctes">
+<div class="pedago-title">
+Deux quantités distinctes
+</div>
+<p><strong>Variance inconditionnelle</strong> : <span class="math display"> \sigma^2 = \mathrm{V}(r_t) = \mathrm{E}\big[(r_t-\mu)^2\big] </span> Une constante, calculée sur toute la série.</p>
+<p><strong>Variance conditionnelle</strong> : <span class="math display"> h_t = \mathrm{V}\big(r_t \mid \Omega_{t-1}\big) = \mathrm{E}\big[(r_t-\mu)^2 \mid \Omega_{t-1}\big] </span> Une <strong>variable aléatoire</strong>, fonction de l’information disponible la veille.</p>
+</div>
+</section>
+<section class="level2" id="le-lien-entre-les-deux">
+<h2 class="anchored" data-anchor-id="le-lien-entre-les-deux">Le lien entre les deux</h2>
+<div class="definitionbox" title="Loi des espérances itérées">
+<div class="pedago-title">
+Loi des espérances itérées
+</div>
+<p><span class="math display"> \sigma^2 = \mathrm{E}\big(h_t\big) . </span> La variance inconditionnelle est la <strong>moyenne</strong> des variances conditionnelles.</p>
+</div>
+<div class="intuitionbox" title="L'image à retenir">
+<div class="pedago-title">
+L’image à retenir
+</div>
+<p><span class="math inline">\sigma^2</span> est la température moyenne de l’année ; <span class="math inline">h_t</span> est la météo de demain. Les deux existent, elles ne se contredisent pas, et c’est la seconde qui intéresse celui qui doit décider aujourd’hui.</p>
+</div>
+<div class="ecobox" title="Pourquoi la stationnarité est sauve">
+<div class="pedago-title">
+Pourquoi la stationnarité est sauve
+</div>
+<p>Le processus reste stationnaire au sens faible tant que <span class="math inline">\mathrm{E}(h_t)</span> est finie et constante. Rien n’interdit à <span class="math inline">h_t</span> de fluctuer autour de cette moyenne — c’est même exactement ce qu’on va modéliser.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="lécriture-standard">
+<h1>L’écriture standard</h1>
+<section class="level2" id="la-décomposition">
+<h2 class="anchored" data-anchor-id="la-décomposition">La décomposition</h2>
+<div class="definitionbox" title="Modèle à variance conditionnelle">
+<div class="pedago-title">
+Modèle à variance conditionnelle
+</div>
+<p><span class="math display"> r_t = \mu_t + \varepsilon_t, \qquad \varepsilon_t = \sqrt{h_t}\;z_t, \qquad z_t \sim \mathrm{i.i.d.}(0,1). </span></p>
+</div>
+<p>Trois objets, trois rôles :</p>
+<ul>
+<li><span class="math inline">\mu_t = \mathrm{E}(r_t \mid \Omega_{t-1})</span> : l’<strong>équation de moyenne</strong>, celle du cours ARMA ;</li>
+<li><span class="math inline">h_t</span> : l’<strong>équation de variance</strong>, l’objet de ce cours ;</li>
+<li><span class="math inline">z_t</span> : l’<strong>innovation standardisée</strong>, dont la loi fera l’objet du chapitre 9.</li>
+</ul>
+</section>
+<section class="level2" id="vérifier-que-la-décomposition-tient">
+<h2 class="anchored" data-anchor-id="vérifier-que-la-décomposition-tient">Vérifier que la décomposition tient</h2>
+<p><span class="math display"> \mathrm{E}\big(\varepsilon_t \mid \Omega_{t-1}\big) = \sqrt{h_t}\,\mathrm{E}(z_t) = 0 </span> <span class="math display"> \mathrm{V}\big(\varepsilon_t \mid \Omega_{t-1}\big) = h_t\,\mathrm{V}(z_t) = h_t </span></p>
+<div class="definitionbox" title="Le point technique à ne pas manquer">
+<div class="pedago-title">
+Le point technique à ne pas manquer
+</div>
+<p><span class="math inline">h_t</span> doit être <strong>mesurable par rapport à <span class="math inline">\Omega_{t-1}</span></strong> : entièrement déterminée par l’information de la veille. C’est ce qui permet de la sortir de l’espérance conditionnelle comme une constante.</p>
+<p>Concrètement : <span class="math inline">h_t</span> ne peut dépendre que de <span class="math inline">\varepsilon_{t-1}, \varepsilon_{t-2}, \dots</span> et de <span class="math inline">h_{t-1}, h_{t-2},\dots</span> — jamais de <span class="math inline">\varepsilon_t</span>.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-z_t-apporte">
+<h2 class="anchored" data-anchor-id="ce-que-z_t-apporte">Ce que <span class="math inline">z_t</span> apporte</h2>
+<div class="intuitionbox" title="Une séparation nette des rôles">
+<div class="pedago-title">
+Une séparation nette des rôles
+</div>
+<p><span class="math inline">h_t</span> porte toute la <strong>dynamique</strong> : c’est elle qui monte et descend.</p>
+<p><span class="math inline">z_t</span> porte toute la <strong>forme</strong> de la loi : symétrie, épaisseur des queues. Elle est i.i.d., donc sans mémoire.</p>
+<p>Deux questions séparées, qu’on pourra traiter séparément — c’est ce qui rend le modèle maniable.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-lien-avec-larma">
+<h1>Le lien avec l’ARMA</h1>
+<section class="level2" id="les-deux-équations-se-complètent">
+<h2 class="anchored" data-anchor-id="les-deux-équations-se-complètent">Les deux équations se complètent</h2>
+<div class="definitionbox" title="Le modèle complet">
+<div class="pedago-title">
+Le modèle complet
+</div>
+<p><span class="math display"> \underbrace{A(L)\,r_t = \theta + B(L)\,\varepsilon_t}_{\text{équation de moyenne : cours ARMA}}, \qquad \varepsilon_t = \sqrt{h_t}\,z_t, \qquad \underbrace{h_t = f(\Omega_{t-1})}_{\text{équation de variance : ce cours}} </span></p>
+</div>
+<div class="ecobox" title="Ce que le cours ARMA a conclu">
+<div class="pedago-title">
+Ce que le cours ARMA a conclu
+</div>
+<p>Sur données financières quotidiennes, l’équation de moyenne se réduit presque toujours à une <strong>constante</strong> : <span class="math inline">r_t = \theta + \varepsilon_t</span>.</p>
+<p>Ce n’est pas un appauvrissement du modèle, c’est un résultat empirique. Toute la structure est dans la variance.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-le-garch-ne-change-pas">
+<h2 class="anchored" data-anchor-id="ce-que-le-garch-ne-change-pas">Ce que le GARCH ne change pas</h2>
+<div class="intuitionbox" title="Trois invariants">
+<div class="pedago-title">
+Trois invariants
+</div>
+<p>La <strong>prévision ponctuelle</strong> reste celle de l’ARMA : <span class="math inline">\hat{r}_{T+1} = \hat\theta</span>.</p>
+<p>Les <strong>estimateurs de l’équation de moyenne</strong> restent convergents, même si l’on ignore l’hétéroscédasticité.</p>
+<p>Ce qui change, ce sont les <strong>écarts-types</strong>, les <strong>intervalles</strong> et les <strong>quantiles</strong> — c’est-à-dire tout ce qui touche au risque.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-construire">
+<h1>Ce qu’il faut construire</h1>
+<section class="level2" id="le-cahier-des-charges-de-h_t">
+<h2 class="anchored" data-anchor-id="le-cahier-des-charges-de-h_t">Le cahier des charges de <span class="math inline">h_t</span></h2>
+<div class="definitionbox" title="Quatre exigences">
+<div class="pedago-title">
+Quatre exigences
+</div>
+<ol type="1">
+<li><strong>Positivité</strong> : <span class="math inline">h_t &gt; 0</span> pour toute réalisation, sans exception.</li>
+<li><strong>Mesurabilité</strong> : <span class="math inline">h_t</span> ne dépend que de <span class="math inline">\Omega_{t-1}</span>.</li>
+<li><strong>Persistance</strong> : un choc doit élever <span class="math inline">h_t</span> durablement, pas une seule période.</li>
+<li><strong>Stationnarité</strong> : <span class="math inline">\mathrm{E}(h_t)</span> doit exister et être finie.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La difficulté est dans la conjonction">
+<div class="pedago-title">
+La difficulté est dans la conjonction
+</div>
+<p>Chaque exigence prise isolément est facile. C’est de les satisfaire <strong>ensemble</strong> qui a demandé du temps — et qui explique la forme, à première vue arbitraire, de l’équation ARCH.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-lon-rejette-demblée">
+<h2 class="anchored" data-anchor-id="ce-que-lon-rejette-demblée">Ce que l’on rejette d’emblée</h2>
+<div class="examplebox" title="Trois fausses bonnes idées">
+<div class="pedago-title">
+Trois fausses bonnes idées
+</div>
+<p><strong>La variance glissante</strong> <span class="math inline">h_t = \frac{1}{m}\sum_{i=1}^{m}\varepsilon_{t-i}^2</span> : simple, mais donne le même poids à un choc d’hier et à un choc d’il y a <span class="math inline">m</span> jours, puis un poids nul le lendemain. Les sauts de <span class="math inline">h_t</span> à l’entrée et à la sortie de la fenêtre sont artificiels.</p>
+<p><strong>Le lissage exponentiel</strong> <span class="math inline">h_t = \lambda h_{t-1} + (1-\lambda)\varepsilon_{t-1}^2</span> : bien meilleur — c’est la méthode RiskMetrics — mais <span class="math inline">\lambda</span> est <strong>imposé</strong> (0,94), non estimé, et le modèle n’a pas de variance de long terme.</p>
+<p><strong>Une variance déterministe du temps</strong> : ne réagit pas aux chocs, donc manque tout le phénomène.</p>
+</div>
+<div class="ecobox" title="Ce que l'ARCH ajoute">
+<div class="pedago-title">
+Ce que l’ARCH ajoute
+</div>
+<p>Une forme paramétrique <strong>estimable</strong>, dont les coefficients se testent, qui possède une variance de long terme, et qui se prévoit à tout horizon. Le lissage exponentiel en apparaîtra au chapitre 12 comme un cas particulier contraint.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 2">
+<div class="pedago-title">
+L’essentiel du chapitre 2
+</div>
+<ul>
+<li>Variance <strong>inconditionnelle</strong> <span class="math inline">\sigma^2</span> : constante. Variance <strong>conditionnelle</strong> <span class="math inline">h_t</span> : aléatoire, fonction de <span class="math inline">\Omega_{t-1}</span>.</li>
+<li>Elles sont liées par <span class="math inline">\sigma^2 = \mathrm{E}(h_t)</span> : aucune contradiction avec la stationnarité.</li>
+<li>Écriture standard : <span class="math inline">r_t = \mu_t + \varepsilon_t</span>, <span class="math inline">\varepsilon_t = \sqrt{h_t}\,z_t</span>, <span class="math inline">z_t</span> i.i.d. centrée réduite.</li>
+<li><span class="math inline">h_t</span> doit être mesurable par rapport à <span class="math inline">\Omega_{t-1}</span> : elle ne dépend jamais de <span class="math inline">\varepsilon_t</span>.</li>
+<li><span class="math inline">h_t</span> porte la dynamique, <span class="math inline">z_t</span> porte la forme de la loi.</li>
+<li>Cahier des charges : positivité, mesurabilité, persistance, stationnarité — <strong>ensemble</strong>.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers la partie II">
+<div class="pedago-title">
+Vers la partie II
+</div>
+<p>Le cadre est posé. Il reste à proposer une forme pour <span class="math inline">h_t</span> — et la plus simple qui satisfasse les quatre exigences est celle qu’Engle a écrite en 1982.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="clusters-effet-levier.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Regroupement de la volatilité et effet de levier</span></a>
+<a class="jm-nav-suivant" href="modele-arch.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Le modèle ARCH(q) d&#x27;Engle</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/variance-conditionnelle.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/variance-conditionnelle-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/variance-conditionnelle-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/variance-conditionnelle.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

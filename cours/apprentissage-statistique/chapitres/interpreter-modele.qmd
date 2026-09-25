@@ -1,0 +1,347 @@
+---
+title: "Apprentissage statistique"
+subtitle: "Interpréter un modèle de prévision"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage statistique</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="expliquer-prevoir.qmd">1. Expliquer ou prévoir : deux objectifs distincts</a></li>
+<li><a class="" href="biais-variance.qmd">2. Le compromis biais-variance</a></li>
+<li><a class="" href="validation-croisee.qmd">3. Rééchantillonnage et validation croisée</a></li>
+<li><a class="" href="regression-penalisee.qmd">4. La régression pénalisée : ridge et lasso</a></li>
+<li><a class="" href="selection-variables.qmd">5. Sélection de variables et grande dimension</a></li>
+<li><a class="" href="classification.qmd">6. La classification : logistique et analyse discriminante</a></li>
+<li><a class="" href="evaluer-classifieur.qmd">7. Évaluer un classifieur : matrice de confusion, ROC, AUC</a></li>
+<li><a class="" href="arbres-decision.qmd">8. Les arbres de décision</a></li>
+<li><a class="" href="forets-aleatoires.qmd">9. Forêts aléatoires et bagging</a></li>
+<li><a class="" href="boosting.qmd">10. Le boosting de gradient</a></li>
+<li><a class="" href="svm.qmd">11. Les machines à vecteurs de support</a></li>
+<li><a class="jm-actif" href="interpreter-modele.qmd">12. Interpréter un modèle de prévision</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage statistique</h1>
+<p class="subtitle lead">Chapitre 11 : Interpréter un modèle de prévision</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="pourquoi-interpréter">
+<h1>Pourquoi interpréter</h1>
+<section class="level2" id="trois-raisons-de-nature-différente">
+<h2 class="anchored" data-anchor-id="trois-raisons-de-nature-différente">Trois raisons, de nature différente</h2>
+<div class="definitionbox" title="Ce qui rend l'interprétation nécessaire">
+<div class="pedago-title">
+Ce qui rend l’interprétation nécessaire
+</div>
+<ol type="1">
+<li><strong>Réglementaire</strong> — un refus de crédit doit être motivé auprès du client et du superviseur.</li>
+<li><strong>Technique</strong> — comprendre un modèle est le seul moyen de repérer une fuite de données ou un biais.</li>
+<li><strong>Confiance</strong> — un modèle qu’on ne comprend pas ne sera pas adopté par ceux qui doivent s’en servir.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="Un usage souvent oublié">
+<div class="pedago-title">
+Un usage souvent oublié
+</div>
+<p>La deuxième raison est la plus négligée et la plus utile au quotidien.</p>
+<p>Un modèle qui accorde une importance démesurée à une variable improbable signale presque toujours un problème dans les données — pas un phénomène économique.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-méthodes-globales">
+<h1>Les méthodes globales</h1>
+<section class="level2" id="ce-que-le-modèle-fait-dans-lensemble">
+<h2 class="anchored" data-anchor-id="ce-que-le-modèle-fait-dans-lensemble">Ce que le modèle fait dans l’ensemble</h2>
+<div class="definitionbox" title="L'importance par permutation">
+<div class="pedago-title">
+L’importance par permutation
+</div>
+<p>Mélanger au hasard les valeurs d’une variable et mesurer la dégradation de la performance.</p>
+<p>Si la performance chute, la variable comptait. Si rien ne bouge, elle ne servait pas.</p>
+</div>
+<div class="definitionbox" title="Ses deux limites">
+<div class="pedago-title">
+Ses deux limites
+</div>
+<ol type="1">
+<li><strong>Variables corrélées</strong> — permuter l’une laisse l’information disponible via l’autre : les deux paraissent inutiles.</li>
+<li><strong>Combinaisons impossibles</strong> — la permutation crée des observations irréalistes, comme un revenu élevé avec un encours nul.</li>
+</ol>
+</div>
+<div class="definitionbox" title="Les graphiques de dépendance partielle">
+<div class="pedago-title">
+Les graphiques de dépendance partielle
+</div>
+<p>Ils montrent comment la prédiction <strong>moyenne</strong> évolue quand une variable varie, les autres étant maintenues.</p>
+<p>Ils révèlent la <strong>forme</strong> de la relation — linéaire, en seuil, non monotone — que l’importance seule ne dit pas.</p>
+</div>
+<div class="ecobox" title="Une découverte typique">
+<div class="pedago-title">
+Une découverte typique
+</div>
+<p>Sur un modèle de crédit, la dépendance partielle de l’âge montre souvent un risque élevé aux deux extrémités et faible au milieu.</p>
+<p>Aucun modèle linéaire n’aurait capté cette forme sans qu’on la spécifie. La lire permet à la fois de valider le modèle et de comprendre le phénomène.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-méthodes-locales">
+<h1>Les méthodes locales</h1>
+<section class="level2" id="expliquer-une-décision-individuelle">
+<h2 class="anchored" data-anchor-id="expliquer-une-décision-individuelle">Expliquer une décision individuelle</h2>
+<div class="definitionbox" title="Le besoin">
+<div class="pedago-title">
+Le besoin
+</div>
+<p>Les méthodes globales décrivent le modèle. Elles ne disent pas <strong>pourquoi ce dossier-ci a été refusé</strong> — qui est la question du client.</p>
+</div>
+<div class="definitionbox" title="Deux approches">
+<div class="pedago-title">
+Deux approches
+</div>
+<p><strong>LIME</strong> — approcher localement le modèle par un modèle simple, autour de l’observation à expliquer.</p>
+<p><strong>Valeurs de Shapley</strong> — répartir l’écart entre la prédiction et la moyenne entre les variables, selon une règle issue de la théorie des jeux.</p>
+</div>
+</section>
+<section class="level2" id="une-explication-de-refus">
+<h2 class="anchored" data-anchor-id="une-explication-de-refus">Une explication de refus</h2>
+<div class="examplebox">
+<div class="pedago-title">
+Exemple
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Variable</th>
+<th>Contribution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">Prédiction moyenne</td>
+<td><span class="math inline">0{,}10</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">Endettement élevé</td>
+<td><span class="math inline">+0{,}22</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">Ancienneté faible</td>
+<td><span class="math inline">+0{,}13</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">Revenu correct</td>
+<td><span class="math inline">-0{,}05</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><strong>Probabilité prédite</strong></td>
+<td><span class="math inline">\mathbf{0{,}40}</span></td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display">0{,}10 + 0{,}22 + 0{,}13 - 0{,}05 = 0{,}40</span></p>
+<p>Les contributions <strong>s’additionnent exactement</strong> à la prédiction : c’est la propriété qui fait la valeur de la méthode.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-shapley-garantit-et-ne-garantit-pas">
+<h2 class="anchored" data-anchor-id="ce-que-shapley-garantit-et-ne-garantit-pas">Ce que Shapley garantit, et ne garantit pas</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Elle garantit une <strong>décomposition cohérente</strong> : les contributions somment à la prédiction, et une variable inutile reçoit zéro.</p>
+<p>Elle ne garantit <strong>aucune causalité</strong>. Dire que l’endettement contribue pour <span class="math inline">+0{,}22</span> signifie que le modèle s’en sert, non que le réduire ferait baisser le risque.</p>
+<p><strong>C’est une explication du modèle, pas du monde.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-que-ce-cours-ne-fait-pas">
+<h1>Ce que ce cours ne fait pas</h1>
+<section class="level2" id="la-limite-posée-franchement">
+<h2 class="anchored" data-anchor-id="la-limite-posée-franchement">La limite, posée franchement</h2>
+<div class="ecobox" title="Le fil qui traverse tout le cours">
+<div class="pedago-title">
+Le fil qui traverse tout le cours
+</div>
+<p>Le chapitre 3 l’a dit du lasso, le chapitre 8 de l’importance des variables, ce chapitre le redit de Shapley : <strong>rien ici n’établit une causalité</strong>.</p>
+<p>Un modèle apprend des associations. Il ne dit pas ce qui se passerait si l’on <strong>intervenait</strong> — et c’est pourtant la question de celui qui décide d’une politique.</p>
+</div>
+<div class="intuitionbox" title="Un exemple qui tranche">
+<div class="pedago-title">
+Un exemple qui tranche
+</div>
+<p>Le nombre de relances prédit excellemment le défaut. Faut-il en conclure qu’il faut cesser de relancer pour réduire les défauts ?</p>
+<p>Évidemment non : la relance est une <strong>conséquence</strong> de la difficulté. Le modèle ne peut pas faire cette distinction, parce que rien dans les données ne la porte.</p>
+<p>Aucune méthode d’interprétation ne sauve d’une question mal posée.</p>
+</div>
+<div class="definitionbox" title="Ce qu'il faut donc">
+<div class="pedago-title">
+Ce qu’il faut donc
+</div>
+<p>Répondre à « quel serait l’effet de ? » exige un cadre différent : résultats potentiels, identification, stratégies quasi expérimentales.</p>
+<p>C’est l’objet du cours <strong>Inférence causale et machine learning</strong>, troisième de cette branche — et il commencera précisément là où ce chapitre s’arrête.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="bilan-du-cours">
+<h1>Bilan du cours</h1>
+<section class="level2" id="le-parcours">
+<h2 class="anchored" data-anchor-id="le-parcours">Le parcours</h2>
+<div class="definitionbox" title="Ce que vous savez faire">
+<div class="pedago-title">
+Ce que vous savez faire
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Chapitres</th>
+<th>Compétence</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1–3</td>
+<td>Distinguer explication et prévision ; découper ; valider par rééchantillonnage</td>
+</tr>
+<tr class="even">
+<td>4–5</td>
+<td>Régulariser, sélectionner, travailler en grande dimension</td>
+</tr>
+<tr class="odd">
+<td>6–7</td>
+<td>Classer, et <strong>évaluer honnêtement</strong> un classifieur</td>
+</tr>
+<tr class="even">
+<td>8–11</td>
+<td>Arbres, forêts, boosting, SVM</td>
+</tr>
+<tr class="odd">
+<td>12</td>
+<td>Interpréter, et connaître la limite de l’interprétation</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="le-fil-rouge-chiffré">
+<h2 class="anchored" data-anchor-id="le-fil-rouge-chiffré">Le fil rouge chiffré</h2>
+<div class="examplebox">
+<div class="pedago-title">
+Exemple
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Chapitre</th>
+<th>Élément</th>
+<th style="text-align: right;">Valeur</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2</td>
+<td>EQM minimale, complexité <span class="math inline">5</span></td>
+<td style="text-align: right;"><span class="math inline">4{,}0</span></td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>Validation croisée à <span class="math inline">5</span> blocs</td>
+<td style="text-align: right;"><span class="math inline">800</span> / <span class="math inline">200</span></td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>Exactitude du modèle</td>
+<td style="text-align: right;"><span class="math inline">0{,}87</span></td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>Exactitude du classifieur trivial</td>
+<td style="text-align: right;"><span class="math inline">\mathbf{0{,}90}</span></td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>Rappel, précision, <span class="math inline">F_1</span></td>
+<td style="text-align: right;"><span class="math inline">0{,}60</span> ; <span class="math inline">0{,}40</span> ; <span class="math inline">0{,}48</span></td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>Gini à la racine</td>
+<td style="text-align: right;"><span class="math inline">0{,}18</span></td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td>Proportion hors sac</td>
+<td style="text-align: right;"><span class="math inline">36{,}8\,\%</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="les-trois-réflexes-à-conserver">
+<h2 class="anchored" data-anchor-id="les-trois-réflexes-à-conserver">Les trois réflexes à conserver</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<ol type="1">
+<li><strong>Comparer au trivial.</strong> Une performance ne signifie rien dans l’absolu.</li>
+<li><strong>Chercher la fuite.</strong> Un résultat excellent est d’abord un soupçon.</li>
+<li><strong>Ne jamais lire une importance comme un effet.</strong></li>
+</ol>
+<p>Le reste — les algorithmes — change tous les cinq ans. Ces trois réflexes, non.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="svm.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Les machines à vecteurs de support</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/interpreter-modele.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/interpreter-modele-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/interpreter-modele-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/interpreter-modele.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

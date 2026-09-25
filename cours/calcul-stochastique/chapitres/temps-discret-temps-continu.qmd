@@ -1,0 +1,470 @@
+---
+title: "Calcul stochastique pour la finance"
+subtitle: "Du temps discret au temps continu"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Calcul stochastique pour la finance</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="jm-actif" href="temps-discret-temps-continu.qmd">1. Du temps discret au temps continu</a></li>
+<li><a class="" href="mouvement-brownien.qmd">2. Le mouvement brownien</a></li>
+<li><a class="" href="modeliser-un-prix.qmd">3. Modéliser un prix, première tentative</a></li>
+<li><a class="" href="equations-differentielles.qmd">4. Modèles dynamiques et équations différentielles</a></li>
+<li><a class="" href="des-edo-aux-eds.qmd">5. De l&#x27;équation différentielle à l&#x27;équation différentielle stochastique</a></li>
+<li><a class="" href="integrale-ito.qmd">6. L&#x27;intégrale stochastique d&#x27;Itô</a></li>
+<li><a class="" href="lemme-ito.qmd">7. Le lemme d&#x27;Itô</a></li>
+<li><a class="" href="prix-action.qmd">8. Le modèle de Black-Scholes-Merton pour une action</a></li>
+<li><a class="" href="processus-usuels.qmd">9. Les autres processus de la finance</a></li>
+<li><a class="" href="equation-black-scholes.qmd">10. Couverture et équation de Black-Scholes</a></li>
+<li><a class="" href="formule-black-scholes.qmd">11. Probabilité risque-neutre et formule de Black-Scholes</a></li>
+<li><a class="" href="simulation-ouverture.qmd">12. Simuler, et ce qui vient après</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Calcul stochastique pour la finance</h1>
+<p class="subtitle lead">Introduction : Du temps discret au temps continu</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="prérequis">
+<h1>Prérequis</h1>
+<section class="level2" id="ce-que-ce-cours-suppose-acquis">
+<h2 class="anchored" data-anchor-id="ce-que-ce-cours-suppose-acquis">Ce que ce cours suppose acquis</h2>
+<div class="definitionbox" title="Les cours qui précèdent">
+<div class="pedago-title">
+Les cours qui précèdent
+</div>
+<p><strong><em>Économétrie avancée</em></strong> et <strong><em>Économétrie financière</em></strong>. Le cours les prolonge et <strong>n’y revient pas</strong>.</p>
+</div>
+<div class="examplebox" title="Les notions mobilisées">
+<div class="pedago-title">
+Les notions mobilisées
+</div>
+<p>De l’économétrie avancée : le processus autorégressif, et le cas limite <span class="math inline">\rho = 1</span> — la marche aléatoire, à variance croissante.</p>
+<p>De l’économétrie financière : la volatilité conditionnelle et les faits stylisés des rendements.</p>
+<p>Des mathématiques de Licence : la dérivée, le <strong>développement de Taylor à l’ordre deux</strong>, l’intégrale et la loi normale.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-le-cours-établit-lui-même">
+<h2 class="anchored" data-anchor-id="ce-que-le-cours-établit-lui-même">Ce que le cours établit lui-même</h2>
+<div class="intuitionbox" title="Ce que ce cours ajoute">
+<div class="pedago-title">
+Ce que ce cours ajoute
+</div>
+<p><strong>Une seule chose, mais elle change tout : le temps continu.</strong></p>
+<p>Un prix cote sans interruption, une couverture s’ajuste sans interruption. Le pas de temps n’est pas une donnée du problème financier : c’est une contrainte de la mesure, et un bon modèle ne doit pas en dépendre.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="ce-que-vous-savez-déjà">
+<h2 class="anchored" data-anchor-id="ce-que-vous-savez-déjà">Ce que vous savez déjà</h2>
+<p>Ce cours ne part pas de zéro. Il prolonge deux enseignements.</p>
+<div class="definitionbox" title="De l'économétrie avancée">
+<div class="pedago-title">
+De l’économétrie avancée
+</div>
+<p>Le processus autorégressif <span class="math inline">y_t = \rho\,y_{t-1} + e_t</span>, et le cas limite <span class="math inline">\rho = 1</span> — la <strong>marche aléatoire</strong>, série <span class="math inline">I(1)</span> à racine unitaire, dont la variance croît avec le temps.</p>
+</div>
+<div class="definitionbox" title="De l'économétrie financière">
+<div class="pedago-title">
+De l’économétrie financière
+</div>
+<p>Les faits stylisés des rendements : volatilité <strong>en grappes</strong>, queues <strong>épaisses</strong>, corrélations qui se resserrent au pire moment. Vous savez donc déjà qu’une volatilité constante est une fiction.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-ce-cours-ajoute">
+<h2 class="anchored" data-anchor-id="ce-que-ce-cours-ajoute">Ce que ce cours ajoute</h2>
+<p>Une seule chose, mais elle change tout : le <strong>temps continu</strong>.</p>
+<div class="intuitionbox" title="Pourquoi ce n'est pas un caprice de mathématicien">
+<div class="pedago-title">
+Pourquoi ce n’est pas un caprice de mathématicien
+</div>
+<p>Un prix cote sans interruption. Une couverture s’ajuste sans interruption. Le pas de temps — le jour, l’heure — n’est pas une donnée du problème financier : c’est une contrainte de la mesure. Un bon modèle ne doit pas en dépendre.</p>
+</div>
+<div class="ecobox" title="La question du cours, en une phrase">
+<div class="pedago-title">
+La question du cours, en une phrase
+</div>
+<p>Comment écrire l’équation qui gouverne le prix d’une action, et comment s’en servir pour évaluer une option écrite sur cette action ?</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-marche-aléatoire">
+<h1>La marche aléatoire</h1>
+<section class="level2" id="le-modèle-discret">
+<h2 class="anchored" data-anchor-id="le-modèle-discret">Le modèle discret</h2>
+<div class="definitionbox" title="Marche aléatoire symétrique">
+<div class="pedago-title">
+Marche aléatoire symétrique
+</div>
+<p>Partant de <span class="math inline">y_0</span>, on ajoute à chaque période un pas de taille fixe <span class="math inline">\delta</span>, vers le haut ou vers le bas avec probabilité <span class="math inline">1/2</span> : <span class="math display"> y_k = y_{k-1} + \delta\,\varepsilon_k, \qquad \varepsilon_k = \pm 1 \ \text{indépendants}. </span></p>
+</div>
+<p>Après <span class="math inline">n</span> pas :</p>
+<p><span class="math display"> \mathrm{E}(y_n) = y_0, \qquad \mathrm{Var}(y_n) = n\,\delta^2. </span></p>
+<div class="intuitionbox" title="Les deux traits qui vont survivre">
+<div class="pedago-title">
+Les deux traits qui vont survivre
+</div>
+<p>L’espérance ne bouge pas — c’est le caractère de <strong>martingale</strong>. La variance croît <strong>proportionnellement au temps</strong> — c’est ce qui interdit à la série de se stabiliser.</p>
+</div>
+</section>
+<section class="level2" id="le-problème-du-raffinement">
+<h2 class="anchored" data-anchor-id="le-problème-du-raffinement">Le problème du raffinement</h2>
+<p>Découpons maintenant l’intervalle <span class="math inline">[0,\,t]</span> en <span class="math inline">n</span> pas de durée <span class="math inline">\Delta t = t/n</span>, et faisons tendre <span class="math inline">n</span> vers l’infini.</p>
+<p><span class="math display"> \mathrm{Var}(y_n) = n\,\delta^2 = \frac{t}{\Delta t}\,\delta^2. </span></p>
+<div class="examplebox" title="Trois choix possibles pour l'amplitude $\delta$">
+<div class="pedago-title">
+Trois choix possibles pour l’amplitude <span class="math inline">\delta</span>
+</div>
+<ul>
+<li><span class="math inline">\delta = \Delta t</span> : la variance vaut <span class="math inline">t\,\Delta t \to 0</span>. La limite est <strong>déterministe</strong>, tout le hasard a disparu.</li>
+<li><span class="math inline">\delta = \text{constante}</span> : la variance vaut <span class="math inline">t/\Delta t \to \infty</span>. La limite <strong>explose</strong>.</li>
+<li><span class="math inline">\delta = \sigma\sqrt{\Delta t}</span> : la variance vaut <span class="math inline">\sigma^2 t</span>, <strong>finie et non nulle</strong>.</li>
+</ul>
+</div>
+</section>
+<section class="level2" id="léchelle-en-racine-carrée">
+<h2 class="anchored" data-anchor-id="léchelle-en-racine-carrée">L’échelle en racine carrée</h2>
+<div class="intuitionbox" title="Le fait à retenir de ce chapitre">
+<div class="pedago-title">
+Le fait à retenir de ce chapitre
+</div>
+<p>Le hasard s’accumule en <span class="math inline">\sqrt{t}</span>, pas en <span class="math inline">t</span>. C’est la seule échelle qui laisse quelque chose à la limite : ni rien, ni l’infini.</p>
+</div>
+<p>Ce n’est pas une astuce de calcul. C’est la signature de l’<strong>indépendance</strong> : ce sont les variances qui s’additionnent, pas les écarts-types.</p>
+<div class="ecobox" title="La règle de la racine carrée du temps">
+<div class="pedago-title">
+La règle de la racine carrée du temps
+</div>
+<p>De là vient la convention qui annualise une volatilité quotidienne en la multipliant par <span class="math inline">\sqrt{252}</span>. Le chapitre 7 dira à quelles conditions elle est légitime — et le chapitre 11 pourquoi elle est fragile.</p>
+</div>
+</section>
+<section class="level2" id="le-passage-à-la-limite-vu-de-près">
+<h2 class="anchored" data-anchor-id="le-passage-à-la-limite-vu-de-près">Le passage à la limite, vu de près</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><svg height="117.98pt" id="svg_2a941e33b5cfbbedf835" role="img" style="width:92.0%" viewbox="0 0 410.17 117.98" width="410.17pt">
+<defs>
+<g>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph0-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph0-1" overflow="visible">
+<path d="M 3.59375 -2.21875 C 3.59375 -2.984375 3.5 -3.53125 3.171875 -4.015625 C 2.96875 -4.34375 2.53125 -4.609375 1.96875 -4.609375 C 0.359375 -4.609375 0.359375 -2.71875 0.359375 -2.21875 C 0.359375 -1.71875 0.359375 0.140625 1.96875 0.140625 C 3.59375 0.140625 3.59375 -1.71875 3.59375 -2.21875 Z M 1.96875 -0.0625 C 1.65625 -0.0625 1.234375 -0.25 1.09375 -0.8125 C 1 -1.21875 1 -1.796875 1 -2.3125 C 1 -2.8125 1 -3.34375 1.09375 -3.734375 C 1.25 -4.28125 1.6875 -4.421875 1.96875 -4.421875 C 2.34375 -4.421875 2.71875 -4.1875 2.84375 -3.796875 C 2.953125 -3.40625 2.953125 -2.90625 2.953125 -2.3125 C 2.953125 -1.796875 2.953125 -1.28125 2.859375 -0.84375 C 2.71875 -0.203125 2.25 -0.0625 1.96875 -0.0625 Z M 1.96875 -0.0625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph0-2" overflow="visible">
+<path d="M 1.078125 -3.875 C 1.4375 -3.796875 1.640625 -3.796875 1.75 -3.796875 C 2.671875 -3.796875 3.21875 -4.421875 3.21875 -4.515625 C 3.21875 -4.59375 3.15625 -4.609375 3.125 -4.609375 C 3.109375 -4.609375 3.09375 -4.609375 3.078125 -4.59375 C 2.90625 -4.53125 2.53125 -4.390625 2.015625 -4.390625 C 1.828125 -4.390625 1.453125 -4.40625 1.015625 -4.578125 C 0.9375 -4.609375 0.921875 -4.609375 0.921875 -4.609375 C 0.828125 -4.609375 0.828125 -4.546875 0.828125 -4.421875 L 0.828125 -2.375 C 0.828125 -2.265625 0.828125 -2.171875 0.9375 -2.171875 C 1 -2.171875 1.015625 -2.1875 1.078125 -2.28125 C 1.375 -2.65625 1.796875 -2.71875 2.046875 -2.71875 C 2.46875 -2.71875 2.65625 -2.375 2.6875 -2.328125 C 2.8125 -2.09375 2.84375 -1.828125 2.84375 -1.421875 C 2.84375 -1.21875 2.84375 -0.8125 2.640625 -0.5 C 2.46875 -0.25 2.171875 -0.078125 1.828125 -0.078125 C 1.375 -0.078125 0.90625 -0.328125 0.734375 -0.796875 C 1 -0.765625 1.140625 -0.953125 1.140625 -1.140625 C 1.140625 -1.4375 0.875 -1.484375 0.78125 -1.484375 C 0.765625 -1.484375 0.4375 -1.484375 0.4375 -1.109375 C 0.4375 -0.484375 1.015625 0.140625 1.84375 0.140625 C 2.734375 0.140625 3.515625 -0.515625 3.515625 -1.390625 C 3.515625 -2.1875 2.90625 -2.90625 2.046875 -2.90625 C 1.75 -2.90625 1.390625 -2.828125 1.078125 -2.5625 Z M 1.078125 -3.875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph0-3" overflow="visible">
+<path d="M 2.328125 -4.421875 C 2.328125 -4.609375 2.3125 -4.609375 2.125 -4.609375 C 1.671875 -4.171875 1.046875 -4.171875 0.765625 -4.171875 L 0.765625 -3.921875 C 0.921875 -3.921875 1.390625 -3.921875 1.765625 -4.109375 L 1.765625 -0.5625 C 1.765625 -0.34375 1.765625 -0.25 1.078125 -0.25 L 0.8125 -0.25 L 0.8125 0 C 0.9375 0 1.78125 -0.03125 2.046875 -0.03125 C 2.265625 -0.03125 3.140625 0 3.28125 0 L 3.28125 -0.25 L 3.03125 -0.25 C 2.328125 -0.25 2.328125 -0.34375 2.328125 -0.5625 Z M 2.328125 -4.421875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph1-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph1-1" overflow="visible">
+<path d="M 1.578125 -0.390625 C 1.578125 -0.640625 1.375 -0.796875 1.1875 -0.796875 C 0.953125 -0.796875 0.78125 -0.609375 0.78125 -0.40625 C 0.78125 -0.15625 0.984375 0 1.171875 0 C 1.40625 0 1.578125 -0.1875 1.578125 -0.390625 Z M 1.578125 -0.390625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph2-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph2-1" overflow="visible">
+<path d="M 5.171875 -1.578125 C 5.28125 -1.578125 5.453125 -1.578125 5.453125 -1.734375 C 5.453125 -1.90625 5.296875 -1.90625 5.171875 -1.90625 L 1.03125 -1.90625 C 0.921875 -1.90625 0.75 -1.90625 0.75 -1.75 C 0.75 -1.578125 0.90625 -1.578125 1.03125 -1.578125 Z M 5.171875 -1.578125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph3-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph3-1" overflow="visible">
+<path d="M 1.6875 -1.40625 C 1.796875 -1.828125 1.953125 -2.484375 1.96875 -2.546875 C 1.984375 -2.609375 2.21875 -3.03125 2.53125 -3.34375 C 2.796875 -3.59375 3.140625 -3.734375 3.484375 -3.734375 C 3.96875 -3.734375 3.96875 -3.265625 3.96875 -3.109375 C 3.96875 -2.5625 3.546875 -1.46875 3.453125 -1.1875 C 3.34375 -0.90625 3.296875 -0.828125 3.296875 -0.65625 C 3.296875 -0.171875 3.671875 0.09375 4.078125 0.09375 C 4.9375 0.09375 5.28125 -1.1875 5.28125 -1.28125 C 5.28125 -1.328125 5.25 -1.390625 5.171875 -1.390625 C 5.0625 -1.390625 5.0625 -1.34375 5.015625 -1.234375 C 4.796875 -0.46875 4.421875 -0.125 4.09375 -0.125 C 4.03125 -0.125 3.875 -0.125 3.875 -0.40625 C 3.875 -0.640625 3.96875 -0.875 4.03125 -1.0625 C 4.21875 -1.515625 4.578125 -2.46875 4.578125 -2.96875 C 4.578125 -3.765625 3.984375 -3.953125 3.515625 -3.953125 C 2.671875 -3.953125 2.234375 -3.359375 2.09375 -3.171875 C 2.046875 -3.65625 1.671875 -3.953125 1.234375 -3.953125 C 0.84375 -3.953125 0.65625 -3.6875 0.53125 -3.4375 C 0.390625 -3.125 0.265625 -2.609375 0.265625 -2.578125 C 0.265625 -2.5 0.328125 -2.46875 0.390625 -2.46875 C 0.484375 -2.46875 0.5 -2.515625 0.546875 -2.6875 C 0.71875 -3.40625 0.90625 -3.734375 1.203125 -3.734375 C 1.484375 -3.734375 1.484375 -3.453125 1.484375 -3.3125 C 1.484375 -3.125 1.40625 -2.84375 1.359375 -2.609375 C 1.296875 -2.375 1.203125 -2 1.15625 -1.890625 L 0.8125 -0.421875 C 0.75 -0.203125 0.75 -0.1875 0.75 -0.15625 C 0.75 -0.046875 0.828125 0.09375 1.015625 0.09375 C 1.140625 0.09375 1.28125 0.015625 1.34375 -0.09375 C 1.375 -0.140625 1.4375 -0.4375 1.484375 -0.609375 Z M 1.6875 -1.40625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph4-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph4-1" overflow="visible">
+<path d="M 6.34375 -2.96875 C 6.46875 -2.96875 6.640625 -2.96875 6.640625 -3.15625 C 6.640625 -3.34375 6.4375 -3.34375 6.296875 -3.34375 L 0.84375 -3.34375 C 0.703125 -3.34375 0.515625 -3.34375 0.515625 -3.15625 C 0.515625 -2.96875 0.6875 -2.96875 0.8125 -2.96875 Z M 6.296875 -1.140625 C 6.4375 -1.140625 6.640625 -1.140625 6.640625 -1.328125 C 6.640625 -1.515625 6.46875 -1.515625 6.34375 -1.515625 L 0.8125 -1.515625 C 0.6875 -1.515625 0.515625 -1.515625 0.515625 -1.328125 C 0.515625 -1.140625 0.703125 -1.140625 0.84375 -1.140625 Z M 6.296875 -1.140625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph4-2" overflow="visible">
+<path d="M 1.546875 -4.0625 C 1.265625 -4.234375 1.0625 -4.46875 1.0625 -4.8125 C 1.0625 -5.390625 1.6875 -5.734375 2.28125 -5.734375 C 2.96875 -5.734375 3.53125 -5.25 3.53125 -4.625 C 3.53125 -4 2.984375 -3.59375 2.625 -3.390625 Z M 2.859375 -3.234375 C 3.296875 -3.453125 3.953125 -3.90625 3.953125 -4.625 C 3.953125 -5.46875 3.109375 -5.96875 2.3125 -5.96875 C 1.375 -5.96875 0.640625 -5.296875 0.640625 -4.46875 C 0.640625 -4.125 0.765625 -3.8125 0.96875 -3.546875 C 1.125 -3.375 1.1875 -3.34375 1.703125 -3.015625 C 0.90625 -2.625 0.390625 -2.09375 0.390625 -1.359375 C 0.390625 -0.40625 1.328125 0.203125 2.296875 0.203125 C 3.328125 0.203125 4.203125 -0.53125 4.203125 -1.5 C 4.203125 -2.375 3.546875 -2.796875 3.328125 -2.953125 C 3.21875 -3.015625 2.96875 -3.171875 2.859375 -3.234375 Z M 1.9375 -2.859375 L 3.078125 -2.15625 C 3.28125 -2.015625 3.71875 -1.734375 3.71875 -1.1875 C 3.71875 -0.484375 3.015625 -0.046875 2.296875 -0.046875 C 1.515625 -0.046875 0.875 -0.609375 0.875 -1.359375 C 0.875 -2 1.3125 -2.53125 1.9375 -2.859375 Z M 1.9375 -2.859375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph4-3" overflow="visible">
+<path d="M 0.9375 -3.09375 C 0.9375 -2.921875 0.9375 -2.828125 1.0625 -2.828125 C 1.125 -2.828125 1.15625 -2.859375 1.203125 -2.953125 C 1.484375 -3.328125 1.90625 -3.53125 2.375 -3.53125 C 3.328125 -3.53125 3.328125 -2.15625 3.328125 -1.828125 C 3.328125 -1.5625 3.328125 -1 3.078125 -0.59375 C 2.84375 -0.21875 2.46875 -0.046875 2.109375 -0.046875 C 1.578125 -0.046875 0.984375 -0.390625 0.765625 -1.046875 C 0.78125 -1.046875 0.828125 -1.03125 0.890625 -1.03125 C 1.078125 -1.03125 1.328125 -1.140625 1.328125 -1.46875 C 1.328125 -1.75 1.140625 -1.90625 0.890625 -1.90625 C 0.703125 -1.90625 0.453125 -1.796875 0.453125 -1.4375 C 0.453125 -0.625 1.140625 0.203125 2.125 0.203125 C 3.21875 0.203125 4.140625 -0.6875 4.140625 -1.796875 C 4.140625 -2.875 3.359375 -3.765625 2.390625 -3.765625 C 1.953125 -3.765625 1.515625 -3.609375 1.203125 -3.296875 L 1.203125 -5.0625 C 1.484375 -4.984375 1.75 -4.9375 2.03125 -4.9375 C 3.140625 -4.9375 3.78125 -5.734375 3.78125 -5.84375 C 3.78125 -5.921875 3.71875 -5.96875 3.6875 -5.96875 C 3.65625 -5.96875 3.640625 -5.96875 3.5625 -5.921875 C 3.140625 -5.75 2.734375 -5.671875 2.359375 -5.671875 C 1.96875 -5.671875 1.5625 -5.75 1.15625 -5.921875 C 1.0625 -5.96875 1.046875 -5.96875 1.03125 -5.96875 C 0.9375 -5.96875 0.9375 -5.875 0.9375 -5.71875 Z M 0.9375 -3.09375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph4-4" overflow="visible">
+<path d="M 4.234375 -2.859375 C 4.234375 -3.46875 4.203125 -4.234375 3.890625 -4.90625 C 3.5 -5.75 2.8125 -5.96875 2.296875 -5.96875 C 1.765625 -5.96875 1.078125 -5.75 0.6875 -4.890625 C 0.40625 -4.265625 0.359375 -3.546875 0.359375 -2.859375 C 0.359375 -2.28125 0.375 -1.421875 0.765625 -0.703125 C 1.1875 0.046875 1.875 0.203125 2.296875 0.203125 C 2.875 0.203125 3.53125 -0.046875 3.90625 -0.875 C 4.1875 -1.484375 4.234375 -2.15625 4.234375 -2.859375 Z M 2.296875 -0.03125 C 2.03125 -0.03125 1.390625 -0.15625 1.21875 -1.15625 C 1.125 -1.6875 1.125 -2.46875 1.125 -2.96875 C 1.125 -3.578125 1.125 -4.28125 1.234375 -4.78125 C 1.421875 -5.578125 1.984375 -5.734375 2.296875 -5.734375 C 2.625 -5.734375 3.203125 -5.5625 3.359375 -4.734375 C 3.46875 -4.234375 3.46875 -3.53125 3.46875 -2.96875 C 3.46875 -2.421875 3.46875 -1.671875 3.375 -1.140625 C 3.1875 -0.109375 2.53125 -0.03125 2.296875 -0.03125 Z M 2.296875 -0.03125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph4-5" overflow="visible">
+<path d="M 0.265625 -1.75 L 0.265625 -1.484375 L 2.703125 -1.484375 L 2.703125 -0.703125 C 2.703125 -0.375 2.671875 -0.28125 2 -0.28125 L 1.8125 -0.28125 L 1.8125 0 C 2.375 -0.03125 3 -0.03125 3.0625 -0.03125 C 3.109375 -0.03125 3.75 -0.03125 4.3125 0 L 4.3125 -0.28125 L 4.125 -0.28125 C 3.453125 -0.28125 3.421875 -0.375 3.421875 -0.703125 L 3.421875 -1.484375 L 4.328125 -1.484375 L 4.328125 -1.75 L 3.421875 -1.75 L 3.421875 -5.8125 C 3.421875 -6 3.421875 -6.0625 3.25 -6.0625 C 3.140625 -6.0625 3.140625 -6.046875 3.046875 -5.921875 Z M 0.546875 -1.75 L 2.75 -5.0625 L 2.75 -1.75 Z M 0.546875 -1.75 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph5-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph5-1" overflow="visible">
+<path d="M 4.796875 -1.9375 C 4.796875 -3.0625 3.921875 -3.953125 2.859375 -3.953125 C 2.375 -3.953125 1.9375 -3.765625 1.59375 -3.390625 L 1.59375 -3.953125 L 0.265625 -3.859375 L 0.265625 -3.578125 C 0.90625 -3.578125 0.953125 -3.53125 0.953125 -3.140625 L 0.953125 1.046875 C 0.953125 1.453125 0.859375 1.453125 0.265625 1.453125 L 0.265625 1.734375 C 0.6875 1.71875 0.859375 1.703125 1.296875 1.703125 C 1.71875 1.703125 1.828125 1.71875 2.3125 1.734375 L 2.3125 1.453125 C 1.71875 1.453125 1.625 1.453125 1.625 1.046875 L 1.625 -0.4375 C 1.859375 -0.203125 2.15625 0.09375 2.75 0.09375 C 3.8125 0.09375 4.796875 -0.765625 4.796875 -1.9375 Z M 4.03125 -1.9375 C 4.03125 -0.90625 3.421875 -0.125 2.6875 -0.125 C 2.296875 -0.125 1.953125 -0.359375 1.734375 -0.671875 C 1.625 -0.84375 1.625 -0.875 1.625 -1.03125 L 1.625 -3.015625 C 1.921875 -3.53125 2.421875 -3.703125 2.796875 -3.703125 C 3.484375 -3.703125 4.03125 -2.90625 4.03125 -1.9375 Z M 4.03125 -1.9375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph5-2" overflow="visible">
+<path d="M 4.453125 -0.796875 L 4.453125 -1.296875 L 4.203125 -1.296875 L 4.203125 -0.8125 C 4.203125 -0.703125 4.203125 -0.265625 3.875 -0.265625 C 3.546875 -0.265625 3.546875 -0.6875 3.546875 -0.828125 L 3.546875 -2.40625 C 3.546875 -2.90625 3.546875 -3.21875 3.15625 -3.578125 C 2.8125 -3.875 2.390625 -4.015625 1.9375 -4.015625 C 1.1875 -4.015625 0.5625 -3.640625 0.5625 -3.0625 C 0.5625 -2.78125 0.75 -2.625 0.984375 -2.625 C 1.234375 -2.625 1.390625 -2.8125 1.390625 -3.046875 C 1.390625 -3.421875 1 -3.46875 1 -3.46875 C 1.234375 -3.703125 1.671875 -3.78125 1.921875 -3.78125 C 2.375 -3.78125 2.890625 -3.453125 2.890625 -2.65625 L 2.890625 -2.359375 C 2.40625 -2.34375 1.734375 -2.296875 1.140625 -2.015625 C 0.5 -1.703125 0.296875 -1.234375 0.296875 -0.875 C 0.296875 -0.140625 1.15625 0.09375 1.765625 0.09375 C 2.5 0.09375 2.84375 -0.390625 2.96875 -0.640625 C 3.015625 -0.265625 3.28125 0.046875 3.65625 0.046875 C 3.890625 0.046875 4.453125 -0.078125 4.453125 -0.796875 Z M 2.890625 -1.265625 C 2.890625 -0.390625 2.21875 -0.125 1.828125 -0.125 C 1.40625 -0.125 1.015625 -0.4375 1.015625 -0.875 C 1.015625 -1.46875 1.515625 -2.09375 2.890625 -2.15625 Z M 2.890625 -1.265625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_2a941e33b5cfbbedf835_glyph5-3" overflow="visible">
+<path d="M 3.3125 -1.140625 C 3.3125 -1.546875 3.140625 -1.796875 2.9375 -2 C 2.625 -2.296875 2.3125 -2.359375 1.640625 -2.484375 C 1.421875 -2.53125 0.765625 -2.640625 0.765625 -3.15625 C 0.765625 -3.4375 0.96875 -3.8125 1.78125 -3.8125 C 2.75 -3.8125 2.8125 -3.078125 2.828125 -2.84375 C 2.84375 -2.734375 2.84375 -2.6875 2.953125 -2.6875 C 3.078125 -2.6875 3.078125 -2.75 3.078125 -2.921875 L 3.078125 -3.78125 C 3.078125 -3.9375 3.078125 -4.015625 2.96875 -4.015625 C 2.921875 -4.015625 2.90625 -4.015625 2.796875 -3.90625 C 2.78125 -3.890625 2.6875 -3.8125 2.640625 -3.765625 C 2.359375 -3.953125 2.09375 -4.015625 1.78125 -4.015625 C 0.59375 -4.015625 0.296875 -3.359375 0.296875 -2.90625 C 0.296875 -2.609375 0.4375 -2.375 0.640625 -2.1875 C 0.9375 -1.90625 1.28125 -1.84375 1.734375 -1.765625 C 2.1875 -1.671875 2.34375 -1.640625 2.546875 -1.5 C 2.625 -1.421875 2.859375 -1.25 2.859375 -0.90625 C 2.859375 -0.125 1.953125 -0.125 1.828125 -0.125 C 0.90625 -0.125 0.6875 -0.890625 0.578125 -1.375 C 0.546875 -1.453125 0.53125 -1.515625 0.4375 -1.515625 C 0.296875 -1.515625 0.296875 -1.4375 0.296875 -1.28125 L 0.296875 -0.140625 C 0.296875 0.015625 0.296875 0.09375 0.40625 0.09375 C 0.46875 0.09375 0.46875 0.09375 0.640625 -0.078125 C 0.671875 -0.140625 0.765625 -0.25 0.8125 -0.296875 C 1.1875 0.078125 1.609375 0.09375 1.828125 0.09375 C 2.921875 0.09375 3.3125 -0.546875 3.3125 -1.140625 Z M 3.3125 -1.140625 " style="stroke:none;"></path>
+</symbol>
+</g>
+<clippath id="svg_2a941e33b5cfbbedf835_clip1">
+<path d="M 24.097656 37 L 126.460938 37 L 126.460938 63 L 24.097656 63 Z M 24.097656 37 "></path>
+</clippath>
+<clippath id="svg_2a941e33b5cfbbedf835_clip2">
+<path d="M 160.40625 41 L 262.769531 41 L 262.769531 97 L 160.40625 97 Z M 160.40625 41 "></path>
+</clippath>
+<clippath id="svg_2a941e33b5cfbbedf835_clip3">
+<path d="M 296.71875 38 L 399.082031 38 L 399.082031 99.445312 L 296.71875 99.445312 Z M 296.71875 38 "></path>
+</clippath>
+</defs>
+<g id="svg_2a941e33b5cfbbedf835_surface1">
+<path d="M 0.00141909 -2.127476 L 0.00141909 2.12721 M 51.284671 -2.127476 L 51.284671 2.12721 M 102.571838 -2.127476 L 102.571838 2.12721 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,24.09624,99.447133)"></path>
+<path d="M -2.127881 13.916643 L 2.126805 13.916643 M -2.127881 37.111923 L 2.126805 37.111923 M -2.127881 60.307202 L 2.126805 60.307202 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,24.09624,99.447133)"></path>
+<path d="M 0.00141909 0.0018241 L 100.579533 0.0018241 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,24.09624,99.447133)"></path>
+<path d="M 126.460938 99.445312 L 123.277344 97.855469 L 124.472656 99.445312 L 123.277344 101.039062 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<path d="M 0.00141909 0.0018241 L 0.00141909 72.233631 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,24.09624,99.447133)"></path>
+<path d="M 24.097656 25.371094 L 22.503906 28.554688 L 24.097656 27.359375 L 25.6875 28.554688 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="22.114251" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-1" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="70.13408" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-1" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="74.098059" xlink:href="#svg_2a941e33b5cfbbedf835_glyph1-1" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="76.459281" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-2" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="124.478112" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-3" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="8.284236" xlink:href="#svg_2a941e33b5cfbbedf835_glyph2-1" y="87.386538"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="14.498661" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-3" y="87.386538"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="14.498661" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-1" y="64.652542"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="14.498661" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-3" y="41.504383"></use>
+</g>
+<g clip-path="url(#svg_2a941e33b5cfbbedf835_clip1)" clip-rule="nonzero">
+<path d="M 0.00141909 37.111923 L 12.820275 37.111923 L 12.820275 45.315991 L 25.643045 45.315991 L 25.643045 53.51223 L 38.465815 53.51223 L 38.465815 45.315991 L 51.284671 45.315991 L 51.284671 53.51223 L 64.107441 53.51223 L 64.107441 45.315991 L 76.926297 45.315991 L 76.926297 53.51223 L 89.749068 53.51223 L 89.749068 61.716298 L 102.571838 61.716298 L 102.571838 53.51223 " style="fill:none;stroke-width:0.79701;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(35.299683%,35.299683%,35.299683%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,24.09624,99.447133)"></path>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="55.872938" xlink:href="#svg_2a941e33b5cfbbedf835_glyph3-1" y="14.15772"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="63.975542" xlink:href="#svg_2a941e33b5cfbbedf835_glyph4-1" y="14.15772"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="73.675491" xlink:href="#svg_2a941e33b5cfbbedf835_glyph4-2" y="14.15772"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="81.351381" xlink:href="#svg_2a941e33b5cfbbedf835_glyph5-1" y="14.15772"></use>
+<use x="86.460856" xlink:href="#svg_2a941e33b5cfbbedf835_glyph5-2" y="14.15772"></use>
+<use x="91.060279" xlink:href="#svg_2a941e33b5cfbbedf835_glyph5-3" y="14.15772"></use>
+</g>
+<path d="M -0.00115974 -2.127476 L -0.00115974 2.12721 M 51.286007 -2.127476 L 51.286007 2.12721 M 102.569259 -2.127476 L 102.569259 2.12721 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,160.407407,99.447133)"></path>
+<path d="M -2.126546 13.916643 L 2.12814 13.916643 M -2.126546 37.111923 L 2.12814 37.111923 M -2.126546 60.307202 L 2.12814 60.307202 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,160.407407,99.447133)"></path>
+<path d="M -0.00115974 0.0018241 L 100.576954 0.0018241 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,160.407407,99.447133)"></path>
+<path d="M 262.769531 99.445312 L 259.589844 97.855469 L 260.78125 99.445312 L 259.589844 101.039062 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<path d="M -0.00115974 0.0018241 L -0.00115974 72.233631 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,160.407407,99.447133)"></path>
+<path d="M 160.40625 25.371094 L 158.816406 28.554688 L 160.40625 27.359375 L 162 28.554688 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="158.425418" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-1" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="206.445247" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-1" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="210.409226" xlink:href="#svg_2a941e33b5cfbbedf835_glyph1-1" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="212.770448" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-2" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="260.78928" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-3" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="144.595404" xlink:href="#svg_2a941e33b5cfbbedf835_glyph2-1" y="87.386538"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="150.809829" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-3" y="87.386538"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="150.809829" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-1" y="64.652542"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="150.809829" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-3" y="41.504383"></use>
+</g>
+<g clip-path="url(#svg_2a941e33b5cfbbedf835_clip2)" clip-rule="nonzero">
+<path d="M -0.00115974 37.111923 L 4.100874 30.5518 L 6.155805 27.271738 L 10.257839 33.831861 L 20.512924 17.431554 L 22.563941 20.711616 L 24.618872 17.431554 L 26.669889 14.151493 L 28.720906 17.431554 L 30.771923 14.151493 L 36.924974 23.991677 L 43.078025 14.151493 L 45.132956 17.431554 L 47.183973 20.711616 L 51.286007 14.151493 L 55.388041 20.711616 L 57.439058 17.431554 L 63.592108 27.271738 L 65.647039 30.5518 L 71.80009 40.391984 L 75.902124 33.831861 L 77.953141 37.111923 L 80.004158 33.831861 L 84.106192 40.391984 L 86.161123 43.672046 L 88.21214 40.391984 L 92.314174 46.952107 L 94.365191 43.672046 L 96.416208 46.952107 L 102.569259 37.111923 " style="fill:none;stroke-width:0.79701;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,160.407407,99.447133)"></path>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="189.884758" xlink:href="#svg_2a941e33b5cfbbedf835_glyph3-1" y="14.15772"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="197.987362" xlink:href="#svg_2a941e33b5cfbbedf835_glyph4-1" y="14.15772"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="207.687312" xlink:href="#svg_2a941e33b5cfbbedf835_glyph4-3" y="14.15772"></use>
+<use x="212.277786" xlink:href="#svg_2a941e33b5cfbbedf835_glyph4-4" y="14.15772"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="219.960898" xlink:href="#svg_2a941e33b5cfbbedf835_glyph5-1" y="14.15772"></use>
+<use x="225.070373" xlink:href="#svg_2a941e33b5cfbbedf835_glyph5-2" y="14.15772"></use>
+<use x="229.669795" xlink:href="#svg_2a941e33b5cfbbedf835_glyph5-3" y="14.15772"></use>
+</g>
+<path d="M 0.000175586 -2.127476 L 0.000175586 2.12721 M 51.287342 -2.127476 L 51.287342 2.12721 M 102.570594 -2.127476 L 102.570594 2.12721 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,296.718575,99.447133)"></path>
+<path d="M -2.12521 13.916643 L 2.125561 13.916643 M -2.12521 37.111923 L 2.125561 37.111923 M -2.12521 60.307202 L 2.125561 60.307202 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,296.718575,99.447133)"></path>
+<path d="M 0.000175586 0.0018241 L 100.57829 0.0018241 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,296.718575,99.447133)"></path>
+<path d="M 399.082031 99.445312 L 395.902344 97.855469 L 397.09375 99.445312 L 395.902344 101.039062 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<path d="M 0.000175586 0.0018241 L 0.000175586 72.233631 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,296.718575,99.447133)"></path>
+<path d="M 296.71875 25.371094 L 295.128906 28.554688 L 296.71875 27.359375 L 298.308594 28.554688 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="294.736585" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-1" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="342.756415" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-1" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="346.720394" xlink:href="#svg_2a941e33b5cfbbedf835_glyph1-1" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="349.081615" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-2" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="397.100447" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-3" y="109.566656"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="280.906571" xlink:href="#svg_2a941e33b5cfbbedf835_glyph2-1" y="87.386538"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="287.120996" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-3" y="87.386538"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="287.120996" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-1" y="64.652542"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="287.120996" xlink:href="#svg_2a941e33b5cfbbedf835_glyph0-3" y="41.504383"></use>
+</g>
+<g clip-path="url(#svg_2a941e33b5cfbbedf835_clip3)" clip-rule="nonzero">
+<path d="M 0.000175586 37.111923 L 0.254596 38.270513 L 0.51293 39.433017 L 0.76735 38.270513 L 1.025684 39.433017 L 1.284018 40.591606 L 1.538438 39.433017 L 1.796772 40.591606 L 2.051193 39.433017 L 2.309527 40.591606 L 2.563947 41.750196 L 2.822281 42.9127 L 3.076701 44.07129 L 3.335035 42.9127 L 3.589455 41.750196 L 3.847789 42.9127 L 4.102209 44.07129 L 4.360544 42.9127 L 4.614964 41.750196 L 4.873298 42.9127 L 5.127718 41.750196 L 5.386052 42.9127 L 5.640472 41.750196 L 5.898806 42.9127 L 6.153226 41.750196 L 6.411561 42.9127 L 6.665981 41.750196 L 6.924315 40.591606 L 7.178735 41.750196 L 7.437069 40.591606 L 7.691489 39.433017 L 7.949823 38.270513 L 8.204243 39.433017 L 8.462578 40.591606 L 8.716998 41.750196 L 8.975332 42.9127 L 9.229752 41.750196 L 9.488086 40.591606 L 9.742506 41.750196 L 10.00084 42.9127 L 10.25526 41.750196 L 10.513595 42.9127 L 10.768015 41.750196 L 11.026349 42.9127 L 11.284683 41.750196 L 11.539103 42.9127 L 11.797437 44.07129 L 12.051857 42.9127 L 12.310191 41.750196 L 12.564612 42.9127 L 12.822946 44.07129 L 13.077366 42.9127 L 13.3357 41.750196 L 13.59012 42.9127 L 13.848454 44.07129 L 14.102874 45.229879 L 14.361208 46.388469 L 14.615628 47.550973 L 14.873963 48.709563 L 15.128383 47.550973 L 15.386717 46.388469 L 15.641137 45.229879 L 15.899471 44.07129 L 16.153891 42.9127 L 16.412225 44.07129 L 16.666645 42.9127 L 16.92498 44.07129 L 17.1794 42.9127 L 17.437734 44.07129 L 17.692154 45.229879 L 17.950488 44.07129 L 18.204908 42.9127 L 18.463242 41.750196 L 18.717662 40.591606 L 18.975997 39.433017 L 19.230417 38.270513 L 19.488751 39.433017 L 19.743171 40.591606 L 20.001505 39.433017 L 20.255925 40.591606 L 20.514259 39.433017 L 20.768679 40.591606 L 21.027014 41.750196 L 21.285348 40.591606 L 21.539768 41.750196 L 21.798102 40.591606 L 22.052522 41.750196 L 22.310856 42.9127 L 22.565276 44.07129 L 22.82361 45.229879 L 23.07803 44.07129 L 23.336365 45.229879 L 23.590785 46.388469 L 23.849119 47.550973 L 24.103539 48.709563 L 24.361873 49.868152 L 24.616293 48.709563 L 24.874627 49.868152 L 25.129047 48.709563 L 25.387382 47.550973 L 25.641802 46.388469 L 25.900136 47.550973 L 26.154556 46.388469 L 26.41289 47.550973 L 26.66731 46.388469 L 26.925644 45.229879 L 27.180064 44.07129 L 27.438399 42.9127 L 27.692819 41.750196 L 27.951153 42.9127 L 28.205573 44.07129 L 28.463907 45.229879 L 28.718327 46.388469 L 28.976661 47.550973 L 29.231081 46.388469 L 29.489416 47.550973 L 29.743836 46.388469 L 30.00217 45.229879 L 30.25659 46.388469 L 30.514924 45.229879 L 30.769344 46.388469 L 31.286012 44.07129 L 31.540433 45.229879 L 31.798767 46.388469 L 32.053187 45.229879 L 32.311521 46.388469 L 32.565941 45.229879 L 32.824275 44.07129 L 33.078695 42.9127 L 33.337029 44.07129 L 33.591449 45.229879 L 33.849784 46.388469 L 34.104204 47.550973 L 34.362538 48.709563 L 34.616958 47.550973 L 34.875292 46.388469 L 35.129712 47.550973 L 35.388046 46.388469 L 35.642466 47.550973 L 35.900801 46.388469 L 36.155221 45.229879 L 36.413555 44.07129 L 36.667975 45.229879 L 36.926309 44.07129 L 37.180729 42.9127 L 37.439063 41.750196 L 37.693483 42.9127 L 37.951818 41.750196 L 38.206238 40.591606 L 38.464572 41.750196 L 38.718992 42.9127 L 38.977326 41.750196 L 39.231746 40.591606 L 39.49008 41.750196 L 39.7445 40.591606 L 40.002835 39.433017 L 40.257255 38.270513 L 40.515589 37.111923 L 40.770009 38.270513 L 41.028343 37.111923 L 41.286677 38.270513 L 41.541097 37.111923 L 41.799431 35.953333 L 42.053852 34.790829 L 42.312186 33.63224 L 42.566606 32.47365 L 42.82494 31.31506 L 43.07936 32.47365 L 43.337694 33.63224 L 43.592114 32.47365 L 43.850448 33.63224 L 44.104868 32.47365 L 44.363203 31.31506 L 44.617623 32.47365 L 44.875957 31.31506 L 45.130377 30.152556 L 45.388711 28.993966 L 45.643131 27.835377 L 45.901465 26.672873 L 46.155885 25.514283 L 46.41422 26.672873 L 46.66864 27.835377 L 46.926974 28.993966 L 47.181394 30.152556 L 47.439728 31.31506 L 47.694148 32.47365 L 47.952482 31.31506 L 48.206902 30.152556 L 48.465237 28.993966 L 48.719657 30.152556 L 48.977991 31.31506 L 49.232411 32.47365 L 49.490745 33.63224 L 49.745165 32.47365 L 50.003499 33.63224 L 50.257919 34.790829 L 50.516254 33.63224 L 50.770674 34.790829 L 51.029008 33.63224 L 51.287342 34.790829 L 51.541762 35.953333 L 51.800096 34.790829 L 52.054516 33.63224 L 52.31285 32.47365 L 52.56727 31.31506 L 52.825605 30.152556 L 53.080025 28.993966 L 53.338359 30.152556 L 53.592779 31.31506 L 53.851113 32.47365 L 54.105533 31.31506 L 54.363867 32.47365 L 54.618287 31.31506 L 54.876622 30.152556 L 55.131042 28.993966 L 55.389376 27.835377 L 55.643796 26.672873 L 55.90213 27.835377 L 56.15655 26.672873 L 56.414884 25.514283 L 56.669304 24.355693 L 56.927639 25.514283 L 57.182059 26.672873 L 57.440393 25.514283 L 57.694813 26.672873 L 57.953147 27.835377 L 58.207567 28.993966 L 58.465901 27.835377 L 58.720321 26.672873 L 58.978656 27.835377 L 59.233076 26.672873 L 59.49141 25.514283 L 59.74583 24.355693 L 60.004164 25.514283 L 60.258584 24.355693 L 60.516918 25.514283 L 60.771338 24.355693 L 61.029673 25.514283 L 61.284093 26.672873 L 61.800761 24.355693 L 62.055181 23.197104 L 62.313515 24.355693 L 62.567935 25.514283 L 62.826269 26.672873 L 63.080689 25.514283 L 63.339024 24.355693 L 63.593444 23.197104 L 63.851778 24.355693 L 64.106198 23.197104 L 64.364532 22.0346 L 64.618952 23.197104 L 64.877286 22.0346 L 65.131706 20.87601 L 65.390041 22.0346 L 65.644461 20.87601 L 65.902795 19.71742 L 66.157215 18.554916 L 66.415549 19.71742 L 66.669969 20.87601 L 66.928303 22.0346 L 67.182723 20.87601 L 67.441058 22.0346 L 67.695478 23.197104 L 67.953812 22.0346 L 68.208232 23.197104 L 68.466566 24.355693 L 68.720986 23.197104 L 68.97932 24.355693 L 69.23374 23.197104 L 69.492075 24.355693 L 69.746495 23.197104 L 70.004829 24.355693 L 70.259249 25.514283 L 70.517583 24.355693 L 70.772003 23.197104 L 71.030337 24.355693 L 71.284757 25.514283 L 71.801426 23.197104 L 72.055846 24.355693 L 72.31418 23.197104 L 72.5686 22.0346 L 72.826934 20.87601 L 73.081354 19.71742 L 73.339688 20.87601 L 73.594108 19.71742 L 73.852443 20.87601 L 74.106863 22.0346 L 74.365197 23.197104 L 74.619617 22.0346 L 74.877951 23.197104 L 75.132371 22.0346 L 75.390705 23.197104 L 75.645125 24.355693 L 75.90346 23.197104 L 76.15788 24.355693 L 76.416214 23.197104 L 76.670634 22.0346 L 76.928968 20.87601 L 77.183388 19.71742 L 77.441722 20.87601 L 77.696142 22.0346 L 77.954477 23.197104 L 78.208897 22.0346 L 78.467231 20.87601 L 78.721651 19.71742 L 78.979985 18.554916 L 79.234405 17.396327 L 79.492739 18.554916 L 79.747159 17.396327 L 80.005494 18.554916 L 80.259914 19.71742 L 80.518248 20.87601 L 80.772668 19.71742 L 81.031002 20.87601 L 81.285422 19.71742 L 81.543756 18.554916 L 81.80209 17.396327 L 82.05651 16.237737 L 82.314845 17.396327 L 82.569265 18.554916 L 82.827599 19.71742 L 83.082019 20.87601 L 83.340353 19.71742 L 83.594773 18.554916 L 83.853107 19.71742 L 84.107527 20.87601 L 84.365862 22.0346 L 84.620282 23.197104 L 84.878616 22.0346 L 85.133036 20.87601 L 85.39137 19.71742 L 85.64579 20.87601 L 85.904124 19.71742 L 86.158544 18.554916 L 86.416879 19.71742 L 86.671299 18.554916 L 86.929633 19.71742 L 87.184053 18.554916 L 87.442387 19.71742 L 87.696807 18.554916 L 87.955141 17.396327 L 88.209561 16.237737 L 88.467896 17.396327 L 88.722316 16.237737 L 88.98065 15.075233 L 89.23507 13.916643 L 89.493404 12.758054 L 89.747824 11.599464 L 90.006158 12.758054 L 90.260578 11.599464 L 90.518912 12.758054 L 90.773333 13.916643 L 91.031667 12.758054 L 91.286087 13.916643 L 91.802755 11.599464 L 92.057175 12.758054 L 92.315509 13.916643 L 92.569929 15.075233 L 92.828264 13.916643 L 93.082684 15.075233 L 93.341018 13.916643 L 93.595438 12.758054 L 93.853772 13.916643 L 94.108192 12.758054 L 94.366526 13.916643 L 94.620946 12.758054 L 94.879281 13.916643 L 95.133701 12.758054 L 95.392035 11.599464 L 95.646455 10.43696 L 95.904789 11.599464 L 96.159209 12.758054 L 96.417543 13.916643 L 96.671963 15.075233 L 96.930298 13.916643 L 97.184718 15.075233 L 97.443052 16.237737 L 97.697472 17.396327 L 97.955806 18.554916 L 98.210226 19.71742 L 98.46856 18.554916 L 98.72298 19.71742 L 98.981315 20.87601 L 99.235735 22.0346 L 99.494069 23.197104 L 99.748489 22.0346 L 100.006823 20.87601 L 100.261243 22.0346 L 100.519577 23.197104 L 100.773997 22.0346 L 101.032331 20.87601 L 101.286752 22.0346 L 101.545086 23.197104 L 101.80342 24.355693 L 102.05784 23.197104 L 102.316174 22.0346 L 102.570594 20.87601 " style="fill:none;stroke-width:0.79701;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(28.999329%,23.098755%,54.899597%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997981,0,0,-0.997981,296.718575,99.447133)"></path>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="323.896579" xlink:href="#svg_2a941e33b5cfbbedf835_glyph3-1" y="14.15772"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="331.999183" xlink:href="#svg_2a941e33b5cfbbedf835_glyph4-1" y="14.15772"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="341.699132" xlink:href="#svg_2a941e33b5cfbbedf835_glyph4-5" y="14.15772"></use>
+<use x="346.289606" xlink:href="#svg_2a941e33b5cfbbedf835_glyph4-4" y="14.15772"></use>
+<use x="350.88008" xlink:href="#svg_2a941e33b5cfbbedf835_glyph4-4" y="14.15772"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="358.571412" xlink:href="#svg_2a941e33b5cfbbedf835_glyph5-1" y="14.15772"></use>
+<use x="363.680887" xlink:href="#svg_2a941e33b5cfbbedf835_glyph5-2" y="14.15772"></use>
+<use x="368.28031" xlink:href="#svg_2a941e33b5cfbbedf835_glyph5-3" y="14.15772"></use>
+</g>
+</g>
+</svg></p>
+</figure>
+</div>
+<p>Même intervalle, même variance finale. Seul le pas change.</p>
+</section>
+<section class="level2" id="ce-que-dit-le-théorème">
+<h2 class="anchored" data-anchor-id="ce-que-dit-le-théorème">Ce que dit le théorème</h2>
+<div class="definitionbox" title="Théorème de Donsker (énoncé informel)">
+<div class="pedago-title">
+Théorème de Donsker (énoncé informel)
+</div>
+<p>Quand <span class="math inline">\Delta t \to 0</span> avec des pas d’amplitude <span class="math inline">\sigma\sqrt{\Delta t}</span>, la marche aléatoire converge — au sens des lois sur l’espace des fonctions continues — vers un processus limite unique : le <strong>mouvement brownien</strong>.</p>
+</div>
+<div class="intuitionbox" title="Pourquoi ce résultat est remarquable">
+<div class="pedago-title">
+Pourquoi ce résultat est remarquable
+</div>
+<p>La loi des pas n’intervient pas. Pile ou face, gaussien, uniforme : pourvu que la variance soit finie, la limite est <strong>la même</strong>. C’est un théorème central limite, non plus sur une somme, mais sur une trajectoire entière.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel de l'introduction">
+<div class="pedago-title">
+L’essentiel de l’introduction
+</div>
+<ul>
+<li>La finance travaille en temps continu parce que le pas d’observation ne doit pas figurer dans le modèle.</li>
+<li>La marche aléatoire raffinée converge, à condition que ses pas soient d’amplitude <span class="math inline">\sigma\sqrt{\Delta t}</span>.</li>
+<li>La variance croît <strong>linéairement</strong> en temps, l’écart-type en <span class="math inline">\sqrt{t}</span>.</li>
+<li>La limite est unique et ne dépend pas de la loi des pas : c’est le mouvement brownien.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers le chapitre 1">
+<div class="pedago-title">
+Vers le chapitre 1
+</div>
+<p>Nous avons obtenu un objet par passage à la limite. Le chapitre suivant l’adopte comme <strong>définition</strong> et en tire les propriétés — dont une, la non-dérivabilité, qui rendra tout le calcul différentiel classique inutilisable.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="../index.qmd">&larr; Présentation du cours</a>
+<a class="jm-nav-suivant" href="mouvement-brownien.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Le mouvement brownien</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/temps-discret-temps-continu.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/temps-discret-temps-continu-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/temps-discret-temps-continu-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/temps-discret-temps-continu.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

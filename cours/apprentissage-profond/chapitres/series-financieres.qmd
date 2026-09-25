@@ -1,0 +1,309 @@
+---
+title: "Apprentissage profond"
+subtitle: "Prévision de séries financières par réseaux"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="jm-actif" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Chapitre 10 : Prévision de séries financières par réseaux</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="poser-le-problème-correctement">
+<h1>Poser le problème correctement</h1>
+<section class="level2" id="trois-questions-trois-difficultés">
+<h2 class="anchored" data-anchor-id="trois-questions-trois-difficultés">Trois questions, trois difficultés</h2>
+<div class="definitionbox" title="Ce qu'on peut chercher à prévoir">
+<div class="pedago-title">
+Ce qu’on peut chercher à prévoir
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Cible</th>
+<th>Difficulté</th>
+<th>Verdict empirique</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Le <strong>signe</strong> du rendement</td>
+<td>extrême</td>
+<td>non exploitable après coûts</td>
+</tr>
+<tr class="even">
+<td>L’<strong>amplitude</strong> du rendement</td>
+<td>extrême</td>
+<td>à peine mieux</td>
+</tr>
+<tr class="odd">
+<td>La <strong>volatilité</strong></td>
+<td>modérée</td>
+<td><strong>prévisible</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="ecobox" title="Pourquoi le signe résiste">
+<div class="pedago-title">
+Pourquoi le signe résiste
+</div>
+<p>Si le rendement de demain était prévisible, l’information serait exploitée immédiatement et le prix s’ajusterait — annulant la prévisibilité.</p>
+<p>C’est l’argument d’efficience, et il n’interdit pas de prévoir la <strong>volatilité</strong> : celle-ci n’est pas un profit à saisir, elle est un régime qui persiste. C’est précisément le regroupement de volatilité établi au chapitre 1 de <em>Modélisation GARCH</em>.</p>
+<p><strong>Choisir la bonne cible est plus décisif que choisir la bonne architecture.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-protocole">
+<h1>Le protocole</h1>
+<section class="level2" id="ce-qui-doit-être-irréprochable">
+<h2 class="anchored" data-anchor-id="ce-qui-doit-être-irréprochable">Ce qui doit être irréprochable</h2>
+<div class="definitionbox" title="Les cinq règles">
+<div class="pedago-title">
+Les cinq règles
+</div>
+<ol type="1">
+<li><strong>Rendements</strong>, pas prix — pour la stationnarité.</li>
+<li>Découpage <strong>chronologique</strong> : apprentissage, puis validation, puis test.</li>
+<li>Normalisation avec les statistiques de l’<strong>apprentissage seulement</strong>.</li>
+<li>Validation par <strong>fenêtre glissante</strong>, jamais par tirage aléatoire.</li>
+<li>Comparaison obligatoire à des <strong>références simples</strong>.</li>
+</ol>
+</div>
+<div class="definitionbox" title="Les références à battre">
+<div class="pedago-title">
+Les références à battre
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Référence</th>
+<th>Ce qu’elle prédit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Naïve</strong></td>
+<td>la dernière valeur observée</td>
+</tr>
+<tr class="even">
+<td><strong>Moyenne historique</strong></td>
+<td>la moyenne de la période d’apprentissage</td>
+</tr>
+<tr class="odd">
+<td><strong>GARCH(1,1)</strong></td>
+<td>pour la volatilité</td>
+</tr>
+<tr class="even">
+<td><strong>Boosting</strong> sur variables construites</td>
+<td>le concurrent sérieux</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="la-règle-du-chapitre-6-dapprentissage-statistique-transposée">
+<h2 class="anchored" data-anchor-id="la-règle-du-chapitre-6-dapprentissage-statistique-transposée">La règle du chapitre 6 d’Apprentissage statistique, transposée</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Là-bas, le classifieur trivial obtenait <span class="math inline">0{,}90</span> d’exactitude et battait le modèle.</p>
+<p>Ici, la <strong>prévision naïve</strong> joue le même rôle. Un réseau qui ne la bat pas nettement n’a rien apporté, quelle que soit sa sophistication.</p>
+<p><strong>Comparer au trivial reste le premier réflexe.</strong> Il n’a pas changé de cours.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="les-pièges-séries-financières">
+<h1>Les pièges, séries financières</h1>
+<section class="level2" id="cinq-erreurs-qui-produisent-dexcellents-résultats-faux">
+<h2 class="anchored" data-anchor-id="cinq-erreurs-qui-produisent-dexcellents-résultats-faux">Cinq erreurs qui produisent d’excellents résultats faux</h2>
+<div class="definitionbox" title="Ce qu'il faut traquer">
+<div class="pedago-title">
+Ce qu’il faut traquer
+</div>
+<ol type="1">
+<li><strong>Normalisation globale</strong> — la volatilité future entre dans l’apprentissage.</li>
+<li><strong>Découpage aléatoire</strong> — on apprend sur le futur.</li>
+<li><strong>Variables retardées mal alignées</strong> — une donnée utilisée avant sa publication réelle.</li>
+<li><strong>Biais du survivant</strong> — l’échantillon ne contient que les entreprises encore cotées.</li>
+<li><strong>Coûts de transaction ignorés</strong> — une stratégie rentable brute, ruineuse nette.</li>
+</ol>
+</div>
+<div class="ecobox" title="Le décalage de publication">
+<div class="pedago-title">
+Le décalage de publication
+</div>
+<p>Un résultat trimestriel porte sur le trimestre écoulé mais n’est publié que plusieurs semaines après.</p>
+<p>L’utiliser à la date qu’il porte, plutôt qu’à sa date de <strong>disponibilité</strong>, donne un modèle remarquable et inutilisable. C’est la fuite la plus fréquente en finance appliquée, et la plus difficile à détecter dans un tableau de données déjà constitué.</p>
+</div>
+</section>
+<section class="level2" id="le-symptôme-qui-doit-alerter">
+<h2 class="anchored" data-anchor-id="le-symptôme-qui-doit-alerter">Le symptôme qui doit alerter</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Une performance nettement supérieure aux références publiées dans la littérature n’est presque jamais une découverte.</p>
+<p>Le chapitre 6 d’<em>Apprentissage statistique</em> le disait de l’AUC : <strong>un résultat excellent est d’abord un soupçon.</strong> Sur données financières, cette règle vaut doublement.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-que-la-comparaison-donne">
+<h1>Ce que la comparaison donne</h1>
+<section class="level2" id="un-bilan-sans-complaisance">
+<h2 class="anchored" data-anchor-id="un-bilan-sans-complaisance">Un bilan sans complaisance</h2>
+<div class="definitionbox" title="Sur la prévision de volatilité">
+<div class="pedago-title">
+Sur la prévision de volatilité
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%"/>
+<col style="width: 25%"/>
+<col style="width: 25%"/>
+<col style="width: 25%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Modèle</th>
+<th>Performance</th>
+<th>Coût</th>
+<th>Interprétabilité</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>GARCH(1,1)</strong></td>
+<td>référence solide</td>
+<td>très faible</td>
+<td><strong>élevée</strong></td>
+</tr>
+<tr class="even">
+<td><strong>LSTM</strong></td>
+<td>comparable, parfois meilleure</td>
+<td>élevé</td>
+<td>nulle</td>
+</tr>
+<tr class="odd">
+<td><strong>Transformeur</strong></td>
+<td>rarement supérieur sur ces volumes</td>
+<td>très élevé</td>
+<td>nulle</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="intuitionbox" title="Pourquoi le GARCH tient si bien">
+<div class="pedago-title">
+Pourquoi le GARCH tient si bien
+</div>
+<p>Il encode directement le fait stylisé qui compte : la volatilité <strong>persiste</strong>. Trois paramètres suffisent.</p>
+<p>Un réseau doit <strong>apprendre</strong> cette structure à partir des données, et il n’a que quelques milliers de points pour le faire. Il redécouvre, au prix de milliers de paramètres, ce que le GARCH suppose d’emblée.</p>
+<p><strong>Quand une structure est connue, la coder vaut mieux que l’apprendre.</strong></p>
+</div>
+<div class="ecobox" title="Où les réseaux apportent réellement quelque chose">
+<div class="pedago-title">
+Où les réseaux apportent réellement quelque chose
+</div>
+<ol type="1">
+<li><strong>Beaucoup de séries à la fois</strong> — un modèle unique sur des centaines d’actifs, partageant leurs régularités.</li>
+<li><strong>Données non structurées</strong> — texte d’actualité, communiqués, où seuls les réseaux savent opérer.</li>
+<li><strong>Haute fréquence</strong> — les volumes y deviennent suffisants.</li>
+<li><strong>Relations non linéaires</strong> entre de nombreux prédicteurs hétérogènes.</li>
+</ol>
+<p>Sur une série unique, quotidienne, avec quelques variables : <strong>il n’y a pas d’avantage à en attendre</strong>.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>Le <strong>signe</strong> des rendements n’est pas prévisible utilement ; la <strong>volatilité</strong> l’est.</li>
+<li>Protocole : rendements, découpage <strong>chronologique</strong>, normalisation sur l’apprentissage, fenêtre glissante.</li>
+<li>Toujours comparer à la <strong>prévision naïve</strong> et au <strong>GARCH</strong>.</li>
+<li>Cinq pièges : normalisation globale, découpage aléatoire, <strong>décalage de publication</strong>, biais du survivant, coûts ignorés.</li>
+<li>Sur une série unique et quotidienne, le <strong>GARCH reste compétitif</strong> pour une fraction du coût.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Le chapitre 11 généralise ce constat et referme le cours sur ce que l’apprentissage profond ne résout pas.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="attention-transformeurs.qmd">&larr; Chapitre précédent<span class="jm-nav-label">L&#x27;attention et les transformeurs</span></a>
+<a class="jm-nav-suivant" href="limites.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Ce que l&#x27;apprentissage profond ne résout pas</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/series-financieres.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/series-financieres-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/series-financieres-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/series-financieres.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

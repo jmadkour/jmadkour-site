@@ -1,0 +1,291 @@
+---
+title: "Apprentissage profond"
+subtitle: "Les réseaux convolutifs"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="jm-actif" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Chapitre 7 : Les réseaux convolutifs</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="le-perceptron-ne-suffit-pas">
+<h1>Le perceptron ne suffit pas</h1>
+<section class="level2" id="le-comptage-qui-tranche">
+<h2 class="anchored" data-anchor-id="le-comptage-qui-tranche">Le comptage qui tranche</h2>
+<div class="examplebox" title="Une image de 100 sur 100">
+<div class="pedago-title">
+Une image de 100 sur 100
+</div>
+<p>Elle compte <span class="math inline">10\,000</span> pixels. Une couche entièrement connectée vers <span class="math inline">100</span> neurones exigerait</p>
+<p><span class="math display">10\,000 \times 100 + 100 = 1\,000\,100 \text{ paramètres}</span></p>
+<p>pour une <strong>seule</strong> couche, sur une image minuscule.</p>
+</div>
+<div class="examplebox" title="La même chose par convolution">
+<div class="pedago-title">
+La même chose par convolution
+</div>
+<p>Trente-deux filtres de taille <span class="math inline">3 \times 3</span> :</p>
+<p><span class="math display">(3 \times 3 \times 1 + 1) \times 32 = 320 \text{ paramètres}</span></p>
+<p><strong>Trois mille cent vingt-cinq fois moins</strong>, pour une capacité de détection supérieure.</p>
+</div>
+</section>
+<section class="level2" id="doù-vient-léconomie">
+<h2 class="anchored" data-anchor-id="doù-vient-léconomie">D’où vient l’économie</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>Le perceptron traite chaque pixel comme une variable indépendante. Il ignore que deux pixels voisins sont liés, et qu’un motif reste le même motif où qu’il se trouve.</p>
+<p>La convolution <strong>inscrit ces deux faits dans l’architecture</strong> : c’est un a priori, au sens du chapitre 1 d’<em>Apprentissage statistique</em>. Il ajoute du biais et retranche énormément de variance — le compromis, encore.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-convolution">
+<h1>La convolution</h1>
+<section class="level2" id="trois-idées">
+<h2 class="anchored" data-anchor-id="trois-idées">Trois idées</h2>
+<div class="definitionbox" title="Le filtre">
+<div class="pedago-title">
+Le filtre
+</div>
+<p>Un <strong>filtre</strong> est une petite matrice de poids que l’on fait glisser sur l’entrée. En chaque position, on calcule un produit scalaire local.</p>
+<p>Le résultat est une <strong>carte d’activation</strong> : elle indique où le motif recherché est présent.</p>
+</div>
+<div class="definitionbox" title="Les trois propriétés">
+<div class="pedago-title">
+Les trois propriétés
+</div>
+<ol type="1">
+<li><strong>Connectivité locale</strong> — chaque neurone ne voit qu’une petite région.</li>
+<li><strong>Partage des poids</strong> — le même filtre s’applique partout, d’où l’économie de paramètres.</li>
+<li><strong>Équivariance par translation</strong> — déplacer le motif déplace la réponse, sans la changer.</li>
+</ol>
+</div>
+</section>
+<section class="level2" id="les-réglages">
+<h2 class="anchored" data-anchor-id="les-réglages">Les réglages</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Paramètre</th>
+<th>Rôle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Taille</strong> du filtre</td>
+<td>étendue du motif détecté — <span class="math inline">3 \times 3</span> le plus souvent</td>
+</tr>
+<tr class="even">
+<td><strong>Pas</strong></td>
+<td>déplacement entre deux positions</td>
+</tr>
+<tr class="odd">
+<td><strong>Remplissage</strong></td>
+<td>bordure ajoutée pour conserver la taille</td>
+</tr>
+<tr class="even">
+<td><strong>Nombre de filtres</strong></td>
+<td>nombre de motifs différents cherchés</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="le-sous-échantillonnage">
+<h2 class="anchored" data-anchor-id="le-sous-échantillonnage">Le sous-échantillonnage</h2>
+<div class="definitionbox" title="Pooling">
+<div class="pedago-title">
+Pooling
+</div>
+<p>Le <strong>pooling</strong> réduit la résolution en ne conservant, sur chaque petite région, que le maximum ou la moyenne.</p>
+</div>
+<div class="intuitionbox" title="Deux effets">
+<div class="pedago-title">
+Deux effets
+</div>
+<p>Il <strong>réduit le calcul</strong>, et il rend la représentation <strong>invariante</strong> à de petits déplacements : peu importe la position exacte du motif dans la région.</p>
+<p>L’équivariance de la convolution devient ainsi une invariance — ce qui est exactement ce qu’on veut pour reconnaître un objet où qu’il soit.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="larchitecture-typique">
+<h1>L’architecture typique</h1>
+<section class="level2" id="un-empilement-qui-monte-en-abstraction">
+<h2 class="anchored" data-anchor-id="un-empilement-qui-monte-en-abstraction">Un empilement qui monte en abstraction</h2>
+<div class="definitionbox" title="Le schéma classique">
+<div class="pedago-title">
+Le schéma classique
+</div>
+<pre><code>entrée
+  → [convolution → activation → pooling] × plusieurs
+  → aplatissement
+  → couches entièrement connectées
+  → sortie</code></pre>
+<p>La résolution <strong>diminue</strong>, le nombre de filtres <strong>augmente</strong> : on perd en précision spatiale et on gagne en richesse sémantique.</p>
+</div>
+<div class="definitionbox" title="Ce que les couches apprennent">
+<div class="pedago-title">
+Ce que les couches apprennent
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Profondeur</th>
+<th>Détecte</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Premières couches</td>
+<td>contours, coins, variations locales</td>
+</tr>
+<tr class="even">
+<td>Couches intermédiaires</td>
+<td>textures, motifs composés</td>
+</tr>
+<tr class="odd">
+<td>Couches profondes</td>
+<td>parties d’objets, objets</td>
+</tr>
+</tbody>
+</table>
+<p>C’est la <strong>hiérarchie de représentations</strong> annoncée à l’introduction, et elle est observable en visualisant les filtres appris.</p>
+</div>
+<div class="definitionbox" title="Les connexions résiduelles">
+<div class="pedago-title">
+Les connexions résiduelles
+</div>
+<p>Au-delà d’une vingtaine de couches, l’entraînement redevient difficile malgré ReLU et la normalisation.</p>
+<p>Une <strong>connexion résiduelle</strong> ajoute l’entrée d’un bloc à sa sortie : <span class="math inline">y = F(x) + x</span>. Le gradient dispose ainsi d’un <strong>chemin direct</strong>, sans facteur multiplicatif.</p>
+<p>C’est ce qui a permis les réseaux à plus de cent couches, et c’est le quatrième remède annoncé au chapitre 4.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="au-delà-de-limage">
+<h1>Au-delà de l’image</h1>
+<section class="level2" id="la-convolution-sur-des-séries">
+<h2 class="anchored" data-anchor-id="la-convolution-sur-des-séries">La convolution sur des séries</h2>
+<div class="definitionbox" title="Convolution unidimensionnelle">
+<div class="pedago-title">
+Convolution unidimensionnelle
+</div>
+<p>Le même mécanisme s’applique à une série temporelle : le filtre glisse <strong>le long du temps</strong> et détecte des motifs locaux — une configuration de variations, un décrochage.</p>
+</div>
+<div class="ecobox" title="Le lien avec la modélisation ARMA">
+<div class="pedago-title">
+Le lien avec la modélisation ARMA
+</div>
+<p>Un filtre convolutif de taille <span class="math inline">q</span> appliqué à une série calcule une <strong>combinaison linéaire pondérée des <span class="math inline">q</span> dernières valeurs</strong>.</p>
+<p>C’est, structurellement, ce que fait un processus de moyenne mobile MA(<span class="math inline">q</span>) du chapitre 5 de <em>Modélisation ARMA</em>. La convolution en est une version dont les poids sont <strong>appris</strong>, et à laquelle on applique ensuite une non-linéarité.</p>
+<p><strong>Ce n’est pas une analogie décorative : c’est la même opération.</strong></p>
+</div>
+<div class="intuitionbox" title="La convolution causale">
+<div class="pedago-title">
+La convolution causale
+</div>
+<p>Sur une série, un filtre centré utiliserait des valeurs <strong>futures</strong> — inacceptable en prévision.</p>
+<p>On emploie donc des convolutions <strong>causales</strong>, qui ne regardent que le passé. C’est la même précaution que le découpage temporel du chapitre 2 d’<em>Apprentissage statistique</em>, inscrite cette fois dans l’architecture.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>Une couche dense sur une image <span class="math inline">100 \times 100</span> coûte <span class="math inline">1\,000\,100</span> paramètres ; une convolution <span class="math inline">3\times3</span> à <span class="math inline">32</span> filtres en coûte <strong><span class="math inline">320</span></strong>.</li>
+<li>Trois idées : connectivité <strong>locale</strong>, <strong>partage</strong> des poids, <strong>équivariance</strong> par translation.</li>
+<li>Le <strong>pooling</strong> réduit la résolution et apporte l’invariance aux petits déplacements.</li>
+<li>Les <strong>connexions résiduelles</strong> donnent au gradient un chemin direct et permettent la très grande profondeur.</li>
+<li>En dimension une, un filtre convolutif est une <strong>moyenne mobile apprise</strong> ; elle doit être <strong>causale</strong> en prévision.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>La convolution capte des motifs <strong>locaux</strong>. Pour une dépendance longue, il faut une mémoire — c’est le chapitre 8.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="initialisation-normalisation.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Initialisation et normalisation</span></a>
+<a class="jm-nav-suivant" href="reseaux-recurrents.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Les réseaux récurrents : RNN, LSTM, GRU</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/reseaux-convolutifs.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/reseaux-convolutifs-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/reseaux-convolutifs-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/reseaux-convolutifs.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

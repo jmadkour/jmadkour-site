@@ -1,0 +1,275 @@
+---
+title: "Calcul stochastique pour la finance"
+subtitle: "Le modèle de Black-Scholes-Merton pour une action"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Calcul stochastique pour la finance</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="temps-discret-temps-continu.qmd">1. Du temps discret au temps continu</a></li>
+<li><a class="" href="mouvement-brownien.qmd">2. Le mouvement brownien</a></li>
+<li><a class="" href="modeliser-un-prix.qmd">3. Modéliser un prix, première tentative</a></li>
+<li><a class="" href="equations-differentielles.qmd">4. Modèles dynamiques et équations différentielles</a></li>
+<li><a class="" href="des-edo-aux-eds.qmd">5. De l&#x27;équation différentielle à l&#x27;équation différentielle stochastique</a></li>
+<li><a class="" href="integrale-ito.qmd">6. L&#x27;intégrale stochastique d&#x27;Itô</a></li>
+<li><a class="" href="lemme-ito.qmd">7. Le lemme d&#x27;Itô</a></li>
+<li><a class="jm-actif" href="prix-action.qmd">8. Le modèle de Black-Scholes-Merton pour une action</a></li>
+<li><a class="" href="processus-usuels.qmd">9. Les autres processus de la finance</a></li>
+<li><a class="" href="equation-black-scholes.qmd">10. Couverture et équation de Black-Scholes</a></li>
+<li><a class="" href="formule-black-scholes.qmd">11. Probabilité risque-neutre et formule de Black-Scholes</a></li>
+<li><a class="" href="simulation-ouverture.qmd">12. Simuler, et ce qui vient après</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Calcul stochastique pour la finance</h1>
+<p class="subtitle lead">Chapitre 7 : Le modèle de Black-Scholes-Merton pour une action</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="le-chapitre-où-la-boucle-se-referme">
+<h2 class="anchored" data-anchor-id="le-chapitre-où-la-boucle-se-referme">Le chapitre où la boucle se referme</h2>
+<p>Le chapitre 2 a posé une question : d’où vient le <span class="math inline">-\sigma^2/2</span> ? Le chapitre 6 a donné l’outil. Ici, nous répondons.</p>
+</section>
+</section>
+<section class="level1" id="lhypothèse-fondatrice">
+<h1>L’hypothèse fondatrice</h1>
+<section class="level2" id="écrire-léquation-du-prix">
+<h2 class="anchored" data-anchor-id="écrire-léquation-du-prix">Écrire l’équation du prix</h2>
+<div class="definitionbox" title="Modèle de Black-Scholes-Merton">
+<div class="pedago-title">
+Modèle de Black-Scholes-Merton
+</div>
+<p><span class="math display"> \frac{dS_t}{S_t} = \mu\,dt + \sigma\,dW_t, \qquad \text{soit} \qquad dS_t = \mu S_t\,dt + \sigma S_t\,dW_t. </span></p>
+</div>
+<div class="intuitionbox" title="Pourquoi cette écriture est la bonne">
+<div class="pedago-title">
+Pourquoi cette écriture est la bonne
+</div>
+<p>Ce n’est pas le prix qui obéit à une loi simple, c’est son <strong>rendement</strong>. Une action à 100 dirhams et une action à 10 000 dirhams peuvent partager le même <span class="math inline">\mu</span> et le même <span class="math inline">\sigma</span> ; elles ne partageraient jamais la même dérive en dirhams.</p>
+</div>
+</section>
+<section class="level2" id="le-lien-avec-ce-que-vous-savez">
+<h2 class="anchored" data-anchor-id="le-lien-avec-ce-que-vous-savez">Le lien avec ce que vous savez</h2>
+<div class="ecobox" title="C'est la marche aléatoire, en continu">
+<div class="pedago-title">
+C’est la marche aléatoire, en continu
+</div>
+<p>Discrétisée, l’équation donne <span class="math display"> \frac{S_{t+\Delta t}-S_t}{S_t} \simeq \mu\,\Delta t + \sigma\sqrt{\Delta t}\;\varepsilon, \qquad \varepsilon \sim \mathcal{N}(0,1). </span> Les rendements sont indépendants et de même loi : le logarithme du prix suit une marche aléatoire. C’est l’hypothèse d’efficience, sous sa forme la plus nette.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-résolution">
+<h1>La résolution</h1>
+<section class="level2" id="appliquer-itô-au-logarithme">
+<h2 class="anchored" data-anchor-id="appliquer-itô-au-logarithme">Appliquer Itô au logarithme</h2>
+<p>Posons <span class="math inline">f(S) = \ln S</span>. Alors <span class="math inline">f' = 1/S</span> et <span class="math inline">f'' = -1/S^2</span>. Le lemme d’Itô, avec <span class="math inline">a = \mu S</span> et <span class="math inline">b = \sigma S</span> :</p>
+<p><span class="math display"> d(\ln S) = \Big(\mu S \cdot \frac{1}{S} + \frac{1}{2}\sigma^2S^2\cdot\Big(-\frac{1}{S^2}\Big)\Big)dt + \sigma S\cdot\frac{1}{S}\,dW </span></p>
+<p><span class="math display"> \boxed{\;d(\ln S_t) = \Big(\mu - \frac{\sigma^2}{2}\Big)dt + \sigma\,dW_t\;} </span></p>
+</section>
+<section class="level2" id="la-solution-explicite">
+<h2 class="anchored" data-anchor-id="la-solution-explicite">La solution explicite</h2>
+<p>Le membre de droite ne dépend plus de <span class="math inline">S</span> : il s’intègre directement.</p>
+<p><span class="math display"> \ln S_t - \ln S_0 = \Big(\mu - \frac{\sigma^2}{2}\Big)t + \sigma W_t </span></p>
+<p><span class="math display"> \boxed{\;S_t = S_0\exp\Big[\Big(\mu - \frac{\sigma^2}{2}\Big)t + \sigma W_t\Big]\;} </span></p>
+<div class="definitionbox" title="La dette du chapitre 2 est soldée">
+<div class="pedago-title">
+La dette du chapitre 2 est soldée
+</div>
+<p>C’est exactement la formule posée sans justification cinq chapitres plus tôt. Le terme <span class="math inline">-\sigma^2/2</span> est le <strong>terme de convexité du lemme d’Itô</strong>, appliqué à une fonction concave — le logarithme — d’où son signe négatif.</p>
+</div>
+</section>
+<section class="level2" id="pourquoi-le-rendement-moyen-nest-pas-la-dérive-du-logarithme">
+<h2 class="anchored" data-anchor-id="pourquoi-le-rendement-moyen-nest-pas-la-dérive-du-logarithme">Pourquoi le rendement moyen n’est pas la dérive du logarithme</h2>
+<div class="intuitionbox" title="Deux nombres, deux questions">
+<div class="pedago-title">
+Deux nombres, deux questions
+</div>
+<p><span class="math inline">\mu</span> répond à : de combien le prix croît-il <strong>en moyenne</strong> ? Réponse : <span class="math inline">\mathrm{E}(S_t) = S_0e^{\mu t}</span>.</p>
+<p><span class="math inline">\mu - \sigma^2/2</span> répond à : de combien croît-il <strong>le plus souvent</strong> ? C’est le taux de croissance de la médiane, et celui que réalise presque sûrement une trajectoire sur longue période.</p>
+</div>
+<div class="ecobox" title="Conséquence de gestion">
+<div class="pedago-title">
+Conséquence de gestion
+</div>
+<p>Deux fonds de même <span class="math inline">\mu</span> mais de volatilités différentes n’offrent pas la même expérience. Celui dont <span class="math inline">\sigma</span> est le plus élevé a une performance moyenne identique et une performance <strong>typique</strong> inférieure. C’est le coût de la volatilité, souvent appelé <em>variance drag</em>.</p>
+</div>
+</section>
+<section class="level2" id="un-exemple-chiffré">
+<h2 class="anchored" data-anchor-id="un-exemple-chiffré">Un exemple chiffré</h2>
+<div class="examplebox" title="Deux placements sur dix ans">
+<div class="pedago-title">
+Deux placements sur dix ans
+</div>
+<p><span class="math inline">S_0 = 100</span>, <span class="math inline">\mu = 8\,\%</span>.</p>
+<ul>
+<li><span class="math inline">\sigma = 15\,\%</span> : moyenne <span class="math inline">100\,e^{0{,}8} = 223</span> ; médiane <span class="math inline">100\,e^{(0{,}08-0{,}011)\times 10} = 199</span>.</li>
+<li><span class="math inline">\sigma = 40\,\%</span> : moyenne <span class="math inline">223</span> également ; médiane <span class="math inline">100\,e^{(0{,}08-0{,}08)\times 10} = 100</span>.</li>
+</ul>
+<p>Même espérance, et pourtant le second placement a une chance sur deux de n’avoir rien rapporté.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="estimer-les-deux-paramètres">
+<h1>Estimer les deux paramètres</h1>
+<section class="level2" id="la-volatilité-sestime-bien">
+<h2 class="anchored" data-anchor-id="la-volatilité-sestime-bien">La volatilité s’estime bien</h2>
+<p>Sur <span class="math inline">n</span> rendements logarithmiques quotidiens <span class="math inline">r_i</span> :</p>
+<p><span class="math display"> \hat{\sigma} = \sqrt{\frac{252}{n-1}\sum_i (r_i - \bar{r})^2}. </span></p>
+<div class="intuitionbox" title="Pourquoi $\sqrt{252}$">
+<div class="pedago-title">
+Pourquoi <span class="math inline">\sqrt{252}</span>
+</div>
+<p>La variance s’additionne dans le temps : la variance annuelle vaut 252 fois la variance quotidienne, donc l’écart-type est multiplié par <span class="math inline">\sqrt{252}</span>. C’est la règle de la racine carrée du temps, rencontrée à l’introduction — valable <strong>uniquement</strong> sous l’hypothèse d’indépendance des rendements.</p>
+</div>
+</section>
+<section class="level2" id="la-dérive-sestime-mal">
+<h2 class="anchored" data-anchor-id="la-dérive-sestime-mal">La dérive s’estime mal</h2>
+<p><span class="math display"> \hat{\mu} \ \text{a un écart-type de} \ \frac{\sigma}{\sqrt{T}}, \qquad T = \text{durée totale d'observation}. </span></p>
+<div class="definitionbox" title="Le fait décourageant">
+<div class="pedago-title">
+Le fait décourageant
+</div>
+<p>Cet écart-type ne dépend <strong>que</strong> de la durée <span class="math inline">T</span>, jamais de la fréquence d’échantillonnage. Observer à la minute plutôt qu’au jour n’améliore en rien l’estimation de <span class="math inline">\mu</span>.</p>
+</div>
+<div class="examplebox" title="L'ordre de grandeur">
+<div class="pedago-title">
+L’ordre de grandeur
+</div>
+<p>Avec <span class="math inline">\sigma = 20\,\%</span> et vingt ans de données : écart-type de <span class="math inline">\hat\mu</span> égal à <span class="math inline">0{,}20/\sqrt{20} = 4{,}5\,\%</span>. L’intervalle de confiance à 95 % sur un rendement espéré de 8 % couvre donc environ <span class="math inline">[-1\,\%,\ 17\,\%]</span>.</p>
+</div>
+<div class="ecobox" title="La conséquence, décisive pour la suite">
+<div class="pedago-title">
+La conséquence, décisive pour la suite
+</div>
+<p>On ne connaîtra jamais <span class="math inline">\mu</span> avec précision. Il serait catastrophique que le prix d’une option en dépende. Le chapitre 9 montrera le miracle : il n’en dépend pas.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="confrontation-aux-données">
+<h1>Confrontation aux données</h1>
+<section class="level2" id="ce-que-léconométrie-financière-a-déjà-montré">
+<h2 class="anchored" data-anchor-id="ce-que-léconométrie-financière-a-déjà-montré">Ce que l’économétrie financière a déjà montré</h2>
+<div class="definitionbox" title="Trois hypothèses du modèle, trois démentis">
+<div class="pedago-title">
+Trois hypothèses du modèle, trois démentis
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Le modèle suppose</th>
+<th>Les données montrent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\sigma</span> constante</td>
+<td>volatilité en <strong>grappes</strong> (GARCH)</td>
+</tr>
+<tr class="even">
+<td>rendements gaussiens</td>
+<td>queues <strong>épaisses</strong>, kurtosis <span class="math inline">&gt; 3</span></td>
+</tr>
+<tr class="odd">
+<td>trajectoires continues</td>
+<td><strong>sauts</strong> lors des annonces et des krachs</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="intuitionbox" title="Pourquoi le garder malgré tout">
+<div class="pedago-title">
+Pourquoi le garder malgré tout
+</div>
+<p>Parce qu’il est le seul à conduire à une <strong>formule fermée</strong>, donc à une intuition transmissible et à un étalon de comparaison. Un modèle faux mais compris vaut mieux qu’un modèle juste et opaque — à condition de savoir précisément où il est faux.</p>
+</div>
+</section>
+<section class="level2" id="les-trois-portes-de-sortie">
+<h2 class="anchored" data-anchor-id="les-trois-portes-de-sortie">Les trois portes de sortie</h2>
+<div class="ecobox" title="Ce que la suite du cours fera de ces limites">
+<div class="pedago-title">
+Ce que la suite du cours fera de ces limites
+</div>
+<ul>
+<li><strong>Sauts</strong> : le chapitre 8 introduit les processus de Merton.</li>
+<li><strong>Volatilité non constante</strong> : le chapitre 11 esquisse Heston, version continue du GARCH.</li>
+<li><strong>Conséquences pratiques</strong> : le cours de <em>Value at Risk</em> en fait son chapitre « risque de modèle ».</li>
+</ul>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 7">
+<div class="pedago-title">
+L’essentiel du chapitre 7
+</div>
+<ul>
+<li><span class="math inline">dS/S = \mu\,dt + \sigma\,dW</span> : le rendement, non le prix, obéit à une loi simple.</li>
+<li>Itô appliqué à <span class="math inline">\ln S</span> donne <span class="math inline">d(\ln S) = (\mu - \sigma^2/2)dt + \sigma dW</span>, donc la solution explicite du chapitre 2.</li>
+<li><span class="math inline">\mathrm{E}(S_t) = S_0e^{\mu t}</span> mais médiane <span class="math inline">= S_0e^{(\mu-\sigma^2/2)t}</span> : la volatilité coûte à la performance typique.</li>
+<li><span class="math inline">\sigma</span> s’estime bien ; <span class="math inline">\mu</span> ne s’estime pas, et cela ne s’améliore pas en échantillonnant plus finement.</li>
+<li>Le modèle est démenti sur trois points connus — et reste le point de départ obligé.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers le chapitre 8">
+<div class="pedago-title">
+Vers le chapitre 8
+</div>
+<p>Une action n’est pas le seul objet de la finance. Un taux d’intérêt ne dérive pas indéfiniment : il revient vers une moyenne. Le chapitre suivant construit les processus correspondants — et referme le tableau ouvert au chapitre 3.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="lemme-ito.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Le lemme d&#x27;Itô</span></a>
+<a class="jm-nav-suivant" href="processus-usuels.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Les autres processus de la finance</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/prix-action.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/prix-action-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/prix-action-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/prix-action.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

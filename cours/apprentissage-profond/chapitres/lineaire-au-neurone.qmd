@@ -1,0 +1,312 @@
+---
+title: "Apprentissage profond"
+subtitle: "Du modèle linéaire au neurone"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage profond</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="jm-actif" href="lineaire-au-neurone.qmd">1. Du modèle linéaire au neurone</a></li>
+<li><a class="" href="perceptron-multicouche.qmd">2. Le perceptron multicouche</a></li>
+<li><a class="" href="perte-activation.qmd">3. Fonctions de perte et d&#x27;activation</a></li>
+<li><a class="" href="descente-gradient.qmd">4. La descente de gradient et ses variantes</a></li>
+<li><a class="" href="retropropagation.qmd">5. La rétropropagation</a></li>
+<li><a class="" href="regularisation.qmd">6. Régularisation : décrochage, pénalisation, arrêt précoce</a></li>
+<li><a class="" href="initialisation-normalisation.qmd">7. Initialisation et normalisation</a></li>
+<li><a class="" href="reseaux-convolutifs.qmd">8. Les réseaux convolutifs</a></li>
+<li><a class="" href="reseaux-recurrents.qmd">9. Les réseaux récurrents : RNN, LSTM, GRU</a></li>
+<li><a class="" href="attention-transformeurs.qmd">10. L&#x27;attention et les transformeurs</a></li>
+<li><a class="" href="series-financieres.qmd">11. Prévision de séries financières par réseaux</a></li>
+<li><a class="" href="limites.qmd">12. Ce que l&#x27;apprentissage profond ne résout pas</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage profond</h1>
+<p class="subtitle lead">Introduction : Du modèle linéaire au neurone</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="prérequis">
+<h1>Prérequis</h1>
+<section class="level2" id="ce-que-ce-cours-suppose-acquis">
+<h2 class="anchored" data-anchor-id="ce-que-ce-cours-suppose-acquis">Ce que ce cours suppose acquis</h2>
+<div class="definitionbox" title="Les cours qui précèdent">
+<div class="pedago-title">
+Les cours qui précèdent
+</div>
+<p><strong><em>Apprentissage statistique</em></strong>, ainsi que l’<strong><em>Algèbre linéaire</em></strong> et l’<strong><em>Analyse mathématique</em></strong> du niveau Licence.</p>
+</div>
+<div class="examplebox" title="Les notions mobilisées">
+<div class="pedago-title">
+Les notions mobilisées
+</div>
+<p>Le compromis biais-variance, la validation croisée, la régularisation. Le produit matriciel et la dérivée composée — la rétropropagation n’est rien d’autre.</p>
+<p><strong>Python est ici la langue de travail</strong> ; le cours suppose qu’on la lit.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-le-cours-établit-lui-même">
+<h2 class="anchored" data-anchor-id="ce-que-le-cours-établit-lui-même">Ce que le cours établit lui-même</h2>
+<div class="intuitionbox" title="Repris depuis le début">
+<div class="pedago-title">
+Repris depuis le début
+</div>
+<p>Le neurone est construit à partir du <strong>modèle linéaire</strong>, que le lecteur connaît déjà : un réseau n’est qu’un empilement de régressions séparées par une non-linéarité.</p>
+<p>Aucune bibliothèque n’est traitée comme une boîte noire : ce que fait une ligne de code est établi avant d’être écrit.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-fil-de-tout-le-cours">
+<h1>Le fil de tout le cours</h1>
+<section class="level2" id="un-neurone-est-un-modèle-que-vous-connaissez">
+<h2 class="anchored" data-anchor-id="un-neurone-est-un-modèle-que-vous-connaissez">Un neurone est un modèle que vous connaissez</h2>
+<div class="definitionbox" title="Le neurone artificiel">
+<div class="pedago-title">
+Le neurone artificiel
+</div>
+<p>Un <strong>neurone</strong> calcule une combinaison linéaire de ses entrées, y ajoute une constante, puis applique une fonction non linéaire :</p>
+<p><span class="math display">a = g\!\left(\underbrace{w_1 x_1 + \dots + w_p x_p + b}_{z}\right)</span></p>
+<p><span class="math inline">w</span> sont les <strong>poids</strong>, <span class="math inline">b</span> le <strong>biais</strong>, <span class="math inline">g</span> la fonction d’<strong>activation</strong>.</p>
+</div>
+<div class="intuitionbox" title="La reconnaissance à faire immédiatement">
+<div class="pedago-title">
+La reconnaissance à faire immédiatement
+</div>
+<p>Si <span class="math inline">g</span> est la fonction logistique, cette formule <strong>est</strong> la régression logistique du chapitre 5 d’<em>Apprentissage statistique</em>.</p>
+<p>Un réseau de neurones n’est donc pas un objet nouveau : c’est un <strong>empilement</strong> de régressions logistiques, entraîné par descente de gradient.</p>
+<p><strong>Ce cours tient ce fil du premier chapitre au dernier.</strong> C’est ce qui évite la boîte noire.</p>
+</div>
+<div class="definitionbox" title="Le vocabulaire, traduit">
+<div class="pedago-title">
+Le vocabulaire, traduit
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Réseaux de neurones</th>
+<th>Statistique</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>poids</td>
+<td>coefficients</td>
+</tr>
+<tr class="even">
+<td>biais</td>
+<td>constante</td>
+</tr>
+<tr class="odd">
+<td>activation</td>
+<td>fonction de lien</td>
+</tr>
+<tr class="even">
+<td>entraînement</td>
+<td>estimation</td>
+</tr>
+<tr class="odd">
+<td>perte</td>
+<td>fonction objectif</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-que-ne-peut-pas-un-neurone">
+<h1>Ce que ne peut pas un neurone</h1>
+<section class="level2" id="la-limite-historique">
+<h2 class="anchored" data-anchor-id="la-limite-historique">La limite historique</h2>
+<div class="definitionbox" title="Le problème du OU exclusif">
+<div class="pedago-title">
+Le problème du OU exclusif
+</div>
+<p>Un neurone unique produit une frontière <strong>linéaire</strong>. Il ne peut donc pas représenter une relation qui exige deux frontières.</p>
+<p>Le cas d’école est le <strong>OU exclusif</strong> : la sortie vaut <span class="math inline">1</span> quand exactement une entrée vaut <span class="math inline">1</span>.</p>
+</div>
+<div class="examplebox" title="La table impossible">
+<div class="pedago-title">
+La table impossible
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;"><span class="math inline">x_1</span></th>
+<th style="text-align: right;"><span class="math inline">x_2</span></th>
+<th style="text-align: right;">sortie</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">1</span></td>
+<td style="text-align: right;"><span class="math inline">0</span></td>
+</tr>
+</tbody>
+</table>
+<p>Aucune droite ne sépare les deux classes : les points de sortie <span class="math inline">1</span> sont sur une diagonale, ceux de sortie <span class="math inline">0</span> sur l’autre.</p>
+</div>
+<div class="intuitionbox" title="La solution, et le prix à payer">
+<div class="pedago-title">
+La solution, et le prix à payer
+</div>
+<p>Avec <strong>une couche intermédiaire</strong>, le problème se résout sans difficulté : la première couche construit des représentations nouvelles, la seconde les combine linéairement.</p>
+<p>C’est exactement l’astuce du noyau du chapitre 10 d’<em>Apprentissage statistique</em> — rendre linéairement séparable ce qui ne l’est pas — à ceci près que le réseau <strong>apprend</strong> la transformation au lieu de la choisir d’avance.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-profondeur">
+<h1>La profondeur</h1>
+<section class="level2" id="pourquoi-empiler">
+<h2 class="anchored" data-anchor-id="pourquoi-empiler">Pourquoi empiler</h2>
+<div class="definitionbox" title="Le théorème d'approximation universelle">
+<div class="pedago-title">
+Le théorème d’approximation universelle
+</div>
+<p>Un réseau à <strong>une seule</strong> couche cachée, suffisamment large, peut approcher n’importe quelle fonction continue avec la précision voulue.</p>
+</div>
+<div class="intuitionbox" title="Un théorème qui prouve moins qu'il n'y paraît">
+<div class="pedago-title">
+Un théorème qui prouve moins qu’il n’y paraît
+</div>
+<p>Il affirme qu’une solution <strong>existe</strong>. Il ne dit ni combien de neurones il faudrait, ni qu’un algorithme saura la trouver, ni qu’elle généralisera.</p>
+<p>En pratique, la largeur requise peut être astronomique. <strong>La profondeur est bien plus économique que la largeur</strong> : plusieurs couches modestes représentent, avec peu de paramètres, des fonctions qu’une couche unique exigerait immense.</p>
+</div>
+<div class="definitionbox" title="L'idée de représentations hiérarchiques">
+<div class="pedago-title">
+L’idée de représentations hiérarchiques
+</div>
+<p>Chaque couche construit des descripteurs à partir de ceux de la couche précédente, du plus simple au plus abstrait.</p>
+<p>Sur une image : contours, puis motifs, puis parties d’objets, puis objets. Sur une série financière : variations, puis régimes, puis configurations.</p>
+</div>
+<div class="ecobox" title="Ce que cela remplace">
+<div class="pedago-title">
+Ce que cela remplace
+</div>
+<p>Dans le cours précédent, les interactions et transformations utiles devaient être <strong>construites à la main</strong> — c’était l’ingénierie des variables.</p>
+<p>Un réseau profond les <strong>apprend</strong>. C’est son avantage décisif, et il n’est réel que si les données sont nombreuses : apprendre une représentation coûte beaucoup plus d’observations que d’en spécifier une.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-cadre-de-travail">
+<h1>Le cadre de travail</h1>
+<section class="level2" id="trois-pièces">
+<h2 class="anchored" data-anchor-id="trois-pièces">Trois pièces</h2>
+<div class="definitionbox" title="Ce qu'il faut définir pour entraîner un réseau">
+<div class="pedago-title">
+Ce qu’il faut définir pour entraîner un réseau
+</div>
+<ol type="1">
+<li>Une <strong>architecture</strong> — combien de couches, de quelle largeur, avec quelles activations.</li>
+<li>Une <strong>fonction de perte</strong> — ce que l’on cherche à minimiser.</li>
+<li>Un <strong>algorithme d’optimisation</strong> — comment on la minimise.</li>
+</ol>
+<p>Les chapitres 1 à 4 traitent ces trois pièces dans l’ordre.</p>
+</div>
+<div class="ecobox" title="Le fil rouge du cours">
+<div class="pedago-title">
+Le fil rouge du cours
+</div>
+<p>Le cours travaille sur des <strong>séries financières</strong> : rendements quotidiens d’un indice, à prévoir ou à classer en régimes.</p>
+<p>Ce choix prolonge directement <em>Modélisation ARMA</em> et <em>GARCH</em>, et permettra au chapitre 10 de comparer honnêtement les approches — ce qui est plus instructif que de reprendre les images de chats de la littérature.</p>
+</div>
+</section>
+<section class="level2" id="une-mise-en-garde-dès-le-premier-chapitre">
+<h2 class="anchored" data-anchor-id="une-mise-en-garde-dès-le-premier-chapitre">Une mise en garde dès le premier chapitre</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>L’apprentissage profond domine sur l’image, le texte et le son. Sur les <strong>données tabulaires</strong>, le boosting du chapitre 9 d’<em>Apprentissage statistique</em> reste généralement supérieur.</p>
+<p>Le chapitre 11 y reviendra sans détour. Il vaut mieux le savoir en commençant qu’en terminant.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>Un <strong>neurone</strong> est une combinaison linéaire suivie d’une non-linéarité — la régression logistique en est un cas.</li>
+<li>Un neurone seul ne produit qu’une frontière <strong>linéaire</strong> : le <strong>OU exclusif</strong> lui échappe.</li>
+<li>Une couche cachée suffit à le résoudre, en apprenant une représentation nouvelle.</li>
+<li>Le <strong>théorème d’approximation universelle</strong> garantit l’existence, non la trouvabilité.</li>
+<li>La <strong>profondeur</strong> est plus économique que la largeur, et remplace l’ingénierie des variables.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Le chapitre 1 assemble ces neurones en réseau, et compte exactement ce que cela coûte en paramètres.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="../index.qmd">&larr; Présentation du cours</a>
+<a class="jm-nav-suivant" href="perceptron-multicouche.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Le perceptron multicouche</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/lineaire-au-neurone.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/lineaire-au-neurone-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/lineaire-au-neurone-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/lineaire-au-neurone.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```

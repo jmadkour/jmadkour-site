@@ -1,0 +1,340 @@
+---
+title: "Apprentissage statistique"
+subtitle: "Évaluer un classifieur : matrice de confusion, ROC, AUC"
+sidebar: false
+toc: false
+page-layout: full
+include-in-header:
+  - ../../../_includes/masquer-titre.html
+  - ../../../_includes/lecteur.html
+---
+
+```{=html}
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Apprentissage statistique</div>
+<ul>
+<li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
+<li><a class="" href="expliquer-prevoir.qmd">1. Expliquer ou prévoir : deux objectifs distincts</a></li>
+<li><a class="" href="biais-variance.qmd">2. Le compromis biais-variance</a></li>
+<li><a class="" href="validation-croisee.qmd">3. Rééchantillonnage et validation croisée</a></li>
+<li><a class="" href="regression-penalisee.qmd">4. La régression pénalisée : ridge et lasso</a></li>
+<li><a class="" href="selection-variables.qmd">5. Sélection de variables et grande dimension</a></li>
+<li><a class="" href="classification.qmd">6. La classification : logistique et analyse discriminante</a></li>
+<li><a class="jm-actif" href="evaluer-classifieur.qmd">7. Évaluer un classifieur : matrice de confusion, ROC, AUC</a></li>
+<li><a class="" href="arbres-decision.qmd">8. Les arbres de décision</a></li>
+<li><a class="" href="forets-aleatoires.qmd">9. Forêts aléatoires et bagging</a></li>
+<li><a class="" href="boosting.qmd">10. Le boosting de gradient</a></li>
+<li><a class="" href="svm.qmd">11. Les machines à vecteurs de support</a></li>
+<li><a class="" href="interpreter-modele.qmd">12. Interpréter un modèle de prévision</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Apprentissage statistique</h1>
+<p class="subtitle lead">Chapitre 6 : Évaluer un classifieur : matrice de confusion, ROC, AUC</p>
+</div>
+<div class="quarto-title-meta-author">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="la-matrice-de-confusion">
+<h1>La matrice de confusion</h1>
+<section class="level2" id="quatre-nombres">
+<h2 class="anchored" data-anchor-id="quatre-nombres">Quatre nombres</h2>
+<div class="definitionbox" title="Les quatre cases">
+<div class="pedago-title">
+Les quatre cases
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Réel : défaut</strong></th>
+<th><strong>Réel : bon</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Prévu : défaut</strong></td>
+<td>vrais positifs <span class="math inline">VP</span></td>
+<td>faux positifs <span class="math inline">FP</span></td>
+</tr>
+<tr class="even">
+<td><strong>Prévu : bon</strong></td>
+<td>faux négatifs <span class="math inline">FN</span></td>
+<td>vrais négatifs <span class="math inline">VN</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="examplebox" title="Notre modèle sur les mille dossiers">
+<div class="pedago-title">
+Notre modèle sur les mille dossiers
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: right;"><strong>Réel : défaut</strong></th>
+<th style="text-align: right;"><strong>Réel : bon</strong></th>
+<th style="text-align: right;">Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Prévu : défaut</strong></td>
+<td style="text-align: right;"><span class="math inline">60</span></td>
+<td style="text-align: right;"><span class="math inline">90</span></td>
+<td style="text-align: right;"><span class="math inline">150</span></td>
+</tr>
+<tr class="even">
+<td><strong>Prévu : bon</strong></td>
+<td style="text-align: right;"><span class="math inline">40</span></td>
+<td style="text-align: right;"><span class="math inline">810</span></td>
+<td style="text-align: right;"><span class="math inline">850</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Total</strong></td>
+<td style="text-align: right;"><span class="math inline">100</span></td>
+<td style="text-align: right;"><span class="math inline">900</span></td>
+<td style="text-align: right;"><span class="math inline">1\,000</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="definitionbox" title="Les mesures qu'on en tire">
+<div class="pedago-title">
+Les mesures qu’on en tire
+</div>
+<p><span class="math display">\text{exactitude} = \frac{VP + VN}{n} = \frac{870}{1\,000} = 0{,}87</span></p>
+<p><span class="math display">\text{précision} = \frac{VP}{VP + FP} = \frac{60}{150} = 0{,}40</span></p>
+<p><span class="math display">\text{rappel} = \frac{VP}{VP + FN} = \frac{60}{100} = 0{,}60</span></p>
+<p><span class="math display">\text{spécificité} = \frac{VN}{VN + FP} = \frac{810}{900} = 0{,}90</span></p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-piège-de-lexactitude">
+<h1>Le piège de l’exactitude</h1>
+<section class="level2" id="le-classifieur-qui-ne-fait-rien">
+<h2 class="anchored" data-anchor-id="le-classifieur-qui-ne-fait-rien">Le classifieur qui ne fait rien</h2>
+<div class="examplebox" title="Un concurrent redoutable">
+<div class="pedago-title">
+Un concurrent redoutable
+</div>
+<p>Considérons un modèle qui prédit <strong>« bon » pour tout le monde</strong>, sans regarder aucune variable.</p>
+<p><span class="math display">\text{exactitude} = \frac{900}{1\,000} = 0{,}90</span></p>
+<p><strong>Il fait mieux que notre modèle</strong> — <span class="math inline">0{,}90</span> contre <span class="math inline">0{,}87</span> — tout en étant strictement inutile : son rappel est nul, il ne détecte <strong>aucun</strong> défaut.</p>
+</div>
+<div class="intuitionbox" title="La leçon">
+<div class="pedago-title">
+La leçon
+</div>
+<p>Avec des classes déséquilibrées, l’exactitude est dominée par la classe majoritaire. Elle récompense l’inaction.</p>
+<p><strong>Une exactitude élevée n’établit rien tant qu’on ne l’a pas comparée à celle du classifieur trivial.</strong> C’est le premier réflexe à acquérir, et l’erreur la plus répandue chez les débutants.</p>
+</div>
+</section>
+<section class="level2" id="précision-et-rappel-sopposent">
+<h2 class="anchored" data-anchor-id="précision-et-rappel-sopposent">Précision et rappel s’opposent</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<p>Abaisser le seuil augmente le <strong>rappel</strong> — on détecte plus de défauts — et dégrade la <strong>précision</strong> — on se trompe plus souvent en accusant.</p>
+<p>Le <strong>F1</strong> les combine par leur moyenne harmonique : <span class="math display">F_1 = 2 \times \frac{\text{précision} \times \text{rappel}}{\text{précision} + \text{rappel}} = 2 \times \frac{0{,}40 \times 0{,}60}{1{,}00} = 0{,}48</span></p>
+</div>
+</section>
+<section class="level2" id="lequel-privilégier-dépend-du-coût-des-erreurs">
+<h2 class="anchored" data-anchor-id="lequel-privilégier-dépend-du-coût-des-erreurs">Lequel privilégier dépend du coût des erreurs</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Contexte</th>
+<th>Priorité</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Dépistage d’une maladie grave</td>
+<td>le <strong>rappel</strong> — ne rien manquer</td>
+</tr>
+<tr class="even">
+<td>Filtre anti-spam</td>
+<td>la <strong>précision</strong> — ne pas bloquer un message légitime</td>
+</tr>
+<tr class="odd">
+<td>Octroi de crédit</td>
+<td>selon le coût relatif du défaut et de la marge perdue</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Aucune mesure unique ne convient à tous les problèmes.</strong> Le choix se fait sur l’économie du cas.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-courbe-roc">
+<h1>La courbe ROC</h1>
+<section class="level2" id="balayer-tous-les-seuils">
+<h2 class="anchored" data-anchor-id="balayer-tous-les-seuils">Balayer tous les seuils</h2>
+<div class="definitionbox" title="Courbe ROC">
+<div class="pedago-title">
+Courbe ROC
+</div>
+<p>La <strong>courbe ROC</strong> trace, pour tous les seuils possibles, le <strong>taux de vrais positifs</strong> — le rappel — contre le <strong>taux de faux positifs</strong>, soit <span class="math inline">1 -</span> spécificité.</p>
+<p>Sur notre modèle et à ce seuil, le point vaut <span class="math inline">(0{,}10 \,;\, 0{,}60)</span>.</p>
+</div>
+<div class="definitionbox" title="Comment la lire">
+<div class="pedago-title">
+Comment la lire
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Position</th>
+<th>Signification</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Coin <strong>supérieur gauche</strong></td>
+<td>classifieur parfait</td>
+</tr>
+<tr class="even">
+<td><strong>Diagonale</strong></td>
+<td>classifieur aléatoire</td>
+</tr>
+<tr class="odd">
+<td><strong>Sous la diagonale</strong></td>
+<td>pire que le hasard — inverser les prédictions</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="laire-sous-la-courbe">
+<h2 class="anchored" data-anchor-id="laire-sous-la-courbe">L’aire sous la courbe</h2>
+<div class="definitionbox">
+<div class="pedago-title">
+Définition
+</div>
+<p>L’<strong>AUC</strong> est l’aire sous la courbe ROC.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>AUC</th>
+<th>Lecture</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">0{,}5</span></td>
+<td>aléatoire</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">0{,}7</span> à <span class="math inline">0{,}8</span></td>
+<td>acceptable</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">&gt; 0{,}9</span></td>
+<td>excellent — ou suspect</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="level2" id="ce-que-lauc-signifie-exactement">
+<h2 class="anchored" data-anchor-id="ce-que-lauc-signifie-exactement">Ce que l’AUC signifie exactement</h2>
+<div class="intuitionbox">
+<div class="pedago-title">
+Intuition
+</div>
+<p>L’AUC est la <strong>probabilité que le modèle attribue un score plus élevé à un défaillant tiré au hasard qu’à un bon client tiré au hasard</strong>.</p>
+<p>Cette interprétation est précieuse : elle ne dépend d’<strong>aucun seuil</strong>, et elle est insensible au déséquilibre des classes. C’est ce qui en fait la mesure de référence pour comparer des modèles.</p>
+</div>
+</section>
+<section class="level2" id="une-auc-trop-belle-est-un-signal-dalarme">
+<h2 class="anchored" data-anchor-id="une-auc-trop-belle-est-un-signal-dalarme">Une AUC trop belle est un signal d’alarme</h2>
+<div class="ecobox">
+<div class="pedago-title">
+Application en gestion
+</div>
+<p>Une AUC supérieure à <span class="math inline">0{,}95</span> sur un problème de crédit doit déclencher une vérification, non une célébration.</p>
+<p>Les causes habituelles sont la <strong>fuite de données</strong> de l’introduction — une variable qui contient l’information à prévoir, comme le nombre de relances ou la date de clôture du dossier.</p>
+<p><strong>Le premier réflexe devant un résultat excellent est de chercher la fuite.</strong></p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-quil-faut-retenir">
+<h1>Ce qu’il faut retenir</h1>
+<section class="level2" id="le-résumé-du-chapitre">
+<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<div class="definitionbox" title="Cinq points">
+<div class="pedago-title">
+Cinq points
+</div>
+<ol type="1">
+<li>La <strong>matrice de confusion</strong> résume tout : ici <span class="math inline">60</span>, <span class="math inline">40</span>, <span class="math inline">90</span>, <span class="math inline">810</span>.</li>
+<li>L’<strong>exactitude</strong> de <span class="math inline">0{,}87</span> est battue par le classifieur trivial à <span class="math inline">0{,}90</span> — elle ne prouve rien seule.</li>
+<li><strong>Précision</strong> et <strong>rappel</strong> s’opposent ; le seuil arbitre entre eux ; <span class="math inline">F_1 = 0{,}48</span> les combine.</li>
+<li>La <strong>courbe ROC</strong> balaie tous les seuils ; ici le point <span class="math inline">(0{,}10 \,;\, 0{,}60)</span>.</li>
+<li>L’<strong>AUC</strong> est la probabilité de bien ordonner deux dossiers ; une valeur trop élevée signale une fuite.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="La suite">
+<div class="pedago-title">
+La suite
+</div>
+<p>Nous savons construire et évaluer des modèles linéaires. Les cinq chapitres suivants abandonnent la linéarité, en commençant par l’arbre de décision.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="classification.qmd">&larr; Chapitre précédent<span class="jm-nav-label">La classification : logistique et analyse discriminante</span></a>
+<a class="jm-nav-suivant" href="arbres-decision.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Les arbres de décision</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3>Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/evaluer-classifieur.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/evaluer-classifieur-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/evaluer-classifieur-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/evaluer-classifieur.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+```
