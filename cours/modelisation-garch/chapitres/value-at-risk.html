@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Modélisation GARCH de la volatilité – Jaouad Madkour</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../">
+<link href="../../../favicon.png" rel="icon" type="image/png">
+<script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "Pas de résultats",
+    "search-matching-documents-text": "documents trouvés",
+    "search-copy-link-title": "Copier le lien vers la recherche",
+    "search-hide-matches-text": "Cacher les correspondances additionnelles",
+    "search-more-match-text": "correspondance de plus dans ce document",
+    "search-more-matches-text": "correspondances de plus dans ce document",
+    "search-clear-button-title": "Effacer",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Annuler",
+    "search-submit-button-title": "Envoyer",
+    "search-label": "Recherche"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
+     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
+     latérale, l'onglet du navigateur et la recherche du site. Seul son
+     affichage en tête de page, redondant avec la barre latérale, disparaît.
+     Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
+<style>
+  header#title-block-header,
+  .quarto-title-block { display: none; }
+  /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
+  main.content > *:first-child { margin-top: 0.6rem; }
+</style>
+<!-- Lecteur de chapitres à 3 volets : styles partagés par toutes les pages de cours restructurées (volets gauche/droit sur mesure, encadrés pédagogiques repliables) et rendu KaTeX des fragments de chapitre. Voir claude/plan-refonte-pages-cours.md dans le projet Claude pour le contexte. -->
+<style>
+/* =====================================================================
+   Lecteur de chapitres à 3 volets — pages de cours restructurées
+   Palette identique aux diapositives et à la palette pédagogique de
+   l'atelier (preamble.tex / preamble-article.tex / custom.scss) :
+     cdef  #4A3B8C  définition
+     cintu #E08000  intuition
+     cex   #2E8B57  exemple
+     ceco  #1F6FB2  application économique (= $primary du site)
+   Couleurs de thème (fond, bordures, cartes) reprises de
+   theme-light.scss / theme-dark.scss, sélectionnées via les classes
+   body.quarto-light / body.quarto-dark déjà posées par Quarto.
+   ===================================================================== */
+
+/* Quarto ajoute automatiquement les classes .page-columns.page-full à tout
+   bloc de premier niveau dans .content (grid.content-mode: standard, actif
+   sur tout le site) — leur grille (colonnes nommées pour marge/TOC) prend
+   sinon le pas sur la nôtre, à spécificité CSS égale et chargée après.
+   D'où les !important ci-dessous, uniquement sur les deux propriétés en
+   conflit direct.
+   Largeurs : avec page-layout: full (et un DOM valide — voir la note sur
+   les <summary> dans pedago-blocks.lua), .content atteint ~1135px sur ce
+   site, indépendamment de la largeur de la fenêtre (grille à colonnes
+   nommées, non proportionnelle au viewport). Volets latéraux à 240px,
+   assez larges pour les intitulés de chapitre et de ressource sur une ou
+   deux lignes, le volet central se partageant le reste (~590px, proche
+   de la largeur de lecture par défaut de Quarto). */
+.jm-lecteur {
+  display: grid !important;
+  grid-template-columns: 240px minmax(0, 1fr) 240px !important;
+  gap: 1.75rem;
+  align-items: start;
+  margin-top: .6rem;
+  max-width: none !important;
+}
+/* Bootstrap (.page-columns>*{grid-column:body-content-start/body-content-end})
+   place autrement tous les enfants directs dans la même colonne nommée —
+   même spécificité (classe + combinateur enfant), donc on rétablit le
+   placement automatique (1er, 2e, 3e enfant -> colonnes 1, 2, 3). */
+.jm-lecteur > * { grid-column: auto !important; }
+
+@media (max-width: 991px) {
+  .jm-lecteur { grid-template-columns: 1fr !important; }
+  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+}
+
+/* ---------- Volet gauche : sommaire du cours ---------- */
+.jm-lecteur-gauche {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .92rem;
+}
+.jm-lecteur-titre-cours {
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding-bottom: .45rem;
+  margin-bottom: .6rem;
+  border-bottom: 1px solid #dbe6ee;
+}
+.jm-lecteur-gauche ul { list-style: none; padding: 0; margin: 0; }
+.jm-lecteur-gauche li { margin: 0; }
+.jm-lecteur-gauche a {
+  display: block;
+  padding: .4rem .55rem;
+  border-radius: 7px;
+  margin-bottom: .1rem;
+  color: inherit;
+  border-left: 3px solid transparent;
+  line-height: 1.35;
+}
+.jm-lecteur-gauche a:hover { background: rgba(31,111,178,0.08); text-decoration: none; }
+.jm-lecteur-gauche a.jm-actif {
+  background: rgba(31,111,178,0.12);
+  border-left-color: #1f6fb2;
+  color: #1f6fb2;
+  font-weight: 700;
+}
+.jm-lecteur-gauche a.jm-accueil { font-style: italic; }
+
+/* ---------- Volet centre : contenu du chapitre ---------- */
+.jm-lecteur-centre { min-width: 0; }
+.jm-lecteur-centre .quarto-title-block .title { font-size: 1.7rem; }
+.jm-lecteur-centre .quarto-title-block .subtitle { color: #54707f; }
+
+/* ---------- Volet droit : ressources du chapitre ---------- */
+.jm-lecteur-droite {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .88rem;
+  background: #f6f9fb;
+  border: 1px solid #dbe6ee;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+.jm-lecteur-droite h3 {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #54707f;
+  margin: 0 0 .7rem;
+}
+.jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
+.jm-lecteur-droite li { margin-bottom: .55rem; }
+.jm-lecteur-droite a.jm-ressource {
+  color: #1f6fb2;
+  font-weight: 600;
+}
+.jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+.jm-lecteur-droite .jm-indisponible {
+  color: #9aa9b2; font-weight: 500; cursor: default;
+}
+.jm-lecteur-droite .jm-reserve {
+  color: #9aa9b2; font-style: italic;
+}
+
+/* ---------- Navigation précédent / suivant ---------- */
+.jm-lecteur-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin: 2.2rem 0 .5rem; padding-top: 1rem;
+  border-top: 1px solid #dbe6ee;
+  font-size: .92rem;
+}
+.jm-lecteur-nav a { color: #1f6fb2; font-weight: 600; }
+.jm-lecteur-nav .jm-nav-suivant { margin-left: auto; text-align: right; }
+.jm-lecteur-nav .jm-nav-label {
+  display: block; font-size: .76rem; font-weight: 400; color: #54707f;
+}
+
+/* ---------- Encadrés pédagogiques dans le volet centre ---------- */
+/* Reprend le mécanisme de custom.scss (atelier), adapté en <details> */
+.jm-lecteur-centre details.definitionbox,
+.jm-lecteur-centre details.intuitionbox,
+.jm-lecteur-centre details.examplebox,
+.jm-lecteur-centre details.ecobox {
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0.9em 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+.jm-lecteur-centre summary.pedago-title {
+  font-weight: 700;
+  color: #fff;
+  padding: .45em .9em;
+  cursor: pointer;
+  list-style: none;
+}
+.jm-lecteur-centre summary.pedago-title::-webkit-details-marker { display: none; }
+.jm-lecteur-centre summary.pedago-title::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: .5em;
+  transition: transform .15s ease;
+}
+.jm-lecteur-centre details[open] summary.pedago-title::before { transform: rotate(90deg); }
+.jm-lecteur-centre .pedago-body { padding: .7em 1em .9em; }
+.jm-lecteur-centre .pedago-body > *:first-child { margin-top: 0; }
+.jm-lecteur-centre .pedago-body > *:last-child { margin-bottom: 0; }
+
+.jm-lecteur-centre details.definitionbox { background: rgba(74,59,140,0.07); }
+.jm-lecteur-centre details.definitionbox summary.pedago-title { background: #4A3B8C; }
+.jm-lecteur-centre details.intuitionbox  { background: rgba(224,128,0,0.09); }
+.jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #E08000; }
+.jm-lecteur-centre details.examplebox    { background: rgba(46,139,87,0.07); }
+.jm-lecteur-centre details.examplebox summary.pedago-title { background: #2E8B57; }
+.jm-lecteur-centre details.ecobox        { background: rgba(31,111,178,0.07); }
+.jm-lecteur-centre details.ecobox summary.pedago-title { background: #1F6FB2; }
+
+/* Colonnes (definitionbox à côté d'une figure, etc.) : héritées du rendu
+   Quarto (div.columns{display:flex} / inline style width sur div.column). */
+.jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
+.jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
+
+/* =====================================================================
+   Mode sombre — posé par Quarto sur <body class="quarto-dark">
+   ===================================================================== */
+body.quarto-dark .jm-lecteur-titre-cours { border-bottom-color: #20455a; }
+body.quarto-dark .jm-lecteur-gauche a:hover { background: rgba(58,160,230,0.12); }
+body.quarto-dark .jm-lecteur-gauche a.jm-actif {
+  background: rgba(58,160,230,0.16);
+  border-left-color: #3aa0e6;
+  color: #3aa0e6;
+}
+body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite {
+  background: #13303d;
+  border-color: #20455a;
+}
+body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-droite .jm-indisponible,
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
+body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
+
+body.quarto-dark .jm-lecteur-centre details.definitionbox { background: rgba(122,104,206,0.16); }
+body.quarto-dark .jm-lecteur-centre details.definitionbox summary.pedago-title { background: #6252a8; }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox  { background: rgba(224,148,74,0.16); }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #c47a2e; }
+body.quarto-dark .jm-lecteur-centre details.examplebox    { background: rgba(55,180,126,0.14); }
+body.quarto-dark .jm-lecteur-centre details.examplebox summary.pedago-title { background: #37b47e; }
+body.quarto-dark .jm-lecteur-centre details.ecobox        { background: rgba(58,160,230,0.14); }
+body.quarto-dark .jm-lecteur-centre details.ecobox summary.pedago-title { background: #3aa0e6; }
+</style>
+<!-- Rendu KaTeX pour le volet central : les fragments de chapitre sont
+     extraits (BeautifulSoup) du rendu Quarto de l'atelier et insérés tels
+     quels en HTML brut dans la page du site. Le contenu mathématique y est
+     déjà mis en forme (spans <span class="math inline|display">…</span>,
+     source LaTeX brute), mais Quarto ne le détecte pas à la compilation de
+     CETTE page (le bloc {=html} n'est pas réanalysé comme du Markdown), et
+     n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
+     ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
+     pages où il détecte des maths (cf. html-math-method: katex du site) :
+     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     de tous les éléments .math qui les rend en place. -->
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+</script>
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+
+<meta property="og:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
+<meta property="og:description" content="De la volatilité à la Value at Risk">
+<meta property="og:site_name" content="Jaouad Madkour">
+<meta name="twitter:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
+<meta name="twitter:description" content="De la volatilité à la Value at Risk">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = true;
+    const darkModeDefault = authorPrefersDark;
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+            <div id="quarto-search" class="" title="Recherche"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Basculer la navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../../profile.html"> 
+<span class="menu-text">Jaouad Madkour</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../index.html"> 
+<span class="menu-text">Accueil</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../licence.html"> 
+<span class="menu-text">Licence</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../master.html"> 
+<span class="menu-text">Master</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../doctorat.html"> 
+<span class="menu-text">Doctorat</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../informatique.html"> 
+<span class="menu-text">Informatique</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../recherche.html"> 
+<span class="menu-text">Publications</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../about.html"> 
+<span class="menu-text">À propos</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">🌐</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-">    
+        <li>
+    <a class="dropdown-item" href="../../../index.html">
+ <span class="dropdown-text">Français</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../en/index.html">
+ <span class="dropdown-text">English</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../es/index.html">
+ <span class="dropdown-text">Español</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../ar/index.html">
+ <span class="dropdown-text">العربية</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://youtube.com/@JaouadMadkour" target="_blank"> <i class="bi bi-youtube" role="img" aria-label="YouTube">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.facebook.com/jmadkour" target="_blank"> <i class="bi bi-facebook" role="img" aria-label="Facebook">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.instagram.com/jaouad_madkour/" target="_blank"> <i class="bi bi-instagram" role="img" aria-label="Instagram">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/jmadkour"> <i class="bi bi-github" role="img" aria-label="GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Basculer le mode sombre"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Basculer en mode lecteur">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content column-page" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">De la volatilité à la Value at Risk</p>
+</div>
+
+
+
+<div class="quarto-title-meta column-page">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<ul>
+<li><a class="jm-accueil" href="../../../cours/modelisation-garch/index.html">Présentation du cours</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/faits-stylises.html">1. Mandelbrot et les faits stylisés des rentabilités</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/clusters-effet-levier.html">2. Regroupement de la volatilité et effet de levier</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/variance-conditionnelle.html">3. Le cadre de la variance conditionnelle</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/modele-arch.html">4. Le modèle ARCH(q) d'Engle</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/proprietes-arch.html">5. Propriétés statistiques de l'ARCH</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/detecter-arch.html">6. Détecter et identifier un effet ARCH</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/modele-garch.html">7. Le modèle GARCH(p,q) de Bollerslev</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/persistance.html">8. Stationnarité, persistance et variance de long terme</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/dualite-arma.html">9. La dualité GARCH et ARMA sur les carrés</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/loi-innovations.html">10. La loi des innovations</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/egarch.html">11. L'effet de levier et l'EGARCH de Nelson</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/gjr-tgarch.html">12. GJR-GARCH, TGARCH et la courbe d'impact</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/igarch-memoire-longue.html">13. IGARCH, GARCH-M et la mémoire longue</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/estimation.html">14. L'estimation par quasi-maximum de vraisemblance</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/validation.html">15. La validation d'un modèle de volatilité</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/prevision-volatilite.html">16. La prévision de volatilité</a></li>
+<li><a class="jm-actif" href="../../../cours/modelisation-garch/chapitres/value-at-risk.html">17. De la volatilité à la Value at Risk</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/mise-en-oeuvre-r.html">18. Mise en œuvre sur R</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/mise-en-oeuvre-python.html">19. Mise en œuvre sur Python</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-r.html">20. Étude de cas sur données réelles — R</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-python.html">21. Étude de cas sur données réelles — Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Chapitre 16 : De la volatilité à la Value at Risk</p>
+</div>
+<div class="quarto-title-meta-author column-page">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="le-chapitre-où-la-compétence-devient-utile">
+<h2 class="anchored" data-anchor-id="le-chapitre-où-la-compétence-devient-utile">Le chapitre où la compétence devient utile</h2>
+<div class="ecobox" title="Ce que ce chapitre établit">
+<div class="pedago-title">
+Ce que ce chapitre établit
+</div>
+<p>Une VaR est un <strong>quantile de la densité prédictive</strong>. Le cours a construit cette densité au chapitre 15. Il ne reste qu’à la lire au bon endroit — et à vérifier que la lecture est correcte.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-var-conditionnelle">
+<h1>La VaR conditionnelle</h1>
+<section class="level2" id="définition">
+<h2 class="anchored" data-anchor-id="définition">Définition</h2>
+<div class="definitionbox" title="Value at Risk à l'horizon un jour">
+<div class="pedago-title">
+Value at Risk à l’horizon un jour
+</div>
+<p>La perte que l’on ne dépassera qu’avec probabilité <span class="math inline">\alpha</span> : <span class="math display"> \mathrm{P}\big(r_{T+1} &lt; -\mathrm{VaR}_\alpha \mid \Omega_T\big) = \alpha . </span></p>
+</div>
+<div class="definitionbox" title="Sa forme sous GARCH">
+<div class="pedago-title">
+Sa forme sous GARCH
+</div>
+<p><span class="math display"> \boxed{\ \mathrm{VaR}_{\alpha,\,T+1} = -\Big[\hat\mu + \sqrt{\hat h_{T+1|T}}\ z_\alpha\Big]\ } </span></p>
+</div>
+<div class="intuitionbox" title="Trois ingrédients, trois chapitres">
+<div class="pedago-title">
+Trois ingrédients, trois chapitres
+</div>
+<p><span class="math inline">\hat\mu</span> vient de l’équation de moyenne — cours ARMA.</p>
+<p><span class="math inline">\sqrt{\hat h_{T+1|T}}</span> vient de l’équation de variance — chapitres 6 à 15.</p>
+<p><span class="math inline">z_\alpha</span> vient de la loi des innovations — chapitre 9.</p>
+</div>
+</section>
+<section class="level2" id="conditionnelle-et-inconditionnelle">
+<h2 class="anchored" data-anchor-id="conditionnelle-et-inconditionnelle">Conditionnelle et inconditionnelle</h2>
+<div class="definitionbox" title="Deux mesures qui portent le même nom">
+<div class="pedago-title">
+Deux mesures qui portent le même nom
+</div>
+<p><strong>Inconditionnelle</strong> : <span class="math inline">\mathrm{VaR} = -\hat\mu - \hat\sigma\,z_\alpha</span>, avec <span class="math inline">\hat\sigma</span> l’écart-type de tout l’échantillon. Un <strong>seuil fixe</strong>.</p>
+<p><strong>Conditionnelle</strong> : <span class="math inline">\hat\sigma</span> est remplacé par <span class="math inline">\sqrt{\hat h_{T+1|T}}</span>. Un seuil qui <strong>change chaque jour</strong>.</p>
+</div>
+</section>
+<section class="level2" id="conditionnelle-et-inconditionnelle-suite">
+<h2 class="anchored" data-anchor-id="conditionnelle-et-inconditionnelle-suite">Conditionnelle et inconditionnelle (suite)</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><svg height="152.86pt" id="svg_b37d2e4bbec78fe36ec1" role="img" style="width:90.0%" viewbox="0 0 344.12 152.86" width="344.12pt">
+<defs>
+<g>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-1" overflow="visible">
+<path d="M 2.90625 -2.078125 C 2.90625 -0.34375 2.046875 -0.078125 1.640625 -0.078125 C 1.484375 -0.078125 1.109375 -0.09375 0.921875 -0.3125 C 1.203125 -0.34375 1.234375 -0.578125 1.234375 -0.640625 C 1.234375 -0.8125 1.109375 -0.96875 0.90625 -0.96875 C 0.703125 -0.96875 0.5625 -0.828125 0.5625 -0.625 C 0.5625 -0.15625 0.96875 0.140625 1.640625 0.140625 C 2.640625 0.140625 3.578125 -0.796875 3.578125 -2.28125 C 3.578125 -4.015625 2.8125 -4.609375 2 -4.609375 C 1.765625 -4.609375 1.28125 -4.578125 0.890625 -4.1875 C 0.65625 -3.96875 0.375 -3.6875 0.375 -3.0625 C 0.375 -2.1875 1.078125 -1.53125 1.890625 -1.53125 C 2.453125 -1.53125 2.75 -1.890625 2.90625 -2.21875 Z M 1.921875 -1.71875 C 1.65625 -1.71875 1.390625 -1.8125 1.203125 -2.140625 C 1.046875 -2.390625 1.046875 -2.6875 1.046875 -3.0625 C 1.046875 -3.46875 1.046875 -3.75 1.25 -4.03125 C 1.40625 -4.265625 1.640625 -4.421875 2 -4.421875 C 2.359375 -4.421875 2.5625 -4.1875 2.671875 -4.015625 C 2.859375 -3.71875 2.890625 -3.234375 2.890625 -2.984375 C 2.890625 -2.09375 2.359375 -1.71875 1.921875 -1.71875 Z M 1.921875 -1.71875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-2" overflow="visible">
+<path d="M 3.59375 -2.21875 C 3.59375 -2.984375 3.5 -3.53125 3.171875 -4.015625 C 2.96875 -4.34375 2.53125 -4.609375 1.96875 -4.609375 C 0.359375 -4.609375 0.359375 -2.71875 0.359375 -2.21875 C 0.359375 -1.71875 0.359375 0.140625 1.96875 0.140625 C 3.59375 0.140625 3.59375 -1.71875 3.59375 -2.21875 Z M 1.96875 -0.0625 C 1.65625 -0.0625 1.234375 -0.25 1.09375 -0.8125 C 1 -1.21875 1 -1.796875 1 -2.3125 C 1 -2.8125 1 -3.34375 1.09375 -3.734375 C 1.25 -4.28125 1.6875 -4.421875 1.96875 -4.421875 C 2.34375 -4.421875 2.71875 -4.1875 2.84375 -3.796875 C 2.953125 -3.40625 2.953125 -2.90625 2.953125 -2.3125 C 2.953125 -1.796875 2.953125 -1.28125 2.859375 -0.84375 C 2.71875 -0.203125 2.25 -0.0625 1.96875 -0.0625 Z M 1.96875 -0.0625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-3" overflow="visible">
+<path d="M 2.328125 -4.421875 C 2.328125 -4.609375 2.3125 -4.609375 2.125 -4.609375 C 1.671875 -4.171875 1.046875 -4.171875 0.765625 -4.171875 L 0.765625 -3.921875 C 0.921875 -3.921875 1.390625 -3.921875 1.765625 -4.109375 L 1.765625 -0.5625 C 1.765625 -0.34375 1.765625 -0.25 1.078125 -0.25 L 0.8125 -0.25 L 0.8125 0 C 0.9375 0 1.78125 -0.03125 2.046875 -0.03125 C 2.265625 -0.03125 3.140625 0 3.28125 0 L 3.28125 -0.25 L 3.03125 -0.25 C 2.328125 -0.25 2.328125 -0.34375 2.328125 -0.5625 Z M 2.328125 -4.421875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-4" overflow="visible">
+<path d="M 3.515625 -1.265625 L 3.28125 -1.265625 C 3.25 -1.109375 3.1875 -0.703125 3.09375 -0.625 C 3.03125 -0.59375 2.5 -0.59375 2.40625 -0.59375 L 1.125 -0.59375 C 1.859375 -1.234375 2.09375 -1.4375 2.515625 -1.765625 C 3.03125 -2.171875 3.515625 -2.59375 3.515625 -3.265625 C 3.515625 -4.109375 2.78125 -4.609375 1.890625 -4.609375 C 1.015625 -4.609375 0.4375 -4.015625 0.4375 -3.375 C 0.4375 -3.015625 0.734375 -2.984375 0.8125 -2.984375 C 0.96875 -2.984375 1.171875 -3.09375 1.171875 -3.34375 C 1.171875 -3.484375 1.125 -3.71875 0.765625 -3.71875 C 0.984375 -4.21875 1.453125 -4.359375 1.78125 -4.359375 C 2.46875 -4.359375 2.84375 -3.828125 2.84375 -3.265625 C 2.84375 -2.65625 2.40625 -2.171875 2.1875 -1.921875 L 0.5 -0.265625 C 0.4375 -0.203125 0.4375 -0.1875 0.4375 0 L 3.296875 0 Z M 3.515625 -1.265625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-5" overflow="visible">
+<path d="M 1.890625 -2.328125 C 2.4375 -2.328125 2.828125 -1.953125 2.828125 -1.203125 C 2.828125 -0.34375 2.328125 -0.078125 1.921875 -0.078125 C 1.640625 -0.078125 1.03125 -0.15625 0.75 -0.5625 C 1.078125 -0.578125 1.140625 -0.8125 1.140625 -0.953125 C 1.140625 -1.1875 0.984375 -1.34375 0.765625 -1.34375 C 0.5625 -1.34375 0.375 -1.21875 0.375 -0.9375 C 0.375 -0.28125 1.09375 0.140625 1.9375 0.140625 C 2.90625 0.140625 3.578125 -0.5 3.578125 -1.203125 C 3.578125 -1.75 3.125 -2.28125 2.359375 -2.453125 C 3.09375 -2.71875 3.359375 -3.234375 3.359375 -3.65625 C 3.359375 -4.203125 2.71875 -4.609375 1.953125 -4.609375 C 1.1875 -4.609375 0.59375 -4.234375 0.59375 -3.6875 C 0.59375 -3.453125 0.75 -3.3125 0.953125 -3.3125 C 1.171875 -3.3125 1.3125 -3.484375 1.3125 -3.671875 C 1.3125 -3.875 1.171875 -4.015625 0.953125 -4.03125 C 1.203125 -4.34375 1.671875 -4.421875 1.9375 -4.421875 C 2.25 -4.421875 2.6875 -4.265625 2.6875 -3.65625 C 2.6875 -3.359375 2.59375 -3.046875 2.40625 -2.828125 C 2.171875 -2.5625 1.984375 -2.546875 1.640625 -2.53125 C 1.453125 -2.515625 1.453125 -2.515625 1.40625 -2.515625 C 1.390625 -2.515625 1.34375 -2.5 1.34375 -2.421875 C 1.34375 -2.328125 1.40625 -2.328125 1.515625 -2.328125 Z M 1.890625 -2.328125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-6" overflow="visible">
+<path d="M 3.671875 -1.140625 L 3.671875 -1.390625 L 2.90625 -1.390625 L 2.90625 -4.484375 C 2.90625 -4.640625 2.90625 -4.6875 2.75 -4.6875 C 2.671875 -4.6875 2.640625 -4.6875 2.578125 -4.59375 L 0.265625 -1.390625 L 0.265625 -1.140625 L 2.3125 -1.140625 L 2.3125 -0.5625 C 2.3125 -0.328125 2.3125 -0.25 1.75 -0.25 L 1.5625 -0.25 L 1.5625 0 C 1.90625 -0.015625 2.359375 -0.03125 2.609375 -0.03125 C 2.859375 -0.03125 3.3125 -0.015625 3.65625 0 L 3.65625 -0.25 L 3.46875 -0.25 C 2.90625 -0.25 2.90625 -0.328125 2.90625 -0.5625 L 2.90625 -1.140625 Z M 2.359375 -3.9375 L 2.359375 -1.390625 L 0.53125 -1.390625 Z M 2.359375 -3.9375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-7" overflow="visible">
+<path d="M 1.078125 -3.875 C 1.4375 -3.796875 1.640625 -3.796875 1.75 -3.796875 C 2.671875 -3.796875 3.21875 -4.421875 3.21875 -4.515625 C 3.21875 -4.59375 3.15625 -4.609375 3.125 -4.609375 C 3.109375 -4.609375 3.09375 -4.609375 3.078125 -4.59375 C 2.90625 -4.53125 2.53125 -4.390625 2.015625 -4.390625 C 1.828125 -4.390625 1.453125 -4.40625 1.015625 -4.578125 C 0.9375 -4.609375 0.921875 -4.609375 0.921875 -4.609375 C 0.828125 -4.609375 0.828125 -4.546875 0.828125 -4.421875 L 0.828125 -2.375 C 0.828125 -2.265625 0.828125 -2.171875 0.9375 -2.171875 C 1 -2.171875 1.015625 -2.1875 1.078125 -2.28125 C 1.375 -2.65625 1.796875 -2.71875 2.046875 -2.71875 C 2.46875 -2.71875 2.65625 -2.375 2.6875 -2.328125 C 2.8125 -2.09375 2.84375 -1.828125 2.84375 -1.421875 C 2.84375 -1.21875 2.84375 -0.8125 2.640625 -0.5 C 2.46875 -0.25 2.171875 -0.078125 1.828125 -0.078125 C 1.375 -0.078125 0.90625 -0.328125 0.734375 -0.796875 C 1 -0.765625 1.140625 -0.953125 1.140625 -1.140625 C 1.140625 -1.4375 0.875 -1.484375 0.78125 -1.484375 C 0.765625 -1.484375 0.4375 -1.484375 0.4375 -1.109375 C 0.4375 -0.484375 1.015625 0.140625 1.84375 0.140625 C 2.734375 0.140625 3.515625 -0.515625 3.515625 -1.390625 C 3.515625 -2.1875 2.90625 -2.90625 2.046875 -2.90625 C 1.75 -2.90625 1.390625 -2.828125 1.078125 -2.5625 Z M 1.078125 -3.875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph1-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph1-1" overflow="visible">
+<path d="M 1.46875 -0.109375 C 1.46875 0.265625 1.390625 0.71875 0.921875 1.15625 C 0.890625 1.1875 0.875 1.203125 0.875 1.25 C 0.875 1.296875 0.9375 1.34375 0.96875 1.34375 C 1.078125 1.34375 1.65625 0.78125 1.65625 -0.046875 C 1.65625 -0.46875 1.5 -0.796875 1.171875 -0.796875 C 0.953125 -0.796875 0.78125 -0.625 0.78125 -0.40625 C 0.78125 -0.1875 0.9375 0 1.1875 0 C 1.34375 0 1.453125 -0.109375 1.46875 -0.109375 Z M 1.46875 -0.109375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph2-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph2-1" overflow="visible">
+<path d="M 5.171875 -1.578125 C 5.28125 -1.578125 5.453125 -1.578125 5.453125 -1.734375 C 5.453125 -1.90625 5.296875 -1.90625 5.171875 -1.90625 L 1.03125 -1.90625 C 0.921875 -1.90625 0.75 -1.90625 0.75 -1.75 C 0.75 -1.578125 0.90625 -1.578125 1.03125 -1.578125 Z M 5.171875 -1.578125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph2-2" overflow="visible">
+<path d="M 3.53125 -1.734375 C 3.53125 -2.578125 2.84375 -3.234375 2.03125 -3.234375 C 1.203125 -3.234375 0.53125 -2.5625 0.53125 -1.75 C 0.53125 -0.90625 1.203125 -0.25 2.03125 -0.25 C 2.859375 -0.25 3.53125 -0.921875 3.53125 -1.734375 Z M 3.53125 -1.734375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph3-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph3-1" overflow="visible">
+<path d="M 1.90625 -3.578125 L 2.75 -3.578125 C 2.90625 -3.578125 3.015625 -3.578125 3.015625 -3.734375 C 3.015625 -3.859375 2.9375 -3.859375 2.765625 -3.859375 L 1.96875 -3.859375 L 2.34375 -5.328125 C 2.34375 -5.484375 2.21875 -5.59375 2.0625 -5.59375 C 1.78125 -5.59375 1.703125 -5.328125 1.6875 -5.25 L 1.328125 -3.859375 L 0.484375 -3.859375 C 0.328125 -3.859375 0.21875 -3.859375 0.21875 -3.6875 C 0.21875 -3.578125 0.3125 -3.578125 0.46875 -3.578125 L 1.265625 -3.578125 L 0.65625 -1.140625 C 0.59375 -0.875 0.59375 -0.859375 0.59375 -0.734375 C 0.59375 -0.203125 0.984375 0.09375 1.453125 0.09375 C 2.390625 0.09375 2.90625 -1.1875 2.90625 -1.28125 C 2.90625 -1.328125 2.890625 -1.390625 2.796875 -1.390625 C 2.703125 -1.390625 2.703125 -1.359375 2.640625 -1.203125 C 2.359375 -0.5625 1.90625 -0.125 1.46875 -0.125 C 1.296875 -0.125 1.1875 -0.234375 1.1875 -0.53125 C 1.1875 -0.734375 1.21875 -0.84375 1.25 -0.96875 Z M 1.90625 -3.578125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph4-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph4-1" overflow="visible">
+<path d="M -3.625 -3.609375 C -3.5625 -3.3125 -3.3125 -3.15625 -3.125 -3.15625 C -2.953125 -3.15625 -2.8125 -3.28125 -2.8125 -3.515625 C -2.8125 -3.75 -3.015625 -4 -3.34375 -4 C -3.6875 -4 -3.953125 -3.6875 -3.953125 -3.25 C -3.953125 -2.578125 -3.453125 -2.203125 -3.28125 -2.078125 C -3.765625 -1.96875 -3.953125 -1.5625 -3.953125 -1.21875 C -3.953125 -0.90625 -3.75 -0.703125 -3.4375 -0.546875 C -3.125 -0.375 -2.609375 -0.265625 -2.578125 -0.265625 C -2.5 -0.265625 -2.46875 -0.328125 -2.46875 -0.390625 C -2.46875 -0.484375 -2.515625 -0.5 -2.6875 -0.546875 C -3.390625 -0.71875 -3.734375 -0.90625 -3.734375 -1.203125 C -3.734375 -1.46875 -3.4375 -1.46875 -3.3125 -1.46875 C -3.125 -1.46875 -2.84375 -1.40625 -2.609375 -1.34375 C -2.375 -1.28125 -2 -1.203125 -1.890625 -1.15625 L -0.421875 -0.796875 C -0.203125 -0.734375 -0.1875 -0.734375 -0.15625 -0.734375 C -0.046875 -0.734375 0.09375 -0.828125 0.09375 -1.015625 C 0.09375 -1.3125 -0.140625 -1.375 -0.40625 -1.4375 C -0.78125 -1.53125 -0.796875 -1.53125 -1.171875 -1.625 C -2.515625 -1.953125 -2.71875 -2.015625 -2.765625 -2.03125 C -2.875 -2.078125 -3.734375 -2.5 -3.734375 -3.234375 C -3.734375 -3.4375 -3.65625 -3.5625 -3.625 -3.609375 Z M -3.625 -3.609375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph5-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph5-1" overflow="visible">
+<path d="M -2.328125 -1.609375 L -2.328125 -2.25 C -2.328125 -2.375 -2.328125 -2.453125 -2.484375 -2.453125 C -2.578125 -2.453125 -2.578125 -2.375 -2.578125 -2.28125 L -2.578125 -1.671875 L -3.390625 -1.875 C -3.484375 -1.890625 -3.515625 -1.890625 -3.53125 -1.890625 C -3.671875 -1.890625 -3.734375 -1.78125 -3.734375 -1.6875 C -3.734375 -1.625 -3.6875 -1.46875 -3.5 -1.40625 L -2.578125 -1.171875 L -2.578125 -0.53125 C -2.578125 -0.40625 -2.5625 -0.40625 -2.546875 -0.375 C -2.53125 -0.34375 -2.453125 -0.328125 -2.421875 -0.328125 C -2.328125 -0.34375 -2.328125 -0.390625 -2.328125 -0.515625 L -2.328125 -1.109375 L -0.921875 -0.765625 C -0.78125 -0.734375 -0.578125 -0.6875 -0.515625 -0.6875 C -0.171875 -0.6875 0.0625 -0.984375 0.0625 -1.359375 C 0.0625 -2.046875 -0.765625 -2.453125 -0.859375 -2.453125 C -0.875 -2.453125 -0.9375 -2.4375 -0.9375 -2.328125 C -0.9375 -2.25 -0.90625 -2.25 -0.84375 -2.21875 C -0.390625 -2.015625 -0.140625 -1.671875 -0.140625 -1.375 C -0.140625 -1.15625 -0.359375 -1.15625 -0.4375 -1.15625 C -0.515625 -1.15625 -0.53125 -1.15625 -0.640625 -1.1875 Z M -2.328125 -1.609375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-1" overflow="visible">
+<path d="M 7.796875 -1.75 L 7.796875 -1.953125 L 0.109375 -1.953125 L 0.109375 -1.75 Z M 7.796875 -1.75 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-2" overflow="visible">
+<path d="M 2.828125 -2.625 C 2.828125 -2.859375 2.609375 -3.0625 2.28125 -3.0625 C 1.9375 -3.0625 1.546875 -2.84375 1.34375 -2.328125 L 1.328125 -2.328125 L 1.328125 -3.0625 L 0.34375 -2.984375 L 0.34375 -2.734375 C 0.8125 -2.734375 0.859375 -2.6875 0.859375 -2.34375 L 0.859375 -0.546875 C 0.859375 -0.25 0.796875 -0.25 0.34375 -0.25 L 0.34375 0 C 0.375 0 0.84375 -0.03125 1.140625 -0.03125 L 2.03125 0 L 2.03125 -0.25 L 1.890625 -0.25 C 1.390625 -0.25 1.390625 -0.328125 1.390625 -0.5625 L 1.390625 -1.578125 C 1.390625 -2.171875 1.65625 -2.875 2.3125 -2.875 C 2.25 -2.828125 2.203125 -2.734375 2.203125 -2.625 C 2.203125 -2.390625 2.375 -2.296875 2.515625 -2.296875 C 2.671875 -2.296875 2.828125 -2.40625 2.828125 -2.625 Z M 2.828125 -2.625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-3" overflow="visible">
+<path d="M 3.25 -0.828125 C 3.25 -0.859375 3.234375 -0.9375 3.140625 -0.9375 C 3.046875 -0.9375 3.03125 -0.890625 3.015625 -0.828125 C 2.796875 -0.25 2.265625 -0.15625 2.015625 -0.15625 C 1.6875 -0.15625 1.375 -0.296875 1.171875 -0.5625 C 0.90625 -0.890625 0.90625 -1.3125 0.90625 -1.578125 L 3.0625 -1.578125 C 3.203125 -1.578125 3.25 -1.578125 3.25 -1.734375 C 3.25 -2.34375 2.90625 -3.09375 1.875 -3.09375 C 0.96875 -3.09375 0.265625 -2.375 0.265625 -1.515625 C 0.265625 -0.640625 1.046875 0.0625 1.96875 0.0625 C 2.90625 0.0625 3.25 -0.6875 3.25 -0.828125 Z M 2.765625 -1.765625 L 0.90625 -1.765625 C 0.984375 -2.75 1.609375 -2.90625 1.875 -2.90625 C 2.734375 -2.90625 2.765625 -1.9375 2.765625 -1.765625 Z M 2.765625 -1.765625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-4" overflow="visible">
+<path d="M 4.109375 0 L 4.109375 -0.25 C 3.65625 -0.25 3.578125 -0.25 3.578125 -0.546875 L 3.578125 -2.109375 C 3.578125 -2.71875 3.28125 -3.0625 2.53125 -3.0625 C 1.96875 -3.0625 1.59375 -2.75 1.40625 -2.390625 L 1.390625 -2.390625 L 1.390625 -3.0625 L 0.375 -2.984375 L 0.375 -2.734375 C 0.84375 -2.734375 0.890625 -2.6875 0.890625 -2.34375 L 0.890625 -0.546875 C 0.890625 -0.25 0.828125 -0.25 0.375 -0.25 L 0.375 0 C 0.375 0 0.875 -0.03125 1.171875 -0.03125 C 1.421875 -0.03125 1.90625 0 1.96875 0 L 1.96875 -0.25 C 1.515625 -0.25 1.453125 -0.25 1.453125 -0.546875 L 1.453125 -1.796875 C 1.453125 -2.53125 2.015625 -2.875 2.484375 -2.875 C 2.96875 -2.875 3.03125 -2.484375 3.03125 -2.140625 L 3.03125 -0.546875 C 3.03125 -0.25 2.96875 -0.25 2.515625 -0.25 L 2.515625 0 C 2.515625 0 3.015625 -0.03125 3.296875 -0.03125 C 3.5625 -0.03125 4.046875 0 4.109375 0 Z M 4.109375 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-5" overflow="visible">
+<path d="M 2.609375 -0.875 L 2.609375 -1.265625 L 2.375 -1.265625 L 2.375 -0.890625 C 2.375 -0.40625 2.15625 -0.15625 1.875 -0.15625 C 1.390625 -0.15625 1.390625 -0.734375 1.390625 -0.859375 L 1.390625 -2.75 L 2.484375 -2.75 L 2.484375 -3 L 1.390625 -3 L 1.390625 -4.28125 L 1.15625 -4.28125 C 1.15625 -3.65625 0.875 -2.96875 0.203125 -2.9375 L 0.203125 -2.75 L 0.84375 -2.75 L 0.84375 -0.875 C 0.84375 -0.09375 1.4375 0.0625 1.828125 0.0625 C 2.28125 0.0625 2.609375 -0.328125 2.609375 -0.875 Z M 2.609375 -0.875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-6" overflow="visible">
+<path d="M 3.78125 -0.625 L 3.78125 -1.015625 L 3.546875 -1.015625 L 3.546875 -0.625 C 3.546875 -0.5625 3.546875 -0.234375 3.28125 -0.234375 C 3.03125 -0.234375 3.03125 -0.5625 3.03125 -0.640625 L 3.03125 -1.859375 C 3.03125 -2.234375 3.03125 -2.5 2.71875 -2.75 C 2.421875 -2.984375 2.09375 -3.09375 1.6875 -3.09375 C 1.015625 -3.09375 0.5625 -2.84375 0.5625 -2.421875 C 0.5625 -2.203125 0.703125 -2.09375 0.890625 -2.09375 C 1.078125 -2.09375 1.21875 -2.21875 1.21875 -2.40625 C 1.21875 -2.53125 1.15625 -2.671875 0.96875 -2.734375 C 1.21875 -2.90625 1.625 -2.90625 1.671875 -2.90625 C 2.0625 -2.90625 2.484375 -2.65625 2.484375 -2.0625 L 2.484375 -1.84375 C 2.09375 -1.828125 1.640625 -1.8125 1.140625 -1.625 C 0.5 -1.390625 0.3125 -1.015625 0.3125 -0.703125 C 0.3125 -0.109375 1.03125 0.0625 1.53125 0.0625 C 2.09375 0.0625 2.40625 -0.25 2.5625 -0.515625 C 2.59375 -0.234375 2.78125 0.03125 3.09375 0.03125 C 3.09375 0.03125 3.78125 0.03125 3.78125 -0.625 Z M 2.484375 -0.984375 C 2.484375 -0.3125 1.890625 -0.125 1.578125 -0.125 C 1.234375 -0.125 0.890625 -0.359375 0.890625 -0.703125 C 0.890625 -1.078125 1.234375 -1.625 2.484375 -1.671875 Z M 2.484375 -0.984375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-7" overflow="visible">
+<path d="M 4.0625 -1.5 C 4.0625 -2.34375 3.34375 -3.0625 2.4375 -3.0625 C 2.015625 -3.0625 1.640625 -2.90625 1.390625 -2.65625 L 1.390625 -4.828125 L 0.34375 -4.75 L 0.34375 -4.5 C 0.8125 -4.5 0.859375 -4.4375 0.859375 -4.09375 L 0.859375 0 L 1.09375 0 L 1.34375 -0.421875 C 1.609375 -0.078125 1.984375 0.0625 2.359375 0.0625 C 3.28125 0.0625 4.0625 -0.625 4.0625 -1.5 Z M 3.421875 -1.515625 C 3.421875 -1.34375 3.421875 -0.828125 3.140625 -0.5 C 2.859375 -0.1875 2.53125 -0.125 2.328125 -0.125 C 1.765625 -0.125 1.484375 -0.5625 1.40625 -0.703125 L 1.40625 -2.328125 C 1.609375 -2.65625 1.984375 -2.875 2.40625 -2.875 C 2.78125 -2.875 3.0625 -2.65625 3.203125 -2.4375 C 3.34375 -2.234375 3.421875 -1.96875 3.421875 -1.515625 Z M 3.421875 -1.515625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-8" overflow="visible">
+<path d="M 1.90625 0 L 1.90625 -0.25 C 1.5 -0.25 1.4375 -0.25 1.4375 -0.546875 L 1.4375 -3.0625 L 0.40625 -2.984375 L 0.40625 -2.734375 C 0.84375 -2.734375 0.90625 -2.703125 0.90625 -2.359375 L 0.90625 -0.546875 C 0.90625 -0.25 0.84375 -0.25 0.390625 -0.25 L 0.390625 0 C 0.390625 0 0.890625 -0.03125 1.171875 -0.03125 C 1.40625 -0.03125 1.65625 -0.015625 1.90625 0 Z M 1.515625 -4.1875 C 1.515625 -4.40625 1.34375 -4.59375 1.125 -4.59375 C 0.890625 -4.59375 0.734375 -4.390625 0.734375 -4.1875 C 0.734375 -3.96875 0.90625 -3.796875 1.125 -3.796875 C 1.359375 -3.796875 1.515625 -3.984375 1.515625 -4.1875 Z M 1.515625 -4.1875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-9" overflow="visible">
+<path d="M 1.953125 0 L 1.953125 -0.25 C 1.5 -0.25 1.4375 -0.25 1.4375 -0.546875 L 1.4375 -4.828125 L 0.390625 -4.75 L 0.390625 -4.5 C 0.859375 -4.5 0.90625 -4.453125 0.90625 -4.109375 L 0.90625 -0.546875 C 0.90625 -0.25 0.84375 -0.25 0.390625 -0.25 L 0.390625 0 C 0.390625 0 0.890625 -0.03125 1.171875 -0.03125 C 1.4375 -0.03125 1.6875 -0.015625 1.953125 0 Z M 1.953125 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-10" overflow="visible">
+<path d="M 3.25 -0.828125 C 3.25 -0.859375 3.234375 -0.9375 3.140625 -0.9375 C 3.046875 -0.9375 3.03125 -0.890625 3.015625 -0.828125 C 2.796875 -0.25 2.265625 -0.15625 2.015625 -0.15625 C 1.6875 -0.15625 1.375 -0.296875 1.171875 -0.5625 C 0.90625 -0.890625 0.90625 -1.3125 0.90625 -1.578125 L 3.0625 -1.578125 C 3.203125 -1.578125 3.25 -1.578125 3.25 -1.734375 C 3.25 -2.34375 2.90625 -3.09375 1.875 -3.09375 C 0.96875 -3.09375 0.265625 -2.375 0.265625 -1.515625 C 0.265625 -0.640625 1.046875 0.0625 1.96875 0.0625 C 2.90625 0.0625 3.25 -0.6875 3.25 -0.828125 Z M 2.765625 -1.765625 L 0.90625 -1.765625 C 0.984375 -2.75 1.609375 -2.90625 1.875 -2.90625 C 2.734375 -2.90625 2.765625 -1.9375 2.765625 -1.765625 Z M 2.71875 -4.5625 C 2.71875 -4.703125 2.59375 -4.859375 2.4375 -4.859375 C 2.328125 -4.859375 2.265625 -4.796875 2.203125 -4.71875 L 1.28125 -3.703125 L 1.453125 -3.515625 L 2.546875 -4.3125 C 2.65625 -4.390625 2.71875 -4.4375 2.71875 -4.5625 Z M 2.71875 -4.5625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-11" overflow="visible">
+<path d="M 2.828125 -0.90625 C 2.828125 -1.171875 2.71875 -1.390625 2.53125 -1.546875 C 2.265625 -1.796875 1.953125 -1.84375 1.703125 -1.890625 C 1.140625 -1.984375 0.703125 -2.078125 0.703125 -2.4375 C 0.703125 -2.65625 0.890625 -2.9375 1.546875 -2.9375 C 2.34375 -2.9375 2.390625 -2.375 2.40625 -2.171875 C 2.40625 -2.09375 2.484375 -2.09375 2.515625 -2.09375 C 2.640625 -2.09375 2.640625 -2.140625 2.640625 -2.28125 L 2.640625 -2.921875 C 2.640625 -3.03125 2.640625 -3.09375 2.53125 -3.09375 C 2.5 -3.09375 2.484375 -3.09375 2.40625 -3.015625 C 2.390625 -3.015625 2.3125 -2.953125 2.28125 -2.90625 C 2.0625 -3.0625 1.796875 -3.09375 1.546875 -3.09375 C 0.546875 -3.09375 0.3125 -2.578125 0.3125 -2.234375 C 0.3125 -2.015625 0.40625 -1.828125 0.578125 -1.6875 C 0.84375 -1.453125 1.109375 -1.40625 1.53125 -1.34375 C 1.890625 -1.28125 2.453125 -1.1875 2.453125 -0.71875 C 2.453125 -0.4375 2.265625 -0.125 1.59375 -0.125 C 0.921875 -0.125 0.6875 -0.5625 0.5625 -1.03125 C 0.53125 -1.125 0.53125 -1.15625 0.4375 -1.15625 C 0.3125 -1.15625 0.3125 -1.109375 0.3125 -0.96875 L 0.3125 -0.109375 C 0.3125 0 0.3125 0.0625 0.40625 0.0625 C 0.46875 0.0625 0.609375 -0.078125 0.75 -0.234375 C 1.046875 0.0625 1.421875 0.0625 1.59375 0.0625 C 2.5 0.0625 2.828125 -0.421875 2.828125 -0.90625 Z M 2.828125 -0.90625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-12" overflow="visible">
+<path d="M 5.640625 -4.5 L 5.640625 -4.75 C 5.4375 -4.734375 5.171875 -4.71875 4.96875 -4.71875 C 4.6875 -4.71875 4.171875 -4.75 4.125 -4.75 L 4.125 -4.5 C 4.390625 -4.5 4.609375 -4.390625 4.609375 -4.171875 C 4.609375 -4.125 4.59375 -4.078125 4.578125 -4.03125 L 3.140625 -0.671875 L 1.640625 -4.1875 C 1.59375 -4.28125 1.59375 -4.296875 1.59375 -4.3125 C 1.59375 -4.5 1.953125 -4.5 2.140625 -4.5 L 2.140625 -4.75 L 1.109375 -4.71875 C 0.765625 -4.71875 0.234375 -4.75 0.21875 -4.75 L 0.21875 -4.5 L 0.328125 -4.5 C 0.703125 -4.5 0.828125 -4.46875 0.921875 -4.25 L 2.71875 -0.015625 C 2.78125 0.09375 2.796875 0.140625 2.921875 0.140625 C 3 0.140625 3.0625 0.140625 3.125 0 L 4.859375 -4.046875 C 4.9375 -4.25 5.109375 -4.484375 5.640625 -4.5 Z M 5.640625 -4.5 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-13" overflow="visible">
+<path d="M 5.6875 -0.625 C 5.6875 -0.6875 5.6875 -0.765625 5.5625 -0.765625 C 5.453125 -0.765625 5.453125 -0.703125 5.4375 -0.625 C 5.40625 -0.234375 5.1875 -0.0625 4.96875 -0.0625 C 4.5625 -0.0625 4.515625 -0.46875 4.421875 -1.09375 C 4.359375 -1.65625 4.328125 -1.765625 4.125 -2 C 4.0625 -2.078125 3.859375 -2.25 3.484375 -2.375 C 4.109375 -2.515625 4.734375 -2.921875 4.734375 -3.484375 C 4.734375 -4.1875 3.828125 -4.75 2.75 -4.75 L 0.40625 -4.75 L 0.40625 -4.5 L 0.5625 -4.5 C 1.109375 -4.5 1.125 -4.421875 1.125 -4.1875 L 1.125 -0.5625 C 1.125 -0.328125 1.109375 -0.25 0.5625 -0.25 L 0.40625 -0.25 L 0.40625 0 L 1.4375 -0.03125 L 2.46875 0 L 2.46875 -0.25 L 2.296875 -0.25 C 1.765625 -0.25 1.75 -0.3125 1.75 -0.5625 L 1.75 -2.28125 L 2.671875 -2.28125 C 2.796875 -2.28125 3.15625 -2.28125 3.46875 -2 C 3.71875 -1.78125 3.71875 -1.609375 3.71875 -1.140625 C 3.71875 -0.6875 3.71875 -0.40625 4.03125 -0.140625 C 4.328125 0.109375 4.734375 0.140625 4.9375 0.140625 C 5.53125 0.140625 5.6875 -0.421875 5.6875 -0.625 Z M 4 -3.484375 C 4 -2.71875 3.390625 -2.46875 2.65625 -2.46875 L 1.75 -2.46875 L 1.75 -4.234375 C 1.75 -4.421875 1.765625 -4.46875 1.9375 -4.484375 C 2 -4.5 2.234375 -4.5 2.375 -4.5 C 3.046875 -4.5 4 -4.5 4 -3.484375 Z M 4 -3.484375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-14" overflow="visible">
+<path d="M 3.28125 0 L 3.28125 -0.25 L 3.03125 -0.25 C 2.328125 -0.25 2.328125 -0.34375 2.328125 -0.5625 L 2.328125 -4.421875 C 2.328125 -4.609375 2.3125 -4.609375 2.125 -4.609375 C 1.671875 -4.171875 1.046875 -4.171875 0.765625 -4.171875 L 0.765625 -3.921875 C 0.921875 -3.921875 1.390625 -3.921875 1.765625 -4.109375 L 1.765625 -0.5625 C 1.765625 -0.34375 1.765625 -0.25 1.078125 -0.25 L 0.8125 -0.25 L 0.8125 0 L 2.046875 -0.03125 Z M 3.28125 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-15" overflow="visible">
+<path d="M 4.0625 -1.5 C 4.0625 -2.359375 3.34375 -3.0625 2.46875 -3.0625 C 2.078125 -3.0625 1.671875 -2.921875 1.390625 -2.640625 L 1.390625 -3.0625 L 0.34375 -2.984375 L 0.34375 -2.734375 C 0.828125 -2.734375 0.859375 -2.703125 0.859375 -2.40625 L 0.859375 0.796875 C 0.859375 1.09375 0.796875 1.09375 0.34375 1.09375 L 0.34375 1.34375 C 0.34375 1.34375 0.84375 1.328125 1.140625 1.328125 C 1.390625 1.328125 1.875 1.34375 1.9375 1.34375 L 1.9375 1.09375 C 1.484375 1.09375 1.40625 1.09375 1.40625 0.796875 L 1.40625 -0.328125 C 1.453125 -0.296875 1.765625 0.0625 2.359375 0.0625 C 3.28125 0.0625 4.0625 -0.625 4.0625 -1.5 Z M 3.421875 -1.5 C 3.421875 -0.703125 2.90625 -0.125 2.3125 -0.125 C 1.703125 -0.125 1.4375 -0.65625 1.40625 -0.703125 L 1.40625 -2.3125 C 1.625 -2.65625 2.015625 -2.84375 2.390625 -2.84375 C 2.96875 -2.84375 3.421875 -2.234375 3.421875 -1.5 Z M 3.421875 -1.5 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-16" overflow="visible">
+<path d="M 3.671875 -1.484375 C 3.671875 -2.34375 2.9375 -3.09375 1.96875 -3.09375 C 1.015625 -3.09375 0.265625 -2.34375 0.265625 -1.484375 C 0.265625 -0.625 1.03125 0.0625 1.96875 0.0625 C 2.90625 0.0625 3.671875 -0.625 3.671875 -1.484375 Z M 3.046875 -1.546875 C 3.046875 -1.203125 3.03125 -0.84375 2.828125 -0.5625 C 2.640625 -0.296875 2.3125 -0.15625 1.96875 -0.15625 C 1.71875 -0.15625 1.34375 -0.234375 1.109375 -0.578125 C 0.921875 -0.859375 0.90625 -1.21875 0.90625 -1.546875 C 0.90625 -1.84375 0.90625 -2.25 1.15625 -2.546875 C 1.328125 -2.75 1.625 -2.90625 1.96875 -2.90625 C 2.390625 -2.90625 2.671875 -2.71875 2.828125 -2.5 C 3.03125 -2.21875 3.046875 -1.875 3.046875 -1.546875 Z M 3.046875 -1.546875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-17" overflow="visible">
+<path d="M 4.109375 0 L 4.109375 -0.25 C 3.640625 -0.25 3.578125 -0.296875 3.578125 -0.640625 L 3.578125 -3.0625 L 2.515625 -2.984375 L 2.515625 -2.734375 C 2.96875 -2.734375 3.03125 -2.6875 3.03125 -2.34375 L 3.03125 -1.15625 C 3.03125 -0.546875 2.640625 -0.125 2.109375 -0.125 C 1.46875 -0.125 1.453125 -0.421875 1.453125 -0.78125 L 1.453125 -3.0625 L 0.375 -2.984375 L 0.375 -2.734375 C 0.890625 -2.734375 0.890625 -2.71875 0.890625 -2.09375 L 0.890625 -1.0625 C 0.890625 -0.578125 0.890625 0.0625 2.0625 0.0625 C 2.21875 0.0625 2.71875 0.0625 3.046875 -0.515625 L 3.0625 -0.515625 L 3.0625 0.0625 Z M 4.109375 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-18" overflow="visible">
+<path d="M 3.25 -0.828125 C 3.25 -0.921875 3.15625 -0.921875 3.140625 -0.921875 C 3.046875 -0.921875 3.03125 -0.890625 3 -0.796875 C 2.84375 -0.375 2.484375 -0.15625 2.0625 -0.15625 C 1.578125 -0.15625 0.953125 -0.5 0.953125 -1.515625 C 0.953125 -2.390625 1.390625 -2.875 2.03125 -2.875 C 2.125 -2.875 2.453125 -2.875 2.703125 -2.78125 C 2.578125 -2.71875 2.515625 -2.609375 2.515625 -2.46875 C 2.515625 -2.28125 2.640625 -2.140625 2.84375 -2.140625 C 3.03125 -2.140625 3.171875 -2.265625 3.171875 -2.484375 C 3.171875 -3.09375 2.203125 -3.09375 2.015625 -3.09375 C 0.96875 -3.09375 0.3125 -2.296875 0.3125 -1.5 C 0.3125 -0.625 1.0625 0.0625 1.96875 0.0625 C 3.015625 0.0625 3.25 -0.75 3.25 -0.828125 Z M 3.25 -0.828125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-19" overflow="visible">
+<path d="M 2.609375 1.640625 C 2.609375 1.609375 2.59375 1.59375 2.53125 1.546875 C 1.609375 0.703125 1.265625 -0.46875 1.265625 -1.734375 C 1.265625 -3.609375 1.984375 -4.53125 2.5625 -5.046875 C 2.59375 -5.078125 2.609375 -5.09375 2.609375 -5.125 C 2.609375 -5.21875 2.53125 -5.21875 2.46875 -5.21875 C 1.140625 -4.28125 0.796875 -2.8125 0.796875 -1.75 C 0.796875 -0.765625 1.09375 0.765625 2.46875 1.734375 C 2.53125 1.734375 2.609375 1.734375 2.609375 1.640625 Z M 2.609375 1.640625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-20" overflow="visible">
+<path d="M 5.71875 -1.671875 L 5.71875 -1.921875 C 5.671875 -1.921875 5.15625 -1.890625 4.8125 -1.890625 C 4.453125 -1.890625 3.921875 -1.890625 3.5625 -1.921875 L 3.5625 -1.671875 L 3.828125 -1.671875 C 4.515625 -1.671875 4.515625 -1.578125 4.515625 -1.34375 L 4.515625 -0.90625 C 4.515625 -0.75 4.515625 -0.484375 4.125 -0.28125 C 3.78125 -0.109375 3.390625 -0.109375 3.296875 -0.109375 C 2.515625 -0.109375 1.234375 -0.5625 1.234375 -2.375 C 1.234375 -4.234375 2.546875 -4.640625 3.234375 -4.640625 C 3.921875 -4.640625 4.75 -4.1875 4.9375 -2.984375 C 4.9375 -2.90625 5 -2.90625 5.0625 -2.90625 C 5.1875 -2.90625 5.1875 -2.9375 5.1875 -3.078125 L 5.1875 -4.703125 C 5.1875 -4.828125 5.1875 -4.890625 5.078125 -4.890625 C 5.0625 -4.890625 5.015625 -4.890625 4.96875 -4.8125 L 4.59375 -4.28125 C 4.25 -4.625 3.765625 -4.890625 3.15625 -4.890625 C 1.703125 -4.890625 0.484375 -3.765625 0.484375 -2.375 C 0.484375 -1 1.671875 0.140625 3.171875 0.140625 C 3.546875 0.140625 4.328125 0.0625 4.65625 -0.421875 C 4.765625 -0.234375 5.03125 0 5.09375 0 C 5.1875 0 5.1875 -0.078125 5.1875 -0.1875 L 5.1875 -1.359375 C 5.1875 -1.671875 5.25 -1.671875 5.71875 -1.671875 Z M 5.71875 -1.671875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-21" overflow="visible">
+<path d="M 5.546875 0 L 5.546875 -0.25 L 5.40625 -0.25 C 4.9375 -0.25 4.890625 -0.3125 4.8125 -0.515625 L 3.125 -4.796875 C 3.078125 -4.90625 3.0625 -4.953125 2.921875 -4.953125 C 2.796875 -4.953125 2.78125 -4.90625 2.734375 -4.796875 L 1.125 -0.734375 C 1.0625 -0.5625 0.9375 -0.25 0.3125 -0.25 L 0.3125 0 C 0.546875 -0.015625 0.796875 -0.03125 1.03125 -0.03125 C 1.3125 -0.03125 1.828125 0 1.859375 0 L 1.859375 -0.25 C 1.5625 -0.25 1.359375 -0.390625 1.359375 -0.578125 C 1.359375 -0.640625 1.375 -0.65625 1.390625 -0.71875 L 1.734375 -1.578125 L 3.703125 -1.578125 L 4.109375 -0.5625 C 4.125 -0.53125 4.140625 -0.484375 4.140625 -0.4375 C 4.140625 -0.25 3.765625 -0.25 3.578125 -0.25 L 3.578125 0 L 4.609375 -0.03125 C 4.9375 -0.03125 5.46875 0 5.546875 0 Z M 3.609375 -1.828125 L 1.828125 -1.828125 L 2.71875 -4.09375 Z M 3.609375 -1.828125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-22" overflow="visible">
+<path d="M 5.171875 -1.625 C 5.171875 -1.703125 5.171875 -1.765625 5.0625 -1.765625 C 5.015625 -1.765625 4.9375 -1.765625 4.9375 -1.671875 C 4.875 -0.546875 3.9375 -0.109375 3.25 -0.109375 C 2.5 -0.109375 1.234375 -0.5625 1.234375 -2.375 C 1.234375 -4.25 2.578125 -4.640625 3.234375 -4.640625 C 3.921875 -4.640625 4.734375 -4.171875 4.921875 -2.984375 C 4.9375 -2.90625 5 -2.90625 5.046875 -2.90625 C 5.171875 -2.90625 5.171875 -2.9375 5.171875 -3.078125 L 5.171875 -4.703125 C 5.171875 -4.828125 5.171875 -4.890625 5.078125 -4.890625 C 5.046875 -4.890625 5.015625 -4.890625 4.953125 -4.8125 L 4.59375 -4.28125 C 4.296875 -4.5625 3.8125 -4.890625 3.15625 -4.890625 C 1.6875 -4.890625 0.484375 -3.765625 0.484375 -2.375 C 0.484375 -0.96875 1.703125 0.140625 3.15625 0.140625 C 4.375 0.140625 5.171875 -0.78125 5.171875 -1.625 Z M 5.171875 -1.625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-23" overflow="visible">
+<path d="M 5.46875 0 L 5.46875 -0.25 L 5.296875 -0.25 C 4.765625 -0.25 4.75 -0.3125 4.75 -0.5625 L 4.75 -4.1875 C 4.75 -4.421875 4.765625 -4.5 5.296875 -4.5 L 5.46875 -4.5 L 5.46875 -4.75 L 4.421875 -4.71875 L 3.375 -4.75 L 3.375 -4.5 L 3.546875 -4.5 C 4.078125 -4.5 4.09375 -4.421875 4.09375 -4.1875 L 4.09375 -2.59375 L 1.765625 -2.59375 L 1.765625 -4.1875 C 1.765625 -4.421875 1.78125 -4.5 2.3125 -4.5 L 2.484375 -4.5 L 2.484375 -4.75 L 1.4375 -4.71875 L 0.390625 -4.75 L 0.390625 -4.5 L 0.5625 -4.5 C 1.09375 -4.5 1.109375 -4.421875 1.109375 -4.1875 L 1.109375 -0.5625 C 1.109375 -0.328125 1.09375 -0.25 0.5625 -0.25 L 0.390625 -0.25 L 0.390625 0 L 1.4375 -0.03125 L 2.484375 0 L 2.484375 -0.25 L 2.3125 -0.25 C 1.78125 -0.25 1.765625 -0.3125 1.765625 -0.5625 L 1.765625 -2.34375 L 4.09375 -2.34375 L 4.09375 -0.5625 C 4.09375 -0.328125 4.078125 -0.25 3.546875 -0.25 L 3.375 -0.25 L 3.375 0 L 4.421875 -0.03125 Z M 5.46875 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-24" overflow="visible">
+<path d="M 2.296875 -1.734375 C 2.296875 -2.71875 2 -4.234375 0.625 -5.21875 C 0.578125 -5.21875 0.5 -5.21875 0.5 -5.125 C 0.5 -5.09375 0.515625 -5.078125 0.5625 -5.03125 C 1.15625 -4.484375 1.828125 -3.546875 1.828125 -1.75 C 1.828125 -0.296875 1.375 0.8125 0.625 1.484375 C 0.5 1.609375 0.5 1.609375 0.5 1.640625 C 0.5 1.6875 0.515625 1.734375 0.578125 1.734375 C 0.671875 1.734375 1.328125 1.265625 1.78125 0.40625 C 2.09375 -0.171875 2.296875 -0.921875 2.296875 -1.734375 Z M 2.296875 -1.734375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-25" overflow="visible">
+<path d="M 2.1875 -1.265625 L 2.1875 -1.734375 L 0.140625 -1.734375 L 0.140625 -1.265625 Z M 2.1875 -1.265625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-26" overflow="visible">
+<path d="M 4.15625 0 L 4.15625 -0.25 C 3.703125 -0.25 3.625 -0.25 3.625 -0.546875 L 3.625 -3.078125 L 2.71875 -3.015625 C 2.640625 -3.015625 2.59375 -3.015625 2.59375 -3 C 2.578125 -3 2.5625 -3 2.46875 -3 L 1.359375 -3 L 1.359375 -3.75 C 1.359375 -4.4375 2.078125 -4.703125 2.546875 -4.703125 C 2.78125 -4.703125 3.03125 -4.65625 3.203125 -4.5 C 2.953125 -4.453125 2.9375 -4.25 2.9375 -4.171875 C 2.9375 -3.953125 3.109375 -3.828125 3.28125 -3.828125 C 3.40625 -3.828125 3.609375 -3.921875 3.609375 -4.1875 C 3.609375 -4.5625 3.21875 -4.890625 2.578125 -4.890625 C 1.859375 -4.890625 0.859375 -4.5625 0.859375 -3.765625 L 0.859375 -3 L 0.265625 -3 L 0.265625 -2.75 L 0.859375 -2.75 L 0.859375 -0.546875 C 0.859375 -0.25 0.796875 -0.25 0.34375 -0.25 L 0.34375 0 C 0.34375 0 0.84375 -0.03125 1.125 -0.03125 C 1.390625 -0.03125 1.640625 -0.015625 1.90625 0 L 1.90625 -0.25 C 1.453125 -0.25 1.390625 -0.25 1.390625 -0.546875 L 1.390625 -2.75 L 2.765625 -2.75 C 3.046875 -2.75 3.109375 -2.671875 3.109375 -2.375 L 3.109375 -0.546875 C 3.109375 -0.25 3.03125 -0.25 2.59375 -0.25 L 2.59375 0 C 2.59375 0 3.09375 -0.03125 3.359375 -0.03125 C 3.625 -0.03125 3.890625 -0.015625 4.15625 0 Z M 4.15625 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-27" overflow="visible">
+<path d="M 3.984375 0 L 3.984375 -0.25 C 3.53125 -0.25 3.46875 -0.296875 3.3125 -0.46875 L 2.359375 -1.5625 L 2.296875 -1.625 C 2.296875 -1.640625 2.765625 -2.140625 2.828125 -2.203125 C 3.0625 -2.46875 3.3125 -2.734375 3.859375 -2.75 L 3.859375 -3 C 3.671875 -2.984375 3.46875 -2.96875 3.28125 -2.96875 C 3.0625 -2.96875 2.796875 -2.96875 2.59375 -3 L 2.59375 -2.75 C 2.703125 -2.71875 2.71875 -2.65625 2.71875 -2.59375 C 2.71875 -2.59375 2.71875 -2.46875 2.625 -2.34375 L 2.140625 -1.796875 L 1.5625 -2.46875 C 1.484375 -2.53125 1.484375 -2.578125 1.484375 -2.59375 C 1.484375 -2.703125 1.578125 -2.75 1.671875 -2.75 L 1.671875 -3 C 1.40625 -2.96875 1.140625 -2.96875 0.890625 -2.96875 C 0.6875 -2.96875 0.421875 -2.96875 0.21875 -3 L 0.21875 -2.75 C 0.53125 -2.75 0.71875 -2.75 0.890625 -2.53125 L 1.765625 -1.53125 L 1.828125 -1.46875 C 1.828125 -1.453125 1.296875 -0.875 1.234375 -0.796875 C 0.96875 -0.515625 0.734375 -0.265625 0.1875 -0.25 L 0.1875 0 C 0.390625 -0.015625 0.546875 -0.03125 0.765625 -0.03125 C 0.96875 -0.03125 1.25 -0.015625 1.453125 0 L 1.453125 -0.25 C 1.375 -0.265625 1.3125 -0.3125 1.3125 -0.40625 C 1.3125 -0.546875 1.390625 -0.625 1.5 -0.75 L 1.984375 -1.28125 L 2.59375 -0.59375 C 2.71875 -0.453125 2.71875 -0.4375 2.71875 -0.390625 C 2.71875 -0.25 2.5625 -0.25 2.53125 -0.25 L 2.53125 0 C 2.59375 0 3.09375 -0.03125 3.328125 -0.03125 C 3.546875 -0.03125 3.765625 -0.015625 3.984375 0 Z M 3.984375 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-28" overflow="visible">
+<path d="M 4.046875 0 L 4.046875 -0.25 C 3.578125 -0.25 3.515625 -0.296875 3.515625 -0.640625 L 3.515625 -4.828125 L 2.46875 -4.75 L 2.46875 -4.5 C 2.9375 -4.5 3 -4.453125 3 -4.109375 L 3 -2.671875 C 2.734375 -2.921875 2.40625 -3.0625 2.015625 -3.0625 C 1.09375 -3.0625 0.3125 -2.375 0.3125 -1.5 C 0.3125 -0.625 1.0625 0.0625 1.9375 0.0625 C 2.515625 0.0625 2.84375 -0.234375 2.96875 -0.359375 L 2.96875 0.0625 Z M 2.96875 -0.734375 C 2.78125 -0.40625 2.4375 -0.125 1.984375 -0.125 C 1.59375 -0.125 1.3125 -0.359375 1.171875 -0.5625 C 1.03125 -0.765625 0.953125 -1.046875 0.953125 -1.484375 C 0.953125 -1.640625 0.953125 -2.171875 1.234375 -2.5 C 1.515625 -2.8125 1.859375 -2.875 2.0625 -2.875 C 2.390625 -2.875 2.6875 -2.71875 2.890625 -2.46875 C 2.96875 -2.359375 2.96875 -2.34375 2.96875 -2.21875 Z M 2.96875 -0.734375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-29" overflow="visible">
+<path d="M 6.234375 0 L 6.234375 -0.25 C 5.78125 -0.25 5.71875 -0.25 5.71875 -0.546875 L 5.71875 -2.109375 C 5.71875 -2.71875 5.421875 -3.0625 4.671875 -3.0625 C 4.125 -3.0625 3.75 -2.765625 3.5625 -2.421875 C 3.421875 -2.90625 3.046875 -3.0625 2.53125 -3.0625 C 1.96875 -3.0625 1.59375 -2.75 1.40625 -2.390625 L 1.390625 -2.390625 L 1.390625 -3.0625 L 0.375 -2.984375 L 0.375 -2.734375 C 0.84375 -2.734375 0.890625 -2.6875 0.890625 -2.34375 L 0.890625 -0.546875 C 0.890625 -0.25 0.828125 -0.25 0.375 -0.25 L 0.375 0 C 0.375 0 0.875 -0.03125 1.171875 -0.03125 C 1.421875 -0.03125 1.90625 0 1.96875 0 L 1.96875 -0.25 C 1.515625 -0.25 1.453125 -0.25 1.453125 -0.546875 L 1.453125 -1.796875 C 1.453125 -2.53125 2.015625 -2.875 2.484375 -2.875 C 2.96875 -2.875 3.03125 -2.484375 3.03125 -2.140625 L 3.03125 -0.546875 C 3.03125 -0.25 2.96875 -0.25 2.515625 -0.25 L 2.515625 0 C 2.515625 0 3.015625 -0.03125 3.296875 -0.03125 C 3.5625 -0.03125 4.046875 0 4.109375 0 L 4.109375 -0.25 C 3.65625 -0.25 3.578125 -0.25 3.578125 -0.546875 L 3.578125 -1.796875 C 3.578125 -2.53125 4.15625 -2.875 4.609375 -2.875 C 5.109375 -2.875 5.171875 -2.484375 5.171875 -2.140625 L 5.171875 -0.546875 C 5.171875 -0.25 5.09375 -0.25 4.640625 -0.25 L 4.640625 0 C 4.640625 0 5.140625 -0.03125 5.4375 -0.03125 C 5.6875 -0.03125 6.171875 0 6.234375 0 Z M 6.234375 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-30" overflow="visible">
+<path d="M 1.609375 -0.046875 C 1.609375 -0.453125 1.453125 -0.796875 1.125 -0.796875 C 0.875 -0.796875 0.71875 -0.609375 0.71875 -0.390625 C 0.71875 -0.234375 0.828125 0 1.125 0 C 1.296875 0 1.40625 -0.109375 1.40625 -0.109375 C 1.40625 0.078125 1.40625 0.671875 0.875 1.15625 C 0.84375 1.1875 0.828125 1.203125 0.828125 1.25 C 0.828125 1.28125 0.875 1.34375 0.921875 1.34375 C 1.015625 1.34375 1.609375 0.796875 1.609375 -0.046875 Z M 1.609375 -0.046875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph6-31" overflow="visible">
+<path d="M 3.796875 -2.78125 C 3.796875 -2.9375 3.65625 -3.140625 3.375 -3.140625 C 3.28125 -3.140625 2.90625 -3.109375 2.578125 -2.8125 C 2.359375 -2.96875 2.078125 -3.0625 1.765625 -3.0625 C 1.046875 -3.0625 0.53125 -2.59375 0.53125 -2.046875 C 0.53125 -1.765625 0.671875 -1.515625 0.859375 -1.34375 C 0.8125 -1.28125 0.65625 -1.046875 0.65625 -0.78125 C 0.65625 -0.6875 0.671875 -0.359375 0.953125 -0.15625 C 0.625 -0.0625 0.265625 0.171875 0.265625 0.53125 C 0.265625 1.046875 1.03125 1.421875 1.96875 1.421875 C 2.859375 1.421875 3.671875 1.078125 3.671875 0.515625 C 3.671875 0.3125 3.59375 -0.0625 3.21875 -0.265625 C 2.796875 -0.484375 2.390625 -0.484375 1.71875 -0.484375 C 1.5625 -0.484375 1.3125 -0.484375 1.265625 -0.5 C 1.03125 -0.546875 0.90625 -0.75 0.90625 -0.953125 C 0.90625 -1.125 0.953125 -1.1875 1 -1.234375 C 1.109375 -1.171875 1.359375 -1.015625 1.765625 -1.015625 C 2.46875 -1.015625 3 -1.5 3 -2.046875 C 3 -2.3125 2.875 -2.53125 2.703125 -2.71875 C 3.015625 -2.9375 3.28125 -2.9375 3.40625 -2.9375 C 3.375 -2.90625 3.34375 -2.890625 3.34375 -2.78125 C 3.34375 -2.640625 3.453125 -2.546875 3.5625 -2.546875 C 3.671875 -2.546875 3.796875 -2.625 3.796875 -2.78125 Z M 2.4375 -2.046875 C 2.4375 -1.9375 2.4375 -1.65625 2.296875 -1.46875 C 2.203125 -1.359375 2.015625 -1.234375 1.765625 -1.234375 C 1.078125 -1.234375 1.078125 -1.890625 1.078125 -2.046875 C 1.078125 -2.15625 1.078125 -2.4375 1.21875 -2.609375 C 1.328125 -2.734375 1.515625 -2.859375 1.765625 -2.859375 C 2.4375 -2.859375 2.4375 -2.1875 2.4375 -2.046875 Z M 3.25 0.53125 C 3.25 0.890625 2.703125 1.21875 1.96875 1.21875 C 1.25 1.21875 0.703125 0.890625 0.703125 0.53125 C 0.703125 0.28125 0.921875 -0.015625 1.359375 -0.015625 L 1.765625 -0.015625 C 2.390625 -0.015625 3.25 -0.015625 3.25 0.53125 Z M 3.25 0.53125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph7-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph7-1" overflow="visible">
+<path d="M 3.71875 -0.796875 C 3.71875 -0.921875 3.609375 -0.921875 3.5 -0.921875 C 3.34375 -0.921875 3.328125 -0.90625 3.28125 -0.8125 C 3.171875 -0.578125 2.953125 -0.3125 2.40625 -0.3125 C 1.296875 -0.3125 1.296875 -1.28125 1.296875 -1.578125 C 1.296875 -2.09375 1.375 -2.796875 2.3125 -2.796875 C 2.34375 -2.796875 2.75 -2.78125 2.75 -2.765625 L 2.734375 -2.734375 C 2.71875 -2.71875 2.65625 -2.609375 2.65625 -2.453125 C 2.65625 -2.171875 2.859375 -1.96875 3.140625 -1.96875 C 3.421875 -1.96875 3.625 -2.171875 3.625 -2.46875 C 3.625 -3.125 2.6875 -3.15625 2.28125 -3.15625 C 0.734375 -3.15625 0.328125 -2.1875 0.328125 -1.546875 C 0.328125 -0.734375 0.9375 0.046875 2.25 0.046875 C 2.59375 0.046875 2.9375 -0.015625 3.21875 -0.171875 C 3.609375 -0.40625 3.71875 -0.75 3.71875 -0.796875 Z M 3.71875 -0.796875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph7-2" overflow="visible">
+<path d="M 4.21875 -1.515625 C 4.21875 -2.34375 3.609375 -3.15625 2.25 -3.15625 C 0.875 -3.15625 0.28125 -2.34375 0.28125 -1.515625 C 0.28125 -0.703125 0.890625 0.046875 2.25 0.046875 C 3.609375 0.046875 4.21875 -0.703125 4.21875 -1.515625 Z M 3.25 -1.59375 C 3.25 -1 3.25 -0.3125 2.25 -0.3125 C 1.25 -0.3125 1.25 -1 1.25 -1.59375 C 1.25 -2.15625 1.25 -2.828125 2.25 -2.828125 C 3.25 -2.828125 3.25 -2.15625 3.25 -1.59375 Z M 3.25 -1.59375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph7-3" overflow="visible">
+<path d="M 4.71875 0 L 4.71875 -0.390625 L 4.25 -0.390625 L 4.25 -2.09375 C 4.25 -2.953125 3.703125 -3.125 3.0625 -3.125 C 2.21875 -3.125 1.828125 -2.625 1.703125 -2.40625 L 1.703125 -3.125 L 0.4375 -3.078125 L 0.4375 -2.6875 C 0.859375 -2.6875 0.90625 -2.6875 0.90625 -2.40625 L 0.90625 -0.390625 L 0.4375 -0.390625 L 0.4375 0 C 0.4375 0 1.015625 -0.03125 1.34375 -0.03125 C 1.6875 -0.03125 2.265625 0 2.265625 0 L 2.265625 -0.390625 L 1.796875 -0.390625 L 1.796875 -1.734375 C 1.796875 -2.53125 2.515625 -2.8125 2.9375 -2.8125 C 3.234375 -2.8125 3.375 -2.65625 3.375 -2.15625 L 3.375 -0.390625 L 2.90625 -0.390625 L 2.90625 0 C 2.90625 0 3.484375 -0.03125 3.8125 -0.03125 C 4.15625 -0.03125 4.71875 0 4.71875 0 Z M 4.71875 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph7-4" overflow="visible">
+<path d="M 4.609375 0 L 4.609375 -0.390625 C 4.1875 -0.390625 4.140625 -0.390625 4.140625 -0.65625 L 4.140625 -4.828125 L 2.84375 -4.765625 L 2.84375 -4.375 C 3.25 -4.375 3.296875 -4.375 3.296875 -4.109375 L 3.296875 -2.84375 C 2.875 -3.09375 2.484375 -3.125 2.25 -3.125 C 1.015625 -3.125 0.328125 -2.421875 0.328125 -1.53125 C 0.328125 -0.671875 0.96875 0.046875 2.15625 0.046875 C 2.609375 0.046875 2.96875 -0.09375 3.25 -0.296875 L 3.25 0.046875 Z M 3.25 -0.8125 C 3.09375 -0.578125 2.75 -0.28125 2.25 -0.28125 C 1.296875 -0.28125 1.296875 -1.109375 1.296875 -1.515625 C 1.296875 -1.953125 1.296875 -2.8125 2.34375 -2.8125 C 2.921875 -2.8125 3.234375 -2.421875 3.25 -2.390625 Z M 3.25 -0.8125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph7-5" overflow="visible">
+<path d="M 2.1875 0 L 2.1875 -0.390625 L 1.765625 -0.390625 L 1.765625 -3.125 L 0.484375 -3.078125 L 0.484375 -2.6875 C 0.890625 -2.6875 0.9375 -2.6875 0.9375 -2.40625 L 0.9375 -0.390625 L 0.46875 -0.390625 L 0.46875 0 C 0.46875 0 1.03125 -0.03125 1.34375 -0.03125 C 1.625 -0.03125 1.90625 -0.015625 2.1875 0 Z M 1.828125 -4.1875 C 1.828125 -4.5 1.578125 -4.75 1.265625 -4.75 C 0.953125 -4.75 0.703125 -4.484375 0.703125 -4.1875 C 0.703125 -3.875 0.953125 -3.625 1.265625 -3.625 C 1.578125 -3.625 1.828125 -3.890625 1.828125 -4.1875 Z M 1.828125 -4.1875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph7-6" overflow="visible">
+<path d="M 2.984375 -0.84375 L 2.984375 -1.203125 L 2.546875 -1.203125 L 2.546875 -0.875 C 2.546875 -0.390625 2.25 -0.3125 2.109375 -0.3125 C 1.703125 -0.3125 1.703125 -0.65625 1.703125 -0.84375 L 1.703125 -2.703125 L 2.84375 -2.703125 L 2.84375 -3.09375 L 1.703125 -3.09375 L 1.703125 -4.421875 L 1.265625 -4.421875 C 1.265625 -3.765625 0.9375 -3.03125 0.1875 -3.015625 L 0.1875 -2.703125 L 0.828125 -2.703125 L 0.828125 -0.84375 C 0.828125 -0.15625 1.390625 0.046875 1.984375 0.046875 C 2.53125 0.046875 2.984375 -0.28125 2.984375 -0.84375 Z M 2.984375 -0.84375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph7-7" overflow="visible">
+<path d="M 3.828125 -0.796875 C 3.828125 -0.953125 3.671875 -0.953125 3.609375 -0.953125 C 3.484375 -0.953125 3.453125 -0.9375 3.390625 -0.828125 C 3.140625 -0.3125 2.515625 -0.3125 2.390625 -0.3125 C 1.296875 -0.3125 1.265625 -1.125 1.25 -1.453125 L 3.59375 -1.453125 C 3.734375 -1.453125 3.828125 -1.453125 3.828125 -1.65625 C 3.828125 -1.859375 3.78125 -2.375 3.453125 -2.71875 C 3.078125 -3.09375 2.5625 -3.15625 2.171875 -3.15625 C 0.890625 -3.15625 0.28125 -2.390625 0.28125 -1.5625 C 0.28125 -0.734375 0.921875 0.046875 2.296875 0.046875 C 2.546875 0.046875 2.953125 0.015625 3.296875 -0.171875 C 3.703125 -0.390625 3.828125 -0.71875 3.828125 -0.796875 Z M 3.140625 -1.734375 L 1.25 -1.734375 C 1.25 -2.015625 1.28125 -2.828125 2.1875 -2.828125 C 3.078125 -2.828125 3.125 -2.03125 3.140625 -1.734375 Z M 3.140625 -1.734375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_b37d2e4bbec78fe36ec1_glyph7-8" overflow="visible">
+<path d="M 2.234375 0 L 2.234375 -0.390625 L 1.765625 -0.390625 L 1.765625 -4.828125 L 0.46875 -4.765625 L 0.46875 -4.375 C 0.875 -4.375 0.9375 -4.375 0.9375 -4.109375 L 0.9375 -0.390625 L 0.46875 -0.390625 L 0.46875 0 C 0.484375 0 1.03125 -0.03125 1.34375 -0.03125 C 1.6875 -0.03125 2.21875 0 2.234375 0 Z M 2.234375 0 " style="stroke:none;"></path>
+</symbol>
+</g>
+<clippath id="svg_b37d2e4bbec78fe36ec1_clip1">
+<path d="M 35.75 7.050781 L 316.183594 7.050781 L 316.183594 101 L 35.75 101 Z M 35.75 7.050781 "></path>
+</clippath>
+<clippath id="svg_b37d2e4bbec78fe36ec1_clip2">
+<path d="M 35.75 55 L 316.183594 55 L 316.183594 103.707031 L 35.75 103.707031 Z M 35.75 55 "></path>
+</clippath>
+<clippath id="svg_b37d2e4bbec78fe36ec1_clip3">
+<path d="M 35.75 83 L 316.183594 83 L 316.183594 85 L 35.75 85 Z M 35.75 83 "></path>
+</clippath>
+</defs>
+<g id="svg_b37d2e4bbec78fe36ec1_surface1">
+<path d="M -0.000578403 -2.127303 L -0.000578403 2.125733 M 46.857224 -2.127303 L 46.857224 2.125733 M 93.718943 -2.127303 L 93.718943 2.125733 M 140.576746 -2.127303 L 140.576746 2.125733 M 187.434548 -2.127303 L 187.434548 2.125733 M 234.292351 -2.127303 L 234.292351 2.125733 M 281.150153 -2.127303 L 281.150153 2.125733 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997449,0,0,-0.997449,35.750577,103.706248)"></path>
+<path d="M -2.127096 9.566587 L 2.12594 9.566587 M -2.127096 30.498886 L 2.12594 30.498886 M -2.127096 51.431185 L 2.12594 51.431185 M -2.127096 72.3674 L 2.12594 72.3674 M -2.127096 93.299698 L 2.12594 93.299698 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997449,0,0,-0.997449,35.750577,103.706248)"></path>
+<path d="M -0.000578403 -0.000785369 L 279.160704 -0.000785369 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997449,0,0,-0.997449,35.750577,103.706248)"></path>
+<path d="M 316.183594 103.707031 L 313.003906 102.117188 L 314.199219 103.707031 L 313.003906 105.296875 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<path d="M -0.000578403 -0.000785369 L -0.000578403 94.909273 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997449,0,0,-0.997449,35.750577,103.706248)"></path>
+<path d="M 35.75 7.050781 L 34.160156 10.230469 L 35.75 9.039062 L 37.339844 10.230469 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="29.808772" href="#svg_b37d2e4bbec78fe36ec1_glyph0-1" y="113.820384"></use>
+<use x="33.766742" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+<use x="37.724713" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="73.38733" href="#svg_b37d2e4bbec78fe36ec1_glyph0-3" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="77.348202" href="#svg_b37d2e4bbec78fe36ec1_glyph1-1" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="79.708166" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+<use x="83.666137" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+<use x="87.624108" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="120.125809" href="#svg_b37d2e4bbec78fe36ec1_glyph0-3" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="124.08668" href="#svg_b37d2e4bbec78fe36ec1_glyph1-1" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="126.446645" href="#svg_b37d2e4bbec78fe36ec1_glyph0-3" y="113.820384"></use>
+<use x="130.404615" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+<use x="134.362586" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="166.865284" href="#svg_b37d2e4bbec78fe36ec1_glyph0-3" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="170.826155" href="#svg_b37d2e4bbec78fe36ec1_glyph1-1" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="173.18612" href="#svg_b37d2e4bbec78fe36ec1_glyph0-4" y="113.820384"></use>
+<use x="177.144091" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+<use x="181.102062" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="213.60476" href="#svg_b37d2e4bbec78fe36ec1_glyph0-3" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="217.565631" href="#svg_b37d2e4bbec78fe36ec1_glyph1-1" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="219.925596" href="#svg_b37d2e4bbec78fe36ec1_glyph0-5" y="113.820384"></use>
+<use x="223.883567" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+<use x="227.841537" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="260.343238" href="#svg_b37d2e4bbec78fe36ec1_glyph0-3" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="264.304109" href="#svg_b37d2e4bbec78fe36ec1_glyph1-1" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="266.664074" href="#svg_b37d2e4bbec78fe36ec1_glyph0-6" y="113.820384"></use>
+<use x="270.622045" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+<use x="274.580015" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="307.082714" href="#svg_b37d2e4bbec78fe36ec1_glyph0-3" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="311.043585" href="#svg_b37d2e4bbec78fe36ec1_glyph1-1" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="313.40355" href="#svg_b37d2e4bbec78fe36ec1_glyph0-7" y="113.820384"></use>
+<use x="317.36152" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+<use x="321.319491" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="113.820384"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="19.946991" href="#svg_b37d2e4bbec78fe36ec1_glyph2-1" y="95.991975"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="26.15711" href="#svg_b37d2e4bbec78fe36ec1_glyph0-6" y="95.991975"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="19.946991" href="#svg_b37d2e4bbec78fe36ec1_glyph2-1" y="75.111372"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="26.15711" href="#svg_b37d2e4bbec78fe36ec1_glyph0-4" y="75.111372"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="26.158107" href="#svg_b37d2e4bbec78fe36ec1_glyph0-2" y="54.646705"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="26.158107" href="#svg_b37d2e4bbec78fe36ec1_glyph0-4" y="33.766102"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="26.158107" href="#svg_b37d2e4bbec78fe36ec1_glyph0-6" y="12.886496"></use>
+</g>
+<g clip-path="url(#svg_b37d2e4bbec78fe36ec1_clip1)" clip-rule="nonzero">
+<path d="M -0.000578403 48.960038 L 0.46937 34.360298 L 0.935403 47.992727 L 1.405351 53.27965 L 1.8753 28.211802 L 2.341333 45.740889 L 2.811281 52.073448 L 3.28123 44.840154 L 3.747263 29.261354 L 4.217211 51.243205 L 4.68716 9.296367 L 5.153192 79.820003 L 5.623141 41.965634 L 6.09309 59.659203 L 6.559122 53.479378 L 7.029071 51.646578 L 7.49902 36.972429 L 7.965052 38.06506 L 8.435001 39.271262 L 8.90495 52.731376 L 9.370982 74.446923 L 9.840931 60.477697 L 10.306963 30.686865 L 10.776912 63.422709 L 11.246861 51.066974 L 11.712893 34.215397 L 12.182842 38.15905 L 12.652791 55.8722 L 13.118823 66.763261 L 13.588772 47.225144 L 14.05872 43.26191 L 14.524753 59.247998 L 14.994702 56.224662 L 15.46465 53.757431 L 15.930683 36.103024 L 16.400632 56.36173 L 16.87058 44.425033 L 17.336613 50.557863 L 17.806561 65.36908 L 18.27651 31.250804 L 18.742543 57.485691 L 19.212491 65.631468 L 19.68244 50.875079 L 20.148473 44.143063 L 20.618421 48.439178 L 21.084454 49.563139 L 21.554402 54.521097 L 22.024351 44.859735 L 22.490384 46.665122 L 22.960332 53.596865 L 23.430281 29.500245 L 23.896313 43.453805 L 24.366262 63.230814 L 24.836211 56.326484 L 25.302243 33.122766 L 25.772192 41.808985 L 26.242141 55.100701 L 26.708173 58.958197 L 27.178122 48.490089 L 27.648071 49.245923 L 28.114103 36.545559 L 28.584052 49.104939 L 29.054001 52.578643 L 29.520033 41.754157 L 29.989982 42.976024 L 30.45993 42.051792 L 30.925963 51.595667 L 31.395912 54.720826 L 31.861944 71.29435 L 32.331893 55.836954 L 32.801842 40.551872 L 33.267874 51.983374 L 33.737823 48.866048 L 34.207771 54.544595 L 34.673804 53.09167 L 35.143753 52.034286 L 35.613701 44.985055 L 36.079734 49.794197 L 36.549682 55.38267 L 37.019631 48.098465 L 37.485664 46.508472 L 37.955612 53.596865 L 38.425561 54.458438 L 38.891594 48.732896 L 39.361542 38.139469 L 39.831491 51.450766 L 40.297523 26.942941 L 40.767472 55.155528 L 41.237421 36.091276 L 41.703453 62.055942 L 42.173402 53.906248 L 42.639435 53.596865 L 43.109383 77.106049 L 43.579332 50.875079 L 44.045364 50.150574 L 44.515313 51.634829 L 44.985262 34.845911 L 45.451294 59.898094 L 45.921243 44.534687 L 46.391192 46.371404 L 46.857224 49.813778 L 47.327173 31.885235 L 47.797122 50.412962 L 48.263154 60.234891 L 48.733103 38.640747 L 49.203052 80.450518 L 49.669084 38.456684 L 50.139033 47.013667 L 50.608981 66.195407 L 51.075014 44.687421 L 51.544963 58.214111 L 52.014911 39.921358 L 52.480944 70.017656 L 52.950892 47.691176 L 53.416925 49.841192 L 53.886874 60.967227 L 54.356822 55.406168 L 54.822855 45.811381 L 55.292804 54.532846 L 55.762752 46.191257 L 56.228785 55.739048 L 56.698733 30.530216 L 57.168682 48.913043 L 57.634715 36.639549 L 58.104663 59.345904 L 58.574612 37.63819 L 59.040644 43.53213 L 59.510593 44.025576 L 59.980542 51.403771 L 60.446574 43.481219 L 60.916523 49.927349 L 61.386472 33.976506 L 61.852504 68.572564 L 62.322453 44.264467 L 62.792402 68.7018 L 63.258434 70.9928 L 63.728383 68.400249 L 64.194415 53.18566 L 64.664364 35.323693 L 65.134313 51.583918 L 65.600345 44.902814 L 66.070294 45.654732 L 66.540243 46.520221 L 67.006275 55.198607 L 67.476224 44.926311 L 67.946173 67.511263 L 68.412205 52.512067 L 68.882154 35.848469 L 69.352102 58.938615 L 69.818135 24.879083 L 70.288084 56.17375 L 70.758032 78.707791 L 71.224065 48.552749 L 71.694014 57.207638 L 72.163962 71.819126 L 72.629995 26.328091 L 73.099943 66.246318 L 73.569892 51.168797 L 74.035925 47.397458 L 74.505873 57.129313 L 74.971906 48.995284 L 75.441854 37.266147 L 75.911803 58.045713 L 76.377836 55.766462 L 76.847784 40.477463 L 77.317733 57.027491 L 77.783766 48.674152 L 78.253714 45.815298 L 78.723663 50.80067 L 79.189695 44.135231 L 79.659644 60.563855 L 80.129593 56.17375 L 80.595625 41.538764 L 81.065574 48.787723 L 81.535523 60.395456 L 82.001555 56.675029 L 82.471504 60.285802 L 82.941453 40.884752 L 83.407485 51.345027 L 83.877434 56.169834 L 84.347383 48.251198 L 84.813415 57.37212 L 85.283364 49.257672 L 85.749396 75.519972 L 86.219345 61.926706 L 86.689294 46.821771 L 87.155326 72.167671 L 87.625275 46.371404 L 88.095223 38.084641 L 88.561256 39.839117 L 89.031205 64.135465 L 89.501153 47.295636 L 89.967186 55.750797 L 90.437135 62.988007 L 90.907083 44.068655 L 91.373116 53.890583 L 91.843064 39.870446 L 92.313013 61.683899 L 92.779046 46.308744 L 93.248994 40.755516 L 93.718943 51.270619 L 94.184976 63.833914 L 94.654924 34.321135 L 95.120957 56.283405 L 95.590905 61.166955 L 96.060854 68.552983 L 96.526887 45.337516 L 96.996835 49.343829 L 97.466784 49.324248 L 97.932816 87.464502 L 98.402765 44.887149 L 98.872714 59.784523 L 99.338746 55.891781 L 99.808695 57.787241 L 100.278644 42.412086 L 100.744676 48.803388 L 101.214625 66.070087 L 101.684574 52.778371 L 102.150606 46.148178 L 102.620555 47.937899 L 103.090504 56.23641 L 103.556536 58.327682 L 104.026485 45.838795 L 104.496433 52.598224 L 104.962466 47.886988 L 105.432415 45.850544 L 105.898447 58.265022 L 106.368396 61.053385 L 106.838345 53.812258 L 107.304377 57.15281 L 107.774326 60.270137 L 108.244274 41.519183 L 108.710307 42.278934 L 109.180256 41.064899 L 109.650204 49.731537 L 110.116237 52.33192 L 110.586185 60.309299 L 111.056134 49.802029 L 111.522167 60.704839 L 111.992115 37.152576 L 112.462064 63.352217 L 112.928097 40.712438 L 113.398045 41.127559 L 113.867994 62.999755 L 114.334026 60.603017 L 114.803975 40.41872 L 115.273924 53.64386 L 115.739956 57.806822 L 116.209905 54.599422 L 116.675938 48.537084 L 117.145886 54.79915 L 117.615835 44.797075 L 118.081867 42.893783 L 118.551816 40.524458 L 119.021765 48.172874 L 119.487797 45.650816 L 119.957746 51.25887 L 120.427695 49.958679 L 120.893727 51.493845 L 121.363676 54.728658 L 121.833625 51.192294 L 122.299657 58.304185 L 122.769606 53.072089 L 123.239554 55.04979 L 123.705587 46.778692 L 124.175536 45.388428 L 124.645484 47.295636 L 125.111517 54.709077 L 125.581466 46.261749 L 126.051414 47.883072 L 126.517447 33.526139 L 126.987395 46.293079 L 127.453428 48.521419 L 127.923377 55.551068 L 128.393325 39.161607 L 128.859358 47.033248 L 129.329307 49.018781 L 129.799255 59.404648 L 130.265288 47.683344 L 130.735236 52.594308 L 131.205185 42.827207 L 131.671218 45.721308 L 132.141166 52.468988 L 132.611115 60.039079 L 133.077147 51.846306 L 133.547096 58.245441 L 134.017045 39.99185 L 134.483077 65.416075 L 134.953026 48.200287 L 135.422975 53.181744 L 135.889007 56.099342 L 136.358956 51.975542 L 136.828905 53.142581 L 137.294937 56.436138 L 137.764886 51.673992 L 138.230918 59.255831 L 138.700867 48.72898 L 139.170816 44.280132 L 139.636848 54.916638 L 140.106797 52.077364 L 140.576746 49.335997 L 141.042778 48.50967 L 141.512727 51.814976 L 141.982676 54.897056 L 142.448708 46.563299 L 142.918657 49.809862 L 143.388605 53.021178 L 143.854638 53.847504 L 144.324587 56.232494 L 144.794535 68.329757 L 145.260568 47.522778 L 145.730516 58.28852 L 146.200465 53.126916 L 146.666498 64.812974 L 147.136446 55.08112 L 147.606395 51.885468 L 148.072428 50.452125 L 148.542376 58.930783 L 149.008409 49.94693 L 149.478357 60.223142 L 149.948306 56.596704 L 150.414339 55.386586 L 150.884287 56.342149 L 151.354236 49.108855 L 151.820269 40.500961 L 152.290217 62.177345 L 152.760166 51.728819 L 153.226198 51.282368 L 153.696147 54.513265 L 154.166096 55.312178 L 154.632128 51.392022 L 155.102077 58.531326 L 155.572026 60.614766 L 156.038058 51.13355 L 156.508007 49.798113 L 156.977956 53.97674 L 157.443988 51.470347 L 157.913937 46.152094 L 158.383886 51.129634 L 158.849918 41.652335 L 159.319867 75.308495 L 159.785899 58.28852 L 160.255848 42.674474 L 160.725797 53.236571 L 161.191829 31.329129 L 161.661778 54.043316 L 162.131726 52.273176 L 162.597759 42.846788 L 163.067708 43.978581 L 163.537656 45.267024 L 164.003689 59.690533 L 164.473638 36.69046 L 164.943586 62.756949 L 165.409619 68.73313 L 165.879567 56.377395 L 166.349516 44.468111 L 166.815549 46.712116 L 167.285497 46.880515 L 167.755446 40.912166 L 168.221478 50.326805 L 168.691427 63.121159 L 169.161376 51.93638 L 169.627408 48.819053 L 170.097357 56.902171 L 170.56339 47.930067 L 171.033338 43.829764 L 171.503287 52.437658 L 171.969319 74.345101 L 172.439268 66.606612 L 172.909217 56.138504 L 173.375249 54.454521 L 173.845198 47.084159 L 174.315147 55.429665 L 174.781179 61.554663 L 175.251128 52.942853 L 175.721077 48.76031 L 176.187109 62.541555 L 176.657058 52.183103 L 177.127007 23.625886 L 177.593039 48.157209 L 178.062988 50.573528 L 178.532936 65.419991 L 178.998969 60.798829 L 179.468918 42.212357 L 179.938866 50.694932 L 180.404899 52.496402 L 180.874848 59.17359 L 181.34088 49.101022 L 181.810829 41.644503 L 182.280777 53.142581 L 182.74681 54.423191 L 183.216759 62.948844 L 183.686707 56.7886 L 184.15274 53.859253 L 184.622688 62.439733 L 185.092637 25.834645 L 185.55867 60.368043 L 186.028618 64.350858 L 186.498567 63.798668 L 186.9646 54.066814 L 187.434548 31.074573 L 187.904497 67.644415 L 188.370529 60.48553 L 188.840478 38.683826 L 189.310427 45.846628 L 189.776459 46.500639 L 190.246408 52.993764 L 190.716357 52.504234 L 191.182389 55.833038 L 191.652338 36.698293 L 192.11837 65.177184 L 192.588319 47.099824 L 193.058268 36.81578 L 193.5243 62.271335 L 193.994249 48.184622 L 194.464198 54.724742 L 194.93023 59.549549 L 195.400179 42.372923 L 195.870128 39.165523 L 196.33616 51.204043 L 196.806109 38.632915 L 197.276057 60.434619 L 197.74209 41.503518 L 198.212039 50.620523 L 198.681987 73.91823 L 199.14802 48.96787 L 199.617969 54.732574 L 200.087917 42.059624 L 200.55395 20.250088 L 201.023898 45.251359 L 201.489931 27.013433 L 201.95988 61.480255 L 202.429828 62.643378 L 202.895861 60.967227 L 203.36581 58.582238 L 203.835758 53.201325 L 204.301791 68.177024 L 204.771739 47.417039 L 205.241688 58.210195 L 205.707721 55.276932 L 206.177669 54.278291 L 206.647618 50.828084 L 207.11365 60.078241 L 207.583599 55.323926 L 208.053548 49.343829 L 208.51958 44.789243 L 208.989529 32.915206 L 209.459478 40.685024 L 209.92551 49.966511 L 210.395459 44.683504 L 210.865408 37.348388 L 211.33144 46.46931 L 211.801389 40.516626 L 212.267421 53.420634 L 212.73737 37.818337 L 213.207319 46.919677 L 213.673351 45.486333 L 214.1433 55.210356 L 214.613249 37.579446 L 215.079281 34.85766 L 215.54923 42.153614 L 216.019179 37.30531 L 216.485211 90.331189 L 216.95516 51.427268 L 217.425108 59.804104 L 217.891141 47.863491 L 218.36109 39.50232 L 218.831038 58.46475 L 219.297071 52.562978 L 219.767019 39.561064 L 220.236968 64.147214 L 220.703001 45.870125 L 221.172949 62.200843 L 221.642898 31.532773 L 222.108931 48.615409 L 222.578879 47.424872 L 223.044912 44.217472 L 223.51486 70.123395 L 223.984809 74.544829 L 224.450842 49.046195 L 224.92079 35.057388 L 225.390739 50.659686 L 225.856772 58.601819 L 226.32672 53.342309 L 226.796669 56.988328 L 227.262701 57.078402 L 227.73265 47.10374 L 228.202599 53.401053 L 228.668631 50.506952 L 229.13858 56.710275 L 229.608529 49.719788 L 230.074561 58.515661 L 230.54451 50.475622 L 231.014459 45.00072 L 231.480491 47.158568 L 231.95044 56.29907 L 232.420388 62.302665 L 232.886421 52.065615 L 233.35637 74.184535 L 233.822402 52.543397 L 234.292351 53.169995 L 234.7623 49.97826 L 235.228332 49.943014 L 235.698281 47.95748 L 236.168229 54.619003 L 236.634262 77.485924 L 237.104211 64.268617 L 237.574159 49.359494 L 238.040192 48.098465 L 238.510141 28.262713 L 238.980089 69.285319 L 239.446122 59.067851 L 239.91607 69.371477 L 240.386019 72.140258 L 240.852052 96.902639 L 241.322 44.707002 L 241.791949 32.895624 L 242.257981 58.014383 L 242.72793 66.708434 L 243.197879 64.997037 L 243.663911 37.442378 L 244.13386 34.509115 L 244.599893 33.404735 L 245.069841 47.65593 L 245.53979 46.83352 L 246.005822 70.871396 L 246.475771 54.740407 L 246.94572 65.294672 L 247.411752 54.062897 L 247.881701 61.119961 L 248.35165 45.106458 L 248.817682 56.88259 L 249.287631 19.952454 L 249.75758 54.685579 L 250.223612 66.234569 L 250.693561 58.52741 L 251.16351 60.011665 L 251.629542 50.475622 L 252.099491 50.07225 L 252.569439 74.384263 L 253.035472 49.868605 L 253.505421 53.393221 L 253.975369 47.769501 L 254.441402 54.141222 L 254.91135 63.254311 L 255.377383 53.694771 L 255.847332 54.19605 L 256.31728 52.786203 L 256.783313 34.403376 L 257.253262 46.567216 L 257.72321 53.479378 L 258.189243 48.266863 L 258.659191 43.868927 L 259.12914 53.467629 L 259.595173 54.720826 L 260.065121 56.949166 L 260.53507 49.120604 L 261.001103 47.965313 L 261.471051 35.965956 L 261.941 55.923111 L 262.407032 49.594468 L 262.876981 47.558024 L 263.34693 57.434779 L 263.812962 55.38267 L 264.282911 41.139308 L 264.75286 45.607737 L 265.218892 43.845429 L 265.688841 42.325928 L 266.154873 61.89146 L 266.624822 49.610133 L 267.094771 49.64538 L 267.560803 58.245441 L 268.030752 63.524531 L 268.500701 63.747757 L 268.966733 43.026935 L 269.436682 53.001597 L 269.906631 45.055547 L 270.372663 57.939974 L 270.842612 38.531093 L 271.31256 52.754874 L 271.778593 30.534132 L 272.248542 47.922234 L 272.71849 33.193258 L 273.184523 59.134427 L 273.654472 54.709077 L 274.12442 57.513104 L 274.590453 49.473065 L 275.060401 54.243044 L 275.53035 46.18734 L 275.996383 58.539159 L 276.466331 45.45892 L 276.932364 33.224588 L 277.402312 33.232421 L 277.872261 37.951489 L 278.338294 53.741766 L 278.808242 49.398657 L 279.278191 76.119157 L 279.744224 28.023823 L 280.214172 41.358617 L 280.684121 54.979297 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(35.299683%,35.299683%,35.299683%);stroke-opacity:0.65;stroke-miterlimit:10;" transform="matrix(0.997449,0,0,-0.997449,35.750577,103.706248)"></path>
+</g>
+<g clip-path="url(#svg_b37d2e4bbec78fe36ec1_clip2)" clip-rule="nonzero">
+<path d="M -0.000578403 4.166093 L 0.46937 6.656821 L 0.935403 6.801722 L 1.405351 9.080973 L 1.8753 11.321062 L 2.341333 8.9909 L 2.811281 10.952936 L 3.28123 13.095119 L 3.747263 14.669447 L 4.217211 12.178719 L 4.68716 14.242577 L 5.153192 2.439032 L 5.623141 -0.000785369 L 6.09309 2.157062 L 6.559122 4.416733 L 7.029071 6.934874 L 7.49902 9.319864 L 7.965052 9.817226 L 8.435001 10.510401 L 8.90495 11.387638 L 9.370982 13.498491 L 9.840931 11.230989 L 10.306963 12.742657 L 10.776912 11.054758 L 11.246861 12.096478 L 11.712893 14.164252 L 12.182842 13.396669 L 12.652791 13.756963 L 13.118823 15.585847 L 13.588772 15.433114 L 14.05872 17.093599 L 14.524753 18.139235 L 14.994702 19.294525 L 15.46465 20.723953 L 15.930683 22.219956 L 16.400632 20.93543 L 16.87058 22.239537 L 17.336613 23.042366 L 17.806561 24.405218 L 18.27651 23.551477 L 18.742543 20.214842 L 19.212491 21.448457 L 19.68244 20.9041 L 20.148473 22.415768 L 20.618421 23.155937 L 21.084454 24.389553 L 21.554402 25.615336 L 22.024351 26.739296 L 22.490384 27.220994 L 22.960332 27.95333 L 23.430281 28.96372 L 23.896313 23.520148 L 24.366262 24.029259 L 24.836211 23.833447 L 25.302243 24.926077 L 25.772192 22.09072 L 26.242141 22.400103 L 26.708173 23.708127 L 27.178122 24.452212 L 27.648071 25.599671 L 28.114103 26.723631 L 28.584052 24.882999 L 29.054001 26.046122 L 29.520033 27.22491 L 29.989982 26.958606 L 30.45993 27.025182 L 30.925963 26.8607 L 31.395912 27.988577 L 31.861944 28.924558 L 32.331893 24.949575 L 32.801842 26.014792 L 33.267874 25.572257 L 33.737823 26.786291 L 34.207771 27.796681 L 34.673804 28.763992 L 35.143753 29.739135 L 35.613701 30.667284 L 36.079734 30.784771 L 36.549682 31.568019 L 37.019631 32.163288 L 37.485664 32.668482 L 37.955612 32.879959 L 38.425561 33.526139 L 38.891594 34.054831 L 39.361542 34.473869 L 39.831491 31.748166 L 40.297523 32.527498 L 40.767472 24.522705 L 41.237421 25.677995 L 41.703453 23.849112 L 42.173402 23.962683 L 42.639435 25.23546 L 43.109383 26.43383 L 43.579332 20.265753 L 44.045364 21.816583 L 44.515313 23.246011 L 44.985262 24.612778 L 45.451294 22.505842 L 45.921243 23.1951 L 46.391192 23.935269 L 46.857224 24.890831 L 47.327173 26.097033 L 47.797122 22.498009 L 48.263154 23.888274 L 48.733103 24.389553 L 49.203052 23.602389 L 49.669084 16.513996 L 50.139033 16.619734 L 50.608981 18.182313 L 51.075014 17.880763 L 51.544963 19.079132 L 52.014911 20.304915 L 52.480944 20.363659 L 52.950892 18.573937 L 53.416925 20.062108 L 53.886874 21.593358 L 54.356822 22.161213 L 54.822855 23.461404 L 55.292804 24.377804 L 55.762752 25.587922 L 56.228785 26.386835 L 56.698733 27.354146 L 57.168682 22.838722 L 57.634715 24.131081 L 58.104663 22.744732 L 58.574612 23.508399 L 59.040644 22.537172 L 59.510593 23.155937 L 59.980542 23.809949 L 60.446574 25.137554 L 60.916523 25.501765 L 61.386472 26.67272 L 61.852504 23.841279 L 62.322453 22.004563 L 62.792402 22.79956 L 63.258434 21.084247 L 63.728383 18.824577 L 64.194415 17.794606 L 64.664364 19.49817 L 65.134313 18.354628 L 65.600345 20.038611 L 66.070294 21.095995 L 66.540243 22.180794 L 67.006275 23.289089 L 67.476224 24.526621 L 67.946173 25.219795 L 68.412205 23.535813 L 68.882154 24.879083 L 69.352102 23.097194 L 69.818135 23.896107 L 70.288084 17.512637 L 70.758032 19.067384 L 71.224065 13.995854 L 71.694014 15.852151 L 72.163962 17.426479 L 72.629995 15.46836 L 73.099943 11.693105 L 73.569892 12.084729 L 74.035925 14.152503 L 74.505873 15.914811 L 74.971906 17.493055 L 75.441854 19.149625 L 75.911803 18.636597 L 76.377836 19.917207 L 76.847784 21.342719 L 77.317733 21.42496 L 77.783766 22.619413 L 78.253714 23.907855 L 78.723663 24.792925 L 79.189695 26.042206 L 79.659644 26.449495 L 80.129593 26.629642 L 80.595625 27.530377 L 81.065574 27.170083 L 81.535523 28.145226 L 82.001555 28.180472 L 82.471504 28.897144 L 82.941453 28.877563 L 83.407485 28.156975 L 83.877434 29.190862 L 84.347383 29.887953 L 84.813415 30.604624 L 85.283364 31.000165 L 85.749396 31.724669 L 86.219345 24.773344 L 86.689294 24.812507 L 87.155326 25.760236 L 87.625275 22.118134 L 88.095223 23.218597 L 88.561256 22.419684 L 89.031205 22.219956 L 89.501153 21.992814 L 89.967186 23.206848 L 90.437135 24.401301 L 90.907083 24.225071 L 91.373116 24.789009 L 91.843064 26.006959 L 92.313013 25.372529 L 92.779046 25.407775 L 93.248994 26.238018 L 93.718943 25.822896 L 94.184976 27.017349 L 94.654924 26.273264 L 95.120957 23.661132 L 95.590905 24.769428 L 96.060854 24.988737 L 96.526887 22.964042 L 96.996835 23.853028 L 97.466784 25.106224 L 97.932816 26.265431 L 98.402765 14.289572 L 98.872714 15.785575 L 99.338746 17.05052 L 99.808695 18.660095 L 100.278644 19.972035 L 100.744676 20.610382 L 101.214625 22.047642 L 101.684574 21.295724 L 102.150606 22.783895 L 102.620555 23.802117 L 103.090504 24.945659 L 103.556536 25.967797 L 104.026485 26.621809 L 104.496433 27.279737 L 104.962466 28.372368 L 105.432415 29.167365 L 105.898447 29.602067 L 106.368396 29.934947 L 106.838345 29.602067 L 107.304377 30.483221 L 107.774326 30.925756 L 108.244274 30.675117 L 108.710307 29.895785 L 109.180256 29.441501 L 109.650204 28.697416 L 110.116237 29.629481 L 110.586185 30.561546 L 111.056134 30.346153 L 111.522167 31.16073 L 111.992115 30.76519 L 112.462064 28.415447 L 112.928097 27.628283 L 113.398045 27.025182 L 113.867994 26.613977 L 114.334026 26.163609 L 114.803975 26.363337 L 115.273924 25.842477 L 115.739956 26.997768 L 116.209905 27.647864 L 116.675938 28.619091 L 117.145886 29.464999 L 117.615835 30.283493 L 118.081867 30.404896 L 118.551816 30.052435 L 119.021765 29.053794 L 119.487797 29.825293 L 119.957746 30.158173 L 120.427695 31.051076 L 120.893727 31.822575 L 121.363676 32.594074 L 121.833625 33.177594 L 122.299657 33.839438 L 122.769606 33.718035 L 123.239554 34.325052 L 123.705587 34.720592 L 124.175536 34.771503 L 124.645484 34.516947 L 125.111517 34.685346 L 125.581466 35.088718 L 126.051414 34.990812 L 126.517447 35.210122 L 126.987395 30.001524 L 127.453428 30.43231 L 127.923377 31.133317 L 128.393325 31.74425 L 128.859358 29.993691 L 129.329307 30.541965 L 129.799255 31.282134 L 130.265288 31.199893 L 130.735236 31.736417 L 131.205185 32.511833 L 131.671218 31.865653 L 132.141166 32.010554 L 132.611115 32.766388 L 133.077147 32.347351 L 133.547096 33.083604 L 134.017045 33.060106 L 134.483077 31.38004 L 134.953026 29.394506 L 135.422975 30.142508 L 135.889007 31.015829 L 136.358956 31.571935 L 136.828905 32.363016 L 137.294937 33.075771 L 137.764886 33.392987 L 138.230918 34.050915 L 138.700867 33.67104 L 139.170816 34.121407 L 139.636848 33.667123 L 140.106797 34.137072 L 140.576746 34.736257 L 141.042778 35.159211 L 141.512727 35.449012 L 141.982676 35.942458 L 142.448708 36.208763 L 142.918657 36.048197 L 143.388605 36.400658 L 143.854638 36.78445 L 144.324587 37.082084 L 144.794535 37.02334 L 145.260568 32.280775 L 145.730516 32.695896 L 146.200465 32.707645 L 146.666498 33.38907 L 147.136446 31.25472 L 147.606395 31.908732 L 148.072428 32.676315 L 148.542376 33.353824 L 149.008409 33.142347 L 149.478357 33.749364 L 149.948306 33.146264 L 150.414339 33.436065 L 150.884287 33.866852 L 151.354236 34.125323 L 151.820269 34.579607 L 152.290217 32.805551 L 152.760166 31.740334 L 153.226198 32.523582 L 153.696147 33.240253 L 154.166096 33.784611 L 154.632128 34.199732 L 155.102077 34.787168 L 155.572026 34.497366 L 156.038058 33.67104 L 156.508007 34.297638 L 156.977956 34.798917 L 157.443988 35.261033 L 157.913937 35.766228 L 158.383886 35.566499 L 158.849918 36.040364 L 159.319867 34.422958 L 159.785899 26.617893 L 160.255848 27.22491 L 160.725797 27.189664 L 161.191829 28.270546 L 161.661778 23.907855 L 162.131726 25.176717 L 162.597759 26.418165 L 163.067708 26.512154 L 163.537656 26.841118 L 164.003689 27.385476 L 164.473638 27.655696 L 164.943586 25.709325 L 165.409619 25.435189 L 165.879567 23.265592 L 166.349516 24.397385 L 166.815549 25.020067 L 167.285497 25.936467 L 167.755446 26.801956 L 168.221478 26.359421 L 168.691427 27.491214 L 169.161376 26.89203 L 169.627408 28.019906 L 170.097357 28.93239 L 170.56339 29.555072 L 171.033338 30.259995 L 171.503287 30.162089 L 171.969319 31.054992 L 172.439268 24.96524 L 172.909217 23.633718 L 173.375249 24.761595 L 173.845198 25.948216 L 174.315147 26.841118 L 174.781179 27.800597 L 175.251128 27.593036 L 175.721077 28.658253 L 176.187109 29.519826 L 176.657058 28.818819 L 177.127007 29.809628 L 177.593039 20.857105 L 178.062988 22.227789 L 178.532936 23.645467 L 178.998969 22.877884 L 179.468918 23.359582 L 179.938866 23.629802 L 180.404899 24.957407 L 180.874848 26.210604 L 181.34088 26.696218 L 181.810829 27.730105 L 182.280777 27.373727 L 182.74681 28.446777 L 183.216759 29.374925 L 183.686707 28.572096 L 184.15274 29.237857 L 184.622688 30.146424 L 185.092637 29.39059 L 185.55867 21.85183 L 186.028618 22.513674 L 186.498567 22.196459 L 186.9646 22.05939 L 187.434548 23.453571 L 187.904497 20.062108 L 188.370529 19.098713 L 188.840478 19.983784 L 189.310427 19.760558 L 189.776459 20.970676 L 190.246408 22.169045 L 190.716357 23.594556 L 191.182389 24.937826 L 191.652338 25.999127 L 192.11837 24.334725 L 192.588319 23.551477 L 193.058268 24.628443 L 193.5243 23.222513 L 193.994249 23.347833 L 194.464198 24.550118 L 194.93023 25.732823 L 195.400179 26.191023 L 195.870128 26.198855 L 196.33616 25.325534 L 196.806109 26.551317 L 197.276057 25.458686 L 197.74209 25.768069 L 198.212039 25.607503 L 198.681987 26.801956 L 199.14802 22.114218 L 199.617969 23.457488 L 200.087917 24.718517 L 200.55395 24.812507 L 201.023898 15.668088 L 201.489931 17.109264 L 201.95988 13.290931 L 202.429828 14.4893 L 202.895861 15.382202 L 203.36581 16.490498 L 203.835758 17.865098 L 204.301791 19.564746 L 204.771739 18.503445 L 205.241688 19.975951 L 205.707721 21.135158 L 206.177669 22.513674 L 206.647618 23.864777 L 207.11365 25.180633 L 207.583599 25.587922 L 208.053548 26.649223 L 208.51958 27.706607 L 208.989529 28.082566 L 209.459478 24.495291 L 209.92551 24.272065 L 210.395459 25.529178 L 210.865408 26.089201 L 211.33144 24.636276 L 211.801389 25.552676 L 212.267421 25.157136 L 212.73737 26.37117 L 213.207319 25.035732 L 213.673351 25.97563 L 214.1433 26.633558 L 214.613249 27.632199 L 215.079281 26.010876 L 215.54923 23.661132 L 216.019179 23.888274 L 216.485211 22.752565 L 216.95516 10.39683 L 217.425108 12.570343 L 217.891141 14.074178 L 218.36109 15.879565 L 218.831038 16.298602 L 219.297071 17.700616 L 219.767019 19.419845 L 220.236968 19.486421 L 220.703001 19.564746 L 221.172949 20.790529 L 221.642898 21.182153 L 222.108931 18.421204 L 222.578879 19.991616 L 223.044912 21.358383 L 223.51486 22.200375 L 223.984809 20.073857 L 224.450842 16.600153 L 224.92079 18.315466 L 225.390739 17.250249 L 225.856772 18.989059 L 226.32672 20.171763 L 226.796669 21.718677 L 227.262701 22.897466 L 227.73265 23.978348 L 228.202599 25.020067 L 228.668631 26.24585 L 229.13858 27.389392 L 229.608529 28.164807 L 230.074561 29.136035 L 230.54451 29.464999 L 231.014459 30.385315 L 231.480491 30.534132 L 232.420388 31.575852 L 232.886421 30.659452 L 233.35637 31.521024 L 233.822402 25.372529 L 234.292351 26.594395 L 234.7623 27.718356 L 235.228332 28.736578 L 235.698281 29.680392 L 236.168229 30.377482 L 236.634262 31.145065 L 237.104211 23.269508 L 237.574159 22.885717 L 238.040192 24.201573 L 238.510141 25.333366 L 238.980089 20.242255 L 239.446122 18.722754 L 239.91607 19.86238 L 240.386019 18.370293 L 240.852052 16.141953 L 241.322 2.321545 L 241.791949 4.628209 L 242.257981 4.620377 L 242.72793 6.876131 L 243.197879 7.639797 L 243.663911 8.681517 L 244.13386 9.347278 L 244.599893 9.237623 L 245.069841 8.838167 L 245.53979 10.968601 L 246.005822 12.89539 L 246.475771 11.900666 L 246.94572 13.917529 L 247.411752 14.305237 L 247.881701 16.19678 L 248.35165 17.215002 L 248.817682 18.523026 L 249.287631 19.944621 L 249.75758 12.139556 L 250.223612 14.140755 L 250.693561 14.281739 L 251.16351 15.824737 L 251.629542 17.05052 L 252.099491 18.797163 L 252.569439 20.418486 L 253.035472 16.944782 L 253.505421 18.67576 L 253.975369 20.316664 L 254.441402 21.691264 L 254.91135 23.105026 L 255.377383 23.00712 L 255.847332 24.354307 L 256.31728 25.584006 L 256.783313 26.790207 L 257.253262 24.107583 L 257.72321 25.074895 L 258.189243 26.292845 L 258.659191 27.28757 L 259.12914 27.514712 L 259.595173 28.564264 L 260.065121 29.461082 L 260.53507 30.028937 L 261.001103 30.816101 L 261.471051 31.423118 L 261.941 28.435028 L 262.407032 29.222192 L 262.876981 30.107262 L 263.34693 30.718195 L 263.812962 31.094154 L 264.282911 31.728585 L 264.75286 30.675117 L 265.218892 30.917923 L 265.688841 30.745609 L 266.154873 30.193419 L 266.624822 29.598151 L 267.094771 30.455807 L 267.560803 31.250804 L 268.030752 31.427035 L 268.500701 30.126843 L 268.966733 28.959804 L 269.436682 28.814903 L 269.906631 29.790047 L 270.372663 30.013272 L 270.842612 30.365734 L 271.31256 28.626924 L 271.778593 29.621648 L 272.248542 24.514872 L 272.71849 25.607503 L 273.184523 22.662491 L 273.654472 23.473153 L 274.12442 24.730265 L 274.590453 25.611419 L 275.060401 26.751045 L 275.53035 27.812346 L 275.996383 28.423279 L 276.466331 28.818819 L 276.932364 29.210443 L 277.402312 25.505681 L 277.872261 22.599831 L 278.338294 21.843997 L 278.808242 23.265592 L 279.278191 24.561867 L 279.744224 19.384599 L 280.214172 15.534936 L 280.684121 16.373011 " style="fill:none;stroke-width:0.79701;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997449,0,0,-0.997449,35.750577,103.706248)"></path>
+</g>
+<g clip-path="url(#svg_b37d2e4bbec78fe36ec1_clip3)" clip-rule="nonzero">
+<path d="M -0.000578403 19.905459 L 281.150153 19.905459 " style="fill:none;stroke-width:0.79701;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-dasharray:2.98883,2.98883;stroke-miterlimit:10;" transform="matrix(0.997449,0,0,-0.997449,35.750577,103.706248)"></path>
+</g>
+<path d="M 6.67661 9.296367 C 6.67661 10.39683 5.787623 11.289732 4.68716 11.289732 C 3.586697 11.289732 2.693794 10.39683 2.693794 9.296367 C 2.693794 8.195903 3.586697 7.303001 4.68716 7.303001 C 5.787623 7.303001 6.67661 8.195903 6.67661 9.296367 Z M 6.67661 9.296367 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.997449,0,0,-0.997449,35.750577,103.706248)"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="174.308251" href="#svg_b37d2e4bbec78fe36ec1_glyph3-1" y="127.497408"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="12.129981" href="#svg_b37d2e4bbec78fe36ec1_glyph4-1" y="59.12226"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="13.12344" href="#svg_b37d2e4bbec78fe36ec1_glyph5-1" y="54.974866"></use>
+</g>
+<g style="fill:rgb(35.299683%,35.299683%,35.299683%);fill-opacity:1;">
+<use x="16.96761" href="#svg_b37d2e4bbec78fe36ec1_glyph6-1" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="27.569498" href="#svg_b37d2e4bbec78fe36ec1_glyph6-2" y="133.639701"></use>
+<use x="30.671879" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="133.639701"></use>
+<use x="34.205533" href="#svg_b37d2e4bbec78fe36ec1_glyph6-4" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="38.37914" href="#svg_b37d2e4bbec78fe36ec1_glyph6-5" y="133.639701"></use>
+<use x="41.481521" href="#svg_b37d2e4bbec78fe36ec1_glyph6-6" y="133.639701"></use>
+<use x="45.439492" href="#svg_b37d2e4bbec78fe36ec1_glyph6-7" y="133.639701"></use>
+<use x="49.828736" href="#svg_b37d2e4bbec78fe36ec1_glyph6-8" y="133.639701"></use>
+<use x="52.075527" href="#svg_b37d2e4bbec78fe36ec1_glyph6-9" y="133.639701"></use>
+<use x="54.322319" href="#svg_b37d2e4bbec78fe36ec1_glyph6-8" y="133.639701"></use>
+<use x="56.569111" href="#svg_b37d2e4bbec78fe36ec1_glyph6-5" y="133.639701"></use>
+<use x="59.671492" href="#svg_b37d2e4bbec78fe36ec1_glyph6-10" y="133.639701"></use>
+<use x="63.205146" href="#svg_b37d2e4bbec78fe36ec1_glyph6-11" y="133.639701"></use>
+</g>
+<g style="fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;">
+<use x="75.990673" href="#svg_b37d2e4bbec78fe36ec1_glyph6-1" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="86.591564" href="#svg_b37d2e4bbec78fe36ec1_glyph6-12" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="91.815529" href="#svg_b37d2e4bbec78fe36ec1_glyph6-6" y="133.639701"></use>
+<use x="95.773499" href="#svg_b37d2e4bbec78fe36ec1_glyph6-13" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="104.211142" href="#svg_b37d2e4bbec78fe36ec1_glyph6-14" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="110.847177" href="#svg_b37d2e4bbec78fe36ec1_glyph6-15" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="115.452057" href="#svg_b37d2e4bbec78fe36ec1_glyph6-16" y="133.639701"></use>
+<use x="119.410027" href="#svg_b37d2e4bbec78fe36ec1_glyph6-17" y="133.639701"></use>
+<use x="123.799271" href="#svg_b37d2e4bbec78fe36ec1_glyph6-2" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="129.579717" href="#svg_b37d2e4bbec78fe36ec1_glyph6-18" y="133.639701"></use>
+<use x="133.113371" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="133.639701"></use>
+<use x="136.647025" href="#svg_b37d2e4bbec78fe36ec1_glyph6-4" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="140.827588" href="#svg_b37d2e4bbec78fe36ec1_glyph6-5" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="146.608087" href="#svg_b37d2e4bbec78fe36ec1_glyph7-1" y="133.639701"></use>
+<use x="150.61475" href="#svg_b37d2e4bbec78fe36ec1_glyph7-2" y="133.639701"></use>
+<use x="155.115289" href="#svg_b37d2e4bbec78fe36ec1_glyph7-3" y="133.639701"></use>
+<use x="160.109706" href="#svg_b37d2e4bbec78fe36ec1_glyph7-4" y="133.639701"></use>
+<use x="165.104122" href="#svg_b37d2e4bbec78fe36ec1_glyph7-5" y="133.639701"></use>
+<use x="167.629154" href="#svg_b37d2e4bbec78fe36ec1_glyph7-6" y="133.639701"></use>
+<use x="171.14194" href="#svg_b37d2e4bbec78fe36ec1_glyph7-5" y="133.639701"></use>
+<use x="173.666973" href="#svg_b37d2e4bbec78fe36ec1_glyph7-2" y="133.639701"></use>
+<use x="178.167512" href="#svg_b37d2e4bbec78fe36ec1_glyph7-3" y="133.639701"></use>
+<use x="183.161929" href="#svg_b37d2e4bbec78fe36ec1_glyph7-3" y="133.639701"></use>
+<use x="188.156345" href="#svg_b37d2e4bbec78fe36ec1_glyph7-7" y="133.639701"></use>
+<use x="192.274304" href="#svg_b37d2e4bbec78fe36ec1_glyph7-8" y="133.639701"></use>
+<use x="194.799336" href="#svg_b37d2e4bbec78fe36ec1_glyph7-8" y="133.639701"></use>
+<use x="197.324369" href="#svg_b37d2e4bbec78fe36ec1_glyph7-7" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="204.121012" href="#svg_b37d2e4bbec78fe36ec1_glyph6-19" y="133.639701"></use>
+<use x="207.223393" href="#svg_b37d2e4bbec78fe36ec1_glyph6-20" y="133.639701"></use>
+<use x="213.372508" href="#svg_b37d2e4bbec78fe36ec1_glyph6-21" y="133.639701"></use>
+<use x="219.236426" href="#svg_b37d2e4bbec78fe36ec1_glyph6-13" y="133.639701"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="224.787323" href="#svg_b37d2e4bbec78fe36ec1_glyph6-22" y="133.639701"></use>
+<use x="230.463429" href="#svg_b37d2e4bbec78fe36ec1_glyph6-23" y="133.639701"></use>
+<use x="236.327346" href="#svg_b37d2e4bbec78fe36ec1_glyph6-24" y="133.639701"></use>
+</g>
+<g style="fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;">
+<use x="16.96761" href="#svg_b37d2e4bbec78fe36ec1_glyph6-25" y="142.583828"></use>
+</g>
+<g style="fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;">
+<use x="20.800372" href="#svg_b37d2e4bbec78fe36ec1_glyph6-25" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="26.162097" href="#svg_b37d2e4bbec78fe36ec1_glyph6-12" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="31.386062" href="#svg_b37d2e4bbec78fe36ec1_glyph6-6" y="142.583828"></use>
+<use x="35.344033" href="#svg_b37d2e4bbec78fe36ec1_glyph6-13" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="43.781675" href="#svg_b37d2e4bbec78fe36ec1_glyph6-14" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="50.41771" href="#svg_b37d2e4bbec78fe36ec1_glyph6-15" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="55.02259" href="#svg_b37d2e4bbec78fe36ec1_glyph6-16" y="142.583828"></use>
+<use x="58.980561" href="#svg_b37d2e4bbec78fe36ec1_glyph6-17" y="142.583828"></use>
+<use x="63.369804" href="#svg_b37d2e4bbec78fe36ec1_glyph6-2" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="69.15025" href="#svg_b37d2e4bbec78fe36ec1_glyph6-18" y="142.583828"></use>
+<use x="72.683904" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="142.583828"></use>
+<use x="76.217558" href="#svg_b37d2e4bbec78fe36ec1_glyph6-4" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="80.398121" href="#svg_b37d2e4bbec78fe36ec1_glyph6-5" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="86.17862" href="#svg_b37d2e4bbec78fe36ec1_glyph7-5" y="142.583828"></use>
+<use x="88.703652" href="#svg_b37d2e4bbec78fe36ec1_glyph7-3" y="142.583828"></use>
+<use x="93.698069" href="#svg_b37d2e4bbec78fe36ec1_glyph7-1" y="142.583828"></use>
+<use x="97.704731" href="#svg_b37d2e4bbec78fe36ec1_glyph7-2" y="142.583828"></use>
+<use x="102.205271" href="#svg_b37d2e4bbec78fe36ec1_glyph7-3" y="142.583828"></use>
+<use x="107.199687" href="#svg_b37d2e4bbec78fe36ec1_glyph7-4" y="142.583828"></use>
+<use x="112.194104" href="#svg_b37d2e4bbec78fe36ec1_glyph7-5" y="142.583828"></use>
+<use x="114.719136" href="#svg_b37d2e4bbec78fe36ec1_glyph7-6" y="142.583828"></use>
+<use x="118.231922" href="#svg_b37d2e4bbec78fe36ec1_glyph7-5" y="142.583828"></use>
+<use x="120.756954" href="#svg_b37d2e4bbec78fe36ec1_glyph7-2" y="142.583828"></use>
+<use x="125.257494" href="#svg_b37d2e4bbec78fe36ec1_glyph7-3" y="142.583828"></use>
+<use x="130.25191" href="#svg_b37d2e4bbec78fe36ec1_glyph7-3" y="142.583828"></use>
+<use x="135.246327" href="#svg_b37d2e4bbec78fe36ec1_glyph7-7" y="142.583828"></use>
+<use x="139.364286" href="#svg_b37d2e4bbec78fe36ec1_glyph7-8" y="142.583828"></use>
+<use x="141.889318" href="#svg_b37d2e4bbec78fe36ec1_glyph7-8" y="142.583828"></use>
+<use x="144.41435" href="#svg_b37d2e4bbec78fe36ec1_glyph7-7" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="151.211315" href="#svg_b37d2e4bbec78fe36ec1_glyph6-19" y="142.583828"></use>
+<use x="154.313696" href="#svg_b37d2e4bbec78fe36ec1_glyph6-11" y="142.583828"></use>
+<use x="157.46477" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="142.583828"></use>
+<use x="160.998424" href="#svg_b37d2e4bbec78fe36ec1_glyph6-17" y="142.583828"></use>
+<use x="165.387667" href="#svg_b37d2e4bbec78fe36ec1_glyph6-8" y="142.583828"></use>
+<use x="167.634459" href="#svg_b37d2e4bbec78fe36ec1_glyph6-9" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="172.552359" href="#svg_b37d2e4bbec78fe36ec1_glyph6-26" y="142.583828"></use>
+<use x="177.052899" href="#svg_b37d2e4bbec78fe36ec1_glyph6-27" y="142.583828"></use>
+<use x="181.226506" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="142.583828"></use>
+<use x="184.76016" href="#svg_b37d2e4bbec78fe36ec1_glyph6-24" y="142.583828"></use>
+</g>
+<g style="fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;">
+<use x="197.503934" href="#svg_b37d2e4bbec78fe36ec1_glyph2-2" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="204.253673" href="#svg_b37d2e4bbec78fe36ec1_glyph6-11" y="142.583828"></use>
+<use x="207.404746" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="142.583828"></use>
+<use x="210.9384" href="#svg_b37d2e4bbec78fe36ec1_glyph6-11" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="216.760582" href="#svg_b37d2e4bbec78fe36ec1_glyph6-28" y="142.583828"></use>
+<use x="221.149825" href="#svg_b37d2e4bbec78fe36ec1_glyph6-10" y="142.583828"></use>
+<use x="224.683479" href="#svg_b37d2e4bbec78fe36ec1_glyph6-15" y="142.583828"></use>
+<use x="229.072723" href="#svg_b37d2e4bbec78fe36ec1_glyph6-6" y="142.583828"></use>
+<use x="233.030693" href="#svg_b37d2e4bbec78fe36ec1_glyph6-11" y="142.583828"></use>
+<use x="236.181767" href="#svg_b37d2e4bbec78fe36ec1_glyph6-11" y="142.583828"></use>
+<use x="239.33284" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="142.583828"></use>
+<use x="242.866494" href="#svg_b37d2e4bbec78fe36ec1_glyph6-29" y="142.583828"></use>
+<use x="249.398189" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="142.583828"></use>
+<use x="252.931843" href="#svg_b37d2e4bbec78fe36ec1_glyph6-4" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="257.112406" href="#svg_b37d2e4bbec78fe36ec1_glyph6-5" y="142.583828"></use>
+<use x="260.214787" href="#svg_b37d2e4bbec78fe36ec1_glyph6-11" y="142.583828"></use>
+<use x="263.365861" href="#svg_b37d2e4bbec78fe36ec1_glyph6-30" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="268.283761" href="#svg_b37d2e4bbec78fe36ec1_glyph6-31" y="142.583828"></use>
+<use x="272.241732" href="#svg_b37d2e4bbec78fe36ec1_glyph6-2" y="142.583828"></use>
+<use x="275.344113" href="#svg_b37d2e4bbec78fe36ec1_glyph6-16" y="142.583828"></use>
+<use x="279.302084" href="#svg_b37d2e4bbec78fe36ec1_glyph6-17" y="142.583828"></use>
+<use x="283.691327" href="#svg_b37d2e4bbec78fe36ec1_glyph6-15" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="288.296207" href="#svg_b37d2e4bbec78fe36ec1_glyph6-10" y="142.583828"></use>
+<use x="291.829861" href="#svg_b37d2e4bbec78fe36ec1_glyph6-11" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="297.658999" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="142.583828"></use>
+<use x="301.192653" href="#svg_b37d2e4bbec78fe36ec1_glyph6-4" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="308.259961" href="#svg_b37d2e4bbec78fe36ec1_glyph6-31" y="142.583828"></use>
+<use x="312.217931" href="#svg_b37d2e4bbec78fe36ec1_glyph6-2" y="142.583828"></use>
+<use x="315.320313" href="#svg_b37d2e4bbec78fe36ec1_glyph6-6" y="142.583828"></use>
+<use x="319.278283" href="#svg_b37d2e4bbec78fe36ec1_glyph6-15" y="142.583828"></use>
+<use x="323.667527" href="#svg_b37d2e4bbec78fe36ec1_glyph6-15" y="142.583828"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="328.272406" href="#svg_b37d2e4bbec78fe36ec1_glyph6-3" y="142.583828"></use>
+<use x="331.80606" href="#svg_b37d2e4bbec78fe36ec1_glyph6-11" y="142.583828"></use>
+</g>
+</g>
+</svg></p>
+</figure>
+</div>
+</section>
+<section class="level2" id="conditionnelle-et-inconditionnelle-suite-2">
+<h2 class="anchored" data-anchor-id="conditionnelle-et-inconditionnelle-suite-2">Conditionnelle et inconditionnelle (suite 2)</h2>
+<div class="ecobox" title="Lecture de la figure">
+<div class="pedago-title">
+Lecture de la figure
+</div>
+<p>La ligne bleue suit les données : elle s’élargit quand le marché s’agite, se resserre quand il se calme. La ligne orange ne bouge jamais.</p>
+<p>Les points marquent les dépassements du seuil fixe. Ils ne sont pas répartis au hasard : ils <strong>se groupent</strong>, tous concentrés dans les périodes agitées.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-backtesting">
+<h1>Le backtesting</h1>
+<section class="level2" id="le-principe">
+<h2 class="anchored" data-anchor-id="le-principe">Le principe</h2>
+<div class="definitionbox" title="La variable de dépassement">
+<div class="pedago-title">
+La variable de dépassement
+</div>
+<p><span class="math display"> d_t = \mathbf{1}\big\{r_t &lt; -\mathrm{VaR}_{\alpha,t}\big\} . </span> Si la VaR est correcte, <span class="math inline">(d_t)</span> est une suite de Bernoulli <strong>indépendantes</strong> de paramètre <span class="math inline">\alpha</span>.</p>
+</div>
+<div class="intuitionbox" title="Deux exigences, et non une">
+<div class="pedago-title">
+Deux exigences, et non une
+</div>
+<p><strong>Couverture</strong> : la fréquence des dépassements doit valoir <span class="math inline">\alpha</span>.</p>
+<p><strong>Indépendance</strong> : les dépassements ne doivent pas se suivre.</p>
+<p>Une mesure peut satisfaire la première et violer la seconde — et c’est précisément le défaut de la VaR inconditionnelle.</p>
+</div>
+</section>
+<section class="level2" id="le-test-de-kupiec">
+<h2 class="anchored" data-anchor-id="le-test-de-kupiec">Le test de Kupiec</h2>
+<div class="definitionbox" title="Couverture inconditionnelle (1995)">
+<div class="pedago-title">
+Couverture inconditionnelle (1995)
+</div>
+<p><span class="math display"> \mathrm{LR}_{uc} = -2\ln\frac{(1-\alpha)^{n-n_1}\alpha^{n_1}}{(1-\hat\pi)^{n-n_1}\hat\pi^{\,n_1}} \ \sim\ \chi^2_1 , \qquad \hat\pi = \frac{n_1}{n} . </span></p>
+</div>
+<div class="examplebox" title="Sur les données du cours, à 1 pour cent">
+<div class="pedago-title">
+Sur les données du cours, à 1 pour cent
+</div>
+
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Mesure</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Dépassements</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Fréquence</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th"><span class="math inline">\mathrm{LR}_{uc}</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>VaR conditionnelle</td>
+<td style="text-align: right;">25 / 2 500</td>
+<td style="text-align: right;"><span class="math inline">1{,}00\ \%</span></td>
+<td style="text-align: right;"><span class="math inline">0{,}00</span></td>
+</tr>
+<tr class="even">
+<td>VaR inconditionnelle</td>
+<td style="text-align: right;">25 / 2 500</td>
+<td style="text-align: right;"><span class="math inline">1{,}00\ \%</span></td>
+<td style="text-align: right;"><span class="math inline">0{,}00</span></td>
+</tr>
+</tbody>
+</table>
+
+</div>
+<div class="intuitionbox" title="Les deux passent — et c'est le piège">
+<div class="pedago-title">
+Les deux passent — et c’est le piège
+</div>
+<p>Sur le seul comptage, les deux mesures sont irréprochables. Une banque qui s’arrêterait là conclurait que le seuil fixe suffit.</p>
+</div>
+</section>
+<section class="level2" id="le-test-de-christoffersen">
+<h2 class="anchored" data-anchor-id="le-test-de-christoffersen">Le test de Christoffersen</h2>
+<div class="definitionbox" title="Indépendance (1998)">
+<div class="pedago-title">
+Indépendance (1998)
+</div>
+<p>On modélise <span class="math inline">(d_t)</span> comme une chaîne de Markov d’ordre 1 et l’on teste <span class="math display"> H_0 : \pi_{01} = \pi_{11} , </span> où <span class="math inline">\pi_{ij}</span> est la probabilité de dépasser sachant qu’on a dépassé (<span class="math inline">j=1</span>) ou non (<span class="math inline">j=0</span>) la veille. La statistique suit un <span class="math inline">\chi^2_1</span>.</p>
+</div>
+<div class="examplebox" title="Le résultat, sur les mêmes données">
+<div class="pedago-title">
+Le résultat, sur les mêmes données
+</div>
+
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Mesure</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Paires consécutives</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th"><span class="math inline">\mathrm{LR}_{ind}</span></th>
+<th data-quarto-table-cell-role="th">Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>VaR conditionnelle</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;"><span class="math inline">1{,}38</span></td>
+<td><strong>acceptée</strong></td>
+</tr>
+<tr class="even">
+<td>VaR inconditionnelle</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;"><span class="math inline">16{,}22</span></td>
+<td><strong>rejetée</strong></td>
+</tr>
+</tbody>
+</table>
+
+<p>Valeur critique du <span class="math inline">\chi^2_1</span> à 5 % : <span class="math inline">3{,}84</span>.</p>
+</div>
+</section>
+<section class="level2" id="le-test-de-christoffersen-suite">
+<h2 class="anchored" data-anchor-id="le-test-de-christoffersen-suite">Le test de Christoffersen (suite)</h2>
+<div class="ecobox" title="Le résultat central de ce chapitre">
+<div class="pedago-title">
+Le résultat central de ce chapitre
+</div>
+<p>Même nombre de dépassements, verdict opposé. La VaR inconditionnelle échoue <strong>exactement là où elle devrait tenir</strong> : elle concentre ses erreurs dans les périodes de crise, c’est-à-dire au moment précis où le capital doit protéger.</p>
+<p>Voilà à quoi sert un GARCH.</p>
+</div>
+</section>
+<section class="level2" id="le-test-conjoint">
+<h2 class="anchored" data-anchor-id="le-test-conjoint">Le test conjoint</h2>
+<div class="definitionbox" title="Couverture conditionnelle">
+<div class="pedago-title">
+Couverture conditionnelle
+</div>
+<p><span class="math display"> \mathrm{LR}_{cc} = \mathrm{LR}_{uc} + \mathrm{LR}_{ind} \ \sim\ \chi^2_2 . </span> C’est le test que la réglementation retient, parce qu’il vérifie les deux propriétés à la fois.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="trois-var-sous-garch">
+<h1>Trois VaR sous GARCH</h1>
+<section class="level2" id="les-méthodes">
+<h2 class="anchored" data-anchor-id="les-méthodes">Les méthodes</h2>
+<div class="definitionbox" title="Le choix de $z_\alpha$">
+<div class="pedago-title">
+Le choix de <span class="math inline">z_\alpha</span>
+</div>
+<p><strong>Paramétrique</strong> : <span class="math inline">z_\alpha</span> est le quantile théorique de la loi supposée — normale, Student, Student asymétrique.</p>
+<p><strong>Simulation historique filtrée</strong> : <span class="math inline">z_\alpha</span> est le quantile <strong>empirique</strong> des résidus standardisés <span class="math inline">\hat z_t</span>. Aucune hypothèse de loi.</p>
+<p><strong>Monte Carlo</strong> : simuler le modèle sur <span class="math inline">H</span> jours et lire le quantile des trajectoires. Indispensable pour les horizons longs et les portefeuilles d’options.</p>
+</div>
+</section>
+<section class="level2" id="la-simulation-historique-filtrée">
+<h2 class="anchored" data-anchor-id="la-simulation-historique-filtrée">La simulation historique filtrée</h2>
+<div class="definitionbox" title="Barone-Adesi, Giannopoulos et Vosper (1999)">
+<div class="pedago-title">
+Barone-Adesi, Giannopoulos et Vosper (1999)
+</div>
+<ol type="1">
+<li>Estimer le GARCH, extraire les résidus standardisés <span class="math inline">\hat z_t</span>.</li>
+<li>Prendre le quantile empirique <span class="math inline">\hat z_{(\alpha)}</span> de cet échantillon.</li>
+<li>Poser <span class="math inline">\mathrm{VaR}_\alpha = -\big[\hat\mu + \sqrt{\hat h_{T+1|T}}\ \hat z_{(\alpha)}\big]</span>.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="Pourquoi cette méthode est la meilleure des trois">
+<div class="pedago-title">
+Pourquoi cette méthode est la meilleure des trois
+</div>
+<p>Elle combine les deux forces : la <strong>dynamique</strong> vient du GARCH, la <strong>forme de la loi</strong> vient des données elles-mêmes — queues épaisses et asymétrie comprises, sans avoir à les paramétrer.</p>
+<p>C’est elle qui produit les 25 dépassements parfaitement répartis du tableau précédent.</p>
+</div>
+</section>
+<section class="level2" id="ce-que-la-méthode-historique-simple-ne-sait-pas-faire">
+<h2 class="anchored" data-anchor-id="ce-que-la-méthode-historique-simple-ne-sait-pas-faire">Ce que la méthode historique simple ne sait pas faire</h2>
+<div class="ecobox" title="Le contraste avec la pratique courante">
+<div class="pedago-title">
+Le contraste avec la pratique courante
+</div>
+<p>La simulation historique <strong>non filtrée</strong> prend directement le quantile des rentabilités passées. Elle capte les queues épaisses, mais ignore complètement la dynamique : c’est une VaR inconditionnelle.</p>
+<p>Elle réagit avec retard aux crises, et met des mois à revenir à la normale quand elles s’achèvent. Le filtrage par <span class="math inline">\sqrt{h_t}</span> corrige exactement ce défaut.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="lexpected-shortfall">
+<h1>L’expected shortfall</h1>
+<section class="level2" id="au-delà-de-la-var">
+<h2 class="anchored" data-anchor-id="au-delà-de-la-var">Au-delà de la VaR</h2>
+<div class="definitionbox" title="Expected shortfall (CVaR)">
+<div class="pedago-title">
+Expected shortfall (CVaR)
+</div>
+<p><span class="math display"> \mathrm{ES}_\alpha = -\mathrm{E}\big[r_{T+1} \mid r_{T+1} &lt; -\mathrm{VaR}_\alpha,\ \Omega_T\big] . </span> La perte <strong>moyenne</strong> dans les cas où la VaR est dépassée.</p>
+</div>
+<div class="intuitionbox" title="Deux raisons de la préférer">
+<div class="pedago-title">
+Deux raisons de la préférer
+</div>
+<p>La VaR ne dit rien de ce qui se passe <strong>au-delà</strong> du seuil : deux portefeuilles de même VaR peuvent avoir des pertes extrêmes très différentes.</p>
+<p>Et la VaR n’est pas <strong>sous-additive</strong> : la VaR d’un portefeuille peut dépasser la somme des VaR de ses composantes, ce qui contredit l’idée même de diversification. L’ES, elle, est une mesure cohérente.</p>
+</div>
+<div class="ecobox" title="Bâle III">
+<div class="pedago-title">
+Bâle III
+</div>
+<p>Depuis 2016, la réglementation bancaire a remplacé la VaR à 99 % par l’<strong>expected shortfall à 97,5 %</strong> pour le risque de marché.</p>
+<p>Le calcul sous GARCH est identique : même <span class="math inline">\hat h_{T+1|T}</span>, même loi de <span class="math inline">z</span>, seule la fonctionnelle change.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-que-le-cours-suivant-fera">
+<h1>Ce que le cours suivant fera</h1>
+<div class="definitionbox" title="Le cours de Value at Risk">
+<div class="pedago-title">
+Le cours de Value at Risk
+</div>
+<ul>
+<li><strong>Chapitre 1</strong> : VaR linéaire paramétrique — la formule de ce chapitre, appliquée à un portefeuille.</li>
+<li><strong>Chapitre 2</strong> : simulation historique — et sa version filtrée, vue ici.</li>
+<li><strong>Chapitre 3</strong> : VaR Monte Carlo — la simulation, avec les trajectoires du calcul stochastique.</li>
+<li><strong>Chapitre 5</strong> : risque de modèle — ce qui se passe quand <span class="math inline">h_t</span> est mal spécifiée.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Ce que vous y apportez">
+<div class="pedago-title">
+Ce que vous y apportez
+</div>
+<p>La compétence acquise ici est l’<strong>équation de variance</strong>. Tous les modèles de VaR en ont besoin, et la plupart des erreurs de mesure du risque viennent de là — non de la formule du quantile.</p>
+</div>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 16">
+<div class="pedago-title">
+L’essentiel du chapitre 16
+</div>
+<ul>
+<li><span class="math inline">\mathrm{VaR}_{\alpha,T+1} = -[\hat\mu + \sqrt{\hat h_{T+1|T}}\,z_\alpha]</span> : trois ingrédients, trois parties du cursus.</li>
+<li>Le backtesting exige <strong>deux</strong> propriétés : couverture (Kupiec) et <strong>indépendance</strong> (Christoffersen).</li>
+<li>Sur les données du cours, les deux VaR ont 25 dépassements ; seule la conditionnelle passe le test d’indépendance.</li>
+<li>La VaR inconditionnelle groupe ses échecs dans les crises — au pire moment.</li>
+<li>La <strong>simulation historique filtrée</strong> combine dynamique du GARCH et loi empirique : c’est la méthode de référence.</li>
+<li>Bâle III emploie l’<strong>expected shortfall</strong> à 97,5 %, qui se calcule de la même façon.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers les chapitres 17 et 18">
+<div class="pedago-title">
+Vers les chapitres 17 et 18
+</div>
+<p>Toute la démarche est établie. Il reste à l’exécuter, sur les données du cours, en R puis en Python.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="../../../cours/modelisation-garch/chapitres/prevision-volatilite.html">← Chapitre précédent<span class="jm-nav-label">La prévision de volatilité</span></a>
+<a class="jm-nav-suivant" href="../../../cours/modelisation-garch/chapitres/mise-en-oeuvre-r.html">Chapitre suivant →<span class="jm-nav-label">Mise en œuvre sur R</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3 class="anchored">Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/value-at-risk.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/value-at-risk-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/value-at-risk-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/value-at-risk.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+
+
+
+</main> <!-- /main -->
+<!-- Mémorise le thème réellement appliqué par Quarto (clair ou sombre) afin
+     que les diaporamas, qui sont des documents séparés, puissent s'y accorder.
+     On lit la classe posée sur <body> plutôt que la clé interne de Quarto :
+     celle-ci vaut « alternate », dont le sens dépend de l'ordre de déclaration
+     des thèmes et pourrait s'inverser à la moindre retouche de _quarto.yml. -->
+<script>
+(function () {
+  function courant() {
+    var b = document.body;
+    if (!b) return null;
+    if (b.classList.contains("quarto-dark")) return "dark";
+    if (b.classList.contains("quarto-light")) return "light";
+    return null;
+  }
+  function memoriser() {
+    var t = courant();
+    if (!t) return;
+    try { localStorage.setItem("jm-theme", t); } catch (e) {}
+  }
+  memoriser();
+  // Le bouton de bascule change la classe de <body> : on suit le changement.
+  if (window.MutationObserver && document.body) {
+    new MutationObserver(memoriser).observe(document.body, {
+      attributes: true, attributeFilter: ["class"]
+    });
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copié");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copié");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jmadkour\.org");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>© 2026 Jaouad Madkour · jmadkour.org</p>
+</div>   
+    <div class="nav-footer-center">
+<p><a href="mailto:jmadkour@uae.ac.ma">jmadkour@uae.ac.ma</a></p>
+</div>
+    <div class="nav-footer-right">
+<p>construit avec Quarto</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="../../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

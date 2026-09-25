@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Modélisation GARCH de la volatilité – Jaouad Madkour</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../">
+<link href="../../../favicon.png" rel="icon" type="image/png">
+<script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "Pas de résultats",
+    "search-matching-documents-text": "documents trouvés",
+    "search-copy-link-title": "Copier le lien vers la recherche",
+    "search-hide-matches-text": "Cacher les correspondances additionnelles",
+    "search-more-match-text": "correspondance de plus dans ce document",
+    "search-more-matches-text": "correspondances de plus dans ce document",
+    "search-clear-button-title": "Effacer",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Annuler",
+    "search-submit-button-title": "Envoyer",
+    "search-label": "Recherche"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
+     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
+     latérale, l'onglet du navigateur et la recherche du site. Seul son
+     affichage en tête de page, redondant avec la barre latérale, disparaît.
+     Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
+<style>
+  header#title-block-header,
+  .quarto-title-block { display: none; }
+  /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
+  main.content > *:first-child { margin-top: 0.6rem; }
+</style>
+<!-- Lecteur de chapitres à 3 volets : styles partagés par toutes les pages de cours restructurées (volets gauche/droit sur mesure, encadrés pédagogiques repliables) et rendu KaTeX des fragments de chapitre. Voir claude/plan-refonte-pages-cours.md dans le projet Claude pour le contexte. -->
+<style>
+/* =====================================================================
+   Lecteur de chapitres à 3 volets — pages de cours restructurées
+   Palette identique aux diapositives et à la palette pédagogique de
+   l'atelier (preamble.tex / preamble-article.tex / custom.scss) :
+     cdef  #4A3B8C  définition
+     cintu #E08000  intuition
+     cex   #2E8B57  exemple
+     ceco  #1F6FB2  application économique (= $primary du site)
+   Couleurs de thème (fond, bordures, cartes) reprises de
+   theme-light.scss / theme-dark.scss, sélectionnées via les classes
+   body.quarto-light / body.quarto-dark déjà posées par Quarto.
+   ===================================================================== */
+
+/* Quarto ajoute automatiquement les classes .page-columns.page-full à tout
+   bloc de premier niveau dans .content (grid.content-mode: standard, actif
+   sur tout le site) — leur grille (colonnes nommées pour marge/TOC) prend
+   sinon le pas sur la nôtre, à spécificité CSS égale et chargée après.
+   D'où les !important ci-dessous, uniquement sur les deux propriétés en
+   conflit direct.
+   Largeurs : avec page-layout: full (et un DOM valide — voir la note sur
+   les <summary> dans pedago-blocks.lua), .content atteint ~1135px sur ce
+   site, indépendamment de la largeur de la fenêtre (grille à colonnes
+   nommées, non proportionnelle au viewport). Volets latéraux à 240px,
+   assez larges pour les intitulés de chapitre et de ressource sur une ou
+   deux lignes, le volet central se partageant le reste (~590px, proche
+   de la largeur de lecture par défaut de Quarto). */
+.jm-lecteur {
+  display: grid !important;
+  grid-template-columns: 240px minmax(0, 1fr) 240px !important;
+  gap: 1.75rem;
+  align-items: start;
+  margin-top: .6rem;
+  max-width: none !important;
+}
+/* Bootstrap (.page-columns>*{grid-column:body-content-start/body-content-end})
+   place autrement tous les enfants directs dans la même colonne nommée —
+   même spécificité (classe + combinateur enfant), donc on rétablit le
+   placement automatique (1er, 2e, 3e enfant -> colonnes 1, 2, 3). */
+.jm-lecteur > * { grid-column: auto !important; }
+
+@media (max-width: 991px) {
+  .jm-lecteur { grid-template-columns: 1fr !important; }
+  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+}
+
+/* ---------- Volet gauche : sommaire du cours ---------- */
+.jm-lecteur-gauche {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .92rem;
+}
+.jm-lecteur-titre-cours {
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding-bottom: .45rem;
+  margin-bottom: .6rem;
+  border-bottom: 1px solid #dbe6ee;
+}
+.jm-lecteur-gauche ul { list-style: none; padding: 0; margin: 0; }
+.jm-lecteur-gauche li { margin: 0; }
+.jm-lecteur-gauche a {
+  display: block;
+  padding: .4rem .55rem;
+  border-radius: 7px;
+  margin-bottom: .1rem;
+  color: inherit;
+  border-left: 3px solid transparent;
+  line-height: 1.35;
+}
+.jm-lecteur-gauche a:hover { background: rgba(31,111,178,0.08); text-decoration: none; }
+.jm-lecteur-gauche a.jm-actif {
+  background: rgba(31,111,178,0.12);
+  border-left-color: #1f6fb2;
+  color: #1f6fb2;
+  font-weight: 700;
+}
+.jm-lecteur-gauche a.jm-accueil { font-style: italic; }
+
+/* ---------- Volet centre : contenu du chapitre ---------- */
+.jm-lecteur-centre { min-width: 0; }
+.jm-lecteur-centre .quarto-title-block .title { font-size: 1.7rem; }
+.jm-lecteur-centre .quarto-title-block .subtitle { color: #54707f; }
+
+/* ---------- Volet droit : ressources du chapitre ---------- */
+.jm-lecteur-droite {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .88rem;
+  background: #f6f9fb;
+  border: 1px solid #dbe6ee;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+.jm-lecteur-droite h3 {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #54707f;
+  margin: 0 0 .7rem;
+}
+.jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
+.jm-lecteur-droite li { margin-bottom: .55rem; }
+.jm-lecteur-droite a.jm-ressource {
+  color: #1f6fb2;
+  font-weight: 600;
+}
+.jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+.jm-lecteur-droite .jm-indisponible {
+  color: #9aa9b2; font-weight: 500; cursor: default;
+}
+.jm-lecteur-droite .jm-reserve {
+  color: #9aa9b2; font-style: italic;
+}
+
+/* ---------- Navigation précédent / suivant ---------- */
+.jm-lecteur-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin: 2.2rem 0 .5rem; padding-top: 1rem;
+  border-top: 1px solid #dbe6ee;
+  font-size: .92rem;
+}
+.jm-lecteur-nav a { color: #1f6fb2; font-weight: 600; }
+.jm-lecteur-nav .jm-nav-suivant { margin-left: auto; text-align: right; }
+.jm-lecteur-nav .jm-nav-label {
+  display: block; font-size: .76rem; font-weight: 400; color: #54707f;
+}
+
+/* ---------- Encadrés pédagogiques dans le volet centre ---------- */
+/* Reprend le mécanisme de custom.scss (atelier), adapté en <details> */
+.jm-lecteur-centre details.definitionbox,
+.jm-lecteur-centre details.intuitionbox,
+.jm-lecteur-centre details.examplebox,
+.jm-lecteur-centre details.ecobox {
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0.9em 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+.jm-lecteur-centre summary.pedago-title {
+  font-weight: 700;
+  color: #fff;
+  padding: .45em .9em;
+  cursor: pointer;
+  list-style: none;
+}
+.jm-lecteur-centre summary.pedago-title::-webkit-details-marker { display: none; }
+.jm-lecteur-centre summary.pedago-title::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: .5em;
+  transition: transform .15s ease;
+}
+.jm-lecteur-centre details[open] summary.pedago-title::before { transform: rotate(90deg); }
+.jm-lecteur-centre .pedago-body { padding: .7em 1em .9em; }
+.jm-lecteur-centre .pedago-body > *:first-child { margin-top: 0; }
+.jm-lecteur-centre .pedago-body > *:last-child { margin-bottom: 0; }
+
+.jm-lecteur-centre details.definitionbox { background: rgba(74,59,140,0.07); }
+.jm-lecteur-centre details.definitionbox summary.pedago-title { background: #4A3B8C; }
+.jm-lecteur-centre details.intuitionbox  { background: rgba(224,128,0,0.09); }
+.jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #E08000; }
+.jm-lecteur-centre details.examplebox    { background: rgba(46,139,87,0.07); }
+.jm-lecteur-centre details.examplebox summary.pedago-title { background: #2E8B57; }
+.jm-lecteur-centre details.ecobox        { background: rgba(31,111,178,0.07); }
+.jm-lecteur-centre details.ecobox summary.pedago-title { background: #1F6FB2; }
+
+/* Colonnes (definitionbox à côté d'une figure, etc.) : héritées du rendu
+   Quarto (div.columns{display:flex} / inline style width sur div.column). */
+.jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
+.jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
+
+/* =====================================================================
+   Mode sombre — posé par Quarto sur <body class="quarto-dark">
+   ===================================================================== */
+body.quarto-dark .jm-lecteur-titre-cours { border-bottom-color: #20455a; }
+body.quarto-dark .jm-lecteur-gauche a:hover { background: rgba(58,160,230,0.12); }
+body.quarto-dark .jm-lecteur-gauche a.jm-actif {
+  background: rgba(58,160,230,0.16);
+  border-left-color: #3aa0e6;
+  color: #3aa0e6;
+}
+body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite {
+  background: #13303d;
+  border-color: #20455a;
+}
+body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-droite .jm-indisponible,
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
+body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
+
+body.quarto-dark .jm-lecteur-centre details.definitionbox { background: rgba(122,104,206,0.16); }
+body.quarto-dark .jm-lecteur-centre details.definitionbox summary.pedago-title { background: #6252a8; }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox  { background: rgba(224,148,74,0.16); }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #c47a2e; }
+body.quarto-dark .jm-lecteur-centre details.examplebox    { background: rgba(55,180,126,0.14); }
+body.quarto-dark .jm-lecteur-centre details.examplebox summary.pedago-title { background: #37b47e; }
+body.quarto-dark .jm-lecteur-centre details.ecobox        { background: rgba(58,160,230,0.14); }
+body.quarto-dark .jm-lecteur-centre details.ecobox summary.pedago-title { background: #3aa0e6; }
+</style>
+<!-- Rendu KaTeX pour le volet central : les fragments de chapitre sont
+     extraits (BeautifulSoup) du rendu Quarto de l'atelier et insérés tels
+     quels en HTML brut dans la page du site. Le contenu mathématique y est
+     déjà mis en forme (spans <span class="math inline|display">…</span>,
+     source LaTeX brute), mais Quarto ne le détecte pas à la compilation de
+     CETTE page (le bloc {=html} n'est pas réanalysé comme du Markdown), et
+     n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
+     ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
+     pages où il détecte des maths (cf. html-math-method: katex du site) :
+     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     de tous les éléments .math qui les rend en place. -->
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+</script>
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+
+<meta property="og:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
+<meta property="og:description" content="Le modèle ARCH(q) d’Engle">
+<meta property="og:site_name" content="Jaouad Madkour">
+<meta name="twitter:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
+<meta name="twitter:description" content="Le modèle ARCH(q) d’Engle">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = true;
+    const darkModeDefault = authorPrefersDark;
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+            <div id="quarto-search" class="" title="Recherche"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Basculer la navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../../profile.html"> 
+<span class="menu-text">Jaouad Madkour</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../index.html"> 
+<span class="menu-text">Accueil</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../licence.html"> 
+<span class="menu-text">Licence</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../master.html"> 
+<span class="menu-text">Master</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../doctorat.html"> 
+<span class="menu-text">Doctorat</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../informatique.html"> 
+<span class="menu-text">Informatique</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../recherche.html"> 
+<span class="menu-text">Publications</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../about.html"> 
+<span class="menu-text">À propos</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">🌐</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-">    
+        <li>
+    <a class="dropdown-item" href="../../../index.html">
+ <span class="dropdown-text">Français</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../en/index.html">
+ <span class="dropdown-text">English</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../es/index.html">
+ <span class="dropdown-text">Español</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../ar/index.html">
+ <span class="dropdown-text">العربية</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://youtube.com/@JaouadMadkour" target="_blank"> <i class="bi bi-youtube" role="img" aria-label="YouTube">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.facebook.com/jmadkour" target="_blank"> <i class="bi bi-facebook" role="img" aria-label="Facebook">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.instagram.com/jaouad_madkour/" target="_blank"> <i class="bi bi-instagram" role="img" aria-label="Instagram">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/jmadkour"> <i class="bi bi-github" role="img" aria-label="GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Basculer le mode sombre"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Basculer en mode lecteur">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content column-page" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Le modèle ARCH(q) d’Engle</p>
+</div>
+
+
+
+<div class="quarto-title-meta column-page">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<ul>
+<li><a class="jm-accueil" href="../../../cours/modelisation-garch/index.html">Présentation du cours</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/faits-stylises.html">1. Mandelbrot et les faits stylisés des rentabilités</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/clusters-effet-levier.html">2. Regroupement de la volatilité et effet de levier</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/variance-conditionnelle.html">3. Le cadre de la variance conditionnelle</a></li>
+<li><a class="jm-actif" href="../../../cours/modelisation-garch/chapitres/modele-arch.html">4. Le modèle ARCH(q) d'Engle</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/proprietes-arch.html">5. Propriétés statistiques de l'ARCH</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/detecter-arch.html">6. Détecter et identifier un effet ARCH</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/modele-garch.html">7. Le modèle GARCH(p,q) de Bollerslev</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/persistance.html">8. Stationnarité, persistance et variance de long terme</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/dualite-arma.html">9. La dualité GARCH et ARMA sur les carrés</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/loi-innovations.html">10. La loi des innovations</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/egarch.html">11. L'effet de levier et l'EGARCH de Nelson</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/gjr-tgarch.html">12. GJR-GARCH, TGARCH et la courbe d'impact</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/igarch-memoire-longue.html">13. IGARCH, GARCH-M et la mémoire longue</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/estimation.html">14. L'estimation par quasi-maximum de vraisemblance</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/validation.html">15. La validation d'un modèle de volatilité</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/prevision-volatilite.html">16. La prévision de volatilité</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/value-at-risk.html">17. De la volatilité à la Value at Risk</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/mise-en-oeuvre-r.html">18. Mise en œuvre sur R</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/mise-en-oeuvre-python.html">19. Mise en œuvre sur Python</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-r.html">20. Étude de cas sur données réelles — R</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-python.html">21. Étude de cas sur données réelles — Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Chapitre 3 : Le modèle ARCH(q) d’Engle</p>
+</div>
+<div class="quarto-title-meta-author column-page">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="larticle-fondateur">
+<h2 class="anchored" data-anchor-id="larticle-fondateur">L’article fondateur</h2>
+<div class="definitionbox" title="Engle (1982), *Econometrica*">
+<div class="pedago-title">
+Engle (1982), <em>Econometrica</em>
+</div>
+<p>« Autoregressive Conditional Heteroskedasticity with Estimates of the Variance of United Kingdom Inflation ».</p>
+<p>Trois mots, trois idées : <strong>hétéroscédasticité</strong> — la variance change ; <strong>conditionnelle</strong> — elle dépend du passé ; <strong>autorégressive</strong> — elle dépend de son propre passé.</p>
+</div>
+<div class="ecobox" title="Une ironie utile">
+<div class="pedago-title">
+Une ironie utile
+</div>
+<p>L’article ne porte pas sur la finance mais sur l’<strong>inflation</strong> britannique. Engle cherchait à mesurer l’incertitude inflationniste. C’est la finance qui s’est emparée du modèle, au point qu’on oublie son origine.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-modèle-arch1">
+<h1>Le modèle ARCH(1)</h1>
+<section class="level2" id="léquation">
+<h2 class="anchored" data-anchor-id="léquation">L’équation</h2>
+<div class="definitionbox" title="ARCH(1)">
+<div class="pedago-title">
+ARCH(1)
+</div>
+<p><span class="math display"> r_t = \mu + \varepsilon_t, \qquad \varepsilon_t = \sqrt{h_t}\,z_t, \qquad z_t \sim \mathrm{i.i.d.}(0,1), </span> <span class="math display"> \boxed{\ h_t = \omega + \alpha_1\,\varepsilon_{t-1}^2\ }, \qquad \omega &gt; 0,\quad \alpha_1 \ge 0 . </span></p>
+</div>
+<div class="intuitionbox" title="Comment la lire">
+<div class="pedago-title">
+Comment la lire
+</div>
+<p>La variance d’aujourd’hui est une constante, plus une part du <strong>carré du choc d’hier</strong>.</p>
+<p>Un gros choc hier — dans un sens ou dans l’autre — élève la variance d’aujourd’hui. C’est la phrase de Mandelbrot, transformée en équation.</p>
+</div>
+</section>
+<section class="level2" id="pourquoi-le-carré">
+<h2 class="anchored" data-anchor-id="pourquoi-le-carré">Pourquoi le carré</h2>
+<div class="definitionbox" title="Trois raisons, toutes nécessaires">
+<div class="pedago-title">
+Trois raisons, toutes nécessaires
+</div>
+<ol type="1">
+<li><strong>Le signe ne doit pas compter.</strong> Une baisse de 3 % et une hausse de 3 % annoncent toutes deux de l’agitation. Le carré efface le signe.</li>
+<li><strong>La positivité.</strong> <span class="math inline">\varepsilon_{t-1}^2 \ge 0</span> et <span class="math inline">\omega, \alpha_1 \ge 0</span> garantissent <span class="math inline">h_t &gt; 0</span> <strong>quelle que soit</strong> la réalisation. Aucune contrainte à vérifier après coup.</li>
+<li><strong>La cohérence dimensionnelle.</strong> <span class="math inline">h_t</span> est une variance : elle doit s’exprimer en carrés de rentabilités.</li>
+</ol>
+</div>
+<div class="intuitionbox" title="Et le prix à payer">
+<div class="pedago-title">
+Et le prix à payer
+</div>
+<p>Le carré efface le signe <strong>trop bien</strong> : il rend le modèle rigoureusement symétrique. Le fait 5 — l’effet de levier — est hors d’atteinte. On y reviendra au chapitre 10.</p>
+</div>
+</section>
+<section class="level2" id="ce-quune-trajectoire-donne-à-voir">
+<h2 class="anchored" data-anchor-id="ce-quune-trajectoire-donne-à-voir">Ce qu’une trajectoire donne à voir</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><svg height="121.54pt" id="svg_7bb577bed9039c49d64b" role="img" style="width:86.0%" viewbox="0 0 303.27 121.54" width="303.27pt">
+<defs>
+<g>
+<symbol id="svg_7bb577bed9039c49d64b_glyph0-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph0-1" overflow="visible">
+<path d="M 3.59375 -2.21875 C 3.59375 -2.984375 3.5 -3.53125 3.171875 -4.015625 C 2.96875 -4.34375 2.53125 -4.609375 1.96875 -4.609375 C 0.359375 -4.609375 0.359375 -2.71875 0.359375 -2.21875 C 0.359375 -1.71875 0.359375 0.140625 1.96875 0.140625 C 3.59375 0.140625 3.59375 -1.71875 3.59375 -2.21875 Z M 1.96875 -0.0625 C 1.65625 -0.0625 1.234375 -0.25 1.09375 -0.8125 C 1 -1.21875 1 -1.796875 1 -2.3125 C 1 -2.8125 1 -3.34375 1.09375 -3.734375 C 1.25 -4.28125 1.6875 -4.421875 1.96875 -4.421875 C 2.34375 -4.421875 2.71875 -4.1875 2.84375 -3.796875 C 2.953125 -3.40625 2.953125 -2.90625 2.953125 -2.3125 C 2.953125 -1.796875 2.953125 -1.28125 2.859375 -0.84375 C 2.71875 -0.203125 2.25 -0.0625 1.96875 -0.0625 Z M 1.96875 -0.0625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph0-2" overflow="visible">
+<path d="M 1.078125 -3.875 C 1.4375 -3.796875 1.640625 -3.796875 1.75 -3.796875 C 2.671875 -3.796875 3.21875 -4.421875 3.21875 -4.515625 C 3.21875 -4.59375 3.15625 -4.609375 3.125 -4.609375 C 3.109375 -4.609375 3.09375 -4.609375 3.078125 -4.59375 C 2.90625 -4.53125 2.53125 -4.390625 2.015625 -4.390625 C 1.828125 -4.390625 1.453125 -4.40625 1.015625 -4.578125 C 0.9375 -4.609375 0.921875 -4.609375 0.921875 -4.609375 C 0.828125 -4.609375 0.828125 -4.546875 0.828125 -4.421875 L 0.828125 -2.375 C 0.828125 -2.265625 0.828125 -2.171875 0.9375 -2.171875 C 1 -2.171875 1.015625 -2.1875 1.078125 -2.28125 C 1.375 -2.65625 1.796875 -2.71875 2.046875 -2.71875 C 2.46875 -2.71875 2.65625 -2.375 2.6875 -2.328125 C 2.8125 -2.09375 2.84375 -1.828125 2.84375 -1.421875 C 2.84375 -1.21875 2.84375 -0.8125 2.640625 -0.5 C 2.46875 -0.25 2.171875 -0.078125 1.828125 -0.078125 C 1.375 -0.078125 0.90625 -0.328125 0.734375 -0.796875 C 1 -0.765625 1.140625 -0.953125 1.140625 -1.140625 C 1.140625 -1.4375 0.875 -1.484375 0.78125 -1.484375 C 0.765625 -1.484375 0.4375 -1.484375 0.4375 -1.109375 C 0.4375 -0.484375 1.015625 0.140625 1.84375 0.140625 C 2.734375 0.140625 3.515625 -0.515625 3.515625 -1.390625 C 3.515625 -2.1875 2.90625 -2.90625 2.046875 -2.90625 C 1.75 -2.90625 1.390625 -2.828125 1.078125 -2.5625 Z M 1.078125 -3.875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph0-3" overflow="visible">
+<path d="M 2.328125 -4.421875 C 2.328125 -4.609375 2.3125 -4.609375 2.125 -4.609375 C 1.671875 -4.171875 1.046875 -4.171875 0.765625 -4.171875 L 0.765625 -3.921875 C 0.921875 -3.921875 1.390625 -3.921875 1.765625 -4.109375 L 1.765625 -0.5625 C 1.765625 -0.34375 1.765625 -0.25 1.078125 -0.25 L 0.8125 -0.25 L 0.8125 0 C 0.9375 0 1.78125 -0.03125 2.046875 -0.03125 C 2.265625 -0.03125 3.140625 0 3.28125 0 L 3.28125 -0.25 L 3.03125 -0.25 C 2.328125 -0.25 2.328125 -0.34375 2.328125 -0.5625 Z M 2.328125 -4.421875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph0-4" overflow="visible">
+<path d="M 3.515625 -1.265625 L 3.28125 -1.265625 C 3.25 -1.109375 3.1875 -0.703125 3.09375 -0.625 C 3.03125 -0.59375 2.5 -0.59375 2.40625 -0.59375 L 1.125 -0.59375 C 1.859375 -1.234375 2.09375 -1.4375 2.515625 -1.765625 C 3.03125 -2.171875 3.515625 -2.59375 3.515625 -3.265625 C 3.515625 -4.109375 2.78125 -4.609375 1.890625 -4.609375 C 1.015625 -4.609375 0.4375 -4.015625 0.4375 -3.375 C 0.4375 -3.015625 0.734375 -2.984375 0.8125 -2.984375 C 0.96875 -2.984375 1.171875 -3.09375 1.171875 -3.34375 C 1.171875 -3.484375 1.125 -3.71875 0.765625 -3.71875 C 0.984375 -4.21875 1.453125 -4.359375 1.78125 -4.359375 C 2.46875 -4.359375 2.84375 -3.828125 2.84375 -3.265625 C 2.84375 -2.65625 2.40625 -2.171875 2.1875 -1.921875 L 0.5 -0.265625 C 0.4375 -0.203125 0.4375 -0.1875 0.4375 0 L 3.296875 0 Z M 3.515625 -1.265625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph0-5" overflow="visible">
+<path d="M 3.671875 -1.140625 L 3.671875 -1.390625 L 2.90625 -1.390625 L 2.90625 -4.484375 C 2.90625 -4.640625 2.90625 -4.6875 2.75 -4.6875 C 2.671875 -4.6875 2.640625 -4.6875 2.578125 -4.59375 L 0.265625 -1.390625 L 0.265625 -1.140625 L 2.3125 -1.140625 L 2.3125 -0.5625 C 2.3125 -0.328125 2.3125 -0.25 1.75 -0.25 L 1.5625 -0.25 L 1.5625 0 C 1.90625 -0.015625 2.359375 -0.03125 2.609375 -0.03125 C 2.859375 -0.03125 3.3125 -0.015625 3.65625 0 L 3.65625 -0.25 L 3.46875 -0.25 C 2.90625 -0.25 2.90625 -0.328125 2.90625 -0.5625 L 2.90625 -1.140625 Z M 2.359375 -3.9375 L 2.359375 -1.390625 L 0.53125 -1.390625 Z M 2.359375 -3.9375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph1-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph1-1" overflow="visible">
+<path d="M 5.171875 -1.578125 C 5.28125 -1.578125 5.453125 -1.578125 5.453125 -1.734375 C 5.453125 -1.90625 5.296875 -1.90625 5.171875 -1.90625 L 1.03125 -1.90625 C 0.921875 -1.90625 0.75 -1.90625 0.75 -1.75 C 0.75 -1.578125 0.90625 -1.578125 1.03125 -1.578125 Z M 5.171875 -1.578125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph1-2" overflow="visible">
+<path d="M 3.078125 5.859375 L 1.71875 3.15625 C 1.6875 3.078125 1.65625 3.03125 1.609375 3.03125 C 1.578125 3.03125 1.5625 3.03125 1.5 3.09375 L 0.75 3.59375 C 0.65625 3.65625 0.65625 3.6875 0.65625 3.703125 C 0.65625 3.75 0.6875 3.796875 0.75 3.796875 C 0.78125 3.796875 0.796875 3.796875 0.890625 3.734375 C 0.953125 3.6875 1.15625 3.546875 1.25 3.484375 L 2.765625 6.5 C 2.8125 6.59375 2.828125 6.609375 2.921875 6.609375 C 2.984375 6.609375 3.0625 6.609375 3.140625 6.484375 L 6.640625 -0.03125 C 6.6875 -0.125 6.6875 -0.125 6.6875 -0.171875 C 6.6875 -0.28125 6.59375 -0.34375 6.515625 -0.34375 C 6.421875 -0.34375 6.390625 -0.28125 6.34375 -0.1875 Z M 3.078125 5.859375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph2-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph2-1" overflow="visible">
+<path d="M 1.90625 -3.578125 L 2.75 -3.578125 C 2.90625 -3.578125 3.015625 -3.578125 3.015625 -3.734375 C 3.015625 -3.859375 2.9375 -3.859375 2.765625 -3.859375 L 1.96875 -3.859375 L 2.34375 -5.328125 C 2.34375 -5.484375 2.21875 -5.59375 2.0625 -5.59375 C 1.78125 -5.59375 1.703125 -5.328125 1.6875 -5.25 L 1.328125 -3.859375 L 0.484375 -3.859375 C 0.328125 -3.859375 0.21875 -3.859375 0.21875 -3.6875 C 0.21875 -3.578125 0.3125 -3.578125 0.46875 -3.578125 L 1.265625 -3.578125 L 0.65625 -1.140625 C 0.59375 -0.875 0.59375 -0.859375 0.59375 -0.734375 C 0.59375 -0.203125 0.984375 0.09375 1.453125 0.09375 C 2.390625 0.09375 2.90625 -1.1875 2.90625 -1.28125 C 2.90625 -1.328125 2.890625 -1.390625 2.796875 -1.390625 C 2.703125 -1.390625 2.703125 -1.359375 2.640625 -1.203125 C 2.359375 -0.5625 1.90625 -0.125 1.46875 -0.125 C 1.296875 -0.125 1.1875 -0.234375 1.1875 -0.53125 C 1.1875 -0.734375 1.21875 -0.84375 1.25 -0.96875 Z M 1.90625 -3.578125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph3-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph3-1" overflow="visible">
+<path d="M 1.15625 -1.546875 C 1.421875 -1.453125 1.625 -1.453125 1.828125 -1.453125 C 2.046875 -1.453125 2.46875 -1.453125 2.46875 -1.703125 C 2.46875 -1.890625 2.203125 -1.921875 1.890625 -1.921875 C 1.796875 -1.921875 1.5 -1.921875 1.15625 -1.78125 C 1 -1.859375 0.890625 -1.984375 0.890625 -2.140625 C 0.890625 -2.515625 1.578125 -2.75 2.28125 -2.75 C 2.390625 -2.75 2.6875 -2.75 3 -2.5625 C 3.03125 -2.53125 3.078125 -2.5 3.140625 -2.5 C 3.234375 -2.5 3.359375 -2.59375 3.359375 -2.71875 C 3.359375 -2.859375 3.125 -2.953125 3 -3.015625 C 2.703125 -3.140625 2.453125 -3.140625 2.34375 -3.140625 C 1.5 -3.140625 0.65625 -2.6875 0.65625 -2.140625 C 0.65625 -1.84375 0.921875 -1.671875 0.9375 -1.65625 C 0.671875 -1.515625 0.328125 -1.203125 0.328125 -0.765625 C 0.328125 -0.25 0.828125 0.140625 1.59375 0.140625 C 2.65625 0.140625 3.03125 -0.484375 3.03125 -0.59375 C 3.03125 -0.640625 2.984375 -0.6875 2.9375 -0.6875 C 2.890625 -0.6875 2.875 -0.65625 2.84375 -0.625 C 2.671875 -0.359375 2.453125 -0.25 1.703125 -0.25 C 1.53125 -0.25 1.203125 -0.25 0.953125 -0.34375 C 0.6875 -0.4375 0.5625 -0.625 0.5625 -0.8125 C 0.5625 -0.96875 0.6875 -1.3125 1.15625 -1.546875 Z M 1.453125 -1.671875 C 1.53125 -1.6875 1.671875 -1.71875 1.890625 -1.71875 C 2.03125 -1.71875 2.078125 -1.71875 2.21875 -1.6875 C 2.109375 -1.640625 2.09375 -1.640625 1.828125 -1.640625 C 1.71875 -1.640625 1.578125 -1.640625 1.453125 -1.671875 Z M 1.453125 -1.671875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph3-2" overflow="visible">
+<path d="M 2.171875 -4.609375 C 2.1875 -4.625 2.203125 -4.71875 2.203125 -4.734375 C 2.203125 -4.765625 2.171875 -4.828125 2.09375 -4.828125 C 1.953125 -4.828125 1.375 -4.765625 1.203125 -4.75 C 1.140625 -4.75 1.046875 -4.734375 1.046875 -4.59375 C 1.046875 -4.5 1.140625 -4.5 1.234375 -4.5 C 1.5625 -4.5 1.5625 -4.453125 1.5625 -4.390625 C 1.5625 -4.34375 1.546875 -4.296875 1.53125 -4.234375 L 0.5625 -0.3125 C 0.515625 -0.1875 0.515625 -0.171875 0.515625 -0.15625 C 0.515625 -0.046875 0.609375 0.0625 0.765625 0.0625 C 0.828125 0.0625 0.96875 0.03125 1.046875 -0.109375 C 1.0625 -0.15625 1.125 -0.40625 1.15625 -0.546875 L 1.328125 -1.171875 C 1.34375 -1.265625 1.40625 -1.53125 1.4375 -1.640625 C 1.5 -1.90625 1.5 -1.90625 1.640625 -2.140625 C 1.859375 -2.46875 2.21875 -2.875 2.75 -2.875 C 3.140625 -2.875 3.15625 -2.546875 3.15625 -2.390625 C 3.15625 -1.96875 2.859375 -1.203125 2.75 -0.90625 C 2.671875 -0.703125 2.65625 -0.640625 2.65625 -0.53125 C 2.65625 -0.15625 2.953125 0.0625 3.3125 0.0625 C 4 0.0625 4.3125 -0.890625 4.3125 -1 C 4.3125 -1.078125 4.21875 -1.078125 4.203125 -1.078125 C 4.109375 -1.078125 4.09375 -1.046875 4.0625 -0.96875 C 3.90625 -0.40625 3.609375 -0.125 3.328125 -0.125 C 3.1875 -0.125 3.15625 -0.21875 3.15625 -0.375 C 3.15625 -0.53125 3.1875 -0.625 3.3125 -0.9375 C 3.40625 -1.140625 3.6875 -1.890625 3.6875 -2.28125 C 3.6875 -2.390625 3.6875 -2.671875 3.421875 -2.875 C 3.3125 -2.96875 3.109375 -3.0625 2.78125 -3.0625 C 2.28125 -3.0625 1.90625 -2.78125 1.640625 -2.484375 Z M 2.171875 -4.609375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph4-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph4-1" overflow="visible">
+<path d="M 1.5625 -1.921875 L 2.140625 -1.921875 C 2.25 -1.921875 2.25 -1.921875 2.28125 -1.9375 C 2.3125 -1.96875 2.328125 -2.03125 2.328125 -2.0625 C 2.328125 -2.140625 2.25 -2.140625 2.15625 -2.140625 L 1.609375 -2.140625 L 1.71875 -2.546875 C 1.75 -2.6875 1.8125 -2.90625 1.8125 -2.9375 C 1.8125 -3.015625 1.75 -3.109375 1.625 -3.109375 C 1.546875 -3.109375 1.421875 -3.0625 1.375 -2.921875 C 1.359375 -2.84375 1.421875 -3.078125 1.1875 -2.140625 L 0.59375 -2.140625 C 0.484375 -2.140625 0.421875 -2.140625 0.421875 -2 C 0.421875 -1.921875 0.484375 -1.921875 0.578125 -1.921875 L 1.125 -1.921875 L 0.828125 -0.75 C 0.8125 -0.640625 0.765625 -0.484375 0.765625 -0.421875 C 0.765625 -0.140625 1.03125 0.046875 1.375 0.046875 C 1.984375 0.046875 2.34375 -0.609375 2.34375 -0.71875 C 2.34375 -0.78125 2.265625 -0.78125 2.25 -0.78125 C 2.171875 -0.78125 2.15625 -0.765625 2.125 -0.703125 C 1.96875 -0.34375 1.65625 -0.109375 1.40625 -0.109375 C 1.234375 -0.109375 1.1875 -0.234375 1.1875 -0.375 C 1.1875 -0.453125 1.203125 -0.46875 1.203125 -0.515625 Z M 1.5625 -1.921875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-1" overflow="visible">
+<path d="M 1.515625 -2.59375 C 1.515625 -2.84375 1.328125 -3 1.125 -3 C 0.890625 -3 0.71875 -2.796875 0.71875 -2.59375 C 0.71875 -2.359375 0.921875 -2.203125 1.125 -2.203125 C 1.359375 -2.203125 1.515625 -2.390625 1.515625 -2.59375 Z M 1.515625 -0.390625 C 1.515625 -0.640625 1.328125 -0.796875 1.125 -0.796875 C 0.890625 -0.796875 0.71875 -0.609375 0.71875 -0.40625 C 0.71875 -0.15625 0.921875 0 1.125 0 C 1.359375 0 1.515625 -0.1875 1.515625 -0.390625 Z M 1.515625 -0.390625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-2" overflow="visible">
+<path d="M 1.953125 0 L 1.953125 -0.25 C 1.5 -0.25 1.4375 -0.25 1.4375 -0.546875 L 1.4375 -4.828125 L 0.390625 -4.75 L 0.390625 -4.5 C 0.859375 -4.5 0.90625 -4.453125 0.90625 -4.109375 L 0.90625 -0.546875 C 0.90625 -0.25 0.84375 -0.25 0.390625 -0.25 L 0.390625 0 C 0.390625 0 0.890625 -0.03125 1.171875 -0.03125 C 1.4375 -0.03125 1.6875 -0.015625 1.953125 0 Z M 1.953125 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-3" overflow="visible">
+<path d="M 3.78125 -0.625 L 3.78125 -1.015625 L 3.546875 -1.015625 L 3.546875 -0.625 C 3.546875 -0.5625 3.546875 -0.234375 3.28125 -0.234375 C 3.03125 -0.234375 3.03125 -0.5625 3.03125 -0.640625 L 3.03125 -1.859375 C 3.03125 -2.234375 3.03125 -2.5 2.71875 -2.75 C 2.421875 -2.984375 2.09375 -3.09375 1.6875 -3.09375 C 1.015625 -3.09375 0.5625 -2.84375 0.5625 -2.421875 C 0.5625 -2.203125 0.703125 -2.09375 0.890625 -2.09375 C 1.078125 -2.09375 1.21875 -2.21875 1.21875 -2.40625 C 1.21875 -2.53125 1.15625 -2.671875 0.96875 -2.734375 C 1.21875 -2.90625 1.625 -2.90625 1.671875 -2.90625 C 2.0625 -2.90625 2.484375 -2.65625 2.484375 -2.0625 L 2.484375 -1.84375 C 2.09375 -1.828125 1.640625 -1.8125 1.140625 -1.625 C 0.5 -1.390625 0.3125 -1.015625 0.3125 -0.703125 C 0.3125 -0.109375 1.03125 0.0625 1.53125 0.0625 C 2.09375 0.0625 2.40625 -0.25 2.5625 -0.515625 C 2.59375 -0.234375 2.78125 0.03125 3.09375 0.03125 C 3.09375 0.03125 3.78125 0.03125 3.78125 -0.625 Z M 2.484375 -0.984375 C 2.484375 -0.3125 1.890625 -0.125 1.578125 -0.125 C 1.234375 -0.125 0.890625 -0.359375 0.890625 -0.703125 C 0.890625 -1.078125 1.234375 -1.625 2.484375 -1.671875 Z M 2.484375 -0.984375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-4" overflow="visible">
+<path d="M 3.953125 -2.75 L 3.953125 -3 C 3.78125 -2.984375 3.59375 -2.96875 3.421875 -2.96875 C 3.234375 -2.96875 2.96875 -2.96875 2.78125 -3 L 2.78125 -2.75 C 3.078125 -2.734375 3.078125 -2.5 3.078125 -2.484375 C 3.078125 -2.453125 3.078125 -2.375 3.03125 -2.28125 L 2.234375 -0.5625 L 1.375 -2.453125 C 1.375 -2.453125 1.328125 -2.53125 1.328125 -2.59375 C 1.328125 -2.75 1.578125 -2.75 1.6875 -2.75 L 1.6875 -3 C 1.6875 -3 1.1875 -2.96875 0.890625 -2.96875 C 0.6875 -2.96875 0.421875 -2.96875 0.21875 -3 L 0.21875 -2.75 C 0.59375 -2.75 0.6875 -2.734375 0.78125 -2.5 L 1.890625 -0.078125 C 1.921875 0 1.953125 0.0625 2.078125 0.0625 C 2.21875 0.0625 2.234375 0 2.28125 -0.0625 L 3.296875 -2.3125 C 3.484375 -2.734375 3.84375 -2.75 3.953125 -2.75 Z M 3.953125 -2.75 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-5" overflow="visible">
+<path d="M 2.828125 -2.625 C 2.828125 -2.859375 2.609375 -3.0625 2.28125 -3.0625 C 1.9375 -3.0625 1.546875 -2.84375 1.34375 -2.328125 L 1.328125 -2.328125 L 1.328125 -3.0625 L 0.34375 -2.984375 L 0.34375 -2.734375 C 0.8125 -2.734375 0.859375 -2.6875 0.859375 -2.34375 L 0.859375 -0.546875 C 0.859375 -0.25 0.796875 -0.25 0.34375 -0.25 L 0.34375 0 C 0.375 0 0.84375 -0.03125 1.140625 -0.03125 L 2.03125 0 L 2.03125 -0.25 L 1.890625 -0.25 C 1.390625 -0.25 1.390625 -0.328125 1.390625 -0.5625 L 1.390625 -1.578125 C 1.390625 -2.171875 1.65625 -2.875 2.3125 -2.875 C 2.25 -2.828125 2.203125 -2.734375 2.203125 -2.625 C 2.203125 -2.390625 2.375 -2.296875 2.515625 -2.296875 C 2.671875 -2.296875 2.828125 -2.40625 2.828125 -2.625 Z M 2.828125 -2.625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-6" overflow="visible">
+<path d="M 1.90625 0 L 1.90625 -0.25 C 1.5 -0.25 1.4375 -0.25 1.4375 -0.546875 L 1.4375 -3.0625 L 0.40625 -2.984375 L 0.40625 -2.734375 C 0.84375 -2.734375 0.90625 -2.703125 0.90625 -2.359375 L 0.90625 -0.546875 C 0.90625 -0.25 0.84375 -0.25 0.390625 -0.25 L 0.390625 0 C 0.390625 0 0.890625 -0.03125 1.171875 -0.03125 C 1.40625 -0.03125 1.65625 -0.015625 1.90625 0 Z M 1.515625 -4.1875 C 1.515625 -4.40625 1.34375 -4.59375 1.125 -4.59375 C 0.890625 -4.59375 0.734375 -4.390625 0.734375 -4.1875 C 0.734375 -3.96875 0.90625 -3.796875 1.125 -3.796875 C 1.359375 -3.796875 1.515625 -3.984375 1.515625 -4.1875 Z M 1.515625 -4.1875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-7" overflow="visible">
+<path d="M 4.109375 0 L 4.109375 -0.25 C 3.65625 -0.25 3.578125 -0.25 3.578125 -0.546875 L 3.578125 -2.109375 C 3.578125 -2.71875 3.28125 -3.0625 2.53125 -3.0625 C 1.96875 -3.0625 1.59375 -2.75 1.40625 -2.390625 L 1.390625 -2.390625 L 1.390625 -3.0625 L 0.375 -2.984375 L 0.375 -2.734375 C 0.84375 -2.734375 0.890625 -2.6875 0.890625 -2.34375 L 0.890625 -0.546875 C 0.890625 -0.25 0.828125 -0.25 0.375 -0.25 L 0.375 0 C 0.375 0 0.875 -0.03125 1.171875 -0.03125 C 1.421875 -0.03125 1.90625 0 1.96875 0 L 1.96875 -0.25 C 1.515625 -0.25 1.453125 -0.25 1.453125 -0.546875 L 1.453125 -1.796875 C 1.453125 -2.53125 2.015625 -2.875 2.484375 -2.875 C 2.96875 -2.875 3.03125 -2.484375 3.03125 -2.140625 L 3.03125 -0.546875 C 3.03125 -0.25 2.96875 -0.25 2.515625 -0.25 L 2.515625 0 C 2.515625 0 3.015625 -0.03125 3.296875 -0.03125 C 3.5625 -0.03125 4.046875 0 4.109375 0 Z M 4.109375 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-8" overflow="visible">
+<path d="M 3.25 -0.828125 C 3.25 -0.921875 3.15625 -0.921875 3.140625 -0.921875 C 3.046875 -0.921875 3.03125 -0.890625 3 -0.796875 C 2.84375 -0.375 2.484375 -0.15625 2.0625 -0.15625 C 1.578125 -0.15625 0.953125 -0.5 0.953125 -1.515625 C 0.953125 -2.390625 1.390625 -2.875 2.03125 -2.875 C 2.125 -2.875 2.453125 -2.875 2.703125 -2.78125 C 2.578125 -2.71875 2.515625 -2.609375 2.515625 -2.46875 C 2.515625 -2.28125 2.640625 -2.140625 2.84375 -2.140625 C 3.03125 -2.140625 3.171875 -2.265625 3.171875 -2.484375 C 3.171875 -3.09375 2.203125 -3.09375 2.015625 -3.09375 C 0.96875 -3.09375 0.3125 -2.296875 0.3125 -1.5 C 0.3125 -0.625 1.0625 0.0625 1.96875 0.0625 C 3.015625 0.0625 3.25 -0.75 3.25 -0.828125 Z M 3.25 -0.828125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-9" overflow="visible">
+<path d="M 3.25 -0.828125 C 3.25 -0.859375 3.234375 -0.9375 3.140625 -0.9375 C 3.046875 -0.9375 3.03125 -0.890625 3.015625 -0.828125 C 2.796875 -0.25 2.265625 -0.15625 2.015625 -0.15625 C 1.6875 -0.15625 1.375 -0.296875 1.171875 -0.5625 C 0.90625 -0.890625 0.90625 -1.3125 0.90625 -1.578125 L 3.0625 -1.578125 C 3.203125 -1.578125 3.25 -1.578125 3.25 -1.734375 C 3.25 -2.34375 2.90625 -3.09375 1.875 -3.09375 C 0.96875 -3.09375 0.265625 -2.375 0.265625 -1.515625 C 0.265625 -0.640625 1.046875 0.0625 1.96875 0.0625 C 2.90625 0.0625 3.25 -0.6875 3.25 -0.828125 Z M 2.765625 -1.765625 L 0.90625 -1.765625 C 0.984375 -2.75 1.609375 -2.90625 1.875 -2.90625 C 2.734375 -2.90625 2.765625 -1.9375 2.765625 -1.765625 Z M 2.765625 -1.765625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-10" overflow="visible">
+<path d="M 2.828125 -0.90625 C 2.828125 -1.171875 2.71875 -1.390625 2.53125 -1.546875 C 2.265625 -1.796875 1.953125 -1.84375 1.703125 -1.890625 C 1.140625 -1.984375 0.703125 -2.078125 0.703125 -2.4375 C 0.703125 -2.65625 0.890625 -2.9375 1.546875 -2.9375 C 2.34375 -2.9375 2.390625 -2.375 2.40625 -2.171875 C 2.40625 -2.09375 2.484375 -2.09375 2.515625 -2.09375 C 2.640625 -2.09375 2.640625 -2.140625 2.640625 -2.28125 L 2.640625 -2.921875 C 2.640625 -3.03125 2.640625 -3.09375 2.53125 -3.09375 C 2.5 -3.09375 2.484375 -3.09375 2.40625 -3.015625 C 2.390625 -3.015625 2.3125 -2.953125 2.28125 -2.90625 C 2.0625 -3.0625 1.796875 -3.09375 1.546875 -3.09375 C 0.546875 -3.09375 0.3125 -2.578125 0.3125 -2.234375 C 0.3125 -2.015625 0.40625 -1.828125 0.578125 -1.6875 C 0.84375 -1.453125 1.109375 -1.40625 1.53125 -1.34375 C 1.890625 -1.28125 2.453125 -1.1875 2.453125 -0.71875 C 2.453125 -0.4375 2.265625 -0.125 1.59375 -0.125 C 0.921875 -0.125 0.6875 -0.5625 0.5625 -1.03125 C 0.53125 -1.125 0.53125 -1.15625 0.4375 -1.15625 C 0.3125 -1.15625 0.3125 -1.109375 0.3125 -0.96875 L 0.3125 -0.109375 C 0.3125 0 0.3125 0.0625 0.40625 0.0625 C 0.46875 0.0625 0.609375 -0.078125 0.75 -0.234375 C 1.046875 0.0625 1.421875 0.0625 1.59375 0.0625 C 2.5 0.0625 2.828125 -0.421875 2.828125 -0.90625 Z M 2.828125 -0.90625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-11" overflow="visible">
+<path d="M 4.109375 0 L 4.109375 -0.25 C 3.640625 -0.25 3.578125 -0.296875 3.578125 -0.640625 L 3.578125 -3.0625 L 2.515625 -2.984375 L 2.515625 -2.734375 C 2.96875 -2.734375 3.03125 -2.6875 3.03125 -2.34375 L 3.03125 -1.15625 C 3.03125 -0.546875 2.640625 -0.125 2.109375 -0.125 C 1.46875 -0.125 1.453125 -0.421875 1.453125 -0.78125 L 1.453125 -3.0625 L 0.375 -2.984375 L 0.375 -2.734375 C 0.890625 -2.734375 0.890625 -2.71875 0.890625 -2.09375 L 0.890625 -1.0625 C 0.890625 -0.578125 0.890625 0.0625 2.0625 0.0625 C 2.21875 0.0625 2.71875 0.0625 3.046875 -0.515625 L 3.0625 -0.515625 L 3.0625 0.0625 Z M 4.109375 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-12" overflow="visible">
+<path d="M 2.609375 -0.875 L 2.609375 -1.265625 L 2.375 -1.265625 L 2.375 -0.890625 C 2.375 -0.40625 2.15625 -0.15625 1.875 -0.15625 C 1.390625 -0.15625 1.390625 -0.734375 1.390625 -0.859375 L 1.390625 -2.75 L 2.484375 -2.75 L 2.484375 -3 L 1.390625 -3 L 1.390625 -4.28125 L 1.15625 -4.28125 C 1.15625 -3.65625 0.875 -2.96875 0.203125 -2.9375 L 0.203125 -2.75 L 0.84375 -2.75 L 0.84375 -0.875 C 0.84375 -0.09375 1.4375 0.0625 1.828125 0.0625 C 2.28125 0.0625 2.609375 -0.328125 2.609375 -0.875 Z M 2.609375 -0.875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-13" overflow="visible">
+<path d="M 4.109375 0 L 4.109375 -0.25 C 3.65625 -0.25 3.578125 -0.25 3.578125 -0.546875 L 3.578125 -2.109375 C 3.578125 -2.71875 3.28125 -3.0625 2.53125 -3.0625 C 1.921875 -3.0625 1.578125 -2.703125 1.421875 -2.4375 L 1.421875 -4.828125 L 0.375 -4.75 L 0.375 -4.5 C 0.84375 -4.5 0.890625 -4.453125 0.890625 -4.109375 L 0.890625 -0.546875 C 0.890625 -0.25 0.828125 -0.25 0.375 -0.25 L 0.375 0 C 0.375 0 0.875 -0.03125 1.171875 -0.03125 C 1.421875 -0.03125 1.90625 0 1.96875 0 L 1.96875 -0.25 C 1.515625 -0.25 1.453125 -0.25 1.453125 -0.546875 L 1.453125 -1.796875 C 1.453125 -2.53125 2.015625 -2.875 2.484375 -2.875 C 2.96875 -2.875 3.03125 -2.484375 3.03125 -2.140625 L 3.03125 -0.546875 C 3.03125 -0.25 2.96875 -0.25 2.515625 -0.25 L 2.515625 0 C 2.515625 0 3.015625 -0.03125 3.296875 -0.03125 C 3.5625 -0.03125 4.046875 0 4.109375 0 Z M 4.109375 0 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-14" overflow="visible">
+<path d="M 3.671875 -1.484375 C 3.671875 -2.34375 2.9375 -3.09375 1.96875 -3.09375 C 1.015625 -3.09375 0.265625 -2.34375 0.265625 -1.484375 C 0.265625 -0.625 1.03125 0.0625 1.96875 0.0625 C 2.90625 0.0625 3.671875 -0.625 3.671875 -1.484375 Z M 3.046875 -1.546875 C 3.046875 -1.203125 3.03125 -0.84375 2.828125 -0.5625 C 2.640625 -0.296875 2.3125 -0.15625 1.96875 -0.15625 C 1.71875 -0.15625 1.34375 -0.234375 1.109375 -0.578125 C 0.921875 -0.859375 0.90625 -1.21875 0.90625 -1.546875 C 0.90625 -1.84375 0.90625 -2.25 1.15625 -2.546875 C 1.328125 -2.75 1.625 -2.90625 1.96875 -2.90625 C 2.390625 -2.90625 2.671875 -2.71875 2.828125 -2.5 C 3.03125 -2.21875 3.046875 -1.875 3.046875 -1.546875 Z M 3.046875 -1.546875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_7bb577bed9039c49d64b_glyph5-15" overflow="visible">
+<path d="M 4.046875 0 L 4.046875 -0.25 C 3.578125 -0.25 3.515625 -0.296875 3.515625 -0.640625 L 3.515625 -4.828125 L 2.46875 -4.75 L 2.46875 -4.5 C 2.9375 -4.5 3 -4.453125 3 -4.109375 L 3 -2.671875 C 2.734375 -2.921875 2.40625 -3.0625 2.015625 -3.0625 C 1.09375 -3.0625 0.3125 -2.375 0.3125 -1.5 C 0.3125 -0.625 1.0625 0.0625 1.9375 0.0625 C 2.515625 0.0625 2.84375 -0.234375 2.96875 -0.359375 L 2.96875 0.0625 Z M 2.96875 -0.734375 C 2.78125 -0.40625 2.4375 -0.125 1.984375 -0.125 C 1.59375 -0.125 1.3125 -0.359375 1.171875 -0.5625 C 1.03125 -0.765625 0.953125 -1.046875 0.953125 -1.484375 C 0.953125 -1.640625 0.953125 -2.171875 1.234375 -2.5 C 1.515625 -2.8125 1.859375 -2.875 2.0625 -2.875 C 2.390625 -2.875 2.6875 -2.71875 2.890625 -2.46875 C 2.96875 -2.359375 2.96875 -2.34375 2.96875 -2.21875 Z M 2.96875 -0.734375 " style="stroke:none;"></path>
+</symbol>
+</g>
+<clippath id="svg_7bb577bed9039c49d64b_clip1">
+<path d="M 24.261719 5.15625 L 290.238281 5.15625 L 290.238281 90.402344 L 24.261719 90.402344 Z M 24.261719 5.15625 "></path>
+</clippath>
+<clippath id="svg_7bb577bed9039c49d64b_clip2">
+<path d="M 24.261719 5.15625 L 290.238281 5.15625 L 290.238281 64 L 24.261719 64 Z M 24.261719 5.15625 "></path>
+</clippath>
+</defs>
+<g id="svg_7bb577bed9039c49d64b_surface1">
+<path d="M -0.000358832 -2.126696 L -0.000358832 2.127626 M 52.972814 -2.126696 L 52.972814 2.127626 M 105.945986 -2.126696 L 105.945986 2.127626 M 158.919158 -2.126696 L 158.919158 2.127626 M 211.892331 -2.126696 L 211.892331 2.127626 M 264.865503 -2.126696 L 264.865503 2.127626 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.99623,0,0,-0.99623,24.262076,90.400854)"></path>
+<path d="M -2.125559 4.739035 L 2.124842 4.739035 M -2.125559 21.536746 L 2.124842 21.536746 M -2.125559 38.334457 L 2.124842 38.334457 M -2.125559 55.132167 L 2.124842 55.132167 M -2.125559 71.929878 L 2.124842 71.929878 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.99623,0,0,-0.99623,24.262076,90.400854)"></path>
+<path d="M -0.000358832 -0.00149513 L 264.990976 -0.00149513 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.99623,0,0,-0.99623,24.262076,90.400854)"></path>
+<path d="M 290.238281 90.402344 L 287.0625 88.8125 L 288.253906 90.402344 L 287.0625 91.988281 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<path d="M -0.000358832 -0.00149513 L -0.000358832 83.571428 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.99623,0,0,-0.99623,24.262076,90.400854)"></path>
+<path d="M 24.261719 5.15625 L 22.675781 8.332031 L 24.261719 7.144531 L 25.851562 8.332031 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="22.283564" href="#svg_7bb577bed9039c49d64b_glyph0-1" y="100.502621"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="73.079315" href="#svg_7bb577bed9039c49d64b_glyph0-2" y="100.502621"></use>
+<use x="77.032445" href="#svg_7bb577bed9039c49d64b_glyph0-1" y="100.502621"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="123.874069" href="#svg_7bb577bed9039c49d64b_glyph0-3" y="100.502621"></use>
+<use x="127.827199" href="#svg_7bb577bed9039c49d64b_glyph0-1" y="100.502621"></use>
+<use x="131.78033" href="#svg_7bb577bed9039c49d64b_glyph0-1" y="100.502621"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="176.647334" href="#svg_7bb577bed9039c49d64b_glyph0-3" y="100.502621"></use>
+<use x="180.600465" href="#svg_7bb577bed9039c49d64b_glyph0-2" y="100.502621"></use>
+<use x="184.553595" href="#svg_7bb577bed9039c49d64b_glyph0-1" y="100.502621"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="229.419604" href="#svg_7bb577bed9039c49d64b_glyph0-4" y="100.502621"></use>
+<use x="233.372734" href="#svg_7bb577bed9039c49d64b_glyph0-1" y="100.502621"></use>
+<use x="237.325865" href="#svg_7bb577bed9039c49d64b_glyph0-1" y="100.502621"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="282.19287" href="#svg_7bb577bed9039c49d64b_glyph0-4" y="100.502621"></use>
+<use x="286.146" href="#svg_7bb577bed9039c49d64b_glyph0-2" y="100.502621"></use>
+<use x="290.099131" href="#svg_7bb577bed9039c49d64b_glyph0-1" y="100.502621"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="8.477816" href="#svg_7bb577bed9039c49d64b_glyph1-1" y="87.505811"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="14.681337" href="#svg_7bb577bed9039c49d64b_glyph0-5" y="87.505811"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="8.477816" href="#svg_7bb577bed9039c49d64b_glyph1-1" y="70.771148"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="14.681337" href="#svg_7bb577bed9039c49d64b_glyph0-4" y="70.771148"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="14.681337" href="#svg_7bb577bed9039c49d64b_glyph0-1" y="54.44992"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="14.681337" href="#svg_7bb577bed9039c49d64b_glyph0-4" y="37.715257"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="14.681337" href="#svg_7bb577bed9039c49d64b_glyph0-5" y="20.980593"></use>
+</g>
+<g clip-path="url(#svg_7bb577bed9039c49d64b_clip1)" clip-rule="nonzero">
+<path d="M 1.05832 38.334457 L 2.117 37.769828 L 3.1796 20.807434 L 4.238279 24.273628 L 5.296958 24.01484 L 6.355638 42.098649 L 7.414317 42.400569 L 8.476917 48.705592 L 9.535596 46.294156 L 10.594276 41.933966 L 11.652955 34.103661 L 12.711634 37.726696 L 13.774234 33.111639 L 14.832914 39.612714 L 15.891593 38.903006 L 16.950272 43.478853 L 18.008951 42.82012 L 19.071552 45.023741 L 20.130231 53.830384 L 21.18891 44.341481 L 22.247589 31.684382 L 23.306269 22.301348 L 24.368869 33.319454 L 25.427548 36.67978 L 26.486227 34.891788 L 27.544907 30.649229 L 28.603586 43.831747 L 29.666186 44.219929 L 30.724865 39.510767 L 31.783545 37.36204 L 32.842224 36.52686 L 33.900903 30.508072 L 34.963503 43.792536 L 36.022183 42.075123 L 37.080862 37.85609 L 38.139541 40.596893 L 39.19822 35.781863 L 40.260821 30.99428 L 41.3195 44.365007 L 42.378179 32.876377 L 43.436858 32.970482 L 44.495538 38.275641 L 45.558138 42.502516 L 46.616817 45.753053 L 47.675496 55.214509 L 48.734176 16.404112 L 49.792855 10.957796 L 50.855455 57.884733 L 51.914134 12.455631 L 52.972814 75.043179 L 54.031493 85.567235 L 55.090172 45.584449 L 56.152772 32.805798 L 57.211452 39.632319 L 58.270131 24.959809 L 59.32881 45.035504 L 60.387489 42.286859 L 61.45009 35.107445 L 62.508769 41.816335 L 63.567448 39.718582 L 64.626127 46.078499 L 65.684807 32.652878 L 66.747407 37.671802 L 67.806086 45.74129 L 68.864765 34.942762 L 69.923445 34.48008 L 70.982124 39.471556 L 72.044724 41.965334 L 73.103403 32.692088 L 74.162083 33.809583 L 75.220762 41.447758 L 76.279441 44.321876 L 77.342041 50.026981 L 78.400721 24.995098 L 79.4594 56.202609 L 80.518079 20.066358 L 81.576758 21.74064 L 82.639359 58.049417 L 83.698038 47.321467 L 84.756717 44.557138 L 85.815396 39.267663 L 86.874076 42.600542 L 87.936676 35.299576 L 88.995355 34.021319 L 90.054034 31.653014 L 91.112714 36.985621 L 92.171393 35.92302 L 93.233993 41.439916 L 94.292672 42.012387 L 95.351352 38.020774 L 96.410031 33.805662 L 97.46871 39.228452 L 98.53131 34.742789 L 99.58999 38.961822 L 100.648669 30.578651 L 101.707348 51.567947 L 102.766027 46.701944 L 103.828628 46.168683 L 104.887307 54.183277 L 105.945986 22.552294 L 107.004665 56.088899 L 108.063344 13.184943 L 109.125945 63.397707 L 110.184624 22.148427 L 111.243303 26.265513 L 112.301982 32.672483 L 113.360662 30.339468 L 114.419341 51.689499 L 115.481941 63.084025 L 116.54062 9.80109 L 117.5993 26.66938 L 118.657979 39.322557 L 119.716658 45.204108 L 120.779258 43.255354 L 121.837938 37.883538 L 122.896617 33.840951 L 123.955296 39.800923 L 125.013975 39.840134 L 126.076576 42.914224 L 127.135255 46.741154 L 128.193934 41.698704 L 129.252613 28.865159 L 130.311293 42.74562 L 131.373893 41.232101 L 132.432572 48.682066 L 133.491251 45.031583 L 134.549931 35.079998 L 135.60861 38.812823 L 136.67121 28.720081 L 137.729889 35.907336 L 138.788569 43.020092 L 139.847248 36.969937 L 140.905927 49.360405 L 141.968527 37.848248 L 143.027207 40.189106 L 144.085886 53.383386 L 145.144565 32.084328 L 146.203244 46.337287 L 147.265845 38.256036 L 148.324524 37.730617 L 149.383203 44.957083 L 150.441882 46.486287 L 151.500562 36.213177 L 152.563162 25.465622 L 153.621841 32.16667 L 154.68052 47.003863 L 155.7392 33.07635 L 156.797879 27.739822 L 157.860479 22.062164 L 158.919158 22.681688 L 159.977838 44.172876 L 161.036517 38.757928 L 162.095196 39.628398 L 163.157796 39.620556 L 164.216476 33.852714 L 165.275155 34.7075 L 166.333834 24.626521 L 167.392513 24.653968 L 168.455114 54.677327 L 169.513793 33.30377 L 170.572472 39.397057 L 171.631151 38.169773 L 172.689831 33.26848 L 173.752431 42.106491 L 174.81111 40.443973 L 175.869789 35.546601 L 176.928469 40.934102 L 177.987148 38.565798 L 179.049748 40.843918 L 180.108427 33.782136 L 181.167107 30.566888 L 182.225786 43.612169 L 183.284465 42.482911 L 184.347065 47.611623 L 185.405745 36.746438 L 186.464424 43.99643 L 187.523103 30.280652 L 188.581782 43.651379 L 189.644383 37.581618 L 190.703062 38.095273 L 191.761741 39.420583 L 192.82042 39.099058 L 193.8791 33.95074 L 194.9417 42.208438 L 196.000379 30.355152 L 197.059058 34.374212 L 198.117738 45.541317 L 199.176417 34.048766 L 200.239017 35.519154 L 201.297696 34.393817 L 202.356376 32.045118 L 203.415055 20.646671 L 204.473734 57.892575 L 205.536334 55.308614 L 206.595014 40.173422 L 207.653693 34.115424 L 208.712372 36.695464 L 209.771051 51.822814 L 210.833652 40.283211 L 211.892331 32.637194 L 212.95101 42.451542 L 214.009689 38.855954 L 215.068369 31.700067 L 216.130969 33.899767 L 217.189648 43.04754 L 218.248327 43.690589 L 219.307007 40.220474 L 220.365686 38.357983 L 221.428286 33.625294 L 222.486965 35.824995 L 223.545645 38.534429 L 224.604324 34.389896 L 225.663003 48.215463 L 226.721682 53.006967 L 227.784283 9.252146 L 228.842962 4.542984 L 229.901641 12.330158 L 230.96032 0.696449 L 232.019 28.786738 L 233.0816 34.084055 L 234.140279 40.855682 L 235.198958 38.746165 L 236.257638 33.672347 L 237.316317 35.977915 L 238.378917 36.487649 L 239.437596 38.357983 L 240.496276 47.121494 L 241.554955 46.666654 L 242.613634 30.249284 L 243.676234 42.67112 L 244.734914 40.118527 L 245.793593 35.268208 L 246.852272 45.494265 L 247.910951 32.315669 L 248.973552 40.267526 L 250.032231 43.741563 L 251.09091 40.710603 L 252.149589 44.972767 L 253.208268 33.503742 L 254.270869 32.594062 L 255.329548 36.193572 L 256.388227 34.566343 L 257.446906 35.962231 L 258.505586 41.592836 L 259.568186 29.716023 L 260.626865 54.073488 L 261.685544 64.515202 L 262.744224 -0.00149513 L 263.802903 46.403945 L 264.865503 20.336909 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(35.299683%,35.299683%,35.299683%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.99623,0,0,-0.99623,24.262076,90.400854)"></path>
+</g>
+<g clip-path="url(#svg_7bb577bed9039c49d64b_clip2)" clip-rule="nonzero">
+<path d="M 1.05832 48.956538 L 2.117 43.647458 L 3.1796 43.667063 L 4.238279 54.414618 L 5.296958 51.61892 L 6.355638 51.826735 L 7.414317 44.568901 L 8.476917 44.706137 L 9.535596 48.768329 L 10.594276 47.035231 L 11.652955 44.494401 L 12.711634 44.784558 L 13.774234 43.670984 L 14.832914 45.309976 L 15.891593 43.761168 L 16.950272 43.670984 L 18.008951 45.266845 L 19.071552 44.917873 L 20.130231 46.19613 L 21.18891 52.763862 L 22.247589 45.768737 L 23.306269 46.168683 L 24.368869 53.199097 L 25.427548 45.196266 L 26.486227 43.835668 L 27.544907 44.423823 L 28.603586 46.850943 L 29.666186 45.466818 L 30.724865 45.694238 L 31.783545 43.741563 L 32.842224 43.714115 L 33.900903 43.870957 L 34.963503 46.945048 L 36.022183 45.443292 L 37.080862 44.557138 L 38.139541 43.663142 L 39.19822 43.99643 L 40.260821 44.086614 L 41.3195 46.615681 L 42.378179 45.784422 L 43.436858 45.443292 L 44.495538 45.392318 L 45.558138 43.647458 L 46.616817 44.757111 L 47.675496 46.670575 L 48.734176 53.889199 L 49.792855 58.053338 L 50.855455 62.633106 L 51.914134 56.081057 L 52.972814 61.366612 L 54.031493 70.565358 L 55.090172 79.579816 L 56.152772 46.556865 L 57.211452 45.486423 L 58.270131 43.765089 L 59.32881 51.077818 L 60.387489 46.203972 L 61.45009 44.655164 L 62.508769 44.33756 L 63.567448 44.443428 L 64.626127 43.780773 L 65.684807 46.890153 L 66.747407 45.576607 L 67.806086 43.678826 L 68.864765 46.662733 L 69.923445 44.404218 L 70.982124 44.608111 L 72.044724 43.737642 L 73.103403 44.506164 L 74.162083 45.553081 L 75.220762 44.933557 L 76.279441 44.290508 L 77.342041 45.756974 L 78.400721 49.768192 L 79.4594 51.050371 L 80.518079 54.696932 L 81.576758 55.022378 L 82.639359 53.653937 L 83.698038 56.214373 L 84.756717 47.756702 L 85.815396 45.902053 L 86.874076 43.706273 L 87.936676 44.804163 L 88.995355 44.26306 L 90.054034 44.827689 L 91.112714 46.188288 L 92.171393 43.772931 L 93.233993 44.043482 L 95.351352 44.529691 L 96.410031 43.6553 L 97.46871 44.937478 L 98.53131 43.702352 L 99.58999 44.49048 L 100.648669 43.674905 L 101.707348 46.897995 L 102.766027 50.968029 L 103.828628 47.321467 L 104.887307 46.95289 L 105.945986 53.050098 L 107.004665 52.999125 L 108.063344 54.602828 L 109.125945 60.751009 L 110.184624 60.680431 L 111.243303 53.32457 L 112.301982 50.058349 L 113.360662 45.564844 L 114.419341 47.062679 L 115.481941 51.062134 L 116.54062 60.417721 L 117.5993 63.609443 L 118.657979 49.744666 L 119.716658 43.714115 L 120.779258 46.30984 L 121.837938 45.145293 L 122.896617 43.659221 L 123.955296 44.921794 L 125.013975 43.796457 L 126.076576 43.804299 L 127.135255 44.964925 L 128.193934 47.344993 L 129.252613 44.392454 L 130.311293 48.105674 L 131.373893 44.878663 L 132.432572 44.208166 L 133.491251 48.748723 L 134.549931 46.200051 L 135.60861 44.345402 L 136.67121 43.663142 L 137.729889 48.207621 L 138.788569 44.047403 L 139.847248 45.01982 L 140.905927 43.776852 L 141.968527 49.262379 L 143.027207 43.663142 L 144.085886 43.88272 L 145.144565 52.407048 L 146.203244 45.917737 L 147.265845 47.0666 L 148.324524 43.647458 L 149.383203 43.670984 L 150.441882 46.152999 L 151.500562 47.168547 L 152.563162 43.953299 L 153.621841 50.681793 L 154.68052 45.866763 L 155.7392 47.533203 L 156.797879 45.329582 L 157.860479 48.933012 L 158.919158 53.395149 L 159.977838 52.893257 L 161.036517 45.666791 L 162.095196 43.659221 L 163.157796 43.765089 L 164.216476 43.761168 L 165.275155 44.913952 L 166.333834 44.506164 L 167.392513 51.340527 L 168.455114 51.317001 L 169.513793 53.450043 L 170.572472 45.204108 L 171.631151 43.725879 L 172.689831 43.647458 L 173.752431 45.223714 L 174.81111 44.568901 L 175.869789 43.953299 L 176.928469 44.168955 L 177.987148 44.106219 L 179.049748 43.651379 L 180.108427 44.074851 L 181.167107 44.949241 L 182.225786 46.905837 L 183.284465 45.341345 L 184.347065 44.745347 L 185.405745 47.964517 L 186.464424 43.819983 L 187.523103 45.564844 L 188.581782 47.101889 L 189.644383 45.364871 L 190.703062 43.686668 L 191.761741 43.651379 L 192.82042 43.7298 L 193.8791 43.686668 L 194.9417 44.862979 L 196.000379 44.615953 L 197.059058 47.050916 L 198.117738 44.659085 L 199.176417 46.529418 L 200.239017 44.815926 L 201.297696 44.180719 L 202.356376 44.647322 L 203.415055 45.941263 L 204.473734 54.547933 L 205.536334 56.084978 L 206.595014 53.963699 L 207.653693 43.878799 L 208.712372 44.780637 L 209.771051 43.831747 L 210.833652 51.168002 L 211.892331 43.906246 L 212.95101 45.584449 L 214.009689 44.729663 L 215.068369 43.667063 L 216.130969 46.160841 L 217.189648 44.890426 L 218.248327 45.031583 L 219.307007 45.388397 L 220.365686 43.890562 L 221.428286 43.647458 L 222.486965 45.031583 L 223.545645 44.074851 L 224.604324 43.647458 L 225.663003 44.651243 L 226.721682 48.407593 L 227.784283 52.105129 L 228.842962 64.072125 L 229.901641 68.075501 L 230.96032 61.472479 L 232.019 71.361328 L 233.0816 48.164489 L 234.140279 44.796321 L 235.198958 44.078772 L 236.257638 43.659221 L 237.316317 45.008057 L 238.378917 44.023877 L 239.437596 43.88272 L 240.496276 43.647458 L 241.554955 47.615545 L 242.613634 47.29402 L 243.676234 47.121494 L 244.734914 44.839452 L 245.793593 43.867036 L 246.852272 44.270902 L 247.910951 46.49805 L 248.973552 45.776579 L 250.032231 43.906246 L 251.09091 45.415844 L 252.149589 44.031719 L 253.208268 46.160841 L 254.270869 45.09432 L 255.329548 45.607975 L 256.388227 43.961141 L 257.446906 44.568901 L 258.505586 44.031719 L 259.568186 44.349323 L 260.626865 47.493992 L 261.685544 52.963835 L 262.744224 61.621479 L 263.802903 71.953404 L 264.865503 47.113652 " style="fill:none;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.99623,0,0,-0.99623,24.262076,90.400854)"></path>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="155.59302" href="#svg_7bb577bed9039c49d64b_glyph2-1" y="112.812033"></use>
+</g>
+<path d="M 0.000808849 -0.000674305 L 17.006334 -0.000674305 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(35.299683%,35.299683%,35.299683%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.99623,0,0,-0.99623,33.354663,13.272766)"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="120.454013" href="#svg_7bb577bed9039c49d64b_glyph3-1" y="14.023923"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="124.20382" href="#svg_7bb577bed9039c49d64b_glyph4-1" y="15.016167"></use>
+</g>
+<path d="M 0.000808849 -0.001364 L 17.006334 -0.001364 " style="fill:none;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.99623,0,0,-0.99623,33.354663,23.279891)"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="52.877773" href="#svg_7bb577bed9039c49d64b_glyph1-2" y="20.157708"></use>
+</g>
+<path d="M 69.417344 12.693068 L 77.388807 12.693068 " style="fill:none;stroke-width:0.3387;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.99623,0,0,-0.99623,-9.757169,32.63349)"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="59.398095" href="#svg_7bb577bed9039c49d64b_glyph3-2" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="64.044509" href="#svg_7bb577bed9039c49d64b_glyph4-1" y="26.582392"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="70.01292" href="#svg_7bb577bed9039c49d64b_glyph5-1" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="75.821035" href="#svg_7bb577bed9039c49d64b_glyph5-2" y="25.589151"></use>
+<use x="78.065079" href="#svg_7bb577bed9039c49d64b_glyph5-3" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="84.692999" href="#svg_7bb577bed9039c49d64b_glyph5-4" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="88.437704" href="#svg_7bb577bed9039c49d64b_glyph5-3" y="25.589151"></use>
+<use x="92.390835" href="#svg_7bb577bed9039c49d64b_glyph5-5" y="25.589151"></use>
+<use x="95.489422" href="#svg_7bb577bed9039c49d64b_glyph5-6" y="25.589151"></use>
+<use x="97.733466" href="#svg_7bb577bed9039c49d64b_glyph5-3" y="25.589151"></use>
+<use x="101.686597" href="#svg_7bb577bed9039c49d64b_glyph5-7" y="25.589151"></use>
+<use x="106.070473" href="#svg_7bb577bed9039c49d64b_glyph5-8" y="25.589151"></use>
+<use x="109.599806" href="#svg_7bb577bed9039c49d64b_glyph5-9" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="115.79698" href="#svg_7bb577bed9039c49d64b_glyph5-10" y="25.589151"></use>
+<use x="118.9442" href="#svg_7bb577bed9039c49d64b_glyph5-11" y="25.589151"></use>
+<use x="123.328076" href="#svg_7bb577bed9039c49d64b_glyph5-6" y="25.589151"></use>
+<use x="125.57212" href="#svg_7bb577bed9039c49d64b_glyph5-12" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="131.345497" href="#svg_7bb577bed9039c49d64b_glyph5-2" y="25.589151"></use>
+<use x="133.589542" href="#svg_7bb577bed9039c49d64b_glyph5-9" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="139.793664" href="#svg_7bb577bed9039c49d64b_glyph5-8" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="143.114571" href="#svg_7bb577bed9039c49d64b_glyph5-13" y="25.589151"></use>
+<use x="147.498447" href="#svg_7bb577bed9039c49d64b_glyph5-14" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="151.660003" href="#svg_7bb577bed9039c49d64b_glyph5-8" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="157.864125" href="#svg_7bb577bed9039c49d64b_glyph5-15" y="25.589151"></use>
+<use x="162.248001" href="#svg_7bb577bed9039c49d64b_glyph5-9" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="168.452123" href="#svg_7bb577bed9039c49d64b_glyph5-2" y="25.589151"></use>
+<use x="170.696168" href="#svg_7bb577bed9039c49d64b_glyph5-3" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="177.324088" href="#svg_7bb577bed9039c49d64b_glyph5-4" y="25.589151"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="181.284166" href="#svg_7bb577bed9039c49d64b_glyph5-9" y="25.589151"></use>
+<use x="184.813498" href="#svg_7bb577bed9039c49d64b_glyph5-6" y="25.589151"></use>
+<use x="187.057543" href="#svg_7bb577bed9039c49d64b_glyph5-2" y="25.589151"></use>
+<use x="189.301587" href="#svg_7bb577bed9039c49d64b_glyph5-2" y="25.589151"></use>
+<use x="191.545631" href="#svg_7bb577bed9039c49d64b_glyph5-9" y="25.589151"></use>
+</g>
+</g>
+</svg></p>
+</figure>
+</div>
+<div class="examplebox" title="Lecture">
+<div class="pedago-title">
+Lecture
+</div>
+<p>La courbe épaisse est <span class="math inline">\sqrt{h_t}</span>. Elle saute dès qu’un gros choc survient, puis retombe <strong>dès la période suivante</strong> si le choc suivant est petit.</p>
+<p>Retenez ce comportement en dents de scie : c’est la principale faiblesse de l’ARCH, et le chapitre 6 la corrigera.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-modèle-archq">
+<h1>Le modèle ARCH(q)</h1>
+<section class="level2" id="léquation-générale">
+<h2 class="anchored" data-anchor-id="léquation-générale">L’équation générale</h2>
+<div class="definitionbox" title="ARCH(q)">
+<div class="pedago-title">
+ARCH(q)
+</div>
+<p><span class="math display"> h_t = \omega + \sum_{i=1}^{q}\alpha_i\,\varepsilon_{t-i}^2 , \qquad \omega &gt; 0, \quad \alpha_i \ge 0, \quad \boxed{\alpha_q \neq 0}. </span></p>
+</div>
+<p>Comme pour l’AR du cours précédent, la condition <span class="math inline">\alpha_q \neq 0</span> définit l’ordre : sans elle, un ARCH(3) dont <span class="math inline">\alpha_3 = 0</span> serait un ARCH(2), et la question « quel est l’ordre ? » n’aurait pas de sens.</p>
+<div class="intuitionbox" title="La parenté avec l'AR">
+<div class="pedago-title">
+La parenté avec l’AR
+</div>
+<p>C’est un modèle <strong>autorégressif</strong>, mais sur les carrés des chocs plutôt que sur la série elle-même. Le chapitre 8 montrera que cette analogie est bien plus qu’une image : c’est une identité algébrique.</p>
+</div>
+</section>
+<section class="level2" id="les-contraintes-de-paramètres">
+<h2 class="anchored" data-anchor-id="les-contraintes-de-paramètres">Les contraintes de paramètres</h2>
+<div class="definitionbox" title="Ce qu'il faut imposer, et pourquoi">
+<div class="pedago-title">
+Ce qu’il faut imposer, et pourquoi
+</div>
+
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Contrainte</th>
+<th data-quarto-table-cell-role="th">Ce qu’elle assure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\omega &gt; 0</span></td>
+<td>la variance ne peut pas s’annuler</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\alpha_i \ge 0</span></td>
+<td>positivité de <span class="math inline">h_t</span> en toute circonstance</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\sum_i \alpha_i &lt; 1</span></td>
+<td>existence d’une variance inconditionnelle finie</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+<div class="ecobox" title="La troisième mérite qu'on s'y arrête">
+<div class="pedago-title">
+La troisième mérite qu’on s’y arrête
+</div>
+<p>Si <span class="math inline">\sum\alpha_i \ge 1</span>, chaque choc est amplifié plutôt qu’amorti : la variance diverge et le processus n’est plus stationnaire. C’est l’analogue exact de la condition <span class="math inline">|\alpha| &lt; 1</span> de l’AR(1). Le chapitre 4 la démontre.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="la-variance-de-long-terme">
+<h1>La variance de long terme</h1>
+<section class="level2" id="le-calcul">
+<h2 class="anchored" data-anchor-id="le-calcul">Le calcul</h2>
+<p>En prenant l’espérance de l’équation ARCH et en utilisant <span class="math inline">\mathrm{E}(\varepsilon_{t-i}^2) = \sigma^2</span> pour tout <span class="math inline">i</span> :</p>
+<p><span class="math display"> \sigma^2 = \omega + \sigma^2\sum_{i=1}^{q}\alpha_i \qquad \Longrightarrow \qquad \boxed{\ \sigma^2 = \frac{\omega}{1 - \sum_{i}\alpha_i}\ } </span></p>
+<div class="intuitionbox" title="Trois lectures d'une même formule">
+<div class="pedago-title">
+Trois lectures d’une même formule
+</div>
+<p>La variance inconditionnelle est <strong>entièrement déterminée</strong> par les paramètres.</p>
+<p>Elle explose quand <span class="math inline">\sum\alpha_i \to 1</span> : la stationnarité se perd continûment, non brutalement.</p>
+<p>Et <span class="math inline">\omega</span> n’est pas la variance de long terme : il en est un déterminant, amplifié par la persistance — exactement comme la constante <span class="math inline">\theta</span> d’un AR n’était pas son espérance.</p>
+</div>
+</section>
+<section class="level2" id="la-forme-en-écart-à-la-moyenne">
+<h2 class="anchored" data-anchor-id="la-forme-en-écart-à-la-moyenne">La forme en écart à la moyenne</h2>
+<p>En remplaçant <span class="math inline">\omega</span> par <span class="math inline">\sigma^2(1-\sum\alpha_i)</span> :</p>
+<div class="definitionbox" title="Écriture en rappel vers la moyenne">
+<div class="pedago-title">
+Écriture en rappel vers la moyenne
+</div>
+<p><span class="math display"> h_t - \sigma^2 = \sum_{i=1}^{q}\alpha_i\big(\varepsilon_{t-i}^2 - \sigma^2\big) . </span></p>
+</div>
+<div class="ecobox" title="C'est la forme la plus parlante">
+<div class="pedago-title">
+C’est la forme la plus parlante
+</div>
+<p>La variance conditionnelle s’écarte de sa moyenne de long terme dans la mesure où les chocs récents ont été plus gros que la normale. Quand les chocs sont d’ampleur ordinaire, <span class="math inline">h_t</span> revient vers <span class="math inline">\sigma^2</span>.</p>
+<p>Le modèle décrit donc un <strong>retour à la moyenne</strong> — sur la variance, non sur le niveau.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="ce-que-sait-faire-larch">
+<h1>Ce que sait faire l’ARCH</h1>
+<section class="level2" id="le-bilan-provisoire">
+<h2 class="anchored" data-anchor-id="le-bilan-provisoire">Le bilan provisoire</h2>
+<div class="definitionbox" title="Face aux six faits stylisés">
+<div class="pedago-title">
+Face aux six faits stylisés
+</div>
+
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Fait</th>
+<th data-quarto-table-cell-role="th">ARCH ?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1. Rentabilités non corrélées</td>
+<td><strong>oui</strong>, par construction</td>
+</tr>
+<tr class="even">
+<td>2. Queues épaisses</td>
+<td><strong>oui</strong>, même avec <span class="math inline">z_t</span> gaussien</td>
+</tr>
+<tr class="odd">
+<td>3. Regroupement de la volatilité</td>
+<td><strong>oui</strong>, c’est son objet</td>
+</tr>
+<tr class="even">
+<td>4. ACF lente des carrés</td>
+<td>partiellement — voir ci-dessous</td>
+</tr>
+<tr class="odd">
+<td>5. Effet de levier</td>
+<td><strong>non</strong>, le modèle est symétrique</td>
+</tr>
+<tr class="even">
+<td>6. Gaussianité par agrégation</td>
+<td>oui</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</section>
+<section class="level2" id="le-problème-du-fait-4">
+<h2 class="anchored" data-anchor-id="le-problème-du-fait-4">Le problème du fait 4</h2>
+<div class="intuitionbox" title="Une mémoire trop courte">
+<div class="pedago-title">
+Une mémoire trop courte
+</div>
+<p>L’ARCH(q) oublie tout au-delà de <span class="math inline">q</span> périodes — comme un MA(q) oublie tout au-delà de <span class="math inline">q</span> retards. Pour reproduire une ACF des carrés qui décroît lentement sur vingt ou trente retards, il faudrait <span class="math inline">q</span> très grand.</p>
+</div>
+<div class="examplebox" title="Ce que cela coûte">
+<div class="pedago-title">
+Ce que cela coûte
+</div>
+<p>Sur le jeu de données du cours, l’ACF de <span class="math inline">r_t^2</span> reste significative jusqu’au retard 20. Il faudrait donc estimer une vingtaine de paramètres <span class="math inline">\alpha_i</span>, tous contraints positifs, tous mal estimés.</p>
+<p>C’est exactement le problème que l’ARMA résolvait par la parcimonie — et la solution sera de même nature.</p>
+</div>
+<div class="ecobox" title="Le pas suivant">
+<div class="pedago-title">
+Le pas suivant
+</div>
+<p>Bollerslev (1986) proposera d’ajouter à l’équation le <strong>passé de <span class="math inline">h_t</span> elle-même</strong>. Deux paramètres suffiront alors là où il en fallait vingt. C’est le GARCH, et c’est le chapitre 6.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 3">
+<div class="pedago-title">
+L’essentiel du chapitre 3
+</div>
+<ul>
+<li>ARCH(1) : <span class="math inline">h_t = \omega + \alpha_1\varepsilon_{t-1}^2</span>. La variance dépend du <strong>carré</strong> du choc précédent.</li>
+<li>Le carré assure trois choses : indifférence au signe, positivité automatique, cohérence dimensionnelle.</li>
+<li>ARCH(q) : <span class="math inline">h_t = \omega + \sum_i \alpha_i\varepsilon_{t-i}^2</span>, avec <span class="math inline">\omega&gt;0</span>, <span class="math inline">\alpha_i \ge 0</span>, <span class="math inline">\alpha_q \neq 0</span>.</li>
+<li>Stationnarité si <span class="math inline">\sum_i\alpha_i &lt; 1</span> ; alors <span class="math inline">\sigma^2 = \omega/(1-\sum\alpha_i)</span>.</li>
+<li>Forme en écart : <span class="math inline">h_t - \sigma^2 = \sum_i\alpha_i(\varepsilon_{t-i}^2 - \sigma^2)</span> — retour à la moyenne sur la variance.</li>
+<li>Deux faiblesses : mémoire trop courte, et symétrie irrémédiable.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers le chapitre 4">
+<div class="pedago-title">
+Vers le chapitre 4
+</div>
+<p>Avant de corriger ces faiblesses, il faut établir ce que l’ARCH produit exactement : ses moments, son kurtosis, ses conditions de stationnarité. C’est là qu’on verra pourquoi les queues épaisses apparaissent sans qu’on les ait demandées.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="../../../cours/modelisation-garch/chapitres/variance-conditionnelle.html">← Chapitre précédent<span class="jm-nav-label">Le cadre de la variance conditionnelle</span></a>
+<a class="jm-nav-suivant" href="../../../cours/modelisation-garch/chapitres/proprietes-arch.html">Chapitre suivant →<span class="jm-nav-label">Propriétés statistiques de l'ARCH</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3 class="anchored">Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/modele-arch.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/modele-arch-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/modele-arch-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/modele-arch.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+
+
+
+</main> <!-- /main -->
+<!-- Mémorise le thème réellement appliqué par Quarto (clair ou sombre) afin
+     que les diaporamas, qui sont des documents séparés, puissent s'y accorder.
+     On lit la classe posée sur <body> plutôt que la clé interne de Quarto :
+     celle-ci vaut « alternate », dont le sens dépend de l'ordre de déclaration
+     des thèmes et pourrait s'inverser à la moindre retouche de _quarto.yml. -->
+<script>
+(function () {
+  function courant() {
+    var b = document.body;
+    if (!b) return null;
+    if (b.classList.contains("quarto-dark")) return "dark";
+    if (b.classList.contains("quarto-light")) return "light";
+    return null;
+  }
+  function memoriser() {
+    var t = courant();
+    if (!t) return;
+    try { localStorage.setItem("jm-theme", t); } catch (e) {}
+  }
+  memoriser();
+  // Le bouton de bascule change la classe de <body> : on suit le changement.
+  if (window.MutationObserver && document.body) {
+    new MutationObserver(memoriser).observe(document.body, {
+      attributes: true, attributeFilter: ["class"]
+    });
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copié");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copié");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jmadkour\.org");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>© 2026 Jaouad Madkour · jmadkour.org</p>
+</div>   
+    <div class="nav-footer-center">
+<p><a href="mailto:jmadkour@uae.ac.ma">jmadkour@uae.ac.ma</a></p>
+</div>
+    <div class="nav-footer-right">
+<p>construit avec Quarto</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="../../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

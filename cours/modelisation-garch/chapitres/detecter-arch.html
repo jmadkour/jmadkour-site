@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Modélisation GARCH de la volatilité – Jaouad Madkour</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../">
+<link href="../../../favicon.png" rel="icon" type="image/png">
+<script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "Pas de résultats",
+    "search-matching-documents-text": "documents trouvés",
+    "search-copy-link-title": "Copier le lien vers la recherche",
+    "search-hide-matches-text": "Cacher les correspondances additionnelles",
+    "search-more-match-text": "correspondance de plus dans ce document",
+    "search-more-matches-text": "correspondances de plus dans ce document",
+    "search-clear-button-title": "Effacer",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Annuler",
+    "search-submit-button-title": "Envoyer",
+    "search-label": "Recherche"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
+     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
+     latérale, l'onglet du navigateur et la recherche du site. Seul son
+     affichage en tête de page, redondant avec la barre latérale, disparaît.
+     Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
+<style>
+  header#title-block-header,
+  .quarto-title-block { display: none; }
+  /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
+  main.content > *:first-child { margin-top: 0.6rem; }
+</style>
+<!-- Lecteur de chapitres à 3 volets : styles partagés par toutes les pages de cours restructurées (volets gauche/droit sur mesure, encadrés pédagogiques repliables) et rendu KaTeX des fragments de chapitre. Voir claude/plan-refonte-pages-cours.md dans le projet Claude pour le contexte. -->
+<style>
+/* =====================================================================
+   Lecteur de chapitres à 3 volets — pages de cours restructurées
+   Palette identique aux diapositives et à la palette pédagogique de
+   l'atelier (preamble.tex / preamble-article.tex / custom.scss) :
+     cdef  #4A3B8C  définition
+     cintu #E08000  intuition
+     cex   #2E8B57  exemple
+     ceco  #1F6FB2  application économique (= $primary du site)
+   Couleurs de thème (fond, bordures, cartes) reprises de
+   theme-light.scss / theme-dark.scss, sélectionnées via les classes
+   body.quarto-light / body.quarto-dark déjà posées par Quarto.
+   ===================================================================== */
+
+/* Quarto ajoute automatiquement les classes .page-columns.page-full à tout
+   bloc de premier niveau dans .content (grid.content-mode: standard, actif
+   sur tout le site) — leur grille (colonnes nommées pour marge/TOC) prend
+   sinon le pas sur la nôtre, à spécificité CSS égale et chargée après.
+   D'où les !important ci-dessous, uniquement sur les deux propriétés en
+   conflit direct.
+   Largeurs : avec page-layout: full (et un DOM valide — voir la note sur
+   les <summary> dans pedago-blocks.lua), .content atteint ~1135px sur ce
+   site, indépendamment de la largeur de la fenêtre (grille à colonnes
+   nommées, non proportionnelle au viewport). Volets latéraux à 240px,
+   assez larges pour les intitulés de chapitre et de ressource sur une ou
+   deux lignes, le volet central se partageant le reste (~590px, proche
+   de la largeur de lecture par défaut de Quarto). */
+.jm-lecteur {
+  display: grid !important;
+  grid-template-columns: 240px minmax(0, 1fr) 240px !important;
+  gap: 1.75rem;
+  align-items: start;
+  margin-top: .6rem;
+  max-width: none !important;
+}
+/* Bootstrap (.page-columns>*{grid-column:body-content-start/body-content-end})
+   place autrement tous les enfants directs dans la même colonne nommée —
+   même spécificité (classe + combinateur enfant), donc on rétablit le
+   placement automatique (1er, 2e, 3e enfant -> colonnes 1, 2, 3). */
+.jm-lecteur > * { grid-column: auto !important; }
+
+@media (max-width: 991px) {
+  .jm-lecteur { grid-template-columns: 1fr !important; }
+  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+}
+
+/* ---------- Volet gauche : sommaire du cours ---------- */
+.jm-lecteur-gauche {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .92rem;
+}
+.jm-lecteur-titre-cours {
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding-bottom: .45rem;
+  margin-bottom: .6rem;
+  border-bottom: 1px solid #dbe6ee;
+}
+.jm-lecteur-gauche ul { list-style: none; padding: 0; margin: 0; }
+.jm-lecteur-gauche li { margin: 0; }
+.jm-lecteur-gauche a {
+  display: block;
+  padding: .4rem .55rem;
+  border-radius: 7px;
+  margin-bottom: .1rem;
+  color: inherit;
+  border-left: 3px solid transparent;
+  line-height: 1.35;
+}
+.jm-lecteur-gauche a:hover { background: rgba(31,111,178,0.08); text-decoration: none; }
+.jm-lecteur-gauche a.jm-actif {
+  background: rgba(31,111,178,0.12);
+  border-left-color: #1f6fb2;
+  color: #1f6fb2;
+  font-weight: 700;
+}
+.jm-lecteur-gauche a.jm-accueil { font-style: italic; }
+
+/* ---------- Volet centre : contenu du chapitre ---------- */
+.jm-lecteur-centre { min-width: 0; }
+.jm-lecteur-centre .quarto-title-block .title { font-size: 1.7rem; }
+.jm-lecteur-centre .quarto-title-block .subtitle { color: #54707f; }
+
+/* ---------- Volet droit : ressources du chapitre ---------- */
+.jm-lecteur-droite {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .88rem;
+  background: #f6f9fb;
+  border: 1px solid #dbe6ee;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+.jm-lecteur-droite h3 {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #54707f;
+  margin: 0 0 .7rem;
+}
+.jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
+.jm-lecteur-droite li { margin-bottom: .55rem; }
+.jm-lecteur-droite a.jm-ressource {
+  color: #1f6fb2;
+  font-weight: 600;
+}
+.jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+.jm-lecteur-droite .jm-indisponible {
+  color: #9aa9b2; font-weight: 500; cursor: default;
+}
+.jm-lecteur-droite .jm-reserve {
+  color: #9aa9b2; font-style: italic;
+}
+
+/* ---------- Navigation précédent / suivant ---------- */
+.jm-lecteur-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin: 2.2rem 0 .5rem; padding-top: 1rem;
+  border-top: 1px solid #dbe6ee;
+  font-size: .92rem;
+}
+.jm-lecteur-nav a { color: #1f6fb2; font-weight: 600; }
+.jm-lecteur-nav .jm-nav-suivant { margin-left: auto; text-align: right; }
+.jm-lecteur-nav .jm-nav-label {
+  display: block; font-size: .76rem; font-weight: 400; color: #54707f;
+}
+
+/* ---------- Encadrés pédagogiques dans le volet centre ---------- */
+/* Reprend le mécanisme de custom.scss (atelier), adapté en <details> */
+.jm-lecteur-centre details.definitionbox,
+.jm-lecteur-centre details.intuitionbox,
+.jm-lecteur-centre details.examplebox,
+.jm-lecteur-centre details.ecobox {
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0.9em 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+.jm-lecteur-centre summary.pedago-title {
+  font-weight: 700;
+  color: #fff;
+  padding: .45em .9em;
+  cursor: pointer;
+  list-style: none;
+}
+.jm-lecteur-centre summary.pedago-title::-webkit-details-marker { display: none; }
+.jm-lecteur-centre summary.pedago-title::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: .5em;
+  transition: transform .15s ease;
+}
+.jm-lecteur-centre details[open] summary.pedago-title::before { transform: rotate(90deg); }
+.jm-lecteur-centre .pedago-body { padding: .7em 1em .9em; }
+.jm-lecteur-centre .pedago-body > *:first-child { margin-top: 0; }
+.jm-lecteur-centre .pedago-body > *:last-child { margin-bottom: 0; }
+
+.jm-lecteur-centre details.definitionbox { background: rgba(74,59,140,0.07); }
+.jm-lecteur-centre details.definitionbox summary.pedago-title { background: #4A3B8C; }
+.jm-lecteur-centre details.intuitionbox  { background: rgba(224,128,0,0.09); }
+.jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #E08000; }
+.jm-lecteur-centre details.examplebox    { background: rgba(46,139,87,0.07); }
+.jm-lecteur-centre details.examplebox summary.pedago-title { background: #2E8B57; }
+.jm-lecteur-centre details.ecobox        { background: rgba(31,111,178,0.07); }
+.jm-lecteur-centre details.ecobox summary.pedago-title { background: #1F6FB2; }
+
+/* Colonnes (definitionbox à côté d'une figure, etc.) : héritées du rendu
+   Quarto (div.columns{display:flex} / inline style width sur div.column). */
+.jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
+.jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
+
+/* =====================================================================
+   Mode sombre — posé par Quarto sur <body class="quarto-dark">
+   ===================================================================== */
+body.quarto-dark .jm-lecteur-titre-cours { border-bottom-color: #20455a; }
+body.quarto-dark .jm-lecteur-gauche a:hover { background: rgba(58,160,230,0.12); }
+body.quarto-dark .jm-lecteur-gauche a.jm-actif {
+  background: rgba(58,160,230,0.16);
+  border-left-color: #3aa0e6;
+  color: #3aa0e6;
+}
+body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite {
+  background: #13303d;
+  border-color: #20455a;
+}
+body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-droite .jm-indisponible,
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
+body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
+
+body.quarto-dark .jm-lecteur-centre details.definitionbox { background: rgba(122,104,206,0.16); }
+body.quarto-dark .jm-lecteur-centre details.definitionbox summary.pedago-title { background: #6252a8; }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox  { background: rgba(224,148,74,0.16); }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #c47a2e; }
+body.quarto-dark .jm-lecteur-centre details.examplebox    { background: rgba(55,180,126,0.14); }
+body.quarto-dark .jm-lecteur-centre details.examplebox summary.pedago-title { background: #37b47e; }
+body.quarto-dark .jm-lecteur-centre details.ecobox        { background: rgba(58,160,230,0.14); }
+body.quarto-dark .jm-lecteur-centre details.ecobox summary.pedago-title { background: #3aa0e6; }
+</style>
+<!-- Rendu KaTeX pour le volet central : les fragments de chapitre sont
+     extraits (BeautifulSoup) du rendu Quarto de l'atelier et insérés tels
+     quels en HTML brut dans la page du site. Le contenu mathématique y est
+     déjà mis en forme (spans <span class="math inline|display">…</span>,
+     source LaTeX brute), mais Quarto ne le détecte pas à la compilation de
+     CETTE page (le bloc {=html} n'est pas réanalysé comme du Markdown), et
+     n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
+     ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
+     pages où il détecte des maths (cf. html-math-method: katex du site) :
+     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     de tous les éléments .math qui les rend en place. -->
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+</script>
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+
+<meta property="og:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
+<meta property="og:description" content="Détecter et identifier un effet ARCH">
+<meta property="og:site_name" content="Jaouad Madkour">
+<meta name="twitter:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
+<meta name="twitter:description" content="Détecter et identifier un effet ARCH">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = true;
+    const darkModeDefault = authorPrefersDark;
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+            <div id="quarto-search" class="" title="Recherche"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Basculer la navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../../profile.html"> 
+<span class="menu-text">Jaouad Madkour</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../index.html"> 
+<span class="menu-text">Accueil</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../licence.html"> 
+<span class="menu-text">Licence</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../master.html"> 
+<span class="menu-text">Master</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../doctorat.html"> 
+<span class="menu-text">Doctorat</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../informatique.html"> 
+<span class="menu-text">Informatique</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../recherche.html"> 
+<span class="menu-text">Publications</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../about.html"> 
+<span class="menu-text">À propos</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">🌐</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-">    
+        <li>
+    <a class="dropdown-item" href="../../../index.html">
+ <span class="dropdown-text">Français</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../en/index.html">
+ <span class="dropdown-text">English</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../es/index.html">
+ <span class="dropdown-text">Español</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../ar/index.html">
+ <span class="dropdown-text">العربية</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://youtube.com/@JaouadMadkour" target="_blank"> <i class="bi bi-youtube" role="img" aria-label="YouTube">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.facebook.com/jmadkour" target="_blank"> <i class="bi bi-facebook" role="img" aria-label="Facebook">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.instagram.com/jaouad_madkour/" target="_blank"> <i class="bi bi-instagram" role="img" aria-label="Instagram">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/jmadkour"> <i class="bi bi-github" role="img" aria-label="GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Basculer le mode sombre"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Basculer en mode lecteur">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content column-page" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Détecter et identifier un effet ARCH</p>
+</div>
+
+
+
+<div class="quarto-title-meta column-page">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="jm-lecteur">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<ul>
+<li><a class="jm-accueil" href="../../../cours/modelisation-garch/index.html">Présentation du cours</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/faits-stylises.html">1. Mandelbrot et les faits stylisés des rentabilités</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/clusters-effet-levier.html">2. Regroupement de la volatilité et effet de levier</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/variance-conditionnelle.html">3. Le cadre de la variance conditionnelle</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/modele-arch.html">4. Le modèle ARCH(q) d'Engle</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/proprietes-arch.html">5. Propriétés statistiques de l'ARCH</a></li>
+<li><a class="jm-actif" href="../../../cours/modelisation-garch/chapitres/detecter-arch.html">6. Détecter et identifier un effet ARCH</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/modele-garch.html">7. Le modèle GARCH(p,q) de Bollerslev</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/persistance.html">8. Stationnarité, persistance et variance de long terme</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/dualite-arma.html">9. La dualité GARCH et ARMA sur les carrés</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/loi-innovations.html">10. La loi des innovations</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/egarch.html">11. L'effet de levier et l'EGARCH de Nelson</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/gjr-tgarch.html">12. GJR-GARCH, TGARCH et la courbe d'impact</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/igarch-memoire-longue.html">13. IGARCH, GARCH-M et la mémoire longue</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/estimation.html">14. L'estimation par quasi-maximum de vraisemblance</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/validation.html">15. La validation d'un modèle de volatilité</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/prevision-volatilite.html">16. La prévision de volatilité</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/value-at-risk.html">17. De la volatilité à la Value at Risk</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/mise-en-oeuvre-r.html">18. Mise en œuvre sur R</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/mise-en-oeuvre-python.html">19. Mise en œuvre sur Python</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-r.html">20. Étude de cas sur données réelles — R</a></li>
+<li><a class="" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-python.html">21. Étude de cas sur données réelles — Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
+
+<header class="quarto-title-block default" id="title-block-header">
+<div class="quarto-title">
+<h1 class="title">Modélisation GARCH de la volatilité</h1>
+<p class="subtitle lead">Chapitre 5 : Détecter et identifier un effet ARCH</p>
+</div>
+<div class="quarto-title-meta-author column-page">
+<div class="quarto-title-meta-heading">Auteur·rice</div>
+<div class="quarto-title-meta-heading">Affiliation</div>
+<div class="quarto-title-meta-contents">
+<p class="author">Jaouad Madkour </p>
+</div>
+<div class="quarto-title-meta-contents">
+<p class="affiliation">
+            Faculté d’Économie et de Gestion de Tanger
+          </p>
+</div>
+</div>
+<div class="quarto-title-meta">
+<div>
+<div class="quarto-title-meta-heading">Date de publication</div>
+<div class="quarto-title-meta-contents">
+<p class="date">25 septembre 2026</p>
+</div>
+</div>
+</div>
+</header>
+<section class="level1" id="avant-de-commencer">
+<h1>Avant de commencer</h1>
+<section class="level2" id="létape-didentification-transposée">
+<h2 class="anchored" data-anchor-id="létape-didentification-transposée">L’étape d’identification, transposée</h2>
+<div class="intuitionbox" title="La démarche de Box et Jenkins reste valable">
+<div class="pedago-title">
+La démarche de Box et Jenkins reste valable
+</div>
+<p>Identifier, estimer, valider. La seule différence : on ne travaille plus sur <span class="math inline">r_t</span> mais sur <span class="math inline">\hat\varepsilon_t^2</span> — les carrés des résidus de l’équation de moyenne.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="lordre-des-opérations">
+<h1>L’ordre des opérations</h1>
+<section class="level2" id="ne-jamais-commencer-par-la-variance">
+<h2 class="anchored" data-anchor-id="ne-jamais-commencer-par-la-variance">Ne jamais commencer par la variance</h2>
+<div class="definitionbox" title="La séquence obligatoire">
+<div class="pedago-title">
+La séquence obligatoire
+</div>
+<ol type="1">
+<li>Estimer et valider l’<strong>équation de moyenne</strong> (ARMA) ;</li>
+<li>récupérer ses résidus <span class="math inline">\hat\varepsilon_t</span> ;</li>
+<li><strong>puis seulement</strong> examiner <span class="math inline">\hat\varepsilon_t^2</span>.</li>
+</ol>
+</div>
+<div class="ecobox" title="Pourquoi cet ordre est impératif">
+<div class="pedago-title">
+Pourquoi cet ordre est impératif
+</div>
+<p>Une autocorrélation de la moyenne non traitée se retrouve dans les résidus, et de là dans leurs carrés. On conclurait à un effet ARCH là où il n’y a qu’un AR mal spécifié.</p>
+<p>Sur données financières quotidiennes, l’étape 1 aboutit presque toujours à <span class="math inline">r_t = \theta + \varepsilon_t</span> — mais il faut l’avoir vérifié.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="le-test-arch-de-engle">
+<h1>Le test ARCH de Engle</h1>
+<section class="level2" id="le-principe">
+<h2 class="anchored" data-anchor-id="le-principe">Le principe</h2>
+<div class="definitionbox" title="Test du multiplicateur de Lagrange">
+<div class="pedago-title">
+Test du multiplicateur de Lagrange
+</div>
+<p>Régresser le carré des résidus sur ses propres retards : <span class="math display"> \hat\varepsilon_t^2 = a_0 + a_1\hat\varepsilon_{t-1}^2 + \dots + a_m\hat\varepsilon_{t-m}^2 + u_t . </span> <span class="math display"> H_0 : a_1 = \dots = a_m = 0 \quad \text{(homoscédasticité conditionnelle)}. </span> La statistique est <span class="math inline">T\!\cdot\!R^2 \sim \chi^2_m</span> sous <span class="math inline">H_0</span>.</p>
+</div>
+<div class="intuitionbox" title="Pourquoi $T!\cdot!R^2$">
+<div class="pedago-title">
+Pourquoi <span class="math inline">T!\cdot!R^2</span>
+</div>
+<p>Sous <span class="math inline">H_0</span>, aucun retard n’explique quoi que ce soit, donc <span class="math inline">R^2 \approx 0</span>. Plus les carrés passés expliquent le carré présent, plus <span class="math inline">R^2</span> monte — et <span class="math inline">T\!\cdot\!R^2</span> avec lui. C’est la forme habituelle d’un test LM.</p>
+</div>
+</section>
+<section class="level2" id="sur-les-données-du-cours">
+<h2 class="anchored" data-anchor-id="sur-les-données-du-cours">Sur les données du cours</h2>
+<div class="examplebox" title="Résultat">
+<div class="pedago-title">
+Résultat
+</div>
+<p><span class="math display"> T\!\cdot\!R^2 = 274{,}5 \quad \text{avec } m = 12, \qquad p\text{-valeur} &lt; 10^{-50} . </span> La valeur critique du <span class="math inline">\chi^2_{12}</span> à 5 % est <span class="math inline">21{,}0</span>. On rejette massivement.</p>
+</div>
+<div class="ecobox" title="Ce résultat est la règle, non l'exception">
+<div class="pedago-title">
+Ce résultat est la règle, non l’exception
+</div>
+<p>Sur des rentabilités quotidiennes, le test ARCH est <strong>toujours</strong> rejeté, quel que soit l’actif et quelle que soit la période. Un résultat non significatif doit faire soupçonner une erreur de manipulation — série mensuelle, échantillon trop court, ou données déjà lissées.</p>
+</div>
+</section>
+<section class="level2" id="le-test-de-ljung-box-sur-les-carrés">
+<h2 class="anchored" data-anchor-id="le-test-de-ljung-box-sur-les-carrés">Le test de Ljung-Box sur les carrés</h2>
+<div class="definitionbox" title="Une alternative équivalente en pratique">
+<div class="pedago-title">
+Une alternative équivalente en pratique
+</div>
+<p>Appliquer la statistique de Ljung-Box du cours ARMA à la série <span class="math inline">\hat\varepsilon_t^2</span> : <span class="math display"> Q_{\mathrm{LB}}(m) = T(T+2)\sum_{k=1}^{m}\frac{\hat\rho_k^2\big(\hat\varepsilon^2\big)}{T-k} \ \sim\ \chi^2_m . </span></p>
+</div>
+<div class="examplebox" title="Sur les données du cours">
+<div class="pedago-title">
+Sur les données du cours
+</div>
+<p><span class="math inline">Q_{\mathrm{LB}}(20) = 968{,}1</span> contre une valeur critique de <span class="math inline">31{,}4</span>.</p>
+</div>
+<div class="intuitionbox" title="Lequel employer">
+<div class="pedago-title">
+Lequel employer
+</div>
+<p>Les deux, et ils concordent presque toujours. Le test ARCH est plus <strong>ciblé</strong> — il teste la forme autorégressive précise du modèle ; Ljung-Box est plus <strong>général</strong> — il détecte toute dépendance linéaire des carrés. Les logiciels affichent souvent les deux.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="identifier-lordre">
+<h1>Identifier l’ordre</h1>
+<section class="level2" id="le-corrélogramme-des-carrés">
+<h2 class="anchored" data-anchor-id="le-corrélogramme-des-carrés">Le corrélogramme des carrés</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><svg height="129.14pt" id="svg_3a54eea8bd4b98b381d1" role="img" style="width:94.0%" viewbox="0 0 356.34 129.14" width="356.34pt">
+<defs>
+<g>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph0-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph0-1" overflow="visible">
+<path d="M 0.96875 -2.734375 C 1.234375 -2.671875 1.453125 -2.671875 1.515625 -2.671875 C 1.84375 -2.671875 2.09375 -2.765625 2.21875 -2.828125 C 2.34375 -2.890625 2.671875 -3.109375 2.671875 -3.21875 C 2.671875 -3.28125 2.625 -3.296875 2.609375 -3.296875 C 2.59375 -3.296875 2.59375 -3.296875 2.53125 -3.28125 C 2.34375 -3.203125 2.046875 -3.140625 1.71875 -3.140625 C 1.4375 -3.140625 1.15625 -3.1875 0.890625 -3.28125 C 0.84375 -3.296875 0.828125 -3.296875 0.828125 -3.296875 C 0.75 -3.296875 0.75 -3.234375 0.75 -3.15625 L 0.75 -1.671875 C 0.75 -1.59375 0.75 -1.53125 0.84375 -1.53125 C 0.90625 -1.53125 0.90625 -1.53125 0.953125 -1.59375 C 1.140625 -1.8125 1.40625 -1.921875 1.734375 -1.921875 C 2.03125 -1.921875 2.1875 -1.75 2.25 -1.640625 C 2.375 -1.46875 2.390625 -1.25 2.390625 -1.015625 C 2.390625 -0.8125 2.375 -0.53125 2.171875 -0.34375 C 1.953125 -0.109375 1.671875 -0.09375 1.5625 -0.09375 C 1.25 -0.09375 0.875 -0.234375 0.734375 -0.53125 C 0.9375 -0.546875 1 -0.6875 1 -0.796875 C 1 -0.953125 0.890625 -1.078125 0.734375 -1.078125 C 0.625 -1.078125 0.453125 -1.015625 0.453125 -0.78125 C 0.453125 -0.296875 0.921875 0.109375 1.578125 0.109375 C 2.3125 0.109375 2.921875 -0.390625 2.921875 -1 C 2.921875 -1.5625 2.4375 -2.078125 1.75 -2.078125 C 1.4375 -2.078125 1.1875 -2 0.96875 -1.84375 Z M 0.96875 -2.734375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph0-2" overflow="visible">
+<path d="M 1.96875 -3.15625 C 1.96875 -3.296875 1.953125 -3.296875 1.796875 -3.296875 C 1.4375 -2.984375 0.890625 -2.984375 0.796875 -2.984375 L 0.703125 -2.984375 L 0.703125 -2.765625 L 0.796875 -2.765625 C 0.90625 -2.765625 1.234375 -2.78125 1.515625 -2.90625 L 1.515625 -0.421875 C 1.515625 -0.265625 1.515625 -0.21875 0.984375 -0.21875 L 0.75 -0.21875 L 0.75 0 C 1.015625 -0.015625 1.453125 -0.015625 1.75 -0.015625 C 2.03125 -0.015625 2.46875 -0.015625 2.75 0 L 2.75 -0.21875 L 2.5 -0.21875 C 1.96875 -0.21875 1.96875 -0.265625 1.96875 -0.421875 Z M 1.96875 -3.15625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph0-3" overflow="visible">
+<path d="M 2.984375 -1.578125 C 2.984375 -1.9375 2.984375 -3.296875 1.6875 -3.296875 C 0.390625 -3.296875 0.390625 -1.9375 0.390625 -1.578125 C 0.390625 -1.21875 0.390625 0.109375 1.6875 0.109375 C 2.984375 0.109375 2.984375 -1.21875 2.984375 -1.578125 Z M 1.6875 -0.046875 C 1.5 -0.046875 1.078125 -0.125 0.953125 -0.625 C 0.890625 -0.890625 0.890625 -1.234375 0.890625 -1.640625 C 0.890625 -2.015625 0.890625 -2.359375 0.96875 -2.640625 C 1.09375 -3.046875 1.46875 -3.140625 1.6875 -3.140625 C 2.046875 -3.140625 2.3125 -2.953125 2.40625 -2.59375 C 2.484375 -2.34375 2.484375 -1.9375 2.484375 -1.640625 C 2.484375 -1.3125 2.484375 -0.90625 2.40625 -0.609375 C 2.28125 -0.125 1.875 -0.046875 1.6875 -0.046875 Z M 1.6875 -0.046875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph0-4" overflow="visible">
+<path d="M 2.921875 -0.953125 L 2.703125 -0.953125 C 2.6875 -0.859375 2.640625 -0.5625 2.5625 -0.5 C 2.53125 -0.46875 2.109375 -0.46875 2.03125 -0.46875 L 1.0625 -0.46875 C 1.390625 -0.71875 1.765625 -1 2.0625 -1.1875 C 2.5 -1.5 2.921875 -1.78125 2.921875 -2.3125 C 2.921875 -2.953125 2.3125 -3.296875 1.609375 -3.296875 C 0.9375 -3.296875 0.453125 -2.90625 0.453125 -2.421875 C 0.453125 -2.171875 0.671875 -2.125 0.734375 -2.125 C 0.875 -2.125 1.03125 -2.21875 1.03125 -2.421875 C 1.03125 -2.59375 0.90625 -2.6875 0.75 -2.703125 C 0.890625 -2.9375 1.171875 -3.078125 1.5 -3.078125 C 1.984375 -3.078125 2.390625 -2.796875 2.390625 -2.3125 C 2.390625 -1.890625 2.09375 -1.578125 1.71875 -1.25 L 0.515625 -0.234375 C 0.453125 -0.1875 0.453125 -0.1875 0.453125 -0.15625 L 0.453125 0 L 2.75 0 Z M 2.921875 -0.953125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph0-5" overflow="visible">
+<path d="M 3.0625 -0.8125 L 3.0625 -1.03125 L 2.4375 -1.03125 L 2.4375 -3.203125 C 2.4375 -3.328125 2.4375 -3.359375 2.296875 -3.359375 C 2.203125 -3.359375 2.203125 -3.34375 2.140625 -3.28125 L 0.3125 -1.03125 L 0.3125 -0.8125 L 1.96875 -0.8125 L 1.96875 -0.421875 C 1.96875 -0.265625 1.96875 -0.21875 1.53125 -0.21875 L 1.359375 -0.21875 L 1.359375 0 C 1.59375 -0.015625 1.90625 -0.015625 2.203125 -0.015625 C 2.484375 -0.015625 2.796875 -0.015625 3.046875 0 L 3.046875 -0.21875 L 2.875 -0.21875 C 2.4375 -0.21875 2.4375 -0.265625 2.4375 -0.421875 L 2.4375 -0.8125 Z M 2 -2.8125 L 2 -1.03125 L 0.546875 -1.03125 Z M 2 -2.8125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph1-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph1-1" overflow="visible">
+<path d="M 1.4375 -0.296875 C 1.4375 -0.46875 1.296875 -0.609375 1.140625 -0.609375 C 0.96875 -0.609375 0.828125 -0.46875 0.828125 -0.296875 C 0.828125 -0.140625 0.96875 0 1.140625 0 C 1.296875 0 1.4375 -0.140625 1.4375 -0.296875 Z M 1.4375 -0.296875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph1-2" overflow="visible">
+<path d="M 1.5625 -1.90625 L 2.140625 -1.90625 C 2.25 -1.90625 2.25 -1.921875 2.28125 -1.9375 C 2.296875 -1.953125 2.3125 -2.015625 2.3125 -2.046875 C 2.3125 -2.140625 2.234375 -2.140625 2.15625 -2.140625 L 1.609375 -2.140625 L 1.71875 -2.546875 C 1.75 -2.671875 1.796875 -2.890625 1.796875 -2.921875 C 1.796875 -3.015625 1.734375 -3.09375 1.625 -3.09375 C 1.53125 -3.09375 1.421875 -3.046875 1.375 -2.90625 C 1.359375 -2.828125 1.40625 -3.0625 1.171875 -2.140625 L 0.59375 -2.140625 C 0.484375 -2.140625 0.421875 -2.140625 0.421875 -2 C 0.421875 -1.90625 0.484375 -1.90625 0.578125 -1.90625 L 1.125 -1.90625 L 0.828125 -0.75 C 0.8125 -0.640625 0.765625 -0.484375 0.765625 -0.421875 C 0.765625 -0.140625 1.03125 0.046875 1.375 0.046875 C 1.96875 0.046875 2.34375 -0.609375 2.34375 -0.71875 C 2.34375 -0.78125 2.265625 -0.78125 2.234375 -0.78125 C 2.15625 -0.78125 2.15625 -0.765625 2.125 -0.703125 C 1.96875 -0.34375 1.65625 -0.109375 1.390625 -0.109375 C 1.234375 -0.109375 1.1875 -0.234375 1.1875 -0.375 C 1.1875 -0.453125 1.1875 -0.46875 1.203125 -0.515625 Z M 1.5625 -1.90625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph2-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph2-1" overflow="visible">
+<path d="M 2.8125 -2.609375 C 2.8125 -2.84375 2.59375 -3.046875 2.265625 -3.046875 C 1.921875 -3.046875 1.546875 -2.84375 1.328125 -2.3125 L 1.328125 -3.046875 L 0.34375 -2.96875 L 0.34375 -2.734375 C 0.796875 -2.734375 0.859375 -2.671875 0.859375 -2.34375 L 0.859375 -0.546875 C 0.859375 -0.25 0.796875 -0.25 0.34375 -0.25 L 0.34375 0 C 0.375 0 0.84375 -0.03125 1.125 -0.03125 L 2.03125 0 L 2.03125 -0.25 L 1.890625 -0.25 C 1.375 -0.25 1.375 -0.328125 1.375 -0.5625 L 1.375 -1.578125 C 1.375 -2.15625 1.640625 -2.859375 2.3125 -2.859375 C 2.25 -2.8125 2.1875 -2.71875 2.1875 -2.609375 C 2.1875 -2.375 2.375 -2.296875 2.5 -2.296875 C 2.671875 -2.296875 2.8125 -2.40625 2.8125 -2.609375 Z M 2.8125 -2.609375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph2-2" overflow="visible">
+<path d="M 3.234375 -0.828125 C 3.234375 -0.859375 3.21875 -0.921875 3.125 -0.921875 C 3.03125 -0.921875 3.015625 -0.890625 3 -0.8125 C 2.78125 -0.25 2.25 -0.15625 2 -0.15625 C 1.6875 -0.15625 1.375 -0.296875 1.15625 -0.5625 C 0.90625 -0.890625 0.90625 -1.3125 0.90625 -1.578125 L 3.046875 -1.578125 C 3.1875 -1.578125 3.234375 -1.578125 3.234375 -1.734375 C 3.234375 -2.34375 2.90625 -3.09375 1.875 -3.09375 C 0.96875 -3.09375 0.265625 -2.375 0.265625 -1.515625 C 0.265625 -0.640625 1.03125 0.0625 1.953125 0.0625 C 2.890625 0.0625 3.234375 -0.671875 3.234375 -0.828125 Z M 2.75 -1.765625 L 0.90625 -1.765625 C 0.984375 -2.734375 1.609375 -2.890625 1.875 -2.890625 C 2.71875 -2.890625 2.75 -1.9375 2.75 -1.765625 Z M 2.75 -1.765625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph2-3" overflow="visible">
+<path d="M 2.59375 -0.875 L 2.59375 -1.25 L 2.359375 -1.25 L 2.359375 -0.875 C 2.359375 -0.40625 2.140625 -0.15625 1.875 -0.15625 C 1.390625 -0.15625 1.390625 -0.734375 1.390625 -0.859375 L 1.390625 -2.734375 L 2.46875 -2.734375 L 2.46875 -2.984375 L 1.390625 -2.984375 L 1.390625 -4.25 L 1.15625 -4.25 C 1.15625 -3.640625 0.859375 -2.953125 0.203125 -2.921875 L 0.203125 -2.734375 L 0.84375 -2.734375 L 0.84375 -0.859375 C 0.84375 -0.09375 1.421875 0.0625 1.8125 0.0625 C 2.28125 0.0625 2.59375 -0.328125 2.59375 -0.875 Z M 2.59375 -0.875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph2-4" overflow="visible">
+<path d="M 3.765625 -0.625 L 3.765625 -1 L 3.53125 -1 L 3.53125 -0.625 C 3.53125 -0.5625 3.53125 -0.234375 3.28125 -0.234375 C 3.015625 -0.234375 3.015625 -0.546875 3.015625 -0.640625 L 3.015625 -1.859375 C 3.015625 -2.21875 3.015625 -2.484375 2.703125 -2.734375 C 2.421875 -2.96875 2.078125 -3.09375 1.671875 -3.09375 C 1.015625 -3.09375 0.546875 -2.84375 0.546875 -2.421875 C 0.546875 -2.1875 0.703125 -2.078125 0.890625 -2.078125 C 1.078125 -2.078125 1.21875 -2.21875 1.21875 -2.40625 C 1.21875 -2.515625 1.15625 -2.671875 0.96875 -2.71875 C 1.21875 -2.890625 1.625 -2.890625 1.65625 -2.890625 C 2.046875 -2.890625 2.46875 -2.640625 2.46875 -2.0625 L 2.46875 -1.84375 C 2.09375 -1.828125 1.640625 -1.8125 1.125 -1.625 C 0.5 -1.390625 0.3125 -1.015625 0.3125 -0.703125 C 0.3125 -0.109375 1.03125 0.0625 1.515625 0.0625 C 2.078125 0.0625 2.40625 -0.25 2.546875 -0.515625 C 2.578125 -0.234375 2.765625 0.03125 3.078125 0.03125 C 3.078125 0.03125 3.765625 0.03125 3.765625 -0.625 Z M 2.46875 -0.96875 C 2.46875 -0.3125 1.890625 -0.125 1.578125 -0.125 C 1.21875 -0.125 0.890625 -0.359375 0.890625 -0.703125 C 0.890625 -1.078125 1.21875 -1.609375 2.46875 -1.65625 Z M 2.46875 -0.96875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph2-5" overflow="visible">
+<path d="M 4.015625 0 L 4.015625 -0.25 C 3.5625 -0.25 3.5 -0.296875 3.5 -0.640625 L 3.5 -4.796875 L 2.46875 -4.734375 L 2.46875 -4.484375 C 2.921875 -4.484375 2.984375 -4.4375 2.984375 -4.09375 L 2.984375 -2.65625 C 2.734375 -2.90625 2.390625 -3.046875 2.015625 -3.046875 C 1.09375 -3.046875 0.3125 -2.359375 0.3125 -1.484375 C 0.3125 -0.625 1.046875 0.0625 1.9375 0.0625 C 2.5 0.0625 2.84375 -0.234375 2.953125 -0.359375 L 2.953125 0.0625 Z M 2.953125 -0.734375 C 2.78125 -0.40625 2.421875 -0.125 1.96875 -0.125 C 1.578125 -0.125 1.3125 -0.359375 1.171875 -0.546875 C 1.03125 -0.765625 0.953125 -1.03125 0.953125 -1.484375 C 0.953125 -1.640625 0.953125 -2.15625 1.234375 -2.484375 C 1.515625 -2.796875 1.84375 -2.859375 2.046875 -2.859375 C 2.375 -2.859375 2.671875 -2.703125 2.875 -2.453125 C 2.953125 -2.34375 2.953125 -2.34375 2.953125 -2.203125 Z M 2.953125 -0.734375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph3-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph3-1" overflow="visible">
+<path d="M 2.171875 -4.59375 C 2.171875 -4.609375 2.1875 -4.703125 2.1875 -4.703125 C 2.1875 -4.734375 2.171875 -4.796875 2.078125 -4.796875 C 1.9375 -4.796875 1.375 -4.75 1.203125 -4.734375 C 1.140625 -4.734375 1.046875 -4.71875 1.046875 -4.578125 C 1.046875 -4.484375 1.140625 -4.484375 1.21875 -4.484375 C 1.5625 -4.484375 1.5625 -4.4375 1.5625 -4.375 C 1.5625 -4.328125 1.546875 -4.28125 1.53125 -4.21875 L 0.546875 -0.296875 C 0.515625 -0.1875 0.515625 -0.171875 0.515625 -0.15625 C 0.515625 -0.046875 0.609375 0.0625 0.75 0.0625 C 0.9375 0.0625 1.03125 -0.0625 1.078125 -0.21875 C 1.09375 -0.25 1.390625 -1.46875 1.40625 -1.5625 C 1.90625 -1.515625 2.296875 -1.359375 2.296875 -1 C 2.296875 -0.96875 2.296875 -0.921875 2.28125 -0.859375 C 2.25 -0.75 2.25 -0.71875 2.25 -0.640625 C 2.25 -0.15625 2.65625 0.0625 2.984375 0.0625 C 3.65625 0.0625 3.875 -0.984375 3.875 -0.984375 C 3.875 -1.078125 3.78125 -1.078125 3.765625 -1.078125 C 3.65625 -1.078125 3.65625 -1.046875 3.625 -0.90625 C 3.53125 -0.609375 3.34375 -0.125 3.015625 -0.125 C 2.828125 -0.125 2.765625 -0.296875 2.765625 -0.484375 C 2.765625 -0.609375 2.765625 -0.609375 2.8125 -0.796875 C 2.8125 -0.8125 2.84375 -0.9375 2.84375 -1.015625 C 2.84375 -1.625 2.015625 -1.71875 1.71875 -1.75 C 1.921875 -1.875 2.1875 -2.09375 2.296875 -2.203125 C 2.65625 -2.53125 3 -2.859375 3.390625 -2.859375 C 3.46875 -2.859375 3.5625 -2.84375 3.609375 -2.765625 C 3.3125 -2.71875 3.25 -2.484375 3.25 -2.375 C 3.25 -2.234375 3.375 -2.125 3.53125 -2.125 C 3.71875 -2.125 3.921875 -2.28125 3.921875 -2.5625 C 3.921875 -2.796875 3.765625 -3.046875 3.390625 -3.046875 C 3 -3.046875 2.640625 -2.765625 2.28125 -2.4375 C 2 -2.171875 1.765625 -1.953125 1.484375 -1.828125 Z M 2.171875 -4.59375 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph3-2" overflow="visible">
+<path d="M 1.625 -1.390625 C 1.640625 -1.4375 1.796875 -2.0625 1.8125 -2.09375 C 1.828125 -2.15625 2.015625 -2.5 2.25 -2.671875 C 2.3125 -2.71875 2.5 -2.859375 2.796875 -2.859375 C 2.875 -2.859375 3.046875 -2.859375 3.1875 -2.765625 C 2.96875 -2.703125 2.875 -2.5 2.875 -2.375 C 2.875 -2.234375 3 -2.125 3.15625 -2.125 C 3.3125 -2.125 3.546875 -2.25 3.546875 -2.546875 C 3.546875 -2.90625 3.15625 -3.046875 2.8125 -3.046875 C 2.453125 -3.046875 2.140625 -2.90625 1.828125 -2.5625 C 1.703125 -2.984375 1.28125 -3.046875 1.125 -3.046875 C 0.859375 -3.046875 0.6875 -2.890625 0.578125 -2.703125 C 0.421875 -2.421875 0.328125 -2.03125 0.328125 -2 C 0.328125 -1.90625 0.421875 -1.90625 0.4375 -1.90625 C 0.546875 -1.90625 0.546875 -1.921875 0.59375 -2.109375 C 0.703125 -2.53125 0.828125 -2.859375 1.09375 -2.859375 C 1.28125 -2.859375 1.328125 -2.703125 1.328125 -2.515625 C 1.328125 -2.390625 1.265625 -2.125 1.21875 -1.9375 C 1.171875 -1.765625 1.09375 -1.46875 1.0625 -1.328125 L 0.84375 -0.4375 C 0.8125 -0.34375 0.78125 -0.171875 0.78125 -0.15625 C 0.78125 0 0.90625 0.0625 1.015625 0.0625 C 1.109375 0.0625 1.25 0 1.3125 -0.125 C 1.328125 -0.171875 1.390625 -0.484375 1.4375 -0.65625 Z M 1.625 -1.390625 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph4-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph4-1" overflow="visible">
+<path d="M 1.109375 -0.375 C 1.21875 -0.34375 1.25 -0.34375 1.265625 -0.34375 C 1.40625 -0.34375 1.484375 -0.46875 1.484375 -0.578125 C 1.484375 -0.828125 1.28125 -0.890625 1.046875 -0.9375 C 0.6875 -1.03125 -0.09375 -1.21875 -0.359375 -1.296875 C -0.25 -1.359375 0.0625 -1.578125 0.0625 -2.0625 C 0.0625 -2.9375 -0.875 -3.890625 -1.875 -3.890625 C -2.609375 -3.890625 -3.046875 -3.390625 -3.046875 -2.78125 C -3.046875 -2.109375 -2.453125 -1.265625 -1.484375 -1.03125 Z M -0.125 -2.046875 C -0.125 -1.53125 -0.640625 -1.390625 -0.734375 -1.390625 C -0.734375 -1.390625 -0.890625 -1.421875 -0.96875 -1.453125 C -1.828125 -1.65625 -1.984375 -1.703125 -2.296875 -1.890625 C -2.65625 -2.140625 -2.859375 -2.484375 -2.859375 -2.765625 C -2.859375 -3.046875 -2.65625 -3.328125 -2.15625 -3.328125 C -1.84375 -3.328125 -1.078125 -3.140625 -0.734375 -2.921875 C -0.234375 -2.609375 -0.125 -2.265625 -0.125 -2.046875 Z M -0.125 -2.046875 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph5-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph5-1" overflow="visible">
+<path d="M -3.25 -1.828125 C -3.3125 -1.84375 -3.328125 -1.84375 -3.359375 -1.84375 C -3.4375 -1.84375 -3.4375 -1.765625 -3.4375 -1.6875 L -3.390625 -1.078125 C -3.390625 -1 -3.375 -0.984375 -3.359375 -0.953125 C -3.328125 -0.9375 -3.28125 -0.921875 -3.25 -0.921875 C -3.15625 -0.921875 -3.15625 -1 -3.15625 -1.078125 C -3.15625 -1.078125 -3.15625 -1.171875 -3.15625 -1.25 C -3.140625 -1.34375 -3.125 -1.34375 -3.078125 -1.34375 C -3.078125 -1.34375 -3.0625 -1.34375 -2.96875 -1.3125 L -0.234375 -0.640625 C -0.15625 -0.609375 -0.15625 -0.609375 -0.125 -0.609375 C -0.015625 -0.609375 0.046875 -0.703125 0.046875 -0.796875 C 0.046875 -1 -0.125 -1.046875 -0.203125 -1.0625 L -1.109375 -1.28125 C -1.109375 -1.40625 -1.0625 -2.03125 -0.71875 -2.03125 C -0.6875 -2.03125 -0.65625 -2.03125 -0.609375 -2.015625 C -0.53125 -2 -0.5 -2 -0.46875 -2 C -0.125 -2 0.046875 -2.3125 0.046875 -2.609375 C 0.046875 -3.109375 -0.65625 -3.3125 -0.71875 -3.3125 C -0.78125 -3.3125 -0.78125 -3.21875 -0.78125 -3.203125 C -0.78125 -3.125 -0.765625 -3.109375 -0.671875 -3.078125 C -0.5 -3.03125 -0.109375 -2.890625 -0.109375 -2.625 C -0.109375 -2.4375 -0.296875 -2.421875 -0.40625 -2.421875 C -0.40625 -2.421875 -0.484375 -2.421875 -0.5625 -2.4375 C -0.640625 -2.453125 -0.6875 -2.46875 -0.734375 -2.46875 C -1.171875 -2.46875 -1.25 -1.921875 -1.265625 -1.59375 C -1.34375 -1.734375 -1.515625 -1.9375 -1.578125 -2.015625 C -1.8125 -2.296875 -2.015625 -2.578125 -2.015625 -2.859375 C -2.015625 -2.96875 -1.984375 -3 -1.96875 -3.03125 C -1.96875 -3.015625 -1.953125 -3 -1.953125 -2.984375 C -1.875 -2.765625 -1.671875 -2.765625 -1.65625 -2.765625 C -1.5625 -2.765625 -1.453125 -2.8125 -1.453125 -2.984375 C -1.453125 -3.078125 -1.53125 -3.28125 -1.796875 -3.28125 C -2.046875 -3.28125 -2.1875 -3.09375 -2.1875 -2.859375 C -2.1875 -2.53125 -1.96875 -2.234375 -1.671875 -1.875 C -1.53125 -1.703125 -1.40625 -1.546875 -1.328125 -1.34375 Z M -3.25 -1.828125 " style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph6-0" overflow="visible">
+<path d="" style="stroke:none;"></path>
+</symbol>
+<symbol id="svg_3a54eea8bd4b98b381d1_glyph6-1" overflow="visible">
+<path d="M 1.34375 -4.921875 C 1.34375 -5.03125 1.34375 -5.1875 1.171875 -5.1875 C 1 -5.1875 1 -5.03125 1 -4.921875 L 1 1.453125 C 1 1.5625 1 1.734375 1.171875 1.734375 C 1.34375 1.734375 1.34375 1.578125 1.34375 1.453125 Z M 1.34375 -4.921875 " style="stroke:none;"></path>
+</symbol>
+</g>
+<clippath id="svg_3a54eea8bd4b98b381d1_clip1">
+<path d="M 34.832031 79 L 119.828125 79 L 119.828125 81 L 34.832031 81 Z M 34.832031 79 "></path>
+</clippath>
+<clippath id="svg_3a54eea8bd4b98b381d1_clip2">
+<path d="M 34.832031 90 L 119.828125 90 L 119.828125 92 L 34.832031 92 Z M 34.832031 90 "></path>
+</clippath>
+<clippath id="svg_3a54eea8bd4b98b381d1_clip3">
+<path d="M 147.988281 79 L 232.984375 79 L 232.984375 81 L 147.988281 81 Z M 147.988281 79 "></path>
+</clippath>
+<clippath id="svg_3a54eea8bd4b98b381d1_clip4">
+<path d="M 261.144531 79 L 346.140625 79 L 346.140625 81 L 261.144531 81 Z M 261.144531 79 "></path>
+</clippath>
+<clippath id="svg_3a54eea8bd4b98b381d1_clip5">
+<path d="M 321 51 L 354.832031 51 L 354.832031 88 L 321 88 Z M 321 51 "></path>
+</clippath>
+<clippath id="svg_3a54eea8bd4b98b381d1_clip6">
+<path d="M 325 56 L 354.832031 56 L 354.832031 93 L 325 93 Z M 325 56 "></path>
+</clippath>
+</defs>
+<g id="svg_3a54eea8bd4b98b381d1_surface1">
+<path d="M 19.710917 -2.126817 L 19.710917 2.127892 M 40.685611 -2.126817 L 40.685611 2.127892 M 61.656371 -2.126817 L 61.656371 2.127892 M 82.627132 -2.126817 L 82.627132 2.127892 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M -2.124942 14.274654 L 2.125835 14.274654 M -2.124942 42.818954 L 2.125835 42.818954 M -2.124942 71.367186 L 2.125835 71.367186 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M -0.00151926 0.000537304 L 83.570876 0.000537304 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 119.828125 99.566406 L 116.664062 97.984375 L 117.851562 99.566406 L 116.664062 101.152344 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<path d="M -0.00151926 0.000537304 L -0.00151926 72.228352 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 34.832031 25.835938 L 33.25 29.003906 L 34.832031 27.816406 L 36.417969 29.003906 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="52.732344" href="#svg_3a54eea8bd4b98b381d1_glyph0-1" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="71.880826" href="#svg_3a54eea8bd4b98b381d1_glyph0-2" y="108.364354"></use>
+<use x="75.245702" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="92.713095" href="#svg_3a54eea8bd4b98b381d1_glyph0-2" y="108.364354"></use>
+<use x="96.077971" href="#svg_3a54eea8bd4b98b381d1_glyph0-1" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="113.545364" href="#svg_3a54eea8bd4b98b381d1_glyph0-4" y="108.364354"></use>
+<use x="116.91024" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="25.857317" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="86.982744"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="20.221846" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="58.625586"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="23.58942" href="#svg_3a54eea8bd4b98b381d1_glyph1-1" y="58.625586"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="25.85831" href="#svg_3a54eea8bd4b98b381d1_glyph0-4" y="58.625586"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="20.221846" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="30.267436"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="23.58942" href="#svg_3a54eea8bd4b98b381d1_glyph1-1" y="30.267436"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="25.85831" href="#svg_3a54eea8bd4b98b381d1_glyph0-5" y="30.267436"></use>
+</g>
+<path d="M 2.935882 14.274654 L 2.935882 13.787053 M 7.131607 14.274654 L 7.131607 14.074108 M 11.323399 14.274654 L 11.323399 18.199052 M 15.519125 14.274654 L 15.519125 9.846925 M 19.710917 14.274654 L 19.710917 13.146094 M 23.906642 14.274654 L 23.906642 8.863859 M 28.102368 14.274654 L 28.102368 17.314293 M 32.29416 14.274654 L 32.29416 13.232604 M 36.489885 14.274654 L 36.489885 16.598621 M 40.685611 14.274654 L 40.685611 16.37055 M 44.877403 14.274654 L 44.877403 13.460675 M 49.073128 14.274654 L 49.073128 12.446151 M 53.264921 14.274654 L 53.264921 14.774051 M 57.460646 14.274654 L 57.460646 18.383869 M 61.656371 14.274654 L 61.656371 12.245606 M 65.848164 14.274654 L 65.848164 17.168799 M 70.043889 14.274654 L 70.043889 15.941933 M 74.239614 14.274654 L 74.239614 13.944343 M 78.431407 14.274654 L 78.431407 17.113748 M 82.627132 14.274654 L 82.627132 17.027238 " style="fill:none;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<g clip-path="url(#svg_3a54eea8bd4b98b381d1_clip1)" clip-rule="nonzero">
+<path d="M -0.00151926 19.866332 L 85.560601 19.866332 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-dasharray:2.98883,2.98883;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+</g>
+<g clip-path="url(#svg_3a54eea8bd4b98b381d1_clip2)" clip-rule="nonzero">
+<path d="M -0.00151926 8.679043 L 85.560601 8.679043 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-dasharray:2.98883,2.98883;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+</g>
+<path d="M 3.930744 13.787053 C 3.930744 14.33757 3.486398 14.785848 2.935882 14.785848 C 2.385365 14.785848 1.941019 14.33757 1.941019 13.787053 C 1.941019 13.236536 2.385365 12.79219 2.935882 12.79219 C 3.486398 12.79219 3.930744 13.236536 3.930744 13.787053 Z M 3.930744 13.787053 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 8.126469 14.074108 C 8.126469 14.624625 7.682123 15.068971 7.131607 15.068971 C 6.58109 15.068971 6.132812 14.624625 6.132812 14.074108 C 6.132812 13.523591 6.58109 13.075313 7.131607 13.075313 C 7.682123 13.075313 8.126469 13.523591 8.126469 14.074108 Z M 8.126469 14.074108 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 12.322194 18.199052 C 12.322194 18.749569 11.873916 19.193915 11.323399 19.193915 C 10.772883 19.193915 10.328537 18.749569 10.328537 18.199052 C 10.328537 17.648536 10.772883 17.200258 11.323399 17.200258 C 11.873916 17.200258 12.322194 17.648536 12.322194 18.199052 Z M 12.322194 18.199052 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 16.513987 9.846925 C 16.513987 10.397442 16.069641 10.84572 15.519125 10.84572 C 14.968608 10.84572 14.524262 10.397442 14.524262 9.846925 C 14.524262 9.296408 14.968608 8.852062 15.519125 8.852062 C 16.069641 8.852062 16.513987 9.296408 16.513987 9.846925 Z M 16.513987 9.846925 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 20.709712 13.146094 C 20.709712 13.696611 20.261434 14.140957 19.710917 14.140957 C 19.164333 14.140957 18.716055 13.696611 18.716055 13.146094 C 18.716055 12.595577 19.164333 12.147299 19.710917 12.147299 C 20.261434 12.147299 20.709712 12.595577 20.709712 13.146094 Z M 20.709712 13.146094 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 24.901505 8.863859 C 24.901505 9.414376 24.457159 9.858722 23.906642 9.858722 C 23.356126 9.858722 22.91178 9.414376 22.91178 8.863859 C 22.91178 8.313342 23.356126 7.868996 23.906642 7.868996 C 24.457159 7.868996 24.901505 8.313342 24.901505 8.863859 Z M 24.901505 8.863859 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 29.09723 17.314293 C 29.09723 17.86481 28.652884 18.309156 28.102368 18.309156 C 27.551851 18.309156 27.103573 17.86481 27.103573 17.314293 C 27.103573 16.763776 27.551851 16.315498 28.102368 16.315498 C 28.652884 16.315498 29.09723 16.763776 29.09723 17.314293 Z M 29.09723 17.314293 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 33.292955 13.232604 C 33.292955 13.783121 32.844677 14.227466 32.29416 14.227466 C 31.743643 14.227466 31.299298 13.783121 31.299298 13.232604 C 31.299298 12.682087 31.743643 12.233809 32.29416 12.233809 C 32.844677 12.233809 33.292955 12.682087 33.292955 13.232604 Z M 33.292955 13.232604 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 37.484748 16.598621 C 37.484748 17.149138 37.040402 17.597416 36.489885 17.597416 C 35.939369 17.597416 35.495023 17.149138 35.495023 16.598621 C 35.495023 16.048104 35.939369 15.603759 36.489885 15.603759 C 37.040402 15.603759 37.484748 16.048104 37.484748 16.598621 Z M 37.484748 16.598621 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 41.680473 16.37055 C 41.680473 16.921067 41.236127 17.369345 40.685611 17.369345 C 40.135094 17.369345 39.686816 16.921067 39.686816 16.37055 C 39.686816 15.820033 40.135094 15.375687 40.685611 15.375687 C 41.236127 15.375687 41.680473 15.820033 41.680473 16.37055 Z M 41.680473 16.37055 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 45.876198 13.460675 C 45.876198 14.011192 45.42792 14.455538 44.877403 14.455538 C 44.326886 14.455538 43.882541 14.011192 43.882541 13.460675 C 43.882541 12.910158 44.326886 12.46188 44.877403 12.46188 C 45.42792 12.46188 45.876198 12.910158 45.876198 13.460675 Z M 45.876198 13.460675 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 50.067991 12.446151 C 50.067991 12.996668 49.623645 13.441014 49.073128 13.441014 C 48.522612 13.441014 48.074333 12.996668 48.074333 12.446151 C 48.074333 11.895634 48.522612 11.451288 49.073128 11.451288 C 49.623645 11.451288 50.067991 11.895634 50.067991 12.446151 Z M 50.067991 12.446151 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 54.263716 14.774051 C 54.263716 15.324568 53.815438 15.768914 53.264921 15.768914 C 52.718337 15.768914 52.270059 15.324568 52.270059 14.774051 C 52.270059 14.223534 52.718337 13.775256 53.264921 13.775256 C 53.815438 13.775256 54.263716 14.223534 54.263716 14.774051 Z M 54.263716 14.774051 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 58.455509 18.383869 C 58.455509 18.934386 58.011163 19.378732 57.460646 19.378732 C 56.910129 19.378732 56.465784 18.934386 56.465784 18.383869 C 56.465784 17.833352 56.910129 17.389006 57.460646 17.389006 C 58.011163 17.389006 58.455509 17.833352 58.455509 18.383869 Z M 58.455509 18.383869 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 62.651234 12.245606 C 62.651234 12.796123 62.206888 13.244401 61.656371 13.244401 C 61.105855 13.244401 60.657576 12.796123 60.657576 12.245606 C 60.657576 11.695089 61.105855 11.250743 61.656371 11.250743 C 62.206888 11.250743 62.651234 11.695089 62.651234 12.245606 Z M 62.651234 12.245606 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 66.846959 17.168799 C 66.846959 17.719316 66.398681 18.167594 65.848164 18.167594 C 65.297647 18.167594 64.853302 17.719316 64.853302 17.168799 C 64.853302 16.622215 65.297647 16.173937 65.848164 16.173937 C 66.398681 16.173937 66.846959 16.622215 66.846959 17.168799 Z M 66.846959 17.168799 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 71.038752 15.941933 C 71.038752 16.49245 70.594406 16.940728 70.043889 16.940728 C 69.493372 16.940728 69.049027 16.49245 69.049027 15.941933 C 69.049027 15.391416 69.493372 14.947071 70.043889 14.947071 C 70.594406 14.947071 71.038752 15.391416 71.038752 15.941933 Z M 71.038752 15.941933 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 75.234477 13.944343 C 75.234477 14.49486 74.786199 14.939206 74.239614 14.939206 C 73.689098 14.939206 73.240819 14.49486 73.240819 13.944343 C 73.240819 13.393827 73.689098 12.949481 74.239614 12.949481 C 74.786199 12.949481 75.234477 13.393827 75.234477 13.944343 Z M 75.234477 13.944343 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 79.430202 17.113748 C 79.430202 17.664265 78.981924 18.10861 78.431407 18.10861 C 77.88089 18.10861 77.436545 17.664265 77.436545 17.113748 C 77.436545 16.563231 77.88089 16.118885 78.431407 16.118885 C 78.981924 16.118885 79.430202 16.563231 79.430202 17.113748 Z M 79.430202 17.113748 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<path d="M 83.621995 17.027238 C 83.621995 17.577755 83.177649 18.026033 82.627132 18.026033 C 82.076615 18.026033 81.628337 17.577755 81.628337 17.027238 C 81.628337 16.476721 82.076615 16.032375 82.627132 16.032375 C 83.177649 16.032375 83.621995 16.476721 83.621995 17.027238 Z M 83.621995 17.027238 " style="fill-rule:nonzero;fill:rgb(12.199402%,43.499756%,69.799805%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(12.199402%,43.499756%,69.799805%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,34.83354,99.56694)"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="63.259241" href="#svg_3a54eea8bd4b98b381d1_glyph2-1" y="119.970067"></use>
+<use x="66.34898" href="#svg_3a54eea8bd4b98b381d1_glyph2-2" y="119.970067"></use>
+<use x="69.868234" href="#svg_3a54eea8bd4b98b381d1_glyph2-3" y="119.970067"></use>
+<use x="72.957973" href="#svg_3a54eea8bd4b98b381d1_glyph2-4" y="119.970067"></use>
+<use x="76.899815" href="#svg_3a54eea8bd4b98b381d1_glyph2-1" y="119.970067"></use>
+<use x="79.989554" href="#svg_3a54eea8bd4b98b381d1_glyph2-5" y="119.970067"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="87.028948" href="#svg_3a54eea8bd4b98b381d1_glyph3-1" y="119.970067"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="12.079072" href="#svg_3a54eea8bd4b98b381d1_glyph4-1" y="66.919355"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="13.130073" href="#svg_3a54eea8bd4b98b381d1_glyph5-1" y="62.812703"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="73.852695" href="#svg_3a54eea8bd4b98b381d1_glyph3-2" y="15.413356"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="77.527224" href="#svg_3a54eea8bd4b98b381d1_glyph1-2" y="16.40376"></use>
+</g>
+<path d="M 19.711725 -2.126817 L 19.711725 2.127892 M 40.682485 -2.126817 L 40.682485 2.127892 M 61.653246 -2.126817 L 61.653246 2.127892 M 82.627939 -2.126817 L 82.627939 2.127892 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M -2.124134 14.274654 L 2.126642 14.274654 M -2.124134 42.818954 L 2.126642 42.818954 M -2.124134 71.367186 L 2.126642 71.367186 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M -0.000712076 0.000537304 L 83.56775 0.000537304 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 232.984375 99.566406 L 229.816406 97.984375 L 231.003906 99.566406 L 229.816406 101.152344 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<path d="M -0.000712076 0.000537304 L -0.000712076 72.228352 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 147.988281 25.835938 L 146.40625 29.003906 L 147.988281 27.816406 L 149.574219 29.003906 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="165.887793" href="#svg_3a54eea8bd4b98b381d1_glyph0-1" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="185.036274" href="#svg_3a54eea8bd4b98b381d1_glyph0-2" y="108.364354"></use>
+<use x="188.40115" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="205.868543" href="#svg_3a54eea8bd4b98b381d1_glyph0-2" y="108.364354"></use>
+<use x="209.233419" href="#svg_3a54eea8bd4b98b381d1_glyph0-1" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="226.700812" href="#svg_3a54eea8bd4b98b381d1_glyph0-4" y="108.364354"></use>
+<use x="230.065688" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="139.012765" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="86.982744"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="133.377294" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="58.625586"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="136.744868" href="#svg_3a54eea8bd4b98b381d1_glyph1-1" y="58.625586"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="139.013759" href="#svg_3a54eea8bd4b98b381d1_glyph0-4" y="58.625586"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="133.377294" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="30.267436"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="136.744868" href="#svg_3a54eea8bd4b98b381d1_glyph1-1" y="30.267436"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="139.013759" href="#svg_3a54eea8bd4b98b381d1_glyph0-5" y="30.267436"></use>
+</g>
+<path d="M 2.936689 14.274654 L 2.936689 41.765107 M 7.128482 14.274654 L 7.128482 44.474437 M 11.324207 14.274654 L 11.324207 41.108419 M 15.519932 14.274654 L 15.519932 40.707328 M 19.711725 14.274654 L 19.711725 38.465938 M 23.90745 14.274654 L 23.90745 40.506783 M 28.103175 14.274654 L 28.103175 37.353108 M 32.294968 14.274654 L 32.294968 34.812865 M 36.490693 14.274654 L 36.490693 36.712149 M 40.682485 14.274654 L 40.682485 29.700923 M 44.878211 14.274654 L 44.878211 31.32888 M 49.073936 14.274654 L 49.073936 35.111718 M 53.265728 14.274654 L 53.265728 33.157383 M 57.461454 14.274654 L 57.461454 30.943518 M 61.653246 14.274654 L 61.653246 32.555746 M 65.848971 14.274654 L 65.848971 41.863414 M 70.044696 14.274654 L 70.044696 25.461943 M 74.236489 14.274654 L 74.236489 29.303764 M 78.432214 14.274654 L 78.432214 32.685511 M 82.627939 14.274654 L 82.627939 29.4178 " style="fill:none;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<g clip-path="url(#svg_3a54eea8bd4b98b381d1_clip3)" clip-rule="nonzero">
+<path d="M -0.000712076 19.866332 L 85.561408 19.866332 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-dasharray:2.98883,2.98883;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+</g>
+<path d="M 3.931551 41.765107 C 3.931551 42.311692 3.487206 42.75997 2.936689 42.75997 C 2.386172 42.75997 1.937894 42.311692 1.937894 41.765107 C 1.937894 41.21459 2.386172 40.766312 2.936689 40.766312 C 3.487206 40.766312 3.931551 41.21459 3.931551 41.765107 Z M 3.931551 41.765107 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 8.127276 44.474437 C 8.127276 45.024954 7.678998 45.473232 7.128482 45.473232 C 6.581897 45.473232 6.133619 45.024954 6.133619 44.474437 C 6.133619 43.92392 6.581897 43.479574 7.128482 43.479574 C 7.678998 43.479574 8.127276 43.92392 8.127276 44.474437 Z M 8.127276 44.474437 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 12.319069 41.108419 C 12.319069 41.655004 11.874723 42.103282 11.324207 42.103282 C 10.77369 42.103282 10.329344 41.655004 10.329344 41.108419 C 10.329344 40.557902 10.77369 40.109624 11.324207 40.109624 C 11.874723 40.109624 12.319069 40.557902 12.319069 41.108419 Z M 12.319069 41.108419 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 16.514794 40.707328 C 16.514794 41.257845 16.070449 41.702191 15.519932 41.702191 C 14.969415 41.702191 14.521137 41.257845 14.521137 40.707328 C 14.521137 40.156812 14.969415 39.712466 15.519932 39.712466 C 16.070449 39.712466 16.514794 40.156812 16.514794 40.707328 Z M 16.514794 40.707328 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 20.710519 38.465938 C 20.710519 39.016455 20.262241 39.460801 19.711725 39.460801 C 19.161208 39.460801 18.716862 39.016455 18.716862 38.465938 C 18.716862 37.915421 19.161208 37.471076 19.711725 37.471076 C 20.262241 37.471076 20.710519 37.915421 20.710519 38.465938 Z M 20.710519 38.465938 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 24.902312 40.506783 C 24.902312 41.0573 24.457966 41.501646 23.90745 41.501646 C 23.356933 41.501646 22.912587 41.0573 22.912587 40.506783 C 22.912587 39.956266 23.356933 39.51192 23.90745 39.51192 C 24.457966 39.51192 24.902312 39.956266 24.902312 40.506783 Z M 24.902312 40.506783 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 29.098037 37.353108 C 29.098037 37.903625 28.649759 38.34797 28.103175 38.34797 C 27.552658 38.34797 27.10438 37.903625 27.10438 37.353108 C 27.10438 36.802591 27.552658 36.358245 28.103175 36.358245 C 28.649759 36.358245 29.098037 36.802591 29.098037 37.353108 Z M 29.098037 37.353108 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 33.293762 34.812865 C 33.293762 35.363382 32.845484 35.807728 32.294968 35.807728 C 31.744451 35.807728 31.300105 35.363382 31.300105 34.812865 C 31.300105 34.262349 31.744451 33.814071 32.294968 33.814071 C 32.845484 33.814071 33.293762 34.262349 33.293762 34.812865 Z M 33.293762 34.812865 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 37.485555 36.712149 C 37.485555 37.262666 37.041209 37.707011 36.490693 37.707011 C 35.940176 37.707011 35.491898 37.262666 35.491898 36.712149 C 35.491898 36.161632 35.940176 35.713354 36.490693 35.713354 C 37.041209 35.713354 37.485555 36.161632 37.485555 36.712149 Z M 37.485555 36.712149 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 41.68128 29.700923 C 41.68128 30.25144 41.233002 30.699718 40.682485 30.699718 C 40.131969 30.699718 39.687623 30.25144 39.687623 29.700923 C 39.687623 29.150406 40.131969 28.70606 40.682485 28.70606 C 41.233002 28.70606 41.68128 29.150406 41.68128 29.700923 Z M 41.68128 29.700923 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 45.873073 31.32888 C 45.873073 31.879397 45.428727 32.327675 44.878211 32.327675 C 44.327694 32.327675 43.883348 31.879397 43.883348 31.32888 C 43.883348 30.778363 44.327694 30.334017 44.878211 30.334017 C 45.428727 30.334017 45.873073 30.778363 45.873073 31.32888 Z M 45.873073 31.32888 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 50.068798 35.111718 C 50.068798 35.662234 49.624452 36.10658 49.073936 36.10658 C 48.523419 36.10658 48.075141 35.662234 48.075141 35.111718 C 48.075141 34.561201 48.523419 34.116855 49.073936 34.116855 C 49.624452 34.116855 50.068798 34.561201 50.068798 35.111718 Z M 50.068798 35.111718 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 54.264523 33.157383 C 54.264523 33.707899 53.816245 34.152245 53.265728 34.152245 C 52.715212 34.152245 52.270866 33.707899 52.270866 33.157383 C 52.270866 32.606866 52.715212 32.158588 53.265728 32.158588 C 53.816245 32.158588 54.264523 32.606866 54.264523 33.157383 Z M 54.264523 33.157383 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 58.456316 30.943518 C 58.456316 31.494035 58.01197 31.942313 57.461454 31.942313 C 56.910937 31.942313 56.462659 31.494035 56.462659 30.943518 C 56.462659 30.393001 56.910937 29.948656 57.461454 29.948656 C 58.01197 29.948656 58.456316 30.393001 58.456316 30.943518 Z M 58.456316 30.943518 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 62.652041 32.555746 C 62.652041 33.106263 62.203763 33.554541 61.653246 33.554541 C 61.106662 33.554541 60.658384 33.106263 60.658384 32.555746 C 60.658384 32.005229 61.106662 31.560884 61.653246 31.560884 C 62.203763 31.560884 62.652041 32.005229 62.652041 32.555746 Z M 62.652041 32.555746 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 66.843834 41.863414 C 66.843834 42.413931 66.399488 42.858276 65.848971 42.858276 C 65.298455 42.858276 64.854109 42.413931 64.854109 41.863414 C 64.854109 41.312897 65.298455 40.868551 65.848971 40.868551 C 66.399488 40.868551 66.843834 41.312897 66.843834 41.863414 Z M 66.843834 41.863414 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 71.039559 25.461943 C 71.039559 26.01246 70.595213 26.460738 70.044696 26.460738 C 69.49418 26.460738 69.045902 26.01246 69.045902 25.461943 C 69.045902 24.911426 69.49418 24.46708 70.044696 24.46708 C 70.595213 24.46708 71.039559 24.911426 71.039559 25.461943 Z M 71.039559 25.461943 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 75.235284 29.303764 C 75.235284 29.854281 74.787006 30.298627 74.236489 30.298627 C 73.685972 30.298627 73.241627 29.854281 73.241627 29.303764 C 73.241627 28.753248 73.685972 28.30497 74.236489 28.30497 C 74.787006 28.30497 75.235284 28.753248 75.235284 29.303764 Z M 75.235284 29.303764 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 79.427077 32.685511 C 79.427077 33.236028 78.982731 33.680374 78.432214 33.680374 C 77.881698 33.680374 77.437352 33.236028 77.437352 32.685511 C 77.437352 32.134994 77.881698 31.690648 78.432214 31.690648 C 78.982731 31.690648 79.427077 32.134994 79.427077 32.685511 Z M 79.427077 32.685511 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<path d="M 83.622802 29.4178 C 83.622802 29.968317 83.174524 30.412663 82.627939 30.412663 C 82.077423 30.412663 81.629145 29.968317 81.629145 29.4178 C 81.629145 28.867283 82.077423 28.419005 82.627939 28.419005 C 83.174524 28.419005 83.622802 28.867283 83.622802 29.4178 Z M 83.622802 29.4178 " style="fill-rule:nonzero;fill:rgb(17.999268%,54.499817%,34.098816%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(17.999268%,54.499817%,34.098816%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,147.988989,99.56694)"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="176.414689" href="#svg_3a54eea8bd4b98b381d1_glyph2-1" y="119.970067"></use>
+<use x="179.504428" href="#svg_3a54eea8bd4b98b381d1_glyph2-2" y="119.970067"></use>
+<use x="183.023682" href="#svg_3a54eea8bd4b98b381d1_glyph2-3" y="119.970067"></use>
+<use x="186.113421" href="#svg_3a54eea8bd4b98b381d1_glyph2-4" y="119.970067"></use>
+<use x="190.055263" href="#svg_3a54eea8bd4b98b381d1_glyph2-1" y="119.970067"></use>
+<use x="193.145002" href="#svg_3a54eea8bd4b98b381d1_glyph2-5" y="119.970067"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="200.184396" href="#svg_3a54eea8bd4b98b381d1_glyph3-1" y="119.970067"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="184.656802" href="#svg_3a54eea8bd4b98b381d1_glyph6-1" y="14.671297"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="187.008143" href="#svg_3a54eea8bd4b98b381d1_glyph3-2" y="14.671297"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="190.682673" href="#svg_3a54eea8bd4b98b381d1_glyph1-2" y="15.661702"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="193.966802" href="#svg_3a54eea8bd4b98b381d1_glyph6-1" y="14.671297"></use>
+</g>
+<path d="M 19.712532 -2.126817 L 19.712532 2.127892 M 40.683293 -2.126817 L 40.683293 2.127892 M 61.654054 -2.126817 L 61.654054 2.127892 M 82.624814 -2.126817 L 82.624814 2.127892 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M -2.127259 14.274654 L 2.12745 14.274654 M -2.127259 42.818954 L 2.12745 42.818954 M -2.127259 71.367186 L 2.12745 71.367186 " style="fill:none;stroke-width:0.19925;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(50%,50%,50%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 0.00009511 0.000537304 L 83.568558 0.000537304 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 346.140625 99.566406 L 342.972656 97.984375 L 344.160156 99.566406 L 342.972656 101.152344 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<path d="M 0.00009511 0.000537304 L 0.00009511 72.228352 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 261.144531 25.835938 L 259.5625 29.003906 L 261.144531 27.816406 L 262.726562 29.003906 " style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"></path>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="279.043241" href="#svg_3a54eea8bd4b98b381d1_glyph0-1" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="298.191723" href="#svg_3a54eea8bd4b98b381d1_glyph0-2" y="108.364354"></use>
+<use x="301.556598" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="319.023991" href="#svg_3a54eea8bd4b98b381d1_glyph0-2" y="108.364354"></use>
+<use x="322.388867" href="#svg_3a54eea8bd4b98b381d1_glyph0-1" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="339.85626" href="#svg_3a54eea8bd4b98b381d1_glyph0-4" y="108.364354"></use>
+<use x="343.221136" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="108.364354"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="252.168213" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="86.982744"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="246.532742" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="58.625586"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="249.900316" href="#svg_3a54eea8bd4b98b381d1_glyph1-1" y="58.625586"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="252.169207" href="#svg_3a54eea8bd4b98b381d1_glyph0-4" y="58.625586"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="246.532742" href="#svg_3a54eea8bd4b98b381d1_glyph0-3" y="30.267436"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="249.900316" href="#svg_3a54eea8bd4b98b381d1_glyph1-1" y="30.267436"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="252.169207" href="#svg_3a54eea8bd4b98b381d1_glyph0-5" y="30.267436"></use>
+</g>
+<path d="M 2.937496 14.274654 L 2.937496 42.205521 M 7.129289 14.274654 L 7.129289 41.222455 M 11.325014 14.274654 L 11.325014 40.093895 M 15.516807 14.274654 L 15.516807 34.514013 M 19.712532 14.274654 L 19.712532 39.763585 M 23.908257 14.274654 L 23.908257 39.220933 M 28.10005 14.274654 L 28.10005 36.295329 M 32.295775 14.274654 L 32.295775 30.872738 M 36.4915 14.274654 L 36.4915 35.312263 M 40.683293 14.274654 L 40.683293 23.680628 M 44.879018 14.274654 L 44.879018 26.93261 M 49.070811 14.274654 L 49.070811 30.231779 M 53.266536 14.274654 L 53.266536 28.28924 M 57.462261 14.274654 L 57.462261 27.675807 M 61.654054 14.274654 L 61.654054 30.015504 M 65.849779 14.274654 L 65.849779 44.745763 M 70.045504 14.274654 L 70.045504 24.636168 M 74.237296 14.274654 L 74.237296 25.135565 M 78.433022 14.274654 L 78.433022 30.45985 M 82.624814 14.274654 L 82.624814 25.190617 " style="fill:none;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<g clip-path="url(#svg_3a54eea8bd4b98b381d1_clip4)" clip-rule="nonzero">
+<path d="M 0.00009511 19.866332 L 85.562215 19.866332 " style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-dasharray:2.98883,2.98883;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+</g>
+<path d="M 3.932359 42.205521 C 3.932359 42.756038 3.488013 43.200383 2.937496 43.200383 C 2.386979 43.200383 1.938701 42.756038 1.938701 42.205521 C 1.938701 41.655004 2.386979 41.210658 2.937496 41.210658 C 3.488013 41.210658 3.932359 41.655004 3.932359 42.205521 Z M 3.932359 42.205521 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 8.128084 41.222455 C 8.128084 41.772972 7.679806 42.217318 7.129289 42.217318 C 6.578772 42.217318 6.134426 41.772972 6.134426 41.222455 C 6.134426 40.671938 6.578772 40.22366 7.129289 40.22366 C 7.679806 40.22366 8.128084 40.671938 8.128084 41.222455 Z M 8.128084 41.222455 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 12.319876 40.093895 C 12.319876 40.644412 11.875531 41.088758 11.325014 41.088758 C 10.774497 41.088758 10.326219 40.644412 10.326219 40.093895 C 10.326219 39.543378 10.774497 39.0951 11.325014 39.0951 C 11.875531 39.0951 12.319876 39.543378 12.319876 40.093895 Z M 12.319876 40.093895 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 16.515602 34.514013 C 16.515602 35.06453 16.067324 35.508876 15.516807 35.508876 C 14.970222 35.508876 14.521944 35.06453 14.521944 34.514013 C 14.521944 33.963497 14.970222 33.515219 15.516807 33.515219 C 16.067324 33.515219 16.515602 33.963497 16.515602 34.514013 Z M 16.515602 34.514013 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 20.707394 39.763585 C 20.707394 40.314102 20.263049 40.76238 19.712532 40.76238 C 19.162015 40.76238 18.717669 40.314102 18.717669 39.763585 C 18.717669 39.213068 19.162015 38.768723 19.712532 38.768723 C 20.263049 38.768723 20.707394 39.213068 20.707394 39.763585 Z M 20.707394 39.763585 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 24.903119 39.220933 C 24.903119 39.77145 24.458774 40.219728 23.908257 40.219728 C 23.35774 40.219728 22.909462 39.77145 22.909462 39.220933 C 22.909462 38.670416 23.35774 38.22607 23.908257 38.22607 C 24.458774 38.22607 24.903119 38.670416 24.903119 39.220933 Z M 24.903119 39.220933 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 29.098845 36.295329 C 29.098845 36.845846 28.650566 37.294124 28.10005 37.294124 C 27.549533 37.294124 27.105187 36.845846 27.105187 36.295329 C 27.105187 35.744812 27.549533 35.300466 28.10005 35.300466 C 28.650566 35.300466 29.098845 35.744812 29.098845 36.295329 Z M 29.098845 36.295329 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 33.290637 30.872738 C 33.290637 31.423254 32.846292 31.8676 32.295775 31.8676 C 31.745258 31.8676 31.300912 31.423254 31.300912 30.872738 C 31.300912 30.322221 31.745258 29.877875 32.295775 29.877875 C 32.846292 29.877875 33.290637 30.322221 33.290637 30.872738 Z M 33.290637 30.872738 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 37.486362 35.312263 C 37.486362 35.86278 37.038084 36.307126 36.4915 36.307126 C 35.940983 36.307126 35.492705 35.86278 35.492705 35.312263 C 35.492705 34.761746 35.940983 34.3174 36.4915 34.3174 C 37.038084 34.3174 37.486362 34.761746 37.486362 35.312263 Z M 37.486362 35.312263 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 41.682088 23.680628 C 41.682088 24.231145 41.233809 24.67549 40.683293 24.67549 C 40.132776 24.67549 39.68843 24.231145 39.68843 23.680628 C 39.68843 23.130111 40.132776 22.681833 40.683293 22.681833 C 41.233809 22.681833 41.682088 23.130111 41.682088 23.680628 Z M 41.682088 23.680628 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 45.87388 26.93261 C 45.87388 27.483126 45.429535 27.931404 44.879018 27.931404 C 44.328501 27.931404 43.880223 27.483126 43.880223 26.93261 C 43.880223 26.382093 44.328501 25.937747 44.879018 25.937747 C 45.429535 25.937747 45.87388 26.382093 45.87388 26.93261 Z M 45.87388 26.93261 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 50.069605 30.231779 C 50.069605 30.782295 49.621327 31.226641 49.070811 31.226641 C 48.520294 31.226641 48.075948 30.782295 48.075948 30.231779 C 48.075948 29.681262 48.520294 29.232984 49.070811 29.232984 C 49.621327 29.232984 50.069605 29.681262 50.069605 30.231779 Z M 50.069605 30.231779 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 54.261398 28.28924 C 54.261398 28.839757 53.817052 29.284103 53.266536 29.284103 C 52.716019 29.284103 52.271673 28.839757 52.271673 28.28924 C 52.271673 27.738724 52.716019 27.294378 53.266536 27.294378 C 53.817052 27.294378 54.261398 27.738724 54.261398 28.28924 Z M 54.261398 28.28924 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 58.457123 27.675807 C 58.457123 28.226324 58.012778 28.67067 57.462261 28.67067 C 56.911744 28.67067 56.463466 28.226324 56.463466 27.675807 C 56.463466 27.12529 56.911744 26.680945 57.462261 26.680945 C 58.012778 26.680945 58.457123 27.12529 58.457123 27.675807 Z M 58.457123 27.675807 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 62.652848 30.015504 C 62.652848 30.566021 62.20457 31.014299 61.654054 31.014299 C 61.103537 31.014299 60.659191 30.566021 60.659191 30.015504 C 60.659191 29.464987 61.103537 29.020641 61.654054 29.020641 C 62.20457 29.020641 62.652848 29.464987 62.652848 30.015504 Z M 62.652848 30.015504 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 66.844641 44.745763 C 66.844641 45.29628 66.400295 45.740626 65.849779 45.740626 C 65.299262 45.740626 64.854916 45.29628 64.854916 44.745763 C 64.854916 44.195246 65.299262 43.7509 65.849779 43.7509 C 66.400295 43.7509 66.844641 44.195246 66.844641 44.745763 Z M 66.844641 44.745763 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 71.040366 24.636168 C 71.040366 25.186685 70.592088 25.63103 70.045504 25.63103 C 69.494987 25.63103 69.046709 25.186685 69.046709 24.636168 C 69.046709 24.085651 69.494987 23.637373 70.045504 23.637373 C 70.592088 23.637373 71.040366 24.085651 71.040366 24.636168 Z M 71.040366 24.636168 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 75.232159 25.135565 C 75.232159 25.686082 74.787813 26.130428 74.237296 26.130428 C 73.68678 26.130428 73.242434 25.686082 73.242434 25.135565 C 73.242434 24.585048 73.68678 24.13677 74.237296 24.13677 C 74.787813 24.13677 75.232159 24.585048 75.232159 25.135565 Z M 75.232159 25.135565 " style="fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+<path d="M 340.046875 69.308594 C 340.046875 68.761719 339.605469 68.320312 339.058594 68.320312 C 338.511719 68.320312 338.066406 68.761719 338.066406 69.308594 C 338.066406 69.855469 338.511719 70.300781 339.058594 70.300781 C 339.605469 70.300781 340.046875 69.855469 340.046875 69.308594 Z M 340.046875 69.308594 " style=" stroke:none;fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;"></path>
+<g clip-path="url(#svg_3a54eea8bd4b98b381d1_clip5)" clip-rule="nonzero">
+<path d="M 79.427884 30.45985 C 79.427884 31.010367 78.983538 31.454713 78.433022 31.454713 C 77.882505 31.454713 77.434227 31.010367 77.434227 30.45985 C 77.434227 29.909333 77.882505 29.461055 78.433022 29.461055 C 78.983538 29.461055 79.427884 29.909333 79.427884 30.45985 Z M 79.427884 30.45985 " style="fill:none;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+</g>
+<path d="M 344.214844 74.542969 C 344.214844 73.996094 343.769531 73.550781 343.222656 73.550781 C 342.675781 73.550781 342.234375 73.996094 342.234375 74.542969 C 342.234375 75.089844 342.675781 75.53125 343.222656 75.53125 C 343.769531 75.53125 344.214844 75.089844 344.214844 74.542969 Z M 344.214844 74.542969 " style=" stroke:none;fill-rule:nonzero;fill:rgb(87.799072%,50.19989%,0%);fill-opacity:1;"></path>
+<g clip-path="url(#svg_3a54eea8bd4b98b381d1_clip6)" clip-rule="nonzero">
+<path d="M 83.623609 25.190617 C 83.623609 25.741134 83.175331 26.189412 82.624814 26.189412 C 82.074298 26.189412 81.629952 25.741134 81.629952 25.190617 C 81.629952 24.6401 82.074298 24.195754 82.624814 24.195754 C 83.175331 24.195754 83.623609 24.6401 83.623609 25.190617 Z M 83.623609 25.190617 " style="fill:none;stroke-width:1.19553;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(87.799072%,50.19989%,0%);stroke-opacity:1;stroke-miterlimit:10;" transform="matrix(0.993385,0,0,-0.993385,261.144437,99.56694)"></path>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="289.570138" href="#svg_3a54eea8bd4b98b381d1_glyph2-1" y="119.970067"></use>
+<use x="292.659876" href="#svg_3a54eea8bd4b98b381d1_glyph2-2" y="119.970067"></use>
+<use x="296.179131" href="#svg_3a54eea8bd4b98b381d1_glyph2-3" y="119.970067"></use>
+<use x="299.268869" href="#svg_3a54eea8bd4b98b381d1_glyph2-4" y="119.970067"></use>
+<use x="303.210711" href="#svg_3a54eea8bd4b98b381d1_glyph2-1" y="119.970067"></use>
+<use x="306.30045" href="#svg_3a54eea8bd4b98b381d1_glyph2-5" y="119.970067"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="313.339845" href="#svg_3a54eea8bd4b98b381d1_glyph3-1" y="119.970067"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="299.767231" href="#svg_3a54eea8bd4b98b381d1_glyph3-2" y="14.423945"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="303.655338" href="#svg_3a54eea8bd4b98b381d1_glyph0-4" y="11.43783"></use>
+</g>
+<g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+<use x="303.44176" href="#svg_3a54eea8bd4b98b381d1_glyph1-2" y="16.40376"></use>
+</g>
+</g>
+</svg></p>
+</figure>
+</div>
+</section>
+<section class="level2" id="le-corrélogramme-des-carrés-suite">
+<h2 class="anchored" data-anchor-id="le-corrélogramme-des-carrés-suite">Le corrélogramme des carrés (suite)</h2>
+<div class="definitionbox" title="Ce que le chapitre 4 permet d'en dire">
+<div class="pedago-title">
+Ce que le chapitre 4 permet d’en dire
+</div>
+<p>Si <span class="math inline">\varepsilon_t^2</span> se comporte comme un AR, alors la <strong>PACF</strong> de <span class="math inline">\varepsilon_t^2</span> coupe après <span class="math inline">q</span> retards — exactement comme celle d’un AR(p) coupait après <span class="math inline">p</span>.</p>
+</div>
+<div class="ecobox" title="Sur données réelles, la lecture échoue presque toujours">
+<div class="pedago-title">
+Sur données réelles, la lecture échoue presque toujours
+</div>
+<p>La PACF des carrés ne coupe pas : elle s’étire. Ce n’est pas une anomalie — c’est le signe qu’il faudrait un <span class="math inline">q</span> très élevé, donc que l’ARCH n’est pas le bon modèle.</p>
+<p>Cette lecture ratée est en elle-même une information : elle annonce le GARCH.</p>
+</div>
+</section>
+<section class="level2" id="choisir-q-par-les-critères-dinformation">
+<h2 class="anchored" data-anchor-id="choisir-q-par-les-critères-dinformation">Choisir <span class="math inline">q</span> par les critères d’information</h2>
+<div class="definitionbox" title="La méthode qui fonctionne">
+<div class="pedago-title">
+La méthode qui fonctionne
+</div>
+<p>Estimer les ARCH(<span class="math inline">q</span>) pour <span class="math inline">q = 1, \dots, 10</span>, et retenir le minimum de l’AIC ou du BIC — les critères du cours ARMA, appliqués à la log-vraisemblance du modèle de variance.</p>
+</div>
+<div class="intuitionbox" title="Le symptôme caractéristique">
+<div class="pedago-title">
+Le symptôme caractéristique
+</div>
+<p>Le critère continue de décroître jusqu’à <span class="math inline">q = 8</span>, <span class="math inline">10</span>, parfois davantage. Ce n’est pas que le vrai modèle soit un ARCH(10) : c’est qu’un ARCH d’ordre élevé <strong>approche</strong> une structure plus économe.</p>
+<p>Un modèle qui exige dix paramètres pour représenter un phénomène simple est un modèle mal spécifié.</p>
+</div>
+</section>
+<section class="level2" id="deux-difficultés-de-larch-dordre-élevé">
+<h2 class="anchored" data-anchor-id="deux-difficultés-de-larch-dordre-élevé">Deux difficultés de l’ARCH d’ordre élevé</h2>
+<div class="ecobox" title="Ce qui se passe en pratique">
+<div class="pedago-title">
+Ce qui se passe en pratique
+</div>
+<p><strong>Les contraintes butent.</strong> Il faut <span class="math inline">\alpha_i \ge 0</span> pour tout <span class="math inline">i</span> ; l’optimiseur pousse plusieurs coefficients sur la borne zéro, et les écarts-types deviennent ininterprétables.</p>
+<p><strong>Les paramètres sont mal estimés.</strong> Dix coefficients sur les carrés de résidus — série très bruitée — donnent des estimations instables d’un sous-échantillon à l’autre.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="une-solution-intermédiaire">
+<h1>Une solution intermédiaire</h1>
+<section class="level2" id="larch-à-poids-décroissants">
+<h2 class="anchored" data-anchor-id="larch-à-poids-décroissants">L’ARCH à poids décroissants</h2>
+<div class="definitionbox" title="La proposition d'Engle lui-même (1982)">
+<div class="pedago-title">
+La proposition d’Engle lui-même (1982)
+</div>
+<p>Imposer une décroissance linéaire des poids : <span class="math display"> \alpha_i = \alpha\,\frac{q+1-i}{\sum_{j=1}^{q}(q+1-j)} , \qquad i = 1,\dots,q . </span> Un seul paramètre <span class="math inline">\alpha</span> à estimer, quel que soit <span class="math inline">q</span>.</p>
+</div>
+<div class="intuitionbox" title="Une bonne idée, à moitié">
+<div class="pedago-title">
+Une bonne idée, à moitié
+</div>
+<p>Le nombre de paramètres est ramené à un, et la positivité est acquise. Mais la forme de la décroissance est <strong>imposée</strong>, non estimée — et rien ne garantit que les données la suivent.</p>
+<p>Bollerslev fera mieux : obtenir une décroissance <strong>géométrique</strong>, dont la vitesse est estimée, avec un seul paramètre supplémentaire.</p>
+</div>
+</section>
+</section>
+<section class="level1" id="synthèse">
+<h1>Synthèse</h1>
+<section class="level2" id="ce-quil-faut-retenir">
+<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<div class="definitionbox" title="L'essentiel du chapitre 5">
+<div class="pedago-title">
+L’essentiel du chapitre 5
+</div>
+<ul>
+<li><strong>Toujours</strong> valider l’équation de moyenne avant d’examiner les carrés des résidus.</li>
+<li><strong>Test ARCH de Engle</strong> : régresser <span class="math inline">\hat\varepsilon_t^2</span> sur ses retards, <span class="math inline">T\!\cdot\!R^2 \sim \chi^2_m</span>.</li>
+<li><strong>Ljung-Box sur les carrés</strong> : plus général, mêmes conclusions en pratique.</li>
+<li>Sur données financières quotidiennes, le rejet est systématique et massif.</li>
+<li>La PACF des carrés devrait couper après <span class="math inline">q</span> ; sur données réelles elle ne coupe pas.</li>
+<li>Les critères d’information poussent <span class="math inline">q</span> vers 8 ou 10 : le signe qu’il faut changer de modèle.</li>
+</ul>
+</div>
+<div class="intuitionbox" title="Vers la partie III">
+<div class="pedago-title">
+Vers la partie III
+</div>
+<p>Tous les indices convergent : il faut une mémoire longue avec peu de paramètres. La solution reprend exactement le procédé qui, dans le cours ARMA, faisait passer du MA au ARMA.</p>
+</div>
+</section>
+</section>
+
+<div class="jm-lecteur-nav">
+<a href="../../../cours/modelisation-garch/chapitres/proprietes-arch.html">← Chapitre précédent<span class="jm-nav-label">Propriétés statistiques de l'ARCH</span></a>
+<a class="jm-nav-suivant" href="../../../cours/modelisation-garch/chapitres/modele-garch.html">Chapitre suivant →<span class="jm-nav-label">Le modèle GARCH(p,q) de Bollerslev</span></a>
+</div>
+</div>
+<div class="jm-lecteur-droite">
+<h3 class="anchored">Ressources du chapitre</h3>
+<ul>
+<li><a class="jm-ressource" href="../slides/detecter-arch.pdf">Diapositives</a></li>
+<li><a class="jm-ressource" href="../ressources/detecter-arch-poly.pdf">Polycopié du chapitre</a></li>
+<li><a class="jm-ressource" href="../ressources/detecter-arch-exercices-corriges.pdf">Exercices corrigés</a></li>
+<li><a class="jm-ressource" href="../outils/detecter-arch.html">Application interactive</a></li>
+<li><span class="jm-indisponible">— Vidéo</span></li>
+<li><span class="jm-reserve">QCM (bientôt)</span></li>
+</ul>
+</div>
+</div>
+
+
+
+</main> <!-- /main -->
+<!-- Mémorise le thème réellement appliqué par Quarto (clair ou sombre) afin
+     que les diaporamas, qui sont des documents séparés, puissent s'y accorder.
+     On lit la classe posée sur <body> plutôt que la clé interne de Quarto :
+     celle-ci vaut « alternate », dont le sens dépend de l'ordre de déclaration
+     des thèmes et pourrait s'inverser à la moindre retouche de _quarto.yml. -->
+<script>
+(function () {
+  function courant() {
+    var b = document.body;
+    if (!b) return null;
+    if (b.classList.contains("quarto-dark")) return "dark";
+    if (b.classList.contains("quarto-light")) return "light";
+    return null;
+  }
+  function memoriser() {
+    var t = courant();
+    if (!t) return;
+    try { localStorage.setItem("jm-theme", t); } catch (e) {}
+  }
+  memoriser();
+  // Le bouton de bascule change la classe de <body> : on suit le changement.
+  if (window.MutationObserver && document.body) {
+    new MutationObserver(memoriser).observe(document.body, {
+      attributes: true, attributeFilter: ["class"]
+    });
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copié");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copié");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jmadkour\.org");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>© 2026 Jaouad Madkour · jmadkour.org</p>
+</div>   
+    <div class="nav-footer-center">
+<p><a href="mailto:jmadkour@uae.ac.ma">jmadkour@uae.ac.ma</a></p>
+</div>
+    <div class="nav-footer-right">
+<p>construit avec Quarto</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="../../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

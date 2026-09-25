@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Modélisation ARMA – Jaouad Madkour</title>
+<title>Modélisation ARMA des rentabilités financières – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -86,17 +86,247 @@ ul.task-list li input[type="checkbox"] {
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
+<!-- Lecteur de chapitres à 3 volets : styles partagés par toutes les pages de cours restructurées (volets gauche/droit sur mesure, encadrés pédagogiques repliables) et rendu KaTeX des fragments de chapitre. Voir claude/plan-refonte-pages-cours.md dans le projet Claude pour le contexte. -->
+<style>
+/* =====================================================================
+   Lecteur de chapitres à 3 volets — pages de cours restructurées
+   Palette identique aux diapositives et à la palette pédagogique de
+   l'atelier (preamble.tex / preamble-article.tex / custom.scss) :
+     cdef  #4A3B8C  définition
+     cintu #E08000  intuition
+     cex   #2E8B57  exemple
+     ceco  #1F6FB2  application économique (= $primary du site)
+   Couleurs de thème (fond, bordures, cartes) reprises de
+   theme-light.scss / theme-dark.scss, sélectionnées via les classes
+   body.quarto-light / body.quarto-dark déjà posées par Quarto.
+   ===================================================================== */
+
+/* Quarto ajoute automatiquement les classes .page-columns.page-full à tout
+   bloc de premier niveau dans .content (grid.content-mode: standard, actif
+   sur tout le site) — leur grille (colonnes nommées pour marge/TOC) prend
+   sinon le pas sur la nôtre, à spécificité CSS égale et chargée après.
+   D'où les !important ci-dessous, uniquement sur les deux propriétés en
+   conflit direct.
+   Largeurs : avec page-layout: full (et un DOM valide — voir la note sur
+   les <summary> dans pedago-blocks.lua), .content atteint ~1135px sur ce
+   site, indépendamment de la largeur de la fenêtre (grille à colonnes
+   nommées, non proportionnelle au viewport). Volets latéraux à 240px,
+   assez larges pour les intitulés de chapitre et de ressource sur une ou
+   deux lignes, le volet central se partageant le reste (~590px, proche
+   de la largeur de lecture par défaut de Quarto). */
+.jm-lecteur {
+  display: grid !important;
+  grid-template-columns: 240px minmax(0, 1fr) 240px !important;
+  gap: 1.75rem;
+  align-items: start;
+  margin-top: .6rem;
+  max-width: none !important;
+}
+/* Bootstrap (.page-columns>*{grid-column:body-content-start/body-content-end})
+   place autrement tous les enfants directs dans la même colonne nommée —
+   même spécificité (classe + combinateur enfant), donc on rétablit le
+   placement automatique (1er, 2e, 3e enfant -> colonnes 1, 2, 3). */
+.jm-lecteur > * { grid-column: auto !important; }
+
+@media (max-width: 991px) {
+  .jm-lecteur { grid-template-columns: 1fr !important; }
+  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+}
+
+/* ---------- Volet gauche : sommaire du cours ---------- */
+.jm-lecteur-gauche {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .92rem;
+}
+.jm-lecteur-titre-cours {
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding-bottom: .45rem;
+  margin-bottom: .6rem;
+  border-bottom: 1px solid #dbe6ee;
+}
+.jm-lecteur-gauche ul { list-style: none; padding: 0; margin: 0; }
+.jm-lecteur-gauche li { margin: 0; }
+.jm-lecteur-gauche a {
+  display: block;
+  padding: .4rem .55rem;
+  border-radius: 7px;
+  margin-bottom: .1rem;
+  color: inherit;
+  border-left: 3px solid transparent;
+  line-height: 1.35;
+}
+.jm-lecteur-gauche a:hover { background: rgba(31,111,178,0.08); text-decoration: none; }
+.jm-lecteur-gauche a.jm-actif {
+  background: rgba(31,111,178,0.12);
+  border-left-color: #1f6fb2;
+  color: #1f6fb2;
+  font-weight: 700;
+}
+.jm-lecteur-gauche a.jm-accueil { font-style: italic; }
+
+/* ---------- Volet centre : contenu du chapitre ---------- */
+.jm-lecteur-centre { min-width: 0; }
+.jm-lecteur-centre .quarto-title-block .title { font-size: 1.7rem; }
+.jm-lecteur-centre .quarto-title-block .subtitle { color: #54707f; }
+
+/* ---------- Volet droit : ressources du chapitre ---------- */
+.jm-lecteur-droite {
+  position: sticky;
+  top: 5.5rem;
+  font-size: .88rem;
+  background: #f6f9fb;
+  border: 1px solid #dbe6ee;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+.jm-lecteur-droite h3 {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #54707f;
+  margin: 0 0 .7rem;
+}
+.jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
+.jm-lecteur-droite li { margin-bottom: .55rem; }
+.jm-lecteur-droite a.jm-ressource {
+  color: #1f6fb2;
+  font-weight: 600;
+}
+.jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+.jm-lecteur-droite .jm-indisponible {
+  color: #9aa9b2; font-weight: 500; cursor: default;
+}
+.jm-lecteur-droite .jm-reserve {
+  color: #9aa9b2; font-style: italic;
+}
+
+/* ---------- Navigation précédent / suivant ---------- */
+.jm-lecteur-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin: 2.2rem 0 .5rem; padding-top: 1rem;
+  border-top: 1px solid #dbe6ee;
+  font-size: .92rem;
+}
+.jm-lecteur-nav a { color: #1f6fb2; font-weight: 600; }
+.jm-lecteur-nav .jm-nav-suivant { margin-left: auto; text-align: right; }
+.jm-lecteur-nav .jm-nav-label {
+  display: block; font-size: .76rem; font-weight: 400; color: #54707f;
+}
+
+/* ---------- Encadrés pédagogiques dans le volet centre ---------- */
+/* Reprend le mécanisme de custom.scss (atelier), adapté en <details> */
+.jm-lecteur-centre details.definitionbox,
+.jm-lecteur-centre details.intuitionbox,
+.jm-lecteur-centre details.examplebox,
+.jm-lecteur-centre details.ecobox {
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0.9em 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+.jm-lecteur-centre summary.pedago-title {
+  font-weight: 700;
+  color: #fff;
+  padding: .45em .9em;
+  cursor: pointer;
+  list-style: none;
+}
+.jm-lecteur-centre summary.pedago-title::-webkit-details-marker { display: none; }
+.jm-lecteur-centre summary.pedago-title::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: .5em;
+  transition: transform .15s ease;
+}
+.jm-lecteur-centre details[open] summary.pedago-title::before { transform: rotate(90deg); }
+.jm-lecteur-centre .pedago-body { padding: .7em 1em .9em; }
+.jm-lecteur-centre .pedago-body > *:first-child { margin-top: 0; }
+.jm-lecteur-centre .pedago-body > *:last-child { margin-bottom: 0; }
+
+.jm-lecteur-centre details.definitionbox { background: rgba(74,59,140,0.07); }
+.jm-lecteur-centre details.definitionbox summary.pedago-title { background: #4A3B8C; }
+.jm-lecteur-centre details.intuitionbox  { background: rgba(224,128,0,0.09); }
+.jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #E08000; }
+.jm-lecteur-centre details.examplebox    { background: rgba(46,139,87,0.07); }
+.jm-lecteur-centre details.examplebox summary.pedago-title { background: #2E8B57; }
+.jm-lecteur-centre details.ecobox        { background: rgba(31,111,178,0.07); }
+.jm-lecteur-centre details.ecobox summary.pedago-title { background: #1F6FB2; }
+
+/* Colonnes (definitionbox à côté d'une figure, etc.) : héritées du rendu
+   Quarto (div.columns{display:flex} / inline style width sur div.column). */
+.jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
+.jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
+
+/* =====================================================================
+   Mode sombre — posé par Quarto sur <body class="quarto-dark">
+   ===================================================================== */
+body.quarto-dark .jm-lecteur-titre-cours { border-bottom-color: #20455a; }
+body.quarto-dark .jm-lecteur-gauche a:hover { background: rgba(58,160,230,0.12); }
+body.quarto-dark .jm-lecteur-gauche a.jm-actif {
+  background: rgba(58,160,230,0.16);
+  border-left-color: #3aa0e6;
+  color: #3aa0e6;
+}
+body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite {
+  background: #13303d;
+  border-color: #20455a;
+}
+body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-droite .jm-indisponible,
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
+body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
+body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
+
+body.quarto-dark .jm-lecteur-centre details.definitionbox { background: rgba(122,104,206,0.16); }
+body.quarto-dark .jm-lecteur-centre details.definitionbox summary.pedago-title { background: #6252a8; }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox  { background: rgba(224,148,74,0.16); }
+body.quarto-dark .jm-lecteur-centre details.intuitionbox summary.pedago-title { background: #c47a2e; }
+body.quarto-dark .jm-lecteur-centre details.examplebox    { background: rgba(55,180,126,0.14); }
+body.quarto-dark .jm-lecteur-centre details.examplebox summary.pedago-title { background: #37b47e; }
+body.quarto-dark .jm-lecteur-centre details.ecobox        { background: rgba(58,160,230,0.14); }
+body.quarto-dark .jm-lecteur-centre details.ecobox summary.pedago-title { background: #3aa0e6; }
+</style>
+<!-- Rendu KaTeX pour le volet central : les fragments de chapitre sont
+     extraits (BeautifulSoup) du rendu Quarto de l'atelier et insérés tels
+     quels en HTML brut dans la page du site. Le contenu mathématique y est
+     déjà mis en forme (spans <span class="math inline|display">…</span>,
+     source LaTeX brute), mais Quarto ne le détecte pas à la compilation de
+     CETTE page (le bloc {=html} n'est pas réanalysé comme du Markdown), et
+     n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
+     ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
+     pages où il détecte des maths (cf. html-math-method: katex du site) :
+     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     de tous les éléments .math qui les rend en place. -->
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+</script>
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
 
 
-<meta property="og:title" content="Modélisation ARMA – Jaouad Madkour">
-<meta property="og:description" content="Jaouad Madkour — statistique, économétrie et gestion des risques financiers : un manuel vivant, interactif et gratuit.">
+<meta property="og:title" content="Modélisation ARMA des rentabilités financières – Jaouad Madkour">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Modélisation ARMA – Jaouad Madkour">
-<meta name="twitter:description" content="Jaouad Madkour — statistique, économétrie et gestion des risques financiers : un manuel vivant, interactif et gratuit.">
+<meta name="twitter:title" content="Modélisation ARMA des rentabilités financières – Jaouad Madkour">
 <meta name="twitter:card" content="summary_large_image">
 </head>
 
-<body class="nav-sidebar floating nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -357,115 +587,24 @@ ul.task-list li input[type="checkbox"] {
 </div>
       </div> <!-- /container-fluid -->
     </nav>
-  <nav class="quarto-secondary-nav">
-    <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Basculer la barre latérale" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
-        <i class="bi bi-layout-text-sidebar-reverse"></i>
-      </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../cours/modelisation-arma/index.html">Modélisation ARMA</a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Basculer la barre latérale" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
-        </a>
-    </div>
-  </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
-    <div class="sidebar-menu-container"> 
-    <ul class="list-unstyled mt-1">
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a href="../../cours/modelisation-arma/index.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Modélisation ARMA</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Basculer la section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
- <span class="menu-text">1. Variable aléatoire et processus stochastique</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">2. La stationnarité</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">3. Le bruit blanc</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">4. L'opérateur retard et l'écriture polynomiale</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">5. Les processus autorégressifs AR(p)</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">6. Les processus de moyenne mobile MA(q)</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">7. Les processus mixtes ARMA(p,q)</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">8. Conditions de stationnarité et d'inversibilité</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">9. Les tests de racine unitaire</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">10. Espérance, variance et fonction d'autocovariance</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">11. Autocorrélation, autocorrélogramme et mémoire</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">12. Box et Jenkins : l'identification</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">13. Le choix du modèle par les critères d'information</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">14. L'estimation : moindres carrés et maximum de vraisemblance</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">15. La validation, et ce que les résidus révèlent</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">16. La prévision : ponctuelle, par intervalle, par densité</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">17. Mise en œuvre sur R</span>
-  </li>
-          <li class="sidebar-item">
- <span class="menu-text">18. Mise en œuvre sur Python</span>
-  </li>
-      </ul>
-  </li>
-    </ul>
-    </div>
-</nav>
-<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">Sur cette page</h2>
-   
-  <ul>
-  <li><a href="#syllabus" id="toc-syllabus" class="nav-link active" data-scroll-target="#syllabus">Syllabus</a></li>
-  <li><a href="#chapitres-et-documents" id="toc-chapitres-et-documents" class="nav-link" data-scroll-target="#chapitres-et-documents">Chapitres et documents</a></li>
-  </ul>
-</nav>
-    </div>
+    
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content column-page" id="quarto-document-content">
 
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Modélisation ARMA</h1>
+<h1 class="title">Modélisation ARMA des rentabilités financières</h1>
 </div>
 
 
 
-<div class="quarto-title-meta">
+<div class="quarto-title-meta column-page">
 
     
   
@@ -477,6 +616,32 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<div class="jm-lecteur jm-lecteur-accueil">
+<div class="jm-lecteur-gauche">
+<div class="jm-lecteur-titre-cours">Modélisation ARMA des rentabilités financières</div>
+<ul>
+<li><a class="jm-accueil jm-actif" href="../../cours/modelisation-arma/index.html">Présentation du cours</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/processus-stochastique.html">1. Variable aléatoire et processus stochastique</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/stationnarite.html">2. La stationnarité</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/bruit-blanc.html">3. Le bruit blanc</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/operateur-retard.html">4. L'opérateur retard et l'écriture polynomiale</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/processus-ar.html">5. Les processus autorégressifs AR(p)</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/processus-ma.html">6. Les processus de moyenne mobile MA(q)</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/processus-arma.html">7. Les processus mixtes ARMA(p,q)</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/conditions-stationnarite.html">8. Conditions de stationnarité et d'inversibilité</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/racine-unitaire.html">9. Les tests de racine unitaire</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/autocovariance.html">10. Espérance, variance et fonction d'autocovariance</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/autocorrelogramme.html">11. Autocorrélation, autocorrélogramme et mémoire</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/identification.html">12. Box et Jenkins : l'identification</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/criteres-information.html">13. Le choix du modèle par les critères d'information</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/estimation.html">14. L'estimation : moindres carrés et maximum de vraisemblance</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/validation.html">15. La validation, et ce que les résidus révèlent</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/prevision.html">16. La prévision : ponctuelle, par intervalle, par densité</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/mise-en-oeuvre-r.html">17. Mise en œuvre sur R</a></li>
+<li><a class="" href="../../cours/modelisation-arma/chapitres/mise-en-oeuvre-python.html">18. Mise en œuvre sur Python</a></li>
+</ul>
+</div>
+<div class="jm-lecteur-centre">
 <p>La rentabilité d’aujourd’hui aide-t-elle à prévoir celle de demain ? La question est simple, la réponse exige tout un appareil : définir ce qu’est un processus aléatoire indexé par le temps, dire à quelles conditions on peut l’estimer sur une seule trajectoire observée, construire des modèles qui portent la mémoire, et savoir lire cette mémoire sur un graphique.</p>
 <p>Le cours suit la démarche de Box et Jenkins — identifier, estimer, valider — et l’applique aux rentabilités boursières. Il s’achève sur un résultat qui n’est pas celui qu’on attendait : les rentabilités n’ont presque aucune mémoire, mais leurs carrés en ont beaucoup. C’est ce constat qui ouvre le cours suivant.</p>
 <p>Second cours de la branche économétrie avancée, niveau Master — et porte d’entrée de la modélisation GARCH.</p>
@@ -502,214 +667,12 @@ ul.task-list li input[type="checkbox"] {
 </tr>
 </tbody>
 </table>
-<p>Chaque chapitre est un diaporama en PDF. Le tableau ci-dessous rassemble, chapitre par chapitre, les diapositives et le reste du matériel — polycopié, exercices, vidéo — au fur et à mesure de leur mise en ligne.</p>
-<!-- TABLEAU:DEBUT -->
-<!-- Bloc produit par scripts/generer-ressources.py. -->
-<!-- Ne pas modifier à la main : déposez les fichiers selon -->
-<!-- les conventions décrites en tête du script, puis relancez. -->
+<p>Chaque chapitre du sommaire, à gauche, ouvre sa page de lecture : le contenu détaillé au centre, les diapositives, le polycopié, les exercices corrigés, l’application interactive et la vidéo dans le panneau de droite.</p>
 </section>
-<section id="chapitres-et-documents" class="level2">
-<h2 class="anchored" data-anchor-id="chapitres-et-documents">Chapitres et documents</h2>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th style="text-align: right;">#</th>
-<th>Chapitre</th>
-<th>Diapositives</th>
-<th>Polycopié</th>
-<th>Exercices</th>
-<th>Corrigé</th>
-<th>Application</th>
-<th>Vidéo</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: right;">1</td>
-<td>Variable aléatoire et processus stochastique</td>
-<td><a href="slides/processus-stochastique.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/processus-stochastique-exercices.pdf">PDF</a></td>
-<td><a href="ressources/processus-stochastique-corrections.pdf">PDF</a></td>
-<td><a href="outils/processus-stochastique.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">2</td>
-<td>La stationnarité</td>
-<td><a href="slides/stationnarite.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/stationnarite-exercices.pdf">PDF</a></td>
-<td><a href="ressources/stationnarite-corrections.pdf">PDF</a></td>
-<td><a href="outils/stationnarite.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">3</td>
-<td>Le bruit blanc</td>
-<td><a href="slides/bruit-blanc.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/bruit-blanc-exercices.pdf">PDF</a></td>
-<td><a href="ressources/bruit-blanc-corrections.pdf">PDF</a></td>
-<td><a href="outils/bruit-blanc.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">4</td>
-<td>L’opérateur retard et l’écriture polynomiale</td>
-<td><a href="slides/operateur-retard.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/operateur-retard-exercices.pdf">PDF</a></td>
-<td><a href="ressources/operateur-retard-corrections.pdf">PDF</a></td>
-<td><a href="outils/operateur-retard.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">5</td>
-<td>Les processus autorégressifs AR(p)</td>
-<td><a href="slides/processus-ar.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/processus-ar-exercices.pdf">PDF</a></td>
-<td><a href="ressources/processus-ar-corrections.pdf">PDF</a></td>
-<td><a href="outils/processus-ar.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">6</td>
-<td>Les processus de moyenne mobile MA(q)</td>
-<td><a href="slides/processus-ma.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/processus-ma-exercices.pdf">PDF</a></td>
-<td><a href="ressources/processus-ma-corrections.pdf">PDF</a></td>
-<td><a href="outils/processus-ma.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">7</td>
-<td>Les processus mixtes ARMA(p,q)</td>
-<td><a href="slides/processus-arma.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/processus-arma-exercices.pdf">PDF</a></td>
-<td><a href="ressources/processus-arma-corrections.pdf">PDF</a></td>
-<td><a href="outils/processus-arma.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">8</td>
-<td>Conditions de stationnarité et d’inversibilité</td>
-<td><a href="slides/conditions-stationnarite.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/conditions-stationnarite-exercices.pdf">PDF</a></td>
-<td><a href="ressources/conditions-stationnarite-corrections.pdf">PDF</a></td>
-<td><a href="outils/conditions-stationnarite.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">9</td>
-<td>Les tests de racine unitaire</td>
-<td><a href="slides/racine-unitaire.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/racine-unitaire-exercices.pdf">PDF</a></td>
-<td><a href="ressources/racine-unitaire-corrections.pdf">PDF</a></td>
-<td><a href="outils/racine-unitaire.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">10</td>
-<td>Espérance, variance et fonction d’autocovariance</td>
-<td><a href="slides/autocovariance.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/autocovariance-exercices.pdf">PDF</a></td>
-<td><a href="ressources/autocovariance-corrections.pdf">PDF</a></td>
-<td><a href="outils/autocovariance.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">11</td>
-<td>Autocorrélation, autocorrélogramme et mémoire</td>
-<td><a href="slides/autocorrelogramme.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/autocorrelogramme-exercices.pdf">PDF</a></td>
-<td><a href="ressources/autocorrelogramme-corrections.pdf">PDF</a></td>
-<td><a href="outils/autocorrelogramme.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">12</td>
-<td>Box et Jenkins : l’identification</td>
-<td><a href="slides/identification.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/identification-exercices.pdf">PDF</a></td>
-<td><a href="ressources/identification-corrections.pdf">PDF</a></td>
-<td><a href="outils/identification.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">13</td>
-<td>Le choix du modèle par les critères d’information</td>
-<td><a href="slides/criteres-information.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/criteres-information-exercices.pdf">PDF</a></td>
-<td><a href="ressources/criteres-information-corrections.pdf">PDF</a></td>
-<td><a href="outils/criteres-information.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">14</td>
-<td>L’estimation : moindres carrés et maximum de vraisemblance</td>
-<td><a href="slides/estimation.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/estimation-exercices.pdf">PDF</a></td>
-<td><a href="ressources/estimation-corrections.pdf">PDF</a></td>
-<td><a href="outils/estimation.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">15</td>
-<td>La validation, et ce que les résidus révèlent</td>
-<td><a href="slides/validation.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/validation-exercices.pdf">PDF</a></td>
-<td><a href="ressources/validation-corrections.pdf">PDF</a></td>
-<td><a href="outils/validation.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">16</td>
-<td>La prévision : ponctuelle, par intervalle, par densité</td>
-<td><a href="slides/prevision.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/prevision-exercices.pdf">PDF</a></td>
-<td><a href="ressources/prevision-corrections.pdf">PDF</a></td>
-<td><a href="outils/prevision.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td style="text-align: right;">17</td>
-<td>Mise en œuvre sur R</td>
-<td><a href="slides/mise-en-oeuvre-r.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/mise-en-oeuvre-r-exercices.pdf">PDF</a></td>
-<td><a href="ressources/mise-en-oeuvre-r-corrections.pdf">PDF</a></td>
-<td><a href="outils/mise-en-oeuvre-r.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td style="text-align: right;">18</td>
-<td>Mise en œuvre sur Python</td>
-<td><a href="slides/mise-en-oeuvre-python.pdf">PDF</a></td>
-<td>—</td>
-<td><a href="ressources/mise-en-oeuvre-python-exercices.pdf">PDF</a></td>
-<td><a href="ressources/mise-en-oeuvre-python-corrections.pdf">PDF</a></td>
-<td><a href="outils/mise-en-oeuvre-python.html">Ouvrir</a></td>
-<td>—</td>
-</tr>
-</tbody>
-</table>
-<!-- TABLEAU:FIN -->
+</div>
+</div>
 
 
-</section>
 
 </main> <!-- /main -->
 <!-- Mémorise le thème réellement appliqué par Quarto (clair ou sombre) afin
