@@ -38,6 +38,10 @@ Et, pour le cours entier :
 
 Les liens vidéo se déclarent dans cours/liens-video.yml.
 
+Les cours déjà passés au lecteur de chapitres à 3 volets n'ont plus de
+tableau : ce script les signale et les laisse de côté. Leurs pages se
+mettent à jour avec scripts/lecteur/generer_lecteur.py.
+
 Usage :
     python scripts/generer-ressources.py
     python scripts/generer-ressources.py --verifier   # n'écrit rien
@@ -152,6 +156,7 @@ def main():
     videos = yaml.safe_load(lire(VIDEOS)) or {}
 
     ecrits = 0
+    lecteurs = 0
     sans_marqueur = []
     total_manquants = 0
 
@@ -165,6 +170,11 @@ def main():
         total_manquants += manquants
 
         ancien = lire(cible)
+        if "jm-lecteur" in ancien:
+            lecteurs += 1
+            print("  lecteur   cours/%-34s (scripts/lecteur/generer_lecteur.py)"
+                  % (cours + "/index.qmd"))
+            continue
         nouveau = inserer(ancien, bloc)
         if nouveau is None:
             sans_marqueur.append(cours)
@@ -181,9 +191,9 @@ def main():
               % (etat, cours + "/index.qmd", len(chapitres), note))
 
     print()
-    print("%d cours, %d page(s) %s."
+    print("%d cours, %d page(s) %s, %d au lecteur à 3 volets (non traités ici)."
           % (len(sommaire), ecrits if not verif else 0,
-             "mise(s) à jour" if not verif else "à mettre à jour"))
+             "mise(s) à jour" if not verif else "à mettre à jour", lecteurs))
     if total_manquants:
         print("%d chapitre(s) sans PDF : lancer publier.sh depuis le dépôt source."
               % total_manquants)
