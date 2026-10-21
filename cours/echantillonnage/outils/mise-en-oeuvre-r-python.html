@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 15 — Mise en œuvre sur R et Python — Application interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+<style>
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  table.res { width: 100%; }
+  .petit { font-size: 0.85em; color: var(--cgris); }
+  .valeur { display: inline-block; padding: 0.15em 0.6em; border-radius: 5px; font-family: "Courier New", monospace; }
+  .defile { max-height: 320px; overflow-y: auto; }
+  @media (max-width: 640px) { .grille4, .grille3, .grille2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 15 — Mise en œuvre sur R et Python</h1>
+<p class="sous-titre">Application interactive — Échantillonnage</p>
+
+<style>
+  pre.code { background: var(--code-bg, #f3f7fa); border: 1px solid var(--border, #dbe6ee); border-radius: 6px; padding: 0.6em 0.8em; font-size: 0.8em; overflow-x: auto; white-space: pre; }
+  .panneau h3 { font-size: 0.95em; margin: 0.8em 0 0.2em; }
+</style>
+
+<div class="panneau">
+  <h2>Récapitulatif des plans du cours : effet de plan, taille effective, taille nécessaire</h2>
+  <p class="petit">Pour 200 ménages et la dépense moyenne, chaque ligne reprend la variance citée au chapitre indiqué (population du cours, N = 2 000, S = 3 984,29 dh). L'effet de plan est calculé ici : deff = V<sub>plan</sub>/V<sub>SAS</sub>, avec V<sub>SAS</sub> = (1 − f) S²/n = 71 435,5. La taille nécessaire pour une marge donnée suppose l'effet de plan constant : 1/n = (e/1,96)²/(deff × S²) + 1/N.</p>
+  <div class="grille3">
+    <div><label for="marge1">marge visée à 95 % (dh)</label><input id="marge1" type="number" value="300" min="1"></div>
+    <div><label for="tri1">ordre des lignes</label><select id="tri1"><option value="chapitre">par chapitre</option><option value="deff">par effet de plan croissant</option></select></div>
+    <div><label for="famille1">familles de plans</label><select id="famille1"><option value="toutes">toutes</option><option value="strates">strates et systématique</option><option value="grappes">grappes</option><option value="aux">information auxiliaire et non-réponse</option></select></div>
+  </div>
+  <button onclick="recapituler()">Calculer</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="graphe1"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Ce que calculerait svymean : un échantillon, un plan déclaré</h2>
+  <p class="petit">Les trois échantillons du chapitre sont embarqués : le fil rouge (sondage aléatoire simple de 200 ménages), l'échantillon systématique de départ 9 et les 215 ménages des districts 2, 9, 19, 32 et 40. Choisissez le plan déclaré : la page applique les formules de survey (grappes : la moyenne est le ratio Σ Y<sub>i</sub>/Σ M<sub>i</sub>, linéarisé et divisé par N̂ ; le total est celui de Horvitz-Thompson). L'option « fpc = n » reproduit une erreur de déclaration du chapitre.</p>
+  <div class="grille3">
+    <div><label for="ech2">échantillon</label><select id="ech2"><option value="filrouge">fil rouge (200 ménages)</option><option value="systematique">systématique, départ 9 (200)</option><option value="districts">5 districts entiers (215)</option></select></div>
+    <div><label for="plan2">plan déclaré</label><select id="plan2"><option value="sas">sondage aléatoire simple</option><option value="province">stratifié par province</option><option value="milieu">stratifié par milieu</option><option value="grappes">grappes : districts</option></select></div>
+    <div><label for="var2">variable</label><select id="var2"><option value="0">dépense (dh)</option><option value="1">internet (0/1)</option><option value="2">taille (personnes)</option></select></div>
+  </div>
+  <div class="grille2">
+    <div><label for="fpc2">correction de population finie (fpc)</label><select id="fpc2"><option value="N">fpc = N (correct)</option><option value="aucun">pas de fpc (avec remise)</option><option value="n">fpc = n (erreur)</option></select></div>
+    <div><label for="niv2">niveau de l'intervalle</label><select id="niv2"><option value="0.95">95 %</option><option value="0.90">90 %</option><option value="0.99">99 %</option></select></div>
+  </div>
+  <button onclick="calculer2()">Calculer</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels du chapitre : svydesign(ids = ~1, fpc = ~N) pour un sondage aléatoire simple, strata = ~province et fpc = ~N<sub>h</sub> pour des strates, ids = ~district et fpc = ~N<sub>I</sub> pour des grappes. Degrés de liberté : n − 1, n − H, n<sub>I</sub> − 1 ; intervalle avec confint(m, df = degf(p)). Sans fpc, survey suppose un tirage avec remise ; avec fpc = n, il croit à un recensement. Les erreurs-types des estimateurs non linéaires (ratio, calage) peuvent différer un peu des formules du cours : ce sont d'autres approximations de la même variance.</p>
+
+<script>
+
+const PLANS = [[3, "aléatoire simple de 200 ménages", "réf.", 71435.46494095797, "(1 − f) S²/n"], [6, "stratifié par province, allocation proportionnelle", "strates", 68139.7, ""], [6, "stratifié par milieu, allocation proportionnelle", "strates", 68367.8, ""], [6, "stratifié par taille du ménage (5 classes), proportionnelle", "strates", 44685.61024979909, ""], [7, "stratifié par province, allocation de Neyman", "strates", 67172.3, ""], [7, "stratifié par province, allocation égale (50 par province)", "strates", 89027.4, ""], [8, "systématique, pas de 10 dans l'ordre du fichier", "systématique", 30287.0, "variance exacte sur les 10 départs"], [8, "systématique, fichier trié par taille", "systématique", 18137.9, ""], [9, "5 districts entiers, Horvitz-Thompson", "grappes", 2300075.5599999996, "200 ménages en moyenne"], [9, "5 districts entiers, estimateur par le ratio", "grappes", 598829.9, ""], [10, "10 districts × 20 ménages, estimateur d'expansion", "grappes", 1064817.61, ""], [10, "10 districts × 20 ménages, estimateur par le ratio", "grappes", 308601.2085449385, "effet de plan cité : 4,32"], [11, "5 districts tirés selon la taille, Hansen-Hurwitz", "grappes", 568968.4899999999, "222,6 ménages en moyenne"], [11, "20 districts selon la taille × 10 ménages", "grappes", 192721.0, ""], [12, "estimateur par le ratio sur la taille", "information auxiliaire", 48770.3, ""], [13, "estimateur par la régression sur la taille", "information auxiliaire", 43805.5, ""], [13, "post-stratification par milieu", "information auxiliaire", 68673.7, ""], [13, "calage sur marges, milieu et province", "information auxiliaire", 67363.64343932336, "effet de plan simulé : 0,943"], [14, "répondants seuls (non-réponse) : erreur quadratique", "non-réponse", 132912.0245, "biais −219,4 compris"]];
+const ECH = {"filrouge":[[7590,0,6,0,0,1,4],[7790,1,3,0,0,1,8],[7180,1,3,0,0,1,24],[8110,1,4,0,0,1,26],[12550,1,4,0,0,1,47],[5290,1,3,0,0,1,48],[3810,0,3,0,0,1,65],[10470,1,4,0,0,1,66],[15890,1,8,0,0,2,74],[9010,0,4,0,0,2,75],[5060,1,2,0,0,2,114],[7530,1,3,0,0,3,118],[3990,0,1,0,0,3,139],[8210,1,3,0,0,3,145],[9340,0,6,0,0,3,148],[7420,0,3,0,0,4,155],[7430,1,2,0,0,4,169],[11070,1,4,0,0,4,170],[19310,1,9,0,0,4,180],[11670,1,5,0,0,4,181],[13090,0,3,0,0,4,183],[16600,1,7,0,0,5,200],[15600,1,3,0,0,5,201],[13510,1,5,0,0,5,206],[16230,1,4,0,0,5,216],[4220,1,3,0,0,6,269],[4900,1,3,0,0,6,289],[12180,0,5,0,0,6,295],[15520,1,6,0,0,7,302],[10670,1,3,0,0,7,307],[9450,0,2,0,0,7,314],[13060,1,4,0,0,7,323],[4800,0,1,0,0,7,337],[6640,1,3,0,0,7,342],[5030,1,2,0,0,7,359],[9760,0,3,0,0,7,363],[10030,1,6,0,0,8,370],[13100,1,8,0,0,8,374],[2560,1,1,0,0,8,387],[6820,1,3,0,0,8,390],[7970,1,3,0,0,9,417],[6290,0,3,0,0,10,431],[5920,1,4,0,0,11,467],[6840,0,4,0,0,11,487],[5430,1,4,0,0,11,494],[5160,1,3,0,0,11,496],[4400,0,2,0,0,11,500],[4880,0,4,0,0,11,507],[7030,1,6,0,0,11,511],[10490,1,5,0,0,11,516],[6290,1,3,0,0,12,530],[8870,1,4,0,0,12,543],[12020,1,5,0,0,12,553],[6330,1,2,0,0,13,558],[4150,1,2,0,0,13,583],[4960,1,3,0,0,13,584],[11060,0,4,0,0,13,585],[6880,1,4,0,0,13,592],[19960,1,6,0,0,13,601],[8630,1,5,0,0,14,607],[8940,0,3,0,0,14,610],[14230,1,5,0,0,14,623],[6960,1,5,0,0,14,629],[13540,1,5,0,0,14,643],[6260,1,2,0,0,14,646],[10210,0,4,0,0,14,660],[6990,0,3,0,0,15,670],[4530,1,2,0,0,15,677],[8500,1,3,0,0,15,683],[7900,1,3,0,0,15,684],[8200,0,4,1,0,16,694],[14520,1,7,1,0,16,709],[5230,0,2,1,0,16,710],[1540,0,1,1,0,17,738],[7650,1,7,1,0,17,769],[7420,1,3,1,0,18,776],[9010,0,3,1,0,18,788],[6820,1,4,1,0,18,795],[4020,0,4,1,0,18,798],[5470,1,2,1,0,18,801],[11110,0,4,1,0,18,809],[8510,1,9,1,0,18,810],[10430,0,4,1,0,18,812],[14290,1,4,0,1,19,823],[4540,1,1,0,1,19,829],[9770,0,4,0,1,19,844],[7860,1,2,0,1,19,845],[7770,1,3,0,1,19,857],[24970,1,10,0,1,19,858],[6390,1,2,0,1,19,862],[6540,1,3,0,1,19,867],[5630,1,4,0,1,19,886],[7580,1,2,0,1,20,895],[10070,1,5,0,1,20,898],[4920,1,3,0,1,21,922],[6850,1,4,0,1,21,933],[6510,0,5,0,1,21,943],[6990,0,5,0,1,21,945],[7030,0,7,0,1,21,959],[5370,1,3,0,1,21,963],[10040,0,5,0,1,22,969],[6540,1,3,0,1,22,971],[3610,1,2,0,1,22,988],[18280,1,6,0,1,23,999],[6710,1,2,0,1,23,1014],[6110,1,2,0,1,23,1022],[3370,0,2,0,1,24,1043],[4390,1,2,0,1,24,1056],[13260,1,4,0,1,25,1089],[7690,1,4,0,1,25,1099],[2290,0,1,0,1,25,1102],[10270,1,4,0,1,25,1104],[6550,0,3,0,1,25,1105],[9500,1,5,0,1,25,1116],[3900,1,2,0,1,26,1133],[7290,0,4,0,1,26,1134],[4730,0,2,0,1,26,1155],[5130,1,2,0,1,26,1160],[7600,1,3,0,1,26,1162],[7480,1,5,0,1,26,1165],[6410,1,2,0,1,27,1179],[3890,1,1,0,1,27,1181],[4710,1,2,0,1,27,1183],[14870,1,6,0,1,27,1187],[13270,1,5,0,1,27,1188],[6620,1,3,0,1,27,1189],[10160,0,3,0,1,27,1192],[7360,1,4,0,1,27,1199],[13430,1,5,0,1,27,1203],[11270,1,5,0,1,27,1213],[6770,0,2,0,1,28,1225],[10270,1,5,0,1,28,1234],[11240,1,5,1,1,29,1272],[8830,0,7,1,1,30,1278],[3730,0,4,1,1,30,1292],[7170,1,3,1,1,31,1309],[10460,0,5,1,1,31,1310],[3590,1,1,1,1,31,1314],[10490,1,9,1,1,31,1320],[8970,0,7,1,1,31,1324],[6210,0,6,1,1,31,1328],[11090,0,6,1,1,32,1358],[4510,1,3,1,1,32,1376],[8180,1,5,0,2,33,1388],[4680,0,3,0,2,33,1400],[10760,1,6,0,2,34,1415],[9320,1,3,0,2,34,1419],[9880,1,4,0,2,34,1429],[12110,1,7,0,2,34,1433],[7580,0,3,0,2,35,1448],[6350,1,3,0,2,35,1489],[6740,1,4,0,2,36,1506],[4530,1,4,0,2,36,1507],[4310,0,3,0,2,36,1514],[6560,1,3,0,2,36,1525],[8520,0,5,0,2,36,1527],[6150,1,3,0,2,37,1529],[5620,0,2,0,2,37,1534],[7810,0,3,0,2,37,1535],[15460,1,6,0,2,37,1560],[3010,0,1,0,2,37,1567],[14240,1,4,0,2,37,1571],[4810,1,2,0,2,37,1572],[14870,1,7,1,2,40,1631],[8780,0,6,1,2,40,1634],[3570,1,3,1,2,40,1642],[3800,1,2,1,2,42,1677],[7680,1,6,1,2,42,1678],[9890,1,5,1,2,42,1692],[3000,0,2,1,2,43,1733],[3560,0,3,1,2,43,1743],[6440,0,4,1,2,43,1747],[2840,1,1,0,3,44,1762],[1790,0,1,0,3,44,1764],[4180,1,2,0,3,44,1773],[4370,1,2,0,3,44,1785],[6300,1,5,0,3,44,1796],[3900,0,2,0,3,45,1816],[4690,0,3,0,3,45,1821],[4180,1,2,0,3,45,1831],[8460,1,4,0,3,45,1834],[5210,1,3,0,3,45,1842],[5750,0,3,0,3,45,1844],[3640,1,2,0,3,45,1848],[3720,1,2,0,3,45,1853],[1370,0,2,1,3,47,1868],[5590,1,4,1,3,47,1872],[2990,1,4,1,3,47,1873],[2340,0,2,1,3,47,1875],[6750,1,5,1,3,47,1889],[3690,0,5,1,3,48,1913],[8300,0,5,1,3,48,1914],[5230,0,6,1,3,48,1915],[4860,1,3,1,3,48,1921],[6460,1,5,1,3,49,1961],[4100,1,4,1,3,50,1975],[2820,1,2,1,3,50,1977],[8080,0,6,1,3,50,1978],[6900,0,6,1,3,50,1981],[14710,1,9,1,3,50,1999]],"systematique":[[5350,1,3,0,0,1,9],[7620,1,4,0,0,1,19],[7440,1,4,0,0,1,29],[4750,1,2,0,0,1,39],[4190,1,2,0,0,1,49],[7890,1,6,0,0,1,59],[7780,1,5,0,0,1,69],[3490,0,2,0,0,2,79],[10970,1,3,0,0,2,89],[5990,1,2,0,0,2,99],[8450,1,4,0,0,2,109],[11050,1,3,0,0,3,119],[8550,1,3,0,0,3,129],[3990,0,1,0,0,3,139],[6900,1,3,0,0,3,149],[4700,0,2,0,0,4,159],[7430,1,2,0,0,4,169],[11440,1,3,0,0,4,179],[5600,0,4,0,0,4,189],[3870,1,2,0,0,4,199],[7620,0,2,0,0,5,209],[21000,1,7,0,0,5,219],[8490,1,1,0,0,5,229],[15910,1,3,0,0,5,239],[12420,1,5,0,0,6,249],[4890,1,2,0,0,6,259],[4220,1,3,0,0,6,269],[5500,1,2,0,0,6,279],[4900,1,3,0,0,6,289],[10710,1,4,0,0,7,299],[8870,1,3,0,0,7,309],[9070,1,3,0,0,7,319],[9530,1,3,0,0,7,329],[13610,1,3,0,0,7,339],[13640,1,5,0,0,7,349],[5030,1,2,0,0,7,359],[8310,0,4,0,0,8,369],[4030,1,1,0,0,8,379],[10960,0,5,0,0,8,389],[6450,1,2,0,0,9,399],[6550,1,2,0,0,9,409],[13030,1,2,0,0,9,419],[12040,1,3,0,0,9,429],[5690,1,3,0,0,10,439],[14350,1,6,0,0,10,449],[10220,1,2,0,0,10,459],[10150,1,6,0,0,11,469],[6410,1,3,0,0,11,479],[8450,0,4,0,0,11,489],[2180,1,1,0,0,11,499],[6040,1,3,0,0,11,509],[6220,1,3,0,0,11,519],[4860,1,2,0,0,12,529],[5410,1,2,0,0,12,539],[4610,1,2,0,0,12,549],[6060,0,3,0,0,13,559],[7600,1,2,0,0,13,569],[13580,0,7,0,0,13,579],[11980,1,6,0,0,13,589],[3840,1,2,0,0,13,599],[8900,1,4,0,0,14,609],[29120,1,6,0,0,14,619],[6960,1,5,0,0,14,629],[4410,1,1,0,0,14,639],[13620,1,6,0,0,14,649],[10970,1,5,0,0,14,659],[14100,1,5,0,0,15,669],[10080,1,5,0,0,15,679],[10860,1,7,1,0,16,689],[8660,0,6,1,0,16,699],[14520,1,7,1,0,16,709],[7440,0,4,1,0,16,719],[9680,1,6,1,0,16,729],[1720,0,1,1,0,17,739],[4390,0,3,1,0,17,749],[8020,1,6,1,0,17,759],[7650,1,7,1,0,17,769],[12960,0,6,1,0,18,779],[4420,0,4,1,0,18,789],[11840,0,4,1,0,18,799],[11110,0,4,1,0,18,809],[12810,0,5,1,0,18,819],[4540,1,1,0,1,19,829],[3570,1,1,0,1,19,839],[14810,1,7,0,1,19,849],[11630,1,5,0,1,19,859],[7450,0,5,0,1,19,869],[6780,1,3,0,1,19,879],[7530,1,6,0,1,20,889],[13290,1,5,0,1,20,899],[7020,0,3,0,1,20,909],[4120,0,2,0,1,21,919],[9580,1,4,0,1,21,929],[5730,0,3,0,1,21,939],[9310,1,5,0,1,21,949],[7030,0,7,0,1,21,959],[10040,0,5,0,1,22,969],[5520,1,3,0,1,22,979],[17630,1,5,0,1,23,989],[18280,1,6,0,1,23,999],[9090,1,3,0,1,23,1009],[5450,1,2,0,1,23,1019],[9300,1,5,0,1,23,1029],[6830,1,4,0,1,24,1039],[19470,1,6,0,1,24,1049],[8870,1,3,0,1,24,1059],[2480,1,1,0,1,24,1069],[2800,1,1,0,1,25,1079],[13260,1,4,0,1,25,1089],[7690,1,4,0,1,25,1099],[10540,1,7,0,1,25,1109],[3010,0,1,0,1,26,1119],[3800,1,2,0,1,26,1129],[3600,1,1,0,1,26,1139],[9690,1,5,0,1,26,1149],[4800,1,3,0,1,26,1159],[8380,1,4,0,1,26,1169],[6410,1,2,0,1,27,1179],[6620,1,3,0,1,27,1189],[7360,1,4,0,1,27,1199],[11060,0,4,0,1,27,1209],[5680,1,5,0,1,28,1219],[6600,1,2,0,1,28,1229],[15940,1,6,0,1,28,1239],[7160,1,5,1,1,29,1249],[9180,0,5,1,1,29,1259],[5830,1,4,1,1,29,1269],[11080,1,7,1,1,30,1279],[6120,0,4,1,1,30,1289],[5460,1,5,1,1,30,1299],[7170,1,3,1,1,31,1309],[12850,1,6,1,1,31,1319],[4800,1,3,1,1,31,1329],[12060,0,6,1,1,31,1339],[9810,1,8,1,1,32,1349],[8270,0,5,1,1,32,1359],[10370,1,8,1,1,32,1369],[6830,1,5,1,1,32,1379],[8790,0,5,0,2,33,1389],[13460,1,5,0,2,33,1399],[7010,1,4,0,2,34,1409],[9320,1,3,0,2,34,1419],[9880,1,4,0,2,34,1429],[8490,1,5,0,2,34,1439],[2590,1,2,0,2,35,1449],[3100,1,1,0,2,35,1459],[20360,1,7,0,2,35,1469],[6070,1,4,0,2,35,1479],[6350,1,3,0,2,35,1489],[8340,0,4,0,2,36,1499],[9440,1,5,0,2,36,1509],[6860,1,4,0,2,36,1519],[6150,1,3,0,2,37,1529],[9160,1,8,0,2,37,1539],[10350,1,3,0,2,37,1549],[4780,0,3,0,2,37,1559],[7170,0,2,0,2,37,1569],[6870,1,4,0,2,37,1579],[10390,1,10,0,2,38,1589],[14550,1,4,0,2,38,1599],[4490,0,3,1,2,39,1609],[3470,0,3,1,2,40,1619],[6020,0,5,1,2,40,1629],[4510,1,4,1,2,40,1639],[6570,1,6,1,2,41,1649],[5990,1,3,1,2,41,1659],[7300,0,7,1,2,41,1669],[4170,0,5,1,2,42,1679],[4800,0,2,1,2,42,1689],[5190,0,3,1,2,42,1699],[13000,0,7,1,2,42,1709],[4080,0,6,1,2,43,1719],[3310,0,5,1,2,43,1729],[5960,0,6,1,2,43,1739],[5080,1,5,1,2,43,1749],[2950,0,4,1,2,43,1759],[3870,1,4,0,3,44,1769],[2010,0,1,0,3,44,1779],[4790,0,4,0,3,44,1789],[3950,0,2,0,3,44,1799],[5400,1,3,0,3,45,1809],[8570,1,6,0,3,45,1819],[4100,1,2,0,3,45,1829],[7790,0,4,0,3,45,1839],[6580,1,3,0,3,45,1849],[5980,0,5,0,3,46,1859],[3010,0,2,1,3,47,1869],[2550,1,3,1,3,47,1879],[6750,1,5,1,3,47,1889],[5290,0,5,1,3,47,1899],[3640,0,5,1,3,47,1909],[4930,1,6,1,3,48,1919],[4100,0,5,1,3,48,1929],[4560,0,3,1,3,49,1939],[2100,0,2,1,3,49,1949],[6700,0,5,1,3,49,1959],[6210,0,3,1,3,50,1969],[7670,0,6,1,3,50,1979],[7260,1,5,1,3,50,1989],[14710,1,9,1,3,50,1999]],"districts":[[4320,1,2,0,0,2,72],[20250,1,4,0,0,2,73],[15890,1,8,0,0,2,74],[9010,0,4,0,0,2,75],[5770,0,2,0,0,2,76],[11430,1,5,0,0,2,77],[5630,1,3,0,0,2,78],[3490,0,2,0,0,2,79],[5010,1,2,0,0,2,80],[6490,1,3,0,0,2,81],[3000,0,1,0,0,2,82],[8830,1,5,0,0,2,83],[23080,1,7,0,0,2,84],[14140,1,4,0,0,2,85],[14270,1,5,0,0,2,86],[10190,1,4,0,0,2,87],[10300,0,4,0,0,2,88],[10970,1,3,0,0,2,89],[9540,1,5,0,0,2,90],[10260,1,5,0,0,2,91],[12510,1,5,0,0,2,92],[6590,1,2,0,0,2,93],[10700,1,4,0,0,2,94],[11840,1,5,0,0,2,95],[11970,1,6,0,0,2,96],[7870,1,5,0,0,2,97],[13590,0,3,0,0,2,98],[5990,1,2,0,0,2,99],[12680,1,4,0,0,2,100],[7740,1,5,0,0,2,101],[9420,1,4,0,0,2,102],[5240,0,2,0,0,2,103],[12510,1,4,0,0,2,104],[12330,1,5,0,0,2,105],[9290,0,4,0,0,2,106],[8750,1,2,0,0,2,107],[8540,0,4,0,0,2,108],[8450,1,4,0,0,2,109],[11150,1,4,0,0,2,110],[7680,1,3,0,0,2,111],[3490,1,1,0,0,2,112],[9200,1,4,0,0,2,113],[5060,1,2,0,0,2,114],[12080,1,5,0,0,2,115],[2060,0,1,0,0,2,116],[9450,1,2,0,0,2,117],[6450,1,2,0,0,9,399],[14640,1,5,0,0,9,400],[4410,1,3,0,0,9,401],[3050,0,2,0,0,9,402],[2100,1,1,0,0,9,403],[4380,0,2,0,0,9,404],[18340,1,5,0,0,9,405],[4890,1,3,0,0,9,406],[8160,1,3,0,0,9,407],[10910,1,4,0,0,9,408],[6550,1,2,0,0,9,409],[2490,1,1,0,0,9,410],[9010,1,4,0,0,9,411],[11420,1,4,0,0,9,412],[9580,1,4,0,0,9,413],[8460,1,3,0,0,9,414],[5070,1,2,0,0,9,415],[6210,1,4,0,0,9,416],[7970,1,3,0,0,9,417],[4320,1,3,0,0,9,418],[13030,1,2,0,0,9,419],[9880,1,3,0,0,9,420],[6430,1,3,0,0,9,421],[19030,1,6,0,0,9,422],[10620,1,5,0,0,9,423],[14750,1,6,0,0,9,424],[11180,1,6,0,0,9,425],[3650,0,2,0,0,9,426],[10560,0,4,0,0,9,427],[5690,0,2,0,0,9,428],[12040,1,3,0,0,9,429],[7700,1,5,0,1,19,821],[9820,1,6,0,1,19,822],[14290,1,4,0,1,19,823],[6420,1,4,0,1,19,824],[5460,1,3,0,1,19,825],[6490,0,3,0,1,19,826],[15850,1,7,0,1,19,827],[9600,1,4,0,1,19,828],[4540,1,1,0,1,19,829],[14580,1,5,0,1,19,830],[5410,0,4,0,1,19,831],[11100,0,5,0,1,19,832],[6380,0,6,0,1,19,833],[11630,1,3,0,1,19,834],[3760,1,3,0,1,19,835],[7030,1,3,0,1,19,836],[8850,1,3,0,1,19,837],[6630,1,3,0,1,19,838],[3570,1,1,0,1,19,839],[13980,1,6,0,1,19,840],[7700,0,2,0,1,19,841],[10360,1,5,0,1,19,842],[7020,1,5,0,1,19,843],[9770,0,4,0,1,19,844],[7860,1,2,0,1,19,845],[11330,1,7,0,1,19,846],[3680,0,2,0,1,19,847],[8420,0,5,0,1,19,848],[14810,1,7,0,1,19,849],[10950,1,6,0,1,19,850],[4980,1,2,0,1,19,851],[10490,1,6,0,1,19,852],[15790,1,7,0,1,19,853],[13460,1,7,0,1,19,854],[14900,1,6,0,1,19,855],[7330,1,3,0,1,19,856],[7770,1,3,0,1,19,857],[24970,1,10,0,1,19,858],[11630,1,5,0,1,19,859],[11500,1,4,0,1,19,860],[8750,0,2,0,1,19,861],[6390,1,2,0,1,19,862],[8440,1,4,0,1,19,863],[5630,1,4,0,1,19,864],[9070,1,5,0,1,19,865],[7910,1,6,0,1,19,866],[6540,1,3,0,1,19,867],[4590,1,2,0,1,19,868],[7450,0,5,0,1,19,869],[7210,1,4,0,1,19,870],[11280,0,4,0,1,19,871],[7180,1,3,0,1,19,872],[6010,1,3,0,1,19,873],[9070,1,3,0,1,19,874],[9260,1,3,0,1,19,875],[14180,1,7,0,1,19,876],[9780,1,3,0,1,19,877],[8550,1,5,0,1,19,878],[6780,1,3,0,1,19,879],[7090,1,4,0,1,19,880],[8740,0,3,0,1,19,881],[11770,1,5,0,1,19,882],[15820,1,8,0,1,19,883],[7420,1,4,0,1,19,884],[11110,1,6,0,1,19,885],[5630,1,4,0,1,19,886],[2030,0,1,0,1,19,887],[2180,0,1,0,1,19,888],[6230,0,5,1,1,32,1340],[8570,0,4,1,1,32,1341],[5430,0,4,1,1,32,1342],[7920,0,7,1,1,32,1343],[3310,0,4,1,1,32,1344],[10500,0,7,1,1,32,1345],[5780,0,5,1,1,32,1346],[10890,1,6,1,1,32,1347],[6240,1,5,1,1,32,1348],[9810,1,8,1,1,32,1349],[5850,0,2,1,1,32,1350],[5130,0,2,1,1,32,1351],[6090,1,3,1,1,32,1352],[6360,1,4,1,1,32,1353],[9760,1,6,1,1,32,1354],[11230,1,6,1,1,32,1355],[8920,0,4,1,1,32,1356],[5540,1,3,1,1,32,1357],[11090,0,6,1,1,32,1358],[8270,0,5,1,1,32,1359],[6870,1,3,1,1,32,1360],[5130,0,4,1,1,32,1361],[6260,1,5,1,1,32,1362],[7710,0,5,1,1,32,1363],[3490,1,2,1,1,32,1364],[4520,0,2,1,1,32,1365],[12450,1,6,1,1,32,1366],[7450,0,4,1,1,32,1367],[4150,0,4,1,1,32,1368],[10370,1,8,1,1,32,1369],[4250,1,3,1,1,32,1370],[5090,0,3,1,1,32,1371],[5120,1,4,1,1,32,1372],[6740,0,6,1,1,32,1373],[6300,0,4,1,1,32,1374],[6170,0,3,1,1,32,1375],[4510,1,3,1,1,32,1376],[6100,1,2,1,1,32,1377],[4270,0,4,1,1,32,1378],[6830,1,5,1,1,32,1379],[6080,1,3,1,1,32,1380],[7060,0,5,1,2,40,1617],[6150,0,3,1,2,40,1618],[3470,0,3,1,2,40,1619],[5130,0,6,1,2,40,1620],[5110,1,4,1,2,40,1621],[5530,0,3,1,2,40,1622],[7090,1,5,1,2,40,1623],[3450,0,2,1,2,40,1624],[7240,0,6,1,2,40,1625],[7790,0,3,1,2,40,1626],[2650,0,1,1,2,40,1627],[11170,0,5,1,2,40,1628],[6020,0,5,1,2,40,1629],[3930,1,3,1,2,40,1630],[14870,1,7,1,2,40,1631],[8440,0,4,1,2,40,1632],[7060,0,4,1,2,40,1633],[8780,0,6,1,2,40,1634],[3930,1,3,1,2,40,1635],[7040,0,5,1,2,40,1636],[4680,0,3,1,2,40,1637],[6210,1,4,1,2,40,1638],[4510,1,4,1,2,40,1639],[5860,0,5,1,2,40,1640],[5600,0,5,1,2,40,1641],[3570,1,3,1,2,40,1642],[3870,0,2,1,2,40,1643],[14520,1,6,1,2,40,1644],[8500,0,10,1,2,40,1645]]};
+const NH = {"province": [820, 560, 380, 240], "milieu": [1438, 562]};
+const S2 = 15874547.764657328, VSAS = 71435.46494095797, NPOP = 2000, NI = 50;
+const PROV = ["Tanger-Assilah", "Tétouan", "Larache", "Al Hoceïma"];
+const NOMVAR = ["depense", "internet", "taille"];
+function fmt(x, d) { return x.toLocaleString('fr-FR', {minimumFractionDigits: d, maximumFractionDigits: d}); }
+// --- loi de Student : fonction bêta incomplète (fraction continue) ---
+function gammaln(x) {
+  const c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  let y = x, tmp = x + 5.5; tmp -= (x + 0.5) * Math.log(tmp); let ser = 1.000000000190015;
+  for (let j = 0; j < 6; j++) ser += c[j] / ++y;
+  return -tmp + Math.log(2.5066282746310005 * ser / x);
+}
+function betacf(a, b, x) {
+  const FP = 1e-300; let qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap;
+  if (Math.abs(d) < FP) d = FP; d = 1 / d; let h = d;
+  for (let m = 1; m <= 300; m++) {
+    const m2 = 2 * m; let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d;
+    const del = d * c; h *= del; if (Math.abs(del - 1) < 3e-14) break;
+  }
+  return h;
+}
+function ibeta(a, b, x) {
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  const bt = Math.exp(gammaln(a + b) - gammaln(a) - gammaln(b) + a * Math.log(x) + b * Math.log(1 - x));
+  return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b;
+}
+function tcdf(t, df) { const p = 0.5 * ibeta(df / 2, 0.5, df / (df + t * t)); return t > 0 ? 1 - p : p; }
+function tquant(p, df) { let lo = 0, hi = 200; for (let i = 0; i < 100; i++) { const m = (lo + hi) / 2; if (tcdf(m, df) < p) lo = m; else hi = m; } return (lo + hi) / 2; }
+function zquant(p) { // Acklam
+  const a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  const b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  const c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  const d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  const q = p < 0.5 ? p : 1 - p, r0 = Math.sqrt(-2 * Math.log(q));
+  let z = (((((c[0] * r0 + c[1]) * r0 + c[2]) * r0 + c[3]) * r0 + c[4]) * r0 + c[5]) / ((((d[0] * r0 + d[1]) * r0 + d[2]) * r0 + d[3]) * r0 + 1);
+  if (q > 0.02425) { const u = q - 0.5, r = u * u; z = -(((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * u / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1); }
+  return p < 0.5 ? -z : z;
+}
+// --- panneau 1 : récapitulatif des plans ---
+const COUL = {"réf.": "#5A5A5A", "strates": "#4A3B8C", "systématique": "#4A3B8C", "grappes": "#A63D40", "information auxiliaire": "#2E8B57", "non-réponse": "#E08000"};
+function barres(L) {
+  const W = 760, hl = 19, m0 = 330, H = L.length * hl + 44, lmin = Math.log(0.2), lmax = Math.log(40);
+  const X = v => m0 + (W - m0 - 70) * (Math.log(v) - lmin) / (lmax - lmin);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="effets de plan des plans du cours, échelle logarithmique">`;
+  [0.25, 0.5, 1, 2, 4, 8, 16, 32].forEach(v => {
+    s += `<line x1="${X(v).toFixed(1)}" x2="${X(v).toFixed(1)}" y1="6" y2="${H - 30}" stroke="${v === 1 ? '#222' : '#ddd'}" stroke-width="${v === 1 ? 1.4 : 1}"></line>`;
+    s += `<text x="${X(v).toFixed(1)}" y="${H - 16}" font-size="11" text-anchor="middle" fill="#444">${fmt(v, v < 1 ? 2 : 0)}</text>`;
+  });
+  s += `<text x="${(m0 + (W - m0 - 70) / 2).toFixed(0)}" y="${H - 2}" font-size="11" text-anchor="middle" fill="#444">effet de plan (échelle logarithmique ; 1 = aléatoire simple)</text>`;
+  L.forEach((p, i) => {
+    const y = 8 + i * hl, x1 = X(Math.min(p.deff, 1)), x2 = X(Math.max(p.deff, 1));
+    s += `<text x="${m0 - 8}" y="${y + 12}" font-size="11" text-anchor="end" fill="#142a38">ch. ${p.ch} · ${p.nomc}</text>`;
+    s += `<rect x="${x1.toFixed(1)}" y="${y + 2}" width="${Math.max(1, x2 - x1).toFixed(1)}" height="${hl - 6}" fill="${COUL[p.fam]}" opacity="0.75"></rect>`;
+    s += `<text x="${(x2 + 4).toFixed(1)}" y="${y + 12}" font-size="11" fill="${COUL[p.fam]}">${fmt(p.deff, p.deff < 10 ? 3 : 1)}</text>`;
+  });
+  return s + '</svg>';
+}
+function recapituler() {
+  const err = document.getElementById('erreur1'), res = document.getElementById('resultat1'), gr = document.getElementById('graphe1');
+  err.textContent = ''; res.innerHTML = ''; gr.innerHTML = '';
+  try {
+    const e = parseFloat(document.getElementById('marge1').value.replace(',', '.'));
+    if (isNaN(e) || e <= 0) throw new Error('la marge doit être un nombre positif.');
+    const tri = document.getElementById('tri1').value, fam = document.getElementById('famille1').value;
+    let L = PLANS.map(p => ({ch: p[0], nom: p[1], fam: p[2], V: p[3], note: p[4]}));
+    L.forEach(p => { p.deff = p.V / VSAS; p.nomc = p.nom.length > 46 ? p.nom.slice(0, 45) + '…' : p.nom; });
+    const garde = {toutes: () => true, strates: p => ['réf.', 'strates', 'systématique'].includes(p.fam),
+                   grappes: p => ['réf.', 'grappes'].includes(p.fam), aux: p => ['réf.', 'information auxiliaire', 'non-réponse'].includes(p.fam)};
+    L = L.filter(garde[fam]);
+    if (tri === 'deff') L.sort((a, b) => a.deff - b.deff);
+    const Vc = (e / 1.96) ** 2;
+    gr.innerHTML = barres(L);
+    let html = `<div class="defile"><table class="res"><tr><th>ch.</th><th>plan (200 ménages)</th><th>variance V</th><th>erreur-type</th><th>deff = V/V<sub>SAS</sub></th><th>n<sub>eff</sub> = 200/deff</th><th>marge à 95 %</th><th>n pour ± ${fmt(e, 0)} dh</th></tr>`;
+    L.forEach(p => {
+      const nreq = 1 / (Vc / (p.deff * S2) + 1 / NPOP);
+      html += `<tr><td>${p.ch}</td><td style="text-align:left">${p.nom}${p.note ? '<br><span class="petit">' + p.note + '</span>' : ''}</td><td>${fmt(p.V, 1)}</td><td>${fmt(Math.sqrt(p.V), 1)}</td>`;
+      html += `<td><span class="valeur ${p.deff <= 1.0000001 ? 'ok' : 'ko'}">${fmt(p.deff, 3)}</span></td><td>${fmt(200 / p.deff, 1)}</td><td>± ${fmt(1.96 * Math.sqrt(p.V), 1)}</td><td>${fmt(Math.ceil(nreq), 0)}</td></tr>`;
+    });
+    res.innerHTML = html + `</table></div><p class="petit">Variance visée : (${fmt(e, 0)}/1,96)² = ${fmt(Vc, 1)}. Pour un aléatoire simple, la formule redonne le chapitre 5 (marge de 300 dh : 507 ménages) ; pour les grappes, n compte les ménages interrogés, et un effet de plan élevé peut exiger presque toute la population.${L.some(p => p.fam === 'non-réponse') ? ' La ligne du chapitre 14 n\'est pas un plan : elle mesure ce que coûte la non-réponse, biais compris.' : ''}</p>`;
+  } catch (x) { err.textContent = 'Erreur : ' + x.message; }
+}
+// --- panneau 2 : la calculatrice « comme svymean » ---
+function variance(v) { const m = v.reduce((a, b) => a + b, 0) / v.length; return v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1); }
+function calculer2() {
+  const err = document.getElementById('erreur2'), res = document.getElementById('resultat2');
+  err.textContent = ''; res.innerHTML = '';
+  try {
+    const nomE = document.getElementById('ech2').value, plan = document.getElementById('plan2').value;
+    const j = parseInt(document.getElementById('var2').value), fpc = document.getElementById('fpc2').value;
+    const niv = parseFloat(document.getElementById('niv2').value);
+    const E = ECH[nomE], n = E.length, y = E.map(r => r[j]);
+    let groupes, Ng, df, nomPlan;
+    // estimation : moyenne pondérée (ratio Σ w y / Σ w), total Σ w y
+    let est, V, Nhat, Vtot;
+    if (plan === 'sas' || plan === 'province' || plan === 'milieu') {
+      const cle = plan === 'sas' ? (r => 0) : plan === 'province' ? (r => r[4]) : (r => r[3]);
+      const Ntot = plan === 'sas' ? [NPOP] : plan === 'province' ? NH.province : NH.milieu;
+      const G = {}; E.forEach(r => { const k = cle(r); (G[k] = G[k] || []).push(r[j]); });
+      const ks = Object.keys(G).map(Number);
+      if (ks.some(k => G[k].length < 2)) throw new Error('il faut au moins deux unités par strate.');
+      df = n - ks.length; Nhat = 0; let tot = 0; V = 0;
+      ks.forEach(k => {
+        const nh = G[k].length, Nh = Ntot[k], dh = Nh / nh, s2 = variance(G[k]);
+        const f = fpc === 'N' ? nh / Nh : fpc === 'n' ? 1 : 0;
+        Nhat += Nh; tot += dh * G[k].reduce((a, b) => a + b, 0);
+        V += Nh * Nh * (1 - f) * s2 / nh;
+      });
+      Vtot = V; est = tot / Nhat; V = V / (Nhat * Nhat);
+      nomPlan = plan === 'sas' ? 'aléatoire simple' : 'stratifié par ' + plan;
+    } else {
+      const G = {}; E.forEach(r => { const k = r[5]; (G[k] = G[k] || {M: 0, Y: 0}); G[k].M++; G[k].Y += r[j]; });
+      const ks = Object.keys(G), nI = ks.length;
+      if (nI < 2) throw new Error('il faut au moins deux grappes.');
+      const d = NI / nI, sumY = ks.reduce((a, k) => a + G[k].Y, 0), sumM = ks.reduce((a, k) => a + G[k].M, 0);
+      est = sumY / sumM; Nhat = d * sumM;
+      const ei = ks.map(k => G[k].Y - est * G[k].M), f = fpc === 'N' ? nI / NI : fpc === 'n' ? 1 : 0;
+      V = NI * NI * (1 - f) * variance(ei) / nI / (Nhat * Nhat); df = nI - 1; nomPlan = 'grappes (districts)';
+      Vtot = NI * NI * (1 - f) * variance(ks.map(k => G[k].Y)) / nI;   // Horvitz-Thompson, comme svytotal
+    }
+    const se = Math.sqrt(V);
+    const z = zquant(0.5 + niv / 2), tq = tquant(0.5 + niv / 2, df), dec = j === 1 ? 4 : 2;
+    // déclaration comme un SAS, pour comparer
+    const s2 = variance(y), fS = fpc === 'N' ? n / NPOP : fpc === 'n' ? 1 : 0, seS = Math.sqrt((1 - fS) * s2 / n);
+    const nv = NOMVAR[j];
+    let html = `<table class="res"><tr><th>plan déclaré</th><th>n</th><th>degrés de liberté</th><th>moyenne</th><th>erreur-type</th><th>total estimé</th><th>erreur-type du total</th></tr>`;
+    html += `<tr><td>${nomPlan}</td><td>${n}</td><td>${df}</td><td><span class="valeur">${fmt(est, dec)}</span></td><td><span class="valeur ${se === 0 ? 'ko' : ''}">${fmt(se, dec)}</span></td><td>${fmt(est * Nhat, 0)}</td><td>${fmt(Math.sqrt(Vtot), 0)}</td></tr></table>`;
+    html += `<table class="res"><tr><th>intervalle à ${fmt(100 * niv, 0)} %</th><th>quantile</th><th>borne basse</th><th>borne haute</th></tr>`;
+    html += `<tr><td>loi normale : confint(m)</td><td>${fmt(z, 3)}</td><td>${fmt(est - z * se, dec)}</td><td>${fmt(est + z * se, dec)}</td></tr>`;
+    html += `<tr><td>Student : confint(m, df = degf(p))</td><td>${fmt(tq, 3)}</td><td>${fmt(est - tq * se, dec)}</td><td>${fmt(est + tq * se, dec)}</td></tr></table>`;
+    html += `<p class="petit">Le même échantillon déclaré comme un sondage aléatoire simple : erreur-type ${fmt(seS, dec)}, soit un rapport des variances de ${fmt(V / (seS * seS), 3)} (proche du DEff de survey).`;
+    if (j === 0) html += ` Vraie moyenne de la population : 7 911,44 dh.`;
+    if (j === 1) html += ` Vraie proportion : 0,674.`;
+    if (j === 2) html += ` Vraie taille moyenne : 3,9295 personnes.`;
+    if (fpc === 'n') html += ` <b>fpc = n : survey croit à un recensement, l'erreur-type est nulle.</b>`;
+    if (fpc === 'aucun') html += ` Sans fpc, la variance est celle d'un tirage avec remise : plus grande d'un facteur 1/(1 − f).`;
+    html += '</p>';
+    // le code correspondant
+    const fichier = {filrouge: 'e <- d[d$id %in% ids, ]', systematique: 'e <- d[seq(9, 2000, by = 10), ]', districts: 'e <- d[d$district %in% c(2, 9, 19, 32, 40), ]'}[nomE];
+    const fichierPy = {filrouge: 'e = d[d.id.isin(ids)]', systematique: 'e = d.iloc[8::10]', districts: 'e = d[d.district.isin([2, 9, 19, 32, 40])]'}[nomE];
+    let decl, prep = '';
+    if (plan === 'sas') { prep = fpc === 'N' ? 'e$N <- 2000\n' : fpc === 'n' ? 'e$n <- ' + n + '                 # erreur\n' : 'e$d <- 2000 / ' + n + '\n';
+      decl = fpc === 'N' ? 'svydesign(ids = ~1, fpc = ~N, data = e)' : fpc === 'n' ? 'svydesign(ids = ~1, fpc = ~n, data = e)' : 'svydesign(ids = ~1, weights = ~d, data = e)'; }
+    else if (plan === 'grappes') { prep = fpc === 'N' ? 'e$NI <- 50\n' : fpc === 'n' ? 'e$nI <- 5                # erreur\n' : 'e$d <- 50 / 5\n';
+      decl = fpc === 'N' ? 'svydesign(ids = ~district, fpc = ~NI, data = e)' : fpc === 'n' ? 'svydesign(ids = ~district, fpc = ~nI, data = e)' : 'svydesign(ids = ~district, weights = ~d, data = e)'; }
+    else { prep = `Nh <- table(d$${plan})\ne$Nh <- as.numeric(Nh[e$${plan}])\n`;
+      if (fpc === 'aucun') prep += `e$w <- e$Nh / as.numeric(table(e$${plan})[e$${plan}])\n`;
+      if (fpc === 'n') prep += `e$nh <- as.numeric(table(e$${plan})[e$${plan}])   # erreur\n`;
+      decl = `svydesign(ids = ~1, strata = ~${plan}, ` + (fpc === 'N' ? 'fpc = ~Nh' : fpc === 'n' ? 'fpc = ~nh' : 'weights = ~w') + ', data = e)'; }
+    const codeR = `${fichier}\n${prep}p <- ${decl}\nm <- svymean(~${nv}, p)\nconfint(m, df = degf(p))`;
+    let codePy;
+    if (plan === 'grappes') codePy = `${fichierPy}\nG = e.groupby("district").${nv}.agg(["size", "sum"])\nr = G["sum"].sum() / G["size"].sum()\nres = G["sum"] - r * G["size"]\nNc = 50 / len(G) * G["size"].sum()\nse = 50 * np.sqrt((1 - len(G) / 50) * res.var() / len(G)) / Nc`;
+    else if (plan === 'sas') codePy = `${fichierPy}\nn, N = len(e), 2000\nybar = e.${nv}.mean()\nse = np.sqrt((1 - n / N) * e.${nv}.var() / n)`;
+    else codePy = `${fichierPy}\nNh = d.${plan}.value_counts()\ng = e.groupby("${plan}").${nv}\nnh, W = g.size(), Nh / 2000\nyst = (W * g.mean()).sum()\nse = np.sqrt((W**2 * (1 - nh / Nh) * g.var() / nh).sum())`;
+    html += `<div class="grille2"><div><h3>R (survey)</h3><pre class="code">${codeR.replace(/</g, '&lt;')}</pre></div><div><h3>Python (à la main)</h3><pre class="code">${codePy.replace(/</g, '&lt;')}</pre></div></div>`;
+    res.innerHTML = html;
+  } catch (x) { err.textContent = 'Erreur : ' + x.message; }
+}
+window.onload = () => { recapituler(); calculer2(); };
+
+</script>
+</body>
+</html>

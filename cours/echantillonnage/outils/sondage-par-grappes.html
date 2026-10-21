@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 9 — Sondage par grappes — Application interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+<style>
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  table.res { width: 100%; }
+  .petit { font-size: 0.85em; color: var(--cgris); }
+  .valeur { display: inline-block; padding: 0.15em 0.6em; border-radius: 5px; font-family: "Courier New", monospace; }
+  .defile { max-height: 320px; overflow-y: auto; }
+  @media (max-width: 640px) { .grille4, .grille3, .grille2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 9 — Le sondage par grappes</h1>
+<p class="sous-titre">Application interactive — Échantillonnage</p>
+
+
+<style>
+  .boutons button { margin-right: 0.6em; }
+</style>
+
+<div class="panneau">
+  <h2>Tirer des districts entiers dans la population du cours : Horvitz-Thompson et ratio</h2>
+  <p class="petit">Les 2 000 ménages forment 50 districts de 13 à 71 ménages. On tire n<sub>I</sub> districts par sondage aléatoire simple et l'on interroge tous leurs ménages. Par défaut : les districts 2, 9, 19, 32 et 40, tirés dans les diapositives avec la graine 2026 de numpy. Le bouton « Tirer au hasard » utilise le générateur de cette page, qui n'est pas celui de numpy.</p>
+  <div class="grille3">
+    <div><label for="nI1">nombre de districts tirés n<sub>I</sub></label><input id="nI1" type="number" value="5" min="2" max="49"></div>
+    <div><label for="gr1">graine du générateur</label><input id="gr1" type="number" value="2026"></div>
+    <div><label for="ds1">districts tirés (numéros de 1 à 50)</label><input id="ds1" type="text" value="2 9 19 32 40"></div>
+  </div>
+  <div class="boutons"><button onclick="tirerDistricts()">Tirer au hasard</button><button onclick="estimerDistricts()">Estimer avec ces districts</button></div>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Répéter le tirage : la distribution des deux estimateurs</h2>
+  <p class="petit">On répète K fois le tirage de n<sub>I</sub> districts (valeur du panneau précédent) et l'on compare les deux estimateurs de la dépense moyenne par ménage à la vraie valeur, 7 911,44 dh. Les variances théoriques viennent des formules du chapitre ; l'effet de plan compare à un sondage aléatoire simple de n<sub>I</sub> × 40 ménages.</p>
+  <div class="grille3">
+    <div><label for="K2">nombre de tirages K</label><input id="K2" type="number" value="5000" min="100" max="50000"></div>
+    <div><label for="gr2">graine de la simulation</label><input id="gr2" type="number" value="9"></div>
+    <div><label for="seuil2">seuil d'erreur (dh)</label><input id="seuil2" type="number" value="2000"></div>
+  </div>
+  <button onclick="simulerDistricts()">Simuler</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <div id="graphe2"></div>
+</div>
+
+<div class="panneau">
+  <h2>L'effet de grappe : 1 + (M − 1) ρ</h2>
+  <p class="petit">Grappes de même taille M, n<sub>I</sub> grappes tirées par sondage aléatoire simple. Valeurs par défaut : les districts du cours (M = 40, ρ = 0,162). La corrélation intra-grappe ρ doit être comprise entre −1/(M − 1) et 1.</p>
+  <div class="grille3">
+    <div><label for="M3">taille des grappes M</label><input id="M3" type="text" value="40"></div>
+    <div><label for="rho3">corrélation intra-grappe ρ</label><input id="rho3" type="text" value="0.162"></div>
+    <div><label for="nI3">nombre de grappes tirées n<sub>I</sub></label><input id="nI3" type="text" value="5"></div>
+  </div>
+  <button onclick="effetGrappe()">Calculer</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>À budget égal : grappes ou aléatoire simple ?</h2>
+  <p class="petit">Coût C = c<sub>1</sub> n<sub>I</sub> + c<sub>2</sub> n : c<sub>1</sub> par lieu visité, c<sub>2</sub> par entretien. Un ménage tiré au hasard coûte c<sub>1</sub> + c<sub>2</sub> ; dans une grappe de M ménages, c<sub>1</sub>/M + c<sub>2</sub>. On compare les tailles effectives n/deff (population grande : 1 − f ≈ 1).</p>
+  <div class="grille2">
+    <div><label for="ex4">exemple</label><select id="ex4" onchange="exempleCout()">
+      <option value="0" selected>diapositives : rural dispersé (c₁ = 800 dh)</option>
+      <option value="1">diapositives : ville (c₁ = 200 dh)</option>
+      <option value="2">exercice 3 : budget de 90 000 dh</option></select></div>
+    <div><label for="B4">budget (dh)</label><input id="B4" type="text" value="100000"></div>
+  </div>
+  <div class="grille4">
+    <div><label for="c14">coût d'un déplacement c<sub>1</sub></label><input id="c14" type="text" value="800"></div>
+    <div><label for="c24">coût d'un entretien c<sub>2</sub></label><input id="c24" type="text" value="60"></div>
+    <div><label for="M4">ménages par grappe M</label><input id="M4" type="text" value="40"></div>
+    <div><label for="deff4">effet de plan des grappes</label><input id="deff4" type="text" value="8.38"></div>
+  </div>
+  <button onclick="cout()">Comparer</button>
+  <div id="erreur4" class="erreur"></div>
+  <div id="resultat4" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : sondage de n<sub>I</sub> grappes parmi N<sub>I</sub>, f<sub>I</sub> = n<sub>I</sub>/N<sub>I</sub>, M̄ = N/N<sub>I</sub>. Horvitz-Thompson : Ŷ = (N<sub>I</sub>/n<sub>I</sub>) Σ Y<sub>i</sub>, V(Ŷ/N) = (1 − f<sub>I</sub>) S<sub>T</sub>²/(n<sub>I</sub> M̄²). Ratio : ȳ<sub>R</sub> = Σ Y<sub>i</sub>/Σ M<sub>i</sub>, V(ȳ<sub>R</sub>) ≈ (1 − f<sub>I</sub>) S<sub>e</sub>²/(n<sub>I</sub> M̄²), e<sub>i</sub> = Y<sub>i</sub> − Ȳ M<sub>i</sub>. Intervalles : loi de Student à n<sub>I</sub> − 1 degrés de liberté. Grappes égales : deff = 1 + (M − 1) ρ.</p>
+
+<script>
+
+const DIS = {"M":[71,46,32,50,43,56,70,30,31,36,55,34,48,60,22,47,43,46,68,26,49,25,45,40,45,52,44,33,27,26,39,41,20,47,47,34,55,18,15,29,26,43,46,46,47,13,43,22,30,39],"T":[498040,438050,283870,463530,536910,430320,766730,237350,265270,274830,398400,255330,422100,597630,157810,378170,250610,414300,613670,206950,320680,190160,391210,322870,413300,319610,425150,372340,183900,183930,335170,282780,146480,436790,416480,231970,422890,169930,88450,189230,150170,294350,210150,278530,320520,96320,172200,113360,202750,251330],"p":"00000000000000000011111111111111222222222223333333","u":"uuuuuuuuuuuuuuurrruuuuuuuuuurrrruuuuuurrrrruuurrrr"}, C = {"N":2000,"Ybar":7911.435,"S2":15874547.76}, T975 = [12.7062,4.3027,3.1824,2.7764,2.5706,2.4469,2.3646,2.306,2.2622,2.2281,2.201,2.1788,2.1604,2.1448,2.1314,2.1199,2.1098,2.1009,2.093,2.086,2.0796,2.0739,2.0687,2.0639,2.0595,2.0555,2.0518,2.0484,2.0452,2.0423,2.0395,2.0369,2.0345,2.0322,2.0301,2.0281,2.0262,2.0244,2.0227,2.0211,2.0195,2.0181,2.0167,2.0154,2.0141,2.0129,2.0117,2.0106,2.0096,2.0086,2.0076,2.0066,2.0057,2.0049,2.004,2.0032,2.0025,2.0017,2.001,2.0003];
+const PROVS = ['Tanger-Assilah', 'Tétouan', 'Larache', 'Al Hoceïma'];
+const NI = DIS.M.length, NPOP = C.N, YBAR = C.Ybar, MBAR = NPOP / NI;
+function fmt(x, d) { return x.toLocaleString('fr-FR', {minimumFractionDigits: d, maximumFractionDigits: d}); }
+function lire(id) { const v = parseFloat(String(document.getElementById(id).value).replace(/\s/g, '').replace(',', '.')); return v; }
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function tirage(nI, alea) {   // nI indices distincts parmi 0..NI-1 (Fisher-Yates partiel)
+  const a = Array.from({length: NI}, (_, i) => i);
+  for (let k = 0; k < nI; k++) { const j = k + Math.floor(alea() * (NI - k)); const t = a[k]; a[k] = a[j]; a[j] = t; }
+  return a.slice(0, nI).sort((x, y) => x - y);
+}
+function varc(v) { const m = v.reduce((a, b) => a + b, 0) / v.length; return v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1); }
+function tq(ddl) { return ddl <= T975.length ? T975[ddl - 1] : 1.96; }
+// Variances théoriques (population entière)
+const ST2 = varc(DIS.T), SE2 = varc(DIS.T.map((t, i) => t - YBAR * DIS.M[i]));
+function theorie(nI) {
+  const fI = nI / NI, n = nI * MBAR, vHT = (1 - fI) * ST2 / (nI * MBAR * MBAR), vR = (1 - fI) * SE2 / (nI * MBAR * MBAR);
+  const vSAS = (1 - n / NPOP) * C.S2 / n;
+  return {vHT, vR, vSAS, n};
+}
+function estimer(ids) {
+  const nI = ids.length, fI = nI / NI, Ys = ids.map(i => DIS.T[i]), Ms = ids.map(i => DIS.M[i]);
+  const sT = Ys.reduce((a, b) => a + b, 0), sM = Ms.reduce((a, b) => a + b, 0);
+  const ht = NI / nI * sT / NPOP, r = sT / sM;
+  const vHT = (1 - fI) * varc(Ys) / (nI * MBAR * MBAR), vR = (1 - fI) * varc(Ys.map((y, k) => y - r * Ms[k])) / (nI * MBAR * MBAR);
+  return {nI, Ys, Ms, sT, sM, ht, r, vHT, vR};
+}
+function lireDistricts() {
+  const brut = document.getElementById('ds1').value.trim().split(/[\s;,]+/).filter(s => s !== '');
+  const ids = brut.map(s => parseInt(s) - 1);
+  if (ids.length < 2) throw new Error('il faut au moins deux districts.');
+  if (ids.some(i => isNaN(i) || i < 0 || i >= NI)) throw new Error('les numéros de district vont de 1 à 50.');
+  if (new Set(ids).size !== ids.length) throw new Error('un district ne peut figurer qu\'une fois (tirage sans remise).');
+  if (ids.length >= NI) throw new Error('il faut tirer moins de 50 districts.');
+  return ids.sort((a, b) => a - b);
+}
+function afficher(ids) {
+  const res = document.getElementById('resultat1'), E = estimer(ids), t = tq(E.nI - 1);
+  let html = '<div class="defile"><table class="res"><tr><th>district</th><th>province</th><th>milieu</th><th>ménages M<sub>i</sub></th><th>total Y<sub>i</sub> (dh)</th><th>moyenne Y<sub>i</sub>/M<sub>i</sub></th></tr>';
+  ids.forEach(i => { html += `<tr><td>${i + 1}</td><td>${PROVS[+DIS.p[i]]}</td><td>${DIS.u[i] === 'u' ? 'urbain' : 'rural'}</td><td>${DIS.M[i]}</td><td>${fmt(DIS.T[i], 0)}</td><td>${fmt(DIS.T[i] / DIS.M[i], 0)}</td></tr>`; });
+  html += `<tr><th>total</th><th></th><th></th><th>${E.sM}</th><th>${fmt(E.sT, 0)}</th><th></th></tr></table></div>`;
+  html += `<p>${E.nI} districts, ${E.sM} ménages interrogés (${fmt(E.nI * MBAR, 0)} attendus). Probabilité d'inclusion de chaque ménage : π<sub>k</sub> = ${E.nI}/${NI} = ${fmt(E.nI / NI, 3)}.</p>`;
+  html += '<table class="res"><tr><th>estimateur de la moyenne</th><th>estimation (dh)</th><th>erreur (dh)</th><th>écart-type estimé</th><th>intervalle à 95 % (t = ' + fmt(t, 3) + ')</th></tr>';
+  [['Horvitz-Thompson Ŷ/N', E.ht, E.vHT], ['ratio Σ Y<sub>i</sub>/Σ M<sub>i</sub>', E.r, E.vR]].forEach(([nom, v, V]) => {
+    const se = Math.sqrt(V), lo = v - t * se, hi = v + t * se, ok = lo <= YBAR && YBAR <= hi;
+    html += `<tr><td>${nom}</td><td>${fmt(v, 2)}</td><td>${fmt(v - YBAR, 1)}</td><td>${fmt(se, 1)}</td><td><span class="valeur ${ok ? 'ok' : 'ko'}">[${fmt(lo, 0)} ; ${fmt(hi, 0)}]</span></td></tr>`;
+  });
+  html += '</table>';
+  html += `<p class="petit">Total estimé par Horvitz-Thompson : ${fmt(NI / E.nI * E.sT, 0)} dh (vrai total : ${fmt(YBAR * NPOP, 0)} dh). Vraie moyenne Ȳ = ${fmt(YBAR, 2)} dh ; en vert, un intervalle qui la contient. La variance se calcule sur ${E.nI} grappes : ${E.nI - 1} degrés de liberté, quel que soit le nombre de ménages.</p>`;
+  res.innerHTML = html;
+}
+function estimerDistricts() {
+  const err = document.getElementById('erreur1'); err.textContent = ''; document.getElementById('resultat1').innerHTML = '';
+  try { const ids = lireDistricts(); document.getElementById('nI1').value = ids.length; afficher(ids); }
+  catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+function lireNI() {
+  const nI = parseInt(document.getElementById('nI1').value);
+  if (isNaN(nI) || nI < 2 || nI > 49) throw new Error('n_I doit être compris entre 2 et 49.');
+  return nI;
+}
+function tirerDistricts() {
+  const err = document.getElementById('erreur1'); err.textContent = ''; document.getElementById('resultat1').innerHTML = '';
+  try {
+    const nI = lireNI(), g = parseInt(document.getElementById('gr1').value);
+    if (isNaN(g)) throw new Error('la graine doit être un nombre entier.');
+    const ids = tirage(nI, mulberry32(g));
+    document.getElementById('ds1').value = ids.map(i => i + 1).join(' ');
+    document.getElementById('gr1').value = g + 1;
+    afficher(ids);
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+function histo(series, vrai) {
+  const tous = series.flatMap(s => s.v), lo = Math.min(...tous), hi = Math.max(...tous), k = 40, w = (hi - lo) / k;
+  const W = 640, Hs = 92, m = 30, X = v => m + (v - lo) / (hi - lo) * (W - 2 * m);
+  const hs = series.map(s => { const h = new Array(k).fill(0); s.v.forEach(v => { let i = Math.floor((v - lo) / w); if (i >= k) i = k - 1; h[i]++; }); return h; });
+  const hm = Math.max(...hs.flat());
+  let s = `<svg viewBox="0 0 ${W} ${series.length * Hs + 48}" width="100%" role="img" aria-label="distribution des estimations simulées">`;
+  series.forEach((se, r) => { const base = (r + 1) * Hs;
+    hs[r].forEach((c, i) => { const bh = (Hs - 22) * c / hm; s += `<rect x="${X(lo + i * w)}" y="${base - bh}" width="${(W - 2 * m) / k - 1}" height="${bh}" fill="${se.c}" opacity="0.6"></rect>`; });
+    s += `<line x1="${m}" x2="${W - m}" y1="${base}" y2="${base}" stroke="#888"></line>`;
+    s += `<text x="${m}" y="${base - Hs + 30}" font-size="12" fill="${se.c}">${se.nom}</text>`; });
+  s += `<line x1="${X(vrai)}" x2="${X(vrai)}" y1="8" y2="${series.length * Hs}" stroke="#4a3b8c" stroke-width="2" stroke-dasharray="5,3"></line>`;
+  s += `<text x="${X(vrai) + 5}" y="16" font-size="12" fill="#4a3b8c">Ȳ = ${fmt(vrai, 0)}</text>`;
+  const pas = (hi - lo) > 8000 ? 2000 : (hi - lo) > 3000 ? 1000 : 500;
+  for (let v = Math.ceil(lo / pas) * pas; v <= hi; v += pas) s += `<text x="${X(v)}" y="${series.length * Hs + 16}" font-size="11" text-anchor="middle" fill="#666">${fmt(v, 0)}</text>`;
+  s += `<text x="${W / 2}" y="${series.length * Hs + 38}" font-size="12" text-anchor="middle" fill="#444">estimation de la dépense moyenne par ménage (dh)</text>`;
+  return s + '</svg>';
+}
+function simulerDistricts() {
+  const err = document.getElementById('erreur2'), res = document.getElementById('resultat2'), gr = document.getElementById('graphe2');
+  err.textContent = ''; res.innerHTML = ''; gr.innerHTML = '';
+  try {
+    const nI = lireNI(), K = parseInt(document.getElementById('K2').value), g = parseInt(document.getElementById('gr2').value), seuil = lire('seuil2');
+    if (isNaN(K) || K < 100 || K > 50000) throw new Error('K doit être compris entre 100 et 50 000.');
+    if (isNaN(g)) throw new Error('la graine doit être un nombre entier.');
+    if (isNaN(seuil) || seuil <= 0) throw new Error('le seuil doit être un nombre positif.');
+    const alea = mulberry32(g), vHT = new Array(K), vR = new Array(K);
+    let nmin = Infinity, nmax = -Infinity;
+    for (let k = 0; k < K; k++) {
+      const ids = tirage(nI, alea); let sT = 0, sM = 0;
+      ids.forEach(i => { sT += DIS.T[i]; sM += DIS.M[i]; });
+      vHT[k] = NI / nI * sT / NPOP; vR[k] = sT / sM; nmin = Math.min(nmin, sM); nmax = Math.max(nmax, sM);
+    }
+    const Th = theorie(nI);
+    const st = v => { const m = v.reduce((a, b) => a + b, 0) / K, V = v.reduce((a, b) => a + (b - m) ** 2, 0) / K,
+      eqm = v.reduce((a, b) => a + (b - YBAR) ** 2, 0) / K, p = v.filter(x => Math.abs(x - YBAR) > seuil).length / K; return {m, V, eqm, p}; };
+    const A = st(vHT), B = st(vR);
+    let html = `<table class="res"><tr><th>${nI} districts (${K} tirages)</th><th>moyenne des estimations</th><th>biais</th><th>écart-type simulé</th><th>écart-type théorique</th><th>deff (EQM simulée)</th><th>erreur &gt; ${fmt(seuil, 0)} dh</th></tr>`;
+    html += `<tr><td>Horvitz-Thompson</td><td>${fmt(A.m, 1)}</td><td>${fmt(A.m - YBAR, 1)}</td><td>${fmt(Math.sqrt(A.V), 1)}</td><td>${fmt(Math.sqrt(Th.vHT), 1)}</td><td>${fmt(A.eqm / Th.vSAS, 2)}</td><td>${fmt(100 * A.p, 1)} %</td></tr>`;
+    html += `<tr><td>ratio</td><td>${fmt(B.m, 1)}</td><td>${fmt(B.m - YBAR, 1)}</td><td>${fmt(Math.sqrt(B.V), 1)}</td><td>${fmt(Math.sqrt(Th.vR), 1)} (approchée)</td><td>${fmt(B.eqm / Th.vSAS, 2)}</td><td>${fmt(100 * B.p, 1)} %</td></tr>`;
+    html += `<tr><td>aléatoire simple de ${fmt(Th.n, 0)} ménages</td><td>—</td><td>0</td><td>—</td><td>${fmt(Math.sqrt(Th.vSAS), 1)}</td><td>1</td><td>—</td></tr></table>`;
+    html += `<p>Effets de plan théoriques : Horvitz-Thompson <span class="valeur">${fmt(Th.vHT / Th.vSAS, 2)}</span>, ratio <span class="valeur ok">${fmt(Th.vR / Th.vSAS, 2)}</span>. Nombre de ménages interrogés : de ${nmin} à ${nmax} selon le tirage.</p>`;
+    res.innerHTML = html + '<p class="petit">Horvitz-Thompson est sans biais mais subit la variation des tailles de districts ; le ratio a un léger biais et une variance bien plus faible. La simulation approche ce que le chapitre calcule sur tous les échantillons possibles.</p>';
+    gr.innerHTML = histo([{v: vHT, c: '#b56600', nom: 'Horvitz-Thompson'}, {v: vR, c: '#1f6fb2', nom: 'ratio'}], YBAR);
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+function effetGrappe() {
+  const err = document.getElementById('erreur3'), res = document.getElementById('resultat3');
+  err.textContent = ''; res.innerHTML = '';
+  try {
+    const M = lire('M3'), rho = lire('rho3'), nI = lire('nI3');
+    if (isNaN(M) || M < 2) throw new Error('M doit être au moins égal à 2.');
+    if (isNaN(rho) || rho > 1 || rho < -1 / (M - 1) - 1e-12) throw new Error(`ρ doit être compris entre −1/(M − 1) = ${fmt(-1 / (M - 1), 4)} et 1.`);
+    if (isNaN(nI) || nI < 1) throw new Error('n_I doit être un nombre positif.');
+    const deff = 1 + (M - 1) * rho, n = nI * M;
+    let html = `<p>Effet de plan : deff = 1 + (${fmt(M, 0)} − 1) × ${fmt(rho, 3)} = <span class="valeur">${fmt(deff, 3)}</span></p>`;
+    html += '<table class="res"><tr><th>ménages interrogés n = n<sub>I</sub> M</th><th>taille effective n/deff</th><th>une grappe vaut</th><th>à précision égale (1 − f ≈ 1)</th></tr>';
+    html += `<tr><td>${fmt(n, 0)}</td><td>${deff > 0 ? fmt(n / deff, 1) : '∞'}</td><td>${deff > 0 ? fmt(M / deff, 2) + ' ménages indépendants' : 'toute la population'}</td><td>${fmt(deff, 2)} fois plus de ménages</td></tr></table>`;
+    const Ms = [2, 5, 10, 20, 40, 60], rhos = [0.02, 0.05, rho, 0.3].filter((v, i, a) => a.indexOf(v) === i);
+    html += '<table class="res"><tr><th>ρ \\ M</th>' + Ms.map(m => `<th>${m}</th>`).join('') + '</tr>';
+    rhos.forEach(r => { html += `<tr><td>${fmt(r, 3)}</td>` + Ms.map(m => `<td>${fmt(1 + (m - 1) * r, 2)}</td>`).join('') + '</tr>'; });
+    res.innerHTML = html + '</table><p class="petit">Un petit ρ suffit à un grand effet dès que les grappes sont grandes : préférer des grappes petites et hétérogènes. ρ = −1/(M − 1) donne deff = 0 : chaque grappe est un modèle réduit de la population.</p>';
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+const EXCOUT = [[100000, 800, 60, 40, 8.38], [100000, 200, 60, 40, 8.38], [90000, 1000, 80, 30, 3.9]];
+function exempleCout() {
+  const e = EXCOUT[parseInt(document.getElementById('ex4').value)];
+  ['B4', 'c14', 'c24', 'M4', 'deff4'].forEach((id, k) => { document.getElementById(id).value = e[k]; });
+  cout();
+}
+function cout() {
+  const err = document.getElementById('erreur4'), res = document.getElementById('resultat4');
+  err.textContent = ''; res.innerHTML = '';
+  try {
+    const B = lire('B4'), c1 = lire('c14'), c2 = lire('c24'), M = lire('M4'), deff = lire('deff4');
+    if ([B, c1, c2, M, deff].some(isNaN)) throw new Error('toutes les cases doivent contenir un nombre.');
+    if (B <= 0 || c1 < 0 || c2 <= 0 || M < 1 || deff <= 0) throw new Error('budget, c₂, M et deff doivent être positifs ; c₁ ne peut être négatif.');
+    const cS = c1 + c2, cG = c1 / M + c2, nS = Math.floor(B / cS), nI = Math.floor(B / (c1 + M * c2)), n = nI * M, neff = n / deff, rap = cS / cG;
+    if (nS < 1 && nI < 1) throw new Error('le budget ne permet aucune enquête.');
+    let html = '<table class="res"><tr><th></th><th>aléatoire simple</th><th>grappes de ' + fmt(M, 0) + ' ménages</th></tr>';
+    html += `<tr><td>coût d'un ménage enquêté</td><td>${fmt(cS, 2)} dh</td><td>${fmt(cG, 2)} dh</td></tr>`;
+    html += `<tr><td>lieux visités</td><td>${fmt(nS, 0)}</td><td>${fmt(nI, 0)}</td></tr>`;
+    html += `<tr><td>ménages enquêtés</td><td>${fmt(nS, 0)}</td><td>${fmt(n, 0)}</td></tr>`;
+    html += `<tr><td>taille effective n/deff</td><td><span class="valeur ${nS >= neff ? 'ok' : ''}">${fmt(nS, 0)}</span></td><td><span class="valeur ${neff > nS ? 'ok' : ''}">${fmt(neff, 1)}</span></td></tr></table>`;
+    html += `<p>Rapport des coûts par ménage : ${fmt(cS, 2)}/${fmt(cG, 2)} = <span class="valeur">${fmt(rap, 2)}</span> ${rap > deff ? '&gt;' : '≤'} deff = ${fmt(deff, 2)} : ${rap > deff ? '<strong>les grappes l\'emportent</strong>' : '<strong>l\'aléatoire simple l\'emporte</strong>'}.</p>`;
+    if (deff < M && deff > 1) { const s = c2 * (deff - 1) / (1 - deff / M);
+      html += `<p class="petit">Seuil : les grappes l'emportent dès que c₁ dépasse c₂ (deff − 1)/(1 − deff/M) = ${fmt(s, 1)} dh. Les nombres de lieux et de ménages sont arrondis à l'entier inférieur pour respecter le budget.</p>`; }
+    else if (deff <= 1) html += '<p class="petit">Avec deff ≤ 1, les grappes l\'emportent quel que soit c₁.</p>';
+    else html += '<p class="petit">Avec deff ≥ M, une grappe ne vaut pas plus qu\'un ménage : l\'aléatoire simple l\'emporte toujours.</p>';
+    res.innerHTML = html;
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+window.onload = () => { estimerDistricts(); simulerDistricts(); effetGrappe(); cout(); };
+
+</script>
+</body>
+</html>

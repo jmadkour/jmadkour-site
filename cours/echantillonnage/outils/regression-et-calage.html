@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 13 — Régression, post-stratification et calage — Application interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+<style>
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  table.res { width: 100%; }
+  .petit { font-size: 0.85em; color: var(--cgris); }
+  .valeur { display: inline-block; padding: 0.15em 0.6em; border-radius: 5px; font-family: "Courier New", monospace; }
+  .defile { max-height: 320px; overflow-y: auto; }
+  @media (max-width: 640px) { .grille4, .grille3, .grille2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 13 — Régression, post-stratification et calage</h1>
+<p class="sous-titre">Application interactive — Échantillonnage</p>
+
+
+<style>
+  .grille5 { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr; gap: 0 1em; }
+  .grille5 label { margin-top: 0.3em; }
+  textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .boutons button { margin-right: 0.6em; }
+  .resultat-zone { overflow-x: auto; }
+  td.ajuste { font-weight: bold; color: var(--cex); }
+  @media (max-width: 640px) { .grille5 { grid-template-columns: 1fr 1fr; } }
+</style>
+
+<div class="panneau">
+  <h2>Post-stratification : repondérer un sondage aléatoire simple</h2>
+  <p class="petit">On a tiré un sondage aléatoire simple, puis classé les unités tirées en groupes dont les effectifs N<sub>h</sub> sont connus. Une ligne par groupe (six au plus) : N<sub>h</sub>, nombre d'unités tirées n<sub>h</sub>, moyenne ȳ<sub>h</sub> et écart-type s<sub>h</sub> (en n<sub>h</sub> − 1) observés dans le groupe. Valeurs par défaut : l'échantillon fil rouge de 200 ménages, classé par milieu.</p>
+  <div class="grille2">
+    <div><label for="ex1">exemple</label><select id="ex1" onchange="exemple1()">
+      <option value="0" selected>fil rouge par milieu (chapitre 13)</option>
+      <option value="1">fil rouge par province</option>
+      <option value="2">une commune de 1 000 ménages (exercice 2 des diapositives)</option></select></div>
+  </div>
+  <div id="lignes1"></div>
+  <button onclick="postStrat()">Calculer</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Calage sur deux marges : l'ajustement proportionnel itératif, tour par tour</h2>
+  <p class="petit">On connaît les effectifs de la population selon deux variables (les marges), mais pas leur tableau croisé. Chaque tour multiplie les poids de chaque ligne par un même facteur pour retrouver la marge des lignes, puis ceux de chaque colonne pour retrouver la marge des colonnes. Noms séparés par des points-virgules ; nombres séparés par des espaces ; une ligne du tableau par ligne de texte. Les moyennes par case sont facultatives : elles servent à estimer la moyenne avant et après calage.</p>
+  <div class="grille2">
+    <div><label for="ex2">exemple</label><select id="ex2" onchange="exemple2()">
+      <option value="0" selected>fil rouge : milieu × province (chapitre 13)</option>
+      <option value="1">cent entreprises (exercice 3 des diapositives)</option>
+      <option value="2">deux cents commerces (feuille d'exercices, exercice 6)</option></select></div>
+    <div><label for="d2">poids de sondage initial d<sub>k</sub></label><input id="d2" type="text" value="10"></div>
+  </div>
+  <div class="grille2">
+    <div><label for="rl2">modalités des lignes</label><input id="rl2" type="text"></div>
+    <div><label for="ml2">marge connue des lignes</label><input id="ml2" type="text"></div>
+  </div>
+  <div class="grille2">
+    <div><label for="rc2">modalités des colonnes</label><input id="rc2" type="text"></div>
+    <div><label for="mc2">marge connue des colonnes</label><input id="mc2" type="text"></div>
+  </div>
+  <div class="grille2">
+    <div><label for="cnt2">effectifs tirés par case</label><textarea id="cnt2" rows="3"></textarea></div>
+    <div><label for="moy2">moyenne de y par case (facultatif)</label><textarea id="moy2" rows="3"></textarea></div>
+  </div>
+  <div class="grille4">
+    <div><label for="t2">nombre de tours</label><input id="t2" type="number" value="4" min="0" max="30"></div>
+  </div>
+  <div class="boutons"><button onclick="caler()">Calculer</button><button onclick="tourDePlus()">Un tour de plus</button><button onclick="recommencer()">Revenir au départ</button></div>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <div id="graphe2"></div>
+</div>
+
+<div class="panneau">
+  <h2>Quatre estimateurs sur la population du cours</h2>
+  <p class="petit">On tire des sondages aléatoires simples de n ménages parmi les 2 000 et l'on estime la dépense moyenne de quatre façons : moyenne simple ȳ ; régression sur la taille du ménage (X̄ connu) ; post-stratification par milieu ; calage sur les marges milieu et province (ajustement proportionnel itératif jusqu'à un écart inférieur à 0,01 ménage). Le générateur de cette page n'est pas celui de numpy : les échantillons diffèrent de ceux des diapositives, mais les écarts-types simulés sont proches.</p>
+  <div class="grille3">
+    <div><label for="n3">taille de l'échantillon n</label><input id="n3" type="number" value="200" min="20" max="1000"></div>
+    <div><label for="R3">nombre d'échantillons simulés</label><input id="R3" type="number" value="5000" min="100" max="5000"></div>
+    <div><label for="g3">graine du générateur</label><input id="g3" type="number" value="2026"></div>
+  </div>
+  <div class="boutons"><button onclick="tirer()">Tirer un échantillon</button><button onclick="simuler()">Simuler</button></div>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+  <div id="erreur4" class="erreur"></div>
+  <div id="resultat4" class="resultat-zone"></div>
+  <div id="graphe4"></div>
+</div>
+
+<p class="avertissement">Rappels : régression ȳ + b(X̄ − x̄), b = s<sub>xy</sub>/s<sub>x</sub>², V ≈ (1 − f) S²(1 − ρ²)/n. Post-stratification Σ W<sub>h</sub> ȳ<sub>h</sub>, poids N<sub>h</sub>/n<sub>h</sub>, variance estimée Σ W<sub>h</sub>² (1 − n<sub>h</sub>/N<sub>h</sub>) s<sub>h</sub>²/n<sub>h</sub>. Calage : poids w<sub>k</sub> proches des d<sub>k</sub> qui reproduisent des totaux connus ; estimation (1/N) Σ w<sub>k</sub> y<sub>k</sub>. Données fictives.</p>
+
+<script>
+
+const DEP = [5520,11660,7690,7590,4910,8210,7330,7790,5350,4590,11750,5250,9070,6310,6050,10500,5310,11180,7620,6380,6410,10400,3990,7180,4770,8110,6790,8490,7440,2550,7840,6610,20370,3900,4550,9070,2570,7990,4750,3360,4410,12970,3910,14800,5820,4590,12550,5290,4190,4520,4790,9160,7520,5400,9870,5910,12350,4570,7890,8170,7850,4720,2860,8640,3810,10470,1840,2820,7780,6110,5260,4320,20250,15890,9010,5770,11430,5630,3490,5010,6490,3000,8830,23080,14140,14270,10190,10300,10970,9540,10260,12510,6590,10700,11840,11970,7870,13590,5990,12680,7740,9420,5240,12510,12330,9290,8750,8540,8450,11150,7680,3490,9200,5060,12080,2060,9450,7530,11050,7190,11050,4400,17320,7520,6830,6150,10440,6660,8550,24270,6510,7690,11350,5580,6610,3950,9290,3880,3990,6730,10690,4570,10720,4790,8210,10270,23840,9340,6900,8570,14710,6470,10050,3790,7420,10700,5700,8840,4700,8350,2040,10550,19760,9280,6880,4930,14200,7600,7430,11070,2800,5630,12690,9200,9210,7860,10020,6210,11440,19310,11670,9560,13090,10960,7960,17730,9840,8680,5600,6790,7680,11250,5230,5120,9250,11500,16720,13620,3870,16600,15600,4600,11260,6710,21090,13510,12850,7030,7620,18140,9410,16750,11500,29720,21300,16230,3380,12290,21000,12010,13140,16530,10990,5330,4700,15680,6320,12500,8490,11220,13670,16030,10140,5270,19350,7180,18800,2740,15910,11960,16200,6160,5100,11020,8020,8370,12130,6470,12420,9740,6340,10520,5500,3870,9820,5330,8770,2970,4890,10780,7500,8200,9650,3830,7420,1830,3480,4990,4220,2670,6780,15950,2680,1500,4770,13570,14920,3660,5500,6060,6350,6120,11880,4050,15680,10600,8760,11880,4900,8980,7530,10080,4450,7250,12180,6430,7030,14930,10710,7460,4550,15520,12700,11000,13340,19520,10670,21320,8870,12400,8270,8180,14470,9450,8130,8470,16590,2850,9070,12520,16200,16530,13060,15010,3040,10440,31040,10010,9530,8440,12270,7330,15310,15130,9530,12090,4800,7430,13610,13320,10440,6640,6130,11650,9730,6450,19030,8510,13640,13160,12690,10160,12250,6420,6270,13710,3700,4980,5030,11800,13820,14120,9760,6110,13430,4970,9140,12810,8310,10030,7600,4510,11970,13100,14220,4930,14470,10280,4030,7900,12830,11030,3950,3480,5810,3250,2560,7140,10960,6820,10070,3640,4590,8220,6910,11410,7470,5860,6450,14640,4410,3050,2100,4380,18340,4890,8160,10910,6550,2490,9010,11420,9580,8460,5070,6210,7970,4320,13030,9880,6430,19030,10620,14750,11180,3650,10560,5690,12040,7100,6290,10110,11520,3710,9210,7990,6430,2930,5690,6140,4190,11980,12490,2930,5920,6080,4250,2300,14350,10490,13850,8770,6290,5400,2860,11630,11120,8820,10220,9840,9200,9710,6140,3540,5340,4160,5920,9360,10150,8540,3140,4290,5950,6120,3970,10770,3320,5090,6410,4720,6870,11460,7670,7620,5010,8980,6840,10640,8450,9960,7940,5700,10790,5430,8750,5160,5830,10390,2180,4400,4710,12460,8750,8320,7530,10140,4880,7710,6040,7670,7030,5980,8160,12420,2480,10490,9240,5910,6220,10280,5670,3930,7340,7880,6990,4970,18590,6350,4860,6290,8910,14440,10360,4340,4140,4600,5900,4100,5410,6940,8970,3540,8870,5060,17550,4350,4780,5970,4610,11360,6860,16470,12020,2910,3040,11620,5920,6330,6060,6690,16310,8120,5100,9090,5300,5830,26370,2980,7600,9910,4950,10470,5300,6570,7020,8930,11530,6140,13580,7970,12850,11290,4150,4960,11060,5870,7740,8500,11980,13870,5080,6880,6120,12830,5490,5480,13330,13180,3840,3470,19960,15440,12750,7730,11060,8490,8630,12400,8900,8940,8510,9570,14190,12810,8930,8090,5310,9440,29120,8920,21830,7800,14230,10760,16020,17430,11340,8030,6960,12050,9380,5640,5390,2930,6460,5940,5720,8850,4410,17560,10560,4710,13540,16870,9950,6260,11290,2780,13620,10760,9640,9570,2380,8110,5180,10570,9370,10740,10970,10210,4580,13450,8670,5620,9390,8860,2750,9630,14100,6990,3290,4530,8120,2540,2520,10480,4530,7800,10080,8080,8660,4770,8500,7900,5920,12700,2670,10380,10860,4600,12190,9120,4200,8200,13400,9050,5860,6840,8660,6630,11860,6920,3680,3570,12770,8960,7930,5280,14520,5230,17280,12140,2790,11200,12160,5560,6330,7460,7440,3480,4610,9060,11700,4550,4220,5400,9190,6780,9680,7110,8030,7390,4400,10150,3680,2280,8220,1540,1720,5290,3700,3490,4800,3240,5630,6600,6210,4900,4390,3540,6460,15390,4910,3280,6370,5730,10680,2090,8020,12220,9160,5020,7350,9530,6550,4290,3710,8280,7650,6560,3950,5100,1860,5280,13480,7420,8050,10670,12960,4300,7550,8640,13230,9700,14980,4780,5630,9010,4420,2380,6770,9740,5370,16130,6820,10440,6170,4020,11840,4450,5470,6830,12500,10180,5540,11140,9100,4620,11110,8510,17360,10430,7580,2080,13330,9760,11280,16840,12810,8880,7700,9820,14290,6420,5460,6490,15850,9600,4540,14580,5410,11100,6380,11630,3760,7030,8850,6630,3570,13980,7700,10360,7020,9770,7860,11330,3680,8420,14810,10950,4980,10490,15790,13460,14900,7330,7770,24970,11630,11500,8750,6390,8440,5630,9070,7910,6540,4590,7450,7210,11280,7180,6010,9070,9260,14180,9780,8550,6780,7090,8740,11770,15820,7420,11110,5630,2030,2180,7530,3130,7640,2200,16600,4280,7580,4280,3100,10070,13290,4490,12120,4660,11600,9770,10990,8770,8940,13680,7020,6260,7150,4260,7860,9680,5410,3330,5160,5260,4120,8330,2730,4920,8860,6610,7340,6850,13220,6130,9580,2770,2740,9670,6850,5580,7120,7040,8160,5000,5730,5740,14640,3210,6510,2930,6990,5610,4740,4370,9310,5580,7600,6970,5500,6490,2620,8780,12790,3630,7030,14810,7790,3160,5370,1850,6060,6620,14290,2830,10040,7060,6540,11550,7510,4040,10270,5210,4500,10390,5520,2970,14760,1570,16540,7950,11950,11350,5180,3610,17630,14620,6540,13910,10360,9070,9480,10040,18750,5340,18280,6290,2610,13930,12300,12780,13970,5510,2750,5190,9090,7440,4790,10780,8140,6710,6450,3850,6690,3420,5450,6700,7160,6110,9930,9750,14320,5200,4680,6740,9300,5980,8710,7440,7030,7880,2680,2830,6970,6390,6830,17490,2000,4280,3370,6480,5270,13390,6890,9460,19470,5380,4540,11100,20270,7490,1970,4390,17360,13760,8870,8290,5240,4020,4110,10120,13790,10560,8340,8200,2480,11830,4940,4600,9540,4630,7130,13220,6750,9310,2800,7760,15830,11890,6590,9670,12570,10610,13160,6380,13260,7940,4850,7600,8010,6200,17860,7170,11780,14320,7690,9280,4370,2290,12480,10270,6550,7390,4150,18940,10540,9950,9450,6220,6060,9550,14820,9500,6830,9680,3010,6850,3700,14300,10520,4750,3720,5280,4820,7350,3800,6040,7290,2920,3900,7290,4170,3210,11960,2390,3600,5900,5850,10660,2530,6460,5960,2430,9210,4300,9690,2170,5350,2090,3880,5340,4730,9300,2800,9090,4800,5130,6420,7600,11470,5330,7480,13070,7630,10700,8380,2990,5510,8750,3270,13570,14040,3210,10540,5950,6410,14190,3890,10460,4710,23450,13090,14910,14870,13270,6620,15340,7830,10160,2450,4690,9670,8420,8700,8620,7360,5210,16410,9590,13430,8200,13020,8470,2610,7450,11060,5380,16420,7260,11270,15420,8930,11940,11020,17800,5680,6310,18830,7810,7350,11020,6770,5690,10290,17220,6600,20400,10580,6110,10840,10270,12230,11080,8800,12080,15940,13570,20140,7090,12660,9820,12020,12090,13360,6550,7160,8220,8740,5400,4700,10790,5510,3290,11800,4270,9180,5800,3690,8440,7700,10210,4810,5300,1520,5820,5830,6270,5230,11240,5240,11190,4930,6090,11260,8830,11080,6020,10630,9100,4790,11300,7170,7830,5230,2120,6120,4190,2410,3730,5890,9540,5860,10590,12460,5600,5460,5700,10300,8710,11040,9930,7840,5760,9830,4030,7170,10460,8390,9000,6290,3590,4940,8860,8700,7060,12850,10490,10480,7350,12850,8970,15340,10660,7350,6210,4800,3700,16710,4670,9120,5480,14460,6820,8400,4500,12060,6230,8570,5430,7920,3310,10500,5780,10890,6240,9810,5850,5130,6090,6360,9760,11230,8920,5540,11090,8270,6870,5130,6260,7710,3490,4520,12450,7450,4150,10370,4250,5090,5120,6740,6300,6170,4510,6100,4270,6830,6080,4770,12620,4430,7250,11730,4600,4910,8180,8790,3120,7330,4660,5210,4630,5690,5030,7290,18100,13460,4680,7610,3850,9630,5140,11190,4170,10420,6600,7010,9840,7510,9370,4570,7110,10760,7560,21170,18990,9320,5090,7920,7880,7890,8300,6750,12820,14930,2980,9880,12480,5300,18210,12110,13930,3010,5630,11220,14250,8490,10130,15670,9150,9600,10010,3540,9530,8270,7580,2590,7910,15430,11900,6650,9360,5130,5580,10110,11840,3100,4980,3590,14820,11800,5160,10580,12960,8990,7290,20360,2230,8240,11980,9200,14780,3930,13800,9790,5540,6070,8030,13970,6410,11600,12630,12630,5610,4780,5840,6350,16850,5140,6250,4740,12380,7850,6000,9280,11140,8340,7270,6100,4300,9470,6750,4160,6740,4530,6810,9440,8420,8340,5920,3450,4310,2370,16610,5430,3230,6860,2550,6080,11490,5100,8400,6560,4030,8520,6120,6150,8970,8070,14270,8220,5620,7810,10180,6250,6690,9160,5050,9400,7300,7780,6670,4880,7200,6730,5010,10350,6000,7200,4400,12210,5860,5600,7440,5980,8470,4780,15460,5330,9540,4280,6010,6710,10630,3010,7240,7170,5920,14240,4810,4050,7720,7170,7160,11940,12090,6870,11670,11650,8560,3960,13220,17490,4500,11840,6200,10390,12170,7440,8190,9540,6180,8980,10990,5470,8780,14550,3150,10850,3090,6940,4550,4640,7880,4010,8540,4490,4550,5600,7940,5820,6470,2490,11440,7060,6150,3470,5130,5110,5530,7090,3450,7240,7790,2650,11170,6020,3930,14870,8440,7060,8780,3930,7040,4680,6210,4510,5860,5600,3570,3870,14520,8500,7890,5160,2870,6570,10560,4120,6260,7300,3690,3720,4160,8910,1700,5990,8750,7990,6380,2990,4290,8610,9020,6020,3080,7300,3470,3370,4860,6770,6570,7950,4170,3800,7680,4170,7260,7070,7130,2060,9560,17530,10830,1490,6640,4800,3660,2400,9890,6260,5830,4060,9840,14870,5460,5190,7560,7200,4540,4210,2730,5470,6050,8790,3770,13000,7840,19870,3930,4090,7500,5980,11970,7330,3990,4080,6620,4920,5280,5770,4200,2310,3130,5070,4580,3310,3140,5580,4090,3000,2970,7740,5380,4280,7050,5960,4780,3040,2780,3560,1490,2770,3740,6440,4840,5080,2080,3010,5120,3430,4610,7280,2820,5070,5030,2950,2500,7050,2840,5910,1790,8170,6560,6790,5260,3870,7780,5620,4400,4180,15960,5120,3570,6090,4460,2010,6460,5760,6020,5070,4510,4370,4000,2960,5350,4790,18810,6190,4650,6310,6050,3300,6300,6060,8380,3950,7380,6530,5570,6900,7930,7140,10360,6550,3960,5400,9720,5180,1950,8830,6860,2600,3900,7500,6130,8570,9030,4690,10970,8810,8040,9470,10800,9290,5340,4100,7360,4180,4250,3220,8460,7080,4790,7070,7210,7790,8120,3760,5210,3530,5750,12110,8750,9990,3640,6580,11010,9080,10170,3720,7160,5900,7670,5010,14000,5980,7360,4100,4470,4880,4880,11780,13130,3880,1370,3010,4400,2290,5590,2990,10800,2340,3100,2290,2970,2550,5370,6070,5880,2260,1910,4060,4000,4200,4500,6750,4920,2890,4590,3560,3430,2440,7180,2580,2930,5290,3120,2360,5360,4480,4450,4640,5380,2710,3670,3640,2120,6000,5530,3690,8300,5230,6050,4860,11120,4930,2740,4860,6050,6760,4460,4770,9000,1830,2680,4100,4550,3730,8570,6220,8620,3210,13050,7770,7900,4560,3680,3210,4430,5150,5380,15180,6250,7780,7020,2100,9670,6260,3440,3360,8060,9080,10570,4020,3540,6700,11510,6460,3560,7070,7800,5770,2550,10020,9140,6210,7540,4640,4330,5060,4100,4100,2570,2820,8080,7670,7670,6900,5370,5990,8630,2760,6020,3770,5000,7260,4280,9450,7780,3940,18110,6730,3160,5270,8960,14710,6540];
+const TAI = '23553432223322362433321223243033511503101604443212251122425242152301422137314211204634332444134542134313431333203140122151842245261332212002322123752243312315130273313213024312312842242331323411325516202154211334474302632541042301333161502351243242452412223011223120212036002740131263573424333343253115332325242451225023353503542241323201231212223243324114111263215122353157424402731330044230123433142101422310333213221225455131232631334021177022105462110592133331113655112114112344544434323263321301123323332552460431242132216312245111111330326122112640041122621312601214213232623212334353234723441154425344321344321353834243444433202232044146413052450222434304343303420250131344412234186164235424533311535461431552443235531343543443415002525134532148214390546265421465211362445144337222303527353333124342513853605366474533226304345222220514431614651566522943113345214332222624232473530050205111044131723515213024201213127243643104333321224141431343323303426431203240412622531421404235214334344352500352320123122120201221623101413312013234011134465113720142212112544207213243230265226243333232324635203324046231243433041851111312201311600323132022402013150221424246453123033031170416445425220235223152443202326245224442432511341642244212556343554445322743324235653302356426327663553734223213543747425256633124425024425833364645216232834154336364547112355325423441153372235322134218124314403221223442322142443526145569212112254133246611654353330432154714216402054155326034441421335435512125231532353421321332444102143131363322422344212422714333222022213335222514132505133102436533310361429434402312312312352421174426422532415204426335242334421593315734622141255223455163233742154452058703120443239424522125626291354584552682125442371266445632213434401364425231303072313321144142044222111237352224141521343221241022013252254343321311134233331202524123431422144221114651123337133424731143454524343721442532362441554455385226446612464325183421244282431632125422444445537527323231155456262313416328312484', MIL = '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111', PRV = '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333';
+const NPOP = DEP.length;
+const XT = Array.from(TAI, c => parseInt(c) + 1), MI = Array.from(MIL, c => parseInt(c)), PR = Array.from(PRV, c => parseInt(c));
+const NOMS_MIL = ['urbain', 'rural'], NOMS_PRV = ['Tanger-Assilah', 'Tétouan', 'Larache', 'Al Hoceïma'];
+function fmt(x, d) { return x.toLocaleString('fr-FR', {minimumFractionDigits: d, maximumFractionDigits: d}); }
+function lire(id) { const v = document.getElementById(id).value.trim().replace(/\s/g, '').replace(',', '.'); return v === '' ? NaN : parseFloat(v); }
+function nombres(txt) { const t = txt.trim(); return t === '' ? [] : t.split(/[\s;]+/).map(v => parseFloat(v.replace(',', '.'))); }
+function noms(txt) { return txt.split(';').map(v => v.trim()).filter(v => v !== ''); }
+function somme(a) { return a.reduce((s, v) => s + v, 0); }
+
+// ---------------- constantes de la population ----------------
+const YBAR = somme(DEP) / NPOP, XBAR = somme(XT) / NPOP;
+const S2POP = DEP.reduce((a, y) => a + (y - YBAR) ** 2, 0) / (NPOP - 1);
+const SX2 = XT.reduce((a, x) => a + (x - XBAR) ** 2, 0) / (NPOP - 1);
+const SXY = DEP.reduce((a, y, i) => a + (y - YBAR) * (XT[i] - XBAR), 0) / (NPOP - 1);
+const RHO2 = SXY * SXY / (SX2 * S2POP);
+const NM = [0, 0], NP = [0, 0, 0, 0], YM = [0, 0];
+for (let i = 0; i < NPOP; i++) { NM[MI[i]]++; NP[PR[i]]++; YM[MI[i]] += DEP[i]; }
+const WM = NM.map(v => v / NPOP);
+const SM2 = [0, 1].map(h => { const m = YM[h] / NM[h]; let s = 0; for (let i = 0; i < NPOP; i++) if (MI[i] === h) s += (DEP[i] - m) ** 2; return s / (NM[h] - 1); });
+// R2 de la régression de y sur milieu + province (indicatrices) : moindres carrés, 5 coefficients
+function gauss(A, b) {
+  const n = b.length, M = A.map((r, i) => r.concat([b[i]]));
+  for (let c = 0; c < n; c++) {
+    let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    [M[c], M[p]] = [M[p], M[c]];
+    for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k]; }
+  }
+  return M.map((r, i) => r[n] / r[i]);
+}
+const R2MP = (() => {
+  const lig = i => [1, MI[i], PR[i] === 1 ? 1 : 0, PR[i] === 2 ? 1 : 0, PR[i] === 3 ? 1 : 0];
+  const A = Array.from({length: 5}, () => new Array(5).fill(0)), b = new Array(5).fill(0);
+  for (let i = 0; i < NPOP; i++) { const z = lig(i); for (let r = 0; r < 5; r++) { b[r] += z[r] * DEP[i]; for (let c = 0; c < 5; c++) A[r][c] += z[r] * z[c]; } }
+  const beta = gauss(A, b); let sc = 0;
+  for (let i = 0; i < NPOP; i++) { const z = lig(i); sc += (DEP[i] - z.reduce((a, v, k) => a + v * beta[k], 0)) ** 2; }
+  return 1 - sc / (NPOP - 1) / S2POP;
+})();
+
+// ---------------- 1. post-stratification ----------------
+const EX1 = [
+  [['urbain', 1438, 152, 8135.5921, 3926.6177], ['rural', 562, 48, 6916.6667, 3375.3199]],
+  [['Tanger-Assilah', 820, 83, 8723.3735, 3831.4486], ['Tétouan', 560, 60, 8052.3333, 3913.2142], ['Larache', 380, 29, 7524.4828, 3492.0917], ['Al Hoceïma', 240, 28, 5115.0, 2658.7361]],
+  [['urbain', 600, 70, 9, 3], ['rural', 400, 30, 5, 2]]];
+const NL1 = 6;
+function construireLignes1() {
+  let h = '';
+  for (let i = 0; i < NL1; i++) {
+    const t = i === 0;
+    h += `<div class="grille5"><div>${t ? '<label for="pn' + i + '">groupe</label>' : ''}<input id="pn${i}" type="text" aria-label="groupe ${i + 1}"></div>
+      <div>${t ? '<label for="pN' + i + '">N<sub>h</sub></label>' : ''}<input id="pN${i}" type="text" aria-label="N_h du groupe ${i + 1}"></div>
+      <div>${t ? '<label for="pk' + i + '">n<sub>h</sub> tirés</label>' : ''}<input id="pk${i}" type="text" aria-label="n_h du groupe ${i + 1}"></div>
+      <div>${t ? '<label for="py' + i + '">moyenne ȳ<sub>h</sub></label>' : ''}<input id="py${i}" type="text" aria-label="moyenne du groupe ${i + 1}"></div>
+      <div>${t ? '<label for="ps' + i + '">écart-type s<sub>h</sub></label>' : ''}<input id="ps${i}" type="text" aria-label="écart-type du groupe ${i + 1}"></div></div>`;
+  }
+  document.getElementById('lignes1').innerHTML = h;
+}
+function exemple1() {
+  const L = EX1[parseInt(document.getElementById('ex1').value)];
+  for (let i = 0; i < NL1; i++) {
+    const l = L[i] || ['', '', '', '', ''];
+    ['pn', 'pN', 'pk', 'py', 'ps'].forEach((p, j) => { document.getElementById(p + i).value = l[j]; });
+  }
+  postStrat();
+}
+function postStrat() {
+  const err = document.getElementById('erreur1'), res = document.getElementById('resultat1');
+  err.textContent = ''; res.innerHTML = '';
+  try {
+    const G = [];
+    for (let i = 0; i < NL1; i++) {
+      const nom = document.getElementById('pn' + i).value.trim() || `groupe ${i + 1}`;
+      const Nh = lire('pN' + i), nh = lire('pk' + i), y = lire('py' + i), s = lire('ps' + i);
+      if (isNaN(Nh) && isNaN(nh)) continue;
+      if (isNaN(Nh) || isNaN(nh) || Nh <= 0 || nh < 1 || nh > Nh || !Number.isInteger(nh)) throw new Error(`${nom} : il faut un entier n_h tel que 1 ≤ n_h ≤ N_h.`);
+      if (isNaN(y)) throw new Error(`${nom} : la moyenne ȳ_h manque.`);
+      if (nh < 2) throw new Error(`${nom} : avec une seule unité tirée, on ne peut pas estimer s_h. Regrouper ce groupe avec un groupe voisin.`);
+      if (isNaN(s) || s < 0) throw new Error(`${nom} : l'écart-type s_h doit être un nombre positif ou nul.`);
+      G.push({nom, Nh, nh, y, s});
+    }
+    if (G.length < 2) throw new Error('il faut au moins deux groupes.');
+    const N = somme(G.map(g => g.Nh)), n = somme(G.map(g => g.nh)), f = n / N;
+    G.forEach(g => { g.W = g.Nh / N; g.w = g.Nh / g.nh; g.v = g.W * g.W * (1 - g.nh / g.Nh) * g.s * g.s / g.nh; });
+    const yb = somme(G.map(g => g.nh * g.y)) / n, yp = somme(G.map(g => g.W * g.y)), V = somme(G.map(g => g.v)), se = Math.sqrt(V);
+    const s2 = (somme(G.map(g => (g.nh - 1) * g.s * g.s)) + somme(G.map(g => g.nh * (g.y - yb) ** 2))) / (n - 1), Vs = (1 - f) * s2 / n;
+    let html = '<table class="res"><tr><th>groupe</th><th>N<sub>h</sub></th><th>W<sub>h</sub></th><th>n<sub>h</sub> tirés</th><th>attendus n W<sub>h</sub></th><th>ȳ<sub>h</sub></th><th>W<sub>h</sub> ȳ<sub>h</sub></th><th>poids N<sub>h</sub>/n<sub>h</sub></th><th>terme de variance</th></tr>';
+    G.forEach(g => { html += `<tr><td>${g.nom}</td><td>${fmt(g.Nh, 0)}</td><td>${fmt(g.W, 4)}</td><td>${fmt(g.nh, 0)}</td><td>${fmt(n * g.W, 1)}</td><td>${fmt(g.y, 2)}</td><td>${fmt(g.W * g.y, 2)}</td><td>${fmt(g.w, 3)}</td><td>${fmt(g.v, 4)}</td></tr>`; });
+    html += `</table><table class="res"><tr><th>moyenne simple ȳ</th><th>post-stratifiée Σ W<sub>h</sub> ȳ<sub>h</sub></th><th>variance estimée</th><th>erreur-type</th><th>intervalle à 95 %</th></tr>
+      <tr><td>${fmt(yb, 2)}</td><td><span class="valeur">${fmt(yp, 2)}</span></td><td>${fmt(V, 4)}</td><td>${fmt(se, 4)}</td><td>[${fmt(yp - 1.96 * se, 2)} ; ${fmt(yp + 1.96 * se, 2)}]</td></tr></table>`;
+    html += `<p>Poids de sondage avant post-stratification : d<sub>k</sub> = N/n = ${fmt(N / n, 3)} pour tous. Somme des poids post-stratifiés : ${G.map(g => fmt(g.nh, 0) + ' × ' + fmt(g.w, 3)).join(' + ')} = ${fmt(somme(G.map(g => g.nh * g.w)), 0)} = N : chaque groupe retrouve exactement son effectif.</p>`;
+    html += `<p>Sans post-stratification : s² = ${fmt(s2, 4)} (somme des carrés intra-groupes et inter-groupes), variance estimée de ȳ = (1 − f) s²/n = ${fmt(Vs, 4)}, erreur-type ${fmt(Math.sqrt(Vs), 4)}. Rapport des variances : <span class="valeur">${fmt(V / Vs, 3)}</span>. Le gain est d'autant plus grand que les moyennes des groupes diffèrent.</p>`;
+    res.innerHTML = html;
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+
+// ---------------- 2. calage sur marges ----------------
+const EX2 = [
+  {rl: 'urbain ; rural', rc: 'Tanger-Assilah ; Tétouan ; Larache ; Al Hoceïma', ml: '1438 562', mc: '820 560 380 240', cnt: '70 49 20 13\n13 11 9 15',
+   moy: '8915.8571 8098.9796 7831 4540.7692\n7686.9231 7844.5455 6843.3333 5612.6667', d: '10', t: 4},
+  {rl: 'urbain ; rural', rc: 'commerce ; agriculture', ml: '550 450', mc: '400 600', cnt: '30 10\n20 40', moy: '', d: '10', t: 1},
+  {rl: 'rural ; urbain', rc: 'alimentation ; habillement ; services', ml: '800 1200', mc: '900 500 600', cnt: '50 30 10\n40 30 40', moy: '40 55 70\n60 90 80', d: '10', t: 1}];
+function exemple2() {
+  const e = EX2[parseInt(document.getElementById('ex2').value)];
+  ['rl', 'rc', 'ml', 'mc', 'cnt', 'moy', 'd', 't'].forEach(k => { document.getElementById(k + '2').value = e[k]; });
+  caler();
+}
+function matrice(txt, I, J, quoi) {
+  const L = txt.trim().split(/\n+/).map(l => nombres(l));
+  if (L.length !== I) throw new Error(`${quoi} : il faut ${I} lignes de texte, une par modalité des lignes.`);
+  L.forEach((l, i) => { if (l.length !== J || l.some(isNaN)) throw new Error(`${quoi}, ligne ${i + 1} : il faut ${J} nombres.`); });
+  return L;
+}
+function marges(C, W) {
+  return [C.map((r, i) => somme(r.map((c, j) => c * W[i][j]))), C[0].map((_, j) => somme(C.map((r, i) => r[j] * W[i][j])))];
+}
+function ratisser(C, d, L, K, T) {
+  let W = C.map(r => r.map(() => d)); const et = [];
+  const note = (lab, f, cote) => { const [r, c] = marges(C, W);
+    const gap = Math.max(...r.map((v, i) => Math.abs(v - L[i])), ...c.map((v, j) => Math.abs(v - K[j])));
+    et.push({lab, f, cote, r, c, gap, W: W.map(x => x.slice())}); };
+  note('départ', null, '');
+  for (let t = 1; t <= T; t++) {
+    const fl = L.map((v, i) => v / marges(C, W)[0][i]); W = W.map((row, i) => row.map(w => w * fl[i])); note(`${t} : lignes`, fl, 'l');
+    const fc = K.map((v, j) => v / marges(C, W)[1][j]); W = W.map(row => row.map((w, j) => w * fc[j])); note(`${t} : colonnes`, fc, 'c');
+  }
+  return et;
+}
+function courbes(et, L, K, nl, nc) {
+  const W = 640, H = 270, g = 46, dr = 150, hb = 34, ht = 14;
+  const series = L.map((v, i) => ({nom: nl[i], v: et.map(e => 100 * e.r[i] / v), c: '#1f6fb2', dash: i === 0 ? '' : '6,3'}))
+    .concat(K.map((v, j) => ({nom: nc[j], v: et.map(e => 100 * e.c[j] / v), c: '#b56600', dash: ['', '6,3', '2,3', '8,3,2,3', '1,2'][j % 5]})));
+  const tous = series.flatMap(s => s.v), lo = Math.min(95, ...tous), hi = Math.max(105, ...tous);
+  const K1 = Math.max(et.length - 1, 1), X = k => g + k / K1 * (W - g - dr), Y = v => ht + (hi - v) / (hi - lo) * (H - ht - hb);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="marges estimées rapportées aux marges connues, étape par étape">`;
+  const pas = (hi - lo) > 40 ? 10 : 5;
+  for (let v = Math.ceil(lo / pas) * pas; v <= hi; v += pas) s += `<line x1="${g}" x2="${W - dr}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 100 ? '#888' : '#e3e3e3'}"></line><text x="${g - 4}" y="${Y(v) + 4}" font-size="11" text-anchor="end" fill="#666">${v} %</text>`;
+  et.forEach((e, k) => { if (et.length <= 13 || k % 2 === 0) s += `<text x="${X(k)}" y="${H - hb + 16}" font-size="10" text-anchor="middle" fill="#666">${k === 0 ? 'départ' : Math.ceil(k / 2) + (k % 2 ? 'L' : 'C')}</text>`; });
+  s += `<text x="${(W - dr + g) / 2}" y="${H - 4}" font-size="11" text-anchor="middle" fill="#444">étape (L : ajuster les lignes ; C : ajuster les colonnes)</text>`;
+  series.forEach((se, r) => {
+    s += `<polyline fill="none" stroke="${se.c}" stroke-width="2" stroke-dasharray="${se.dash}" points="${se.v.map((v, k) => X(k) + ',' + Y(v)).join(' ')}"></polyline>`;
+    se.v.forEach((v, k) => { s += `<circle cx="${X(k)}" cy="${Y(v)}" r="2.5" fill="${se.c}"></circle>`; });
+    s += `<line x1="${W - dr + 12}" x2="${W - dr + 36}" y1="${ht + 8 + 16 * r}" y2="${ht + 8 + 16 * r}" stroke="${se.c}" stroke-width="2" stroke-dasharray="${se.dash}"></line><text x="${W - dr + 40}" y="${ht + 12 + 16 * r}" font-size="11" fill="#333">${se.nom}</text>`;
+  });
+  return s + '</svg>';
+}
+function tourDePlus() { const t = document.getElementById('t2'); t.value = Math.min(30, (parseInt(t.value) || 0) + 1); caler(); }
+function recommencer() { document.getElementById('t2').value = 0; caler(); }
+function caler() {
+  const err = document.getElementById('erreur2'), res = document.getElementById('resultat2'), gr = document.getElementById('graphe2');
+  err.textContent = ''; res.innerHTML = ''; gr.innerHTML = '';
+  try {
+    const nl = noms(document.getElementById('rl2').value), nc = noms(document.getElementById('rc2').value);
+    if (nl.length < 2 || nl.length > 6 || nc.length < 2 || nc.length > 6) throw new Error('il faut de 2 à 6 modalités pour chaque variable (noms séparés par des points-virgules).');
+    const L = nombres(document.getElementById('ml2').value), K = nombres(document.getElementById('mc2').value);
+    if (L.length !== nl.length || L.some(v => isNaN(v) || v <= 0)) throw new Error(`marge des lignes : il faut ${nl.length} effectifs positifs.`);
+    if (K.length !== nc.length || K.some(v => isNaN(v) || v <= 0)) throw new Error(`marge des colonnes : il faut ${nc.length} effectifs positifs.`);
+    const N = somme(L);
+    if (Math.abs(N - somme(K)) > 1e-9 * N) throw new Error(`les deux marges doivent avoir le même total (${fmt(N, 0)} contre ${fmt(somme(K), 0)}) : sinon, l'algorithme oscille sans converger.`);
+    const C = matrice(document.getElementById('cnt2').value, nl.length, nc.length, 'effectifs tirés');
+    if (C.flat().some(v => v < 0)) throw new Error('les effectifs tirés doivent être positifs ou nuls.');
+    C.forEach((r, i) => { if (somme(r) === 0) throw new Error(`aucune unité tirée dans la modalité « ${nl[i]} » : elle ne peut pas être repondérée.`); });
+    nc.forEach((nom, j) => { if (somme(C.map(r => r[j])) === 0) throw new Error(`aucune unité tirée dans la modalité « ${nom} » : elle ne peut pas être repondérée.`); });
+    const tm = document.getElementById('moy2').value.trim(), M = tm === '' ? null : matrice(tm, nl.length, nc.length, 'moyennes par case');
+    const d = lire('d2'), T = parseInt(document.getElementById('t2').value);
+    if (isNaN(d) || d <= 0) throw new Error('le poids initial doit être positif.');
+    if (isNaN(T) || T < 0 || T > 30) throw new Error('le nombre de tours doit être compris entre 0 et 30.');
+    const et = ratisser(C, d, L, K, T), fin = et[et.length - 1];
+    const liste = (v, k) => v.map(x => fmt(x, k)).join(' ; ');
+    let html = `<p>Tableau des effectifs tirés : ${fmt(somme(C.flat()), 0)} unités ; avec le poids ${fmt(d, 2)}, elles représentent ${fmt(d * somme(C.flat()), 0)} unités pour N = ${fmt(N, 0)}.</p>`;
+    html += '<div class="defile"><table class="res"><tr><th>étape</th><th>facteurs appliqués</th><th>marge des lignes estimée</th><th>marge des colonnes estimée</th><th>plus grand écart</th></tr>';
+    html += `<tr><td>marges connues</td><td></td><td>${liste(L, 0)}</td><td>${liste(K, 0)}</td><td></td></tr>`;
+    et.forEach(e => { html += `<tr><td>${e.lab}</td><td>${e.f ? liste(e.f, 4) : '—'}</td><td class="${e.cote === 'l' ? 'ajuste' : ''}">${liste(e.r, 2)}</td><td class="${e.cote === 'c' ? 'ajuste' : ''}">${liste(e.c, 2)}</td><td>${fmt(e.gap, 3)}</td></tr>`; });
+    html += '</table></div>';
+    html += `<p>Après ${T} tour${T > 1 ? 's' : ''}, le plus grand écart entre une marge estimée et la marge connue vaut <span class="valeur ${fin.gap < 0.5 ? 'ok' : 'ko'}">${fmt(fin.gap, 3)}</span>. En gras, la marge que l'étape vient d'ajuster : elle est juste, l'autre est légèrement dérangée.</p>`;
+    html += `<table class="res"><tr><th>poids w<sub>k</sub></th>${nc.map(c => '<th>' + c + '</th>').join('')}</tr>`;
+    fin.W.forEach((r, i) => { html += `<tr><td>${nl[i]}</td>${r.map((w, j) => '<td>' + (C[i][j] > 0 ? fmt(w, 3) : '—') + '</td>').join('')}</tr>`; });
+    html += `</table><table class="res"><tr><th>tableau estimé n<sub>k</sub> w<sub>k</sub></th>${nc.map(c => '<th>' + c + '</th>').join('')}<th>total</th></tr>`;
+    fin.W.forEach((r, i) => { html += `<tr><td>${nl[i]}</td>${r.map((w, j) => '<td>' + fmt(C[i][j] * w, 1) + '</td>').join('')}<td>${fmt(fin.r[i], 1)}</td></tr>`; });
+    html += `<tr><td>total</td>${fin.c.map(v => '<td>' + fmt(v, 1) + '</td>').join('')}<td>${fmt(somme(fin.r), 1)}</td></tr></table>`;
+    if (T > 0) {
+      const j0 = C[0].findIndex((c, j) => c > 0 && C[1][j] > 0);
+      if (j0 >= 0) html += `<p class="petit">Chaque poids est le produit d × (facteurs de sa ligne) × (facteurs de sa colonne) : dans chaque colonne, un poids de « ${nl[1]} » vaut ${fmt(fin.W[1][j0] / fin.W[0][j0], 4)} fois celui de « ${nl[0]} ». Les poids, multipliés à chaque étape, restent positifs.</p>`;
+    }
+    if (M) {
+      const tot = W => somme(C.map((r, i) => somme(r.map((c, j) => c * W[i][j] * M[i][j]))));
+      const y0 = tot(et[0].W) / N, y1 = tot(fin.W) / N;
+      html += `<table class="res"><tr><th>moyenne estimée avec d<sub>k</sub> : (1/N) Σ d<sub>k</sub> y<sub>k</sub></th><th>moyenne estimée avec les poids calés : (1/N) Σ w<sub>k</sub> y<sub>k</sub></th><th>écart</th></tr>
+        <tr><td>${fmt(y0, 2)}</td><td><span class="valeur">${fmt(y1, 2)}</span></td><td>${fmt(y1 - y0, 2)}</td></tr></table>`;
+    }
+    res.innerHTML = html;
+    gr.innerHTML = courbes(et, L, K, nl, nc);
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+
+// ---------------- 3. simulation ----------------
+function mulberry32(a) {
+  return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const TOUS = Array.from({length: NPOP}, (_, i) => i);
+function tirage(k, alea) {
+  const c = TOUS.slice();
+  for (let i = 0; i < k; i++) { const j = i + Math.floor(alea() * (NPOP - i)); const t = c[i]; c[i] = c[j]; c[j] = t; }
+  return c.slice(0, k);
+}
+function estimateurs(s) {
+  const n = s.length; let sy = 0, sx = 0;
+  s.forEach(i => { sy += DEP[i]; sx += XT[i]; });
+  const yb = sy / n, xb = sx / n; let sxx = 0, sxy = 0;
+  s.forEach(i => { const dx = XT[i] - xb; sxx += dx * dx; sxy += dx * (DEP[i] - yb); });
+  const b = sxx > 0 ? sxy / sxx : NaN, reg = yb + b * (XBAR - xb);
+  const nm = [0, 0], ym = [0, 0], C = [[0, 0, 0, 0], [0, 0, 0, 0]], Ys = [[0, 0, 0, 0], [0, 0, 0, 0]];
+  s.forEach(i => { nm[MI[i]]++; ym[MI[i]] += DEP[i]; C[MI[i]][PR[i]]++; Ys[MI[i]][PR[i]] += DEP[i]; });
+  const post = nm[0] > 0 && nm[1] > 0 ? WM[0] * ym[0] / nm[0] + WM[1] * ym[1] / nm[1] : NaN;
+  let rak = NaN, tours = 0;
+  const colOK = [0, 1, 2, 3].every(j => C[0][j] + C[1][j] > 0);
+  if (nm[0] > 0 && nm[1] > 0 && colOK) {
+    let W = [[1, 1, 1, 1], [1, 1, 1, 1]].map(r => r.map(() => NPOP / n)), gap = Infinity;
+    while (gap >= 0.01 && tours < 100) {
+      tours++;
+      for (let i = 0; i < 2; i++) { const r = C[i].reduce((a, c, j) => a + c * W[i][j], 0); W[i] = W[i].map(w => w * NM[i] / r); }
+      for (let j = 0; j < 4; j++) { const c = C[0][j] * W[0][j] + C[1][j] * W[1][j]; W[0][j] *= NP[j] / c; W[1][j] *= NP[j] / c; }
+      gap = Math.max(...[0, 1].map(i => Math.abs(C[i].reduce((a, c, j) => a + c * W[i][j], 0) - NM[i])));
+    }
+    rak = (W[0].reduce((a, w, j) => a + w * Ys[0][j], 0) + W[1].reduce((a, w, j) => a + w * Ys[1][j], 0)) / NPOP;
+  }
+  return {yb, xb, b, reg, nm, post, rak, tours};
+}
+function lireSim() {
+  const n = parseInt(document.getElementById('n3').value), g = parseInt(document.getElementById('g3').value);
+  if (isNaN(n) || n < 20 || n > 1000) throw new Error('n doit être compris entre 20 et 1 000.');
+  if (isNaN(g)) throw new Error('la graine doit être un nombre entier.');
+  return {n, g};
+}
+function tirer() {
+  const err = document.getElementById('erreur3'), res = document.getElementById('resultat3');
+  err.textContent = ''; res.innerHTML = '';
+  try {
+    const {n, g} = lireSim(), E = estimateurs(tirage(n, mulberry32(g)));
+    const lignes = [['moyenne simple ȳ', E.yb], ['régression sur la taille', E.reg], ['post-stratification par milieu', E.post], ['calage sur milieu et province', E.rak]];
+    let html = `<p>Un échantillon de ${fmt(n, 0)} ménages : ${fmt(E.nm[0], 0)} urbains et ${fmt(E.nm[1], 0)} ruraux (attendus ${fmt(n * WM[0], 1)} et ${fmt(n * WM[1], 1)}) ; taille moyenne x̄ = ${fmt(E.xb, 3)} pour X̄ = ${fmt(XBAR, 4)} ; pente b = ${fmt(E.b, 2)} dh par personne ; calage atteint en ${E.tours} tour${E.tours > 1 ? 's' : ''}.</p>`;
+    html += '<table class="res"><tr><th>estimateur</th><th>estimation (dh)</th><th>erreur commise</th></tr>';
+    lignes.forEach(l => { html += `<tr><td>${l[0]}</td><td>${isNaN(l[1]) ? 'impossible (groupe vide)' : fmt(l[1], 2)}</td><td>${isNaN(l[1]) ? '—' : fmt(l[1] - YBAR, 1)}</td></tr>`; });
+    res.innerHTML = html + `</table><p class="petit">Vraie moyenne Ȳ = ${fmt(YBAR, 2)} dh. Un seul échantillon ne juge pas un estimateur : sur un tirage donné, ȳ peut être le plus proche. La simulation ci-dessous compare les quatre sur des milliers de tirages.</p>`;
+  } catch (ex) { err.textContent = 'Erreur : ' + ex.message; }
+}
+function histo(series, vrai) {
+  const tous = series.flatMap(s => s.v), lo = Math.min(...tous), hi = Math.max(...tous), k = 40, w = (hi - lo) / k;
+  const W = 640, Hs = 78, m = 30, X = v => m + (v - lo) / (hi - lo) * (W - 2 * m);
+  const hs = series.map(s => { const h = new Array(k).fill(0); s.v.forEach(v => { let i = Math.floor((v - lo) / w); if (i >= k) i = k - 1; h[i]++; }); return h; });
+  const hm = Math.max(...hs.flat());
+  let s = `<svg viewBox="0 0 ${W} ${series.length * Hs + 48}" width="100%" role="img" aria-label="distribution des estimations simulées des quatre estimateurs">`;
+  series.forEach((se, r) => { const base = (r + 1) * Hs;
+    hs[r].forEach((c, i) => { const bh = (Hs - 22) * c / hm; s += `<rect x="${X(lo + i * w)}" y="${base - bh}" width="${Math.max((W - 2 * m) / k - 1, 1)}" height="${bh}" fill="${se.c}" opacity="0.55"></rect>`; });
+    s += `<line x1="${m}" x2="${W - m}" y1="${base}" y2="${base}" stroke="#888"></line>`;
+    s += `<text x="${m}" y="${base - Hs + 30}" font-size="12" fill="${se.c}">${se.nom}</text>`; });
+  s += `<line x1="${X(vrai)}" x2="${X(vrai)}" y1="8" y2="${series.length * Hs}" stroke="#4a3b8c" stroke-width="2" stroke-dasharray="5,3"></line>`;
+  s += `<text x="${X(vrai) + 5}" y="16" font-size="12" fill="#4a3b8c">Ȳ = ${fmt(vrai, 0)}</text>`;
+  const pas = (hi - lo) > 2000 ? 500 : 250;
+  for (let v = Math.ceil(lo / pas) * pas; v <= hi; v += pas) s += `<text x="${X(v)}" y="${series.length * Hs + 16}" font-size="11" text-anchor="middle" fill="#666">${fmt(v, 0)}</text>`;
+  s += `<text x="${W / 2}" y="${series.length * Hs + 38}" font-size="12" text-anchor="middle" fill="#444">estimation de la dépense moyenne (dh)</text>`;
+  return s + '</svg>';
+}
+function simuler() {
+  const err = document.getElementById('erreur4'), res = document.getElementById('resultat4'), gr = document.getElementById('graphe4');
+  err.textContent = ''; res.innerHTML = ''; gr.innerHTML = '';
+  try {
+    const {n, g} = lireSim(), R = parseInt(document.getElementById('R3').value);
+    if (isNaN(R) || R < 100 || R > 5000) throw new Error('le nombre d\'échantillons doit être compris entre 100 et 5 000.');
+    const alea = mulberry32(g + 1), f = n / NPOP, Vsas = (1 - f) * S2POP / n;
+    const cles = ['yb', 'reg', 'post', 'rak'], v = {yb: [], reg: [], post: [], rak: []}; let vides = 0;
+    for (let r = 0; r < R; r++) {
+      const E = estimateurs(tirage(n, alea));
+      if (cles.some(k => isNaN(E[k]))) { vides++; continue; }
+      cles.forEach(k => v[k].push(E[k]));
+    }
+    const Rv = v.yb.length;
+    if (Rv < 50) throw new Error('trop d\'échantillons ont un groupe vide : augmenter n.');
+    const Vpost = (1 - f) / n * (WM[0] * SM2[0] + WM[1] * SM2[1]) + ((1 - WM[0]) * SM2[0] + (1 - WM[1]) * SM2[1]) / (n * n);
+    const theo = {yb: '1', reg: fmt(1 - RHO2, 3) + ' (1 − ρ²)', post: fmt(Vpost / Vsas, 3), rak: '≈ ' + fmt(1 - R2MP, 3) + ' (1 − R²)'};
+    const noms = {yb: 'moyenne simple ȳ', reg: 'régression sur la taille', post: 'post-stratification par milieu', rak: 'calage sur milieu et province'};
+    let html = `<table class="res"><tr><th>estimateur (${fmt(Rv, 0)} échantillons de ${fmt(n, 0)} ménages)</th><th>moyenne des estimations</th><th>biais</th><th>écart-type observé</th><th>effet de plan observé</th><th>effet de plan attendu</th><th>à moins de 300 dh de Ȳ</th></tr>`;
+    const st = {};
+    cles.forEach(k => { const x = v[k], m = somme(x) / Rv, sd = Math.sqrt(x.reduce((a, b) => a + (b - m) ** 2, 0) / (Rv - 1));
+      st[k] = sd; const p = x.filter(z => Math.abs(z - YBAR) < 300).length / Rv;
+      html += `<tr><td>${noms[k]}</td><td>${fmt(m, 1)}</td><td>${fmt(m - YBAR, 1)}</td><td>${fmt(sd, 1)}</td><td><span class="valeur">${fmt(sd * sd / Vsas, 3)}</span></td><td>${theo[k]}</td><td>${fmt(100 * p, 1)} %</td></tr>`; });
+    html += '</table>';
+    html += `<p>Les quatre estimateurs sont centrés sur Ȳ = ${fmt(YBAR, 2)} dh. Effet de plan observé = variance des estimations / variance théorique d'un sondage aléatoire simple de même taille (${fmt(Vsas, 1)}). La taille du ménage, liée à la dépense (ρ² = ${fmt(RHO2, 3)}), réduit beaucoup la variance ; le milieu et la province, qui n'expliquent que ${fmt(100 * R2MP, 1)} % de la variance de la dépense, la réduisent peu.${vides ? ` ${vides} échantillon(s) écarté(s) : un groupe vide rendait la post-stratification ou le calage impossible.` : ''}</p>`;
+    res.innerHTML = html;
+    gr.innerHTML = histo([{v: v.yb, nom: 'moyenne simple ȳ', c: '#5a6b75'}, {v: v.reg, nom: 'régression sur la taille', c: '#1d9e75'},
+      {v: v.post, nom: 'post-stratification par milieu', c: '#1f6fb2'}, {v: v.rak, nom: 'calage sur milieu et province', c: '#b56600'}], YBAR);
+  } catch (ex) { err.textContent = 'Erreur : ' + ex.message; }
+}
+window.onload = () => { construireLignes1(); exemple1(); exemple2(); tirer(); simuler(); };
+
+</script>
+</body>
+</html>
