@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 11 — Probabilités inégales — Application interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+<style>
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  table.res { width: 100%; }
+  .petit { font-size: 0.85em; color: var(--cgris); }
+  .valeur { display: inline-block; padding: 0.15em 0.6em; border-radius: 5px; font-family: "Courier New", monospace; }
+  .defile { max-height: 320px; overflow-y: auto; }
+  @media (max-width: 640px) { .grille4, .grille3, .grille2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 11 — Les probabilités inégales</h1>
+<p class="sous-titre">Application interactive — Échantillonnage</p>
+
+
+<style>
+  .boutons button { margin-right: 0.6em; }
+  .resultat-zone { overflow-x: auto; }
+  textarea { width: 100%; min-height: 6.5em; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; box-sizing: border-box; }
+</style>
+
+<div class="panneau">
+  <h2>Tirer des districts proportionnellement à leur taille : la méthode des tailles cumulées</h2>
+  <p class="petit">Les 2 000 ménages forment 50 districts de 13 à 71 ménages, rangés dans l'ordre du fichier (province par province). Le district i occupe sur l'axe des ménages l'intervalle ]C<sub>i−1</sub> ; C<sub>i</sub>], de longueur M<sub>i</sub>. <b>Avec remise</b> : on tire n<sub>I</sub> nombres entre 1 et 2 000, chacun désigne un district (Hansen-Hurwitz). <b>Systématique</b> : un départ r entre 1 et k = 2 000/n<sub>I</sub>, puis les points r, r + k, r + 2k… (Horvitz-Thompson, π<sub>i</sub> = n<sub>I</sub> M<sub>i</sub>/2 000). Par défaut : les nombres et le départ tirés dans les diapositives avec la graine 2026 de numpy ; le bouton « Tirer au hasard » utilise le générateur de cette page.</p>
+  <div class="grille4">
+    <div><label for="mode1">méthode</label><select id="mode1" onchange="changerMode()">
+      <option value="ar" selected>avec remise (HH)</option>
+      <option value="sys">systématique (HT)</option></select></div>
+    <div><label for="nI1">nombre de districts n<sub>I</sub></label><input id="nI1" type="number" value="5" min="2" max="40"></div>
+    <div><label for="pts1">nombres tirés entre 1 et 2 000</label><input id="pts1" type="text" value="1704 358 53 1280 731"></div>
+    <div><label for="gr1">graine du générateur</label><input id="gr1" type="number" value="2026"></div>
+  </div>
+  <div class="boutons"><button onclick="tirerPPT()">Tirer au hasard</button><button onclick="estimerPPT()">Sélectionner avec ces nombres</button></div>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Calculatrice : Hansen-Hurwitz ou Horvitz-Thompson pour des unités tirées selon leur taille</h2>
+  <p class="petit">Une ligne par tirage : valeur y<sub>i</sub> de l'unité tirée, puis sa mesure de taille x<sub>i</sub> (séparées par un espace). Exemples des diapositives : quatre villages (villages 2 et 4 tirés avec remise, X = 100 ménages, totaux en milliers de dh) ; huit douars (tirage systématique, douars 2, 5, 6 et 8, y<sub>i</sub> = M<sub>i</sub> × Ȳ<sub>i</sub>) ; mini-population (A et E tirés, taille en personnes, X = 18). Sans remise, π<sub>i</sub> = n x<sub>i</sub>/X doit rester inférieur à 1 ; la variance est alors calculée comme avec remise, ce qui est l'usage.</p>
+  <div class="grille4">
+    <div><label for="mode2">plan</label><select id="mode2">
+      <option value="hh" selected>avec remise (HH)</option>
+      <option value="ht">sans remise (HT)</option></select></div>
+    <div><label for="X2">taille totale X</label><input id="X2" type="text" value="100"></div>
+    <div><label for="N2">N pour une moyenne (facultatif)</label><input id="N2" type="text" value="100"></div>
+    <div><label for="ex2">exemple</label><select id="ex2" onchange="exempleCalc()">
+      <option value="0" selected>quatre villages</option>
+      <option value="1">huit douars</option>
+      <option value="2">mini-population</option></select></div>
+  </div>
+  <label for="donnees2">tirages : y<sub>i</sub> puis x<sub>i</sub>, une ligne par unité tirée</label>
+  <textarea id="donnees2">140 20
+320 40</textarea>
+  <button onclick="calculer()">Calculer</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Répéter l'enquête : probabilités égales ou proportionnelles à la taille</h2>
+  <p class="petit">On répète K fois l'enquête de n<sub>I</sub> districts, entièrement enquêtés, selon quatre plans, et l'on compare les estimations à la vraie valeur. La mesure de taille reste le nombre de ménages M<sub>i</sub> ; la variable d'intérêt change. Dépense : moyenne par ménage, en dh. Ménages connectés et ménages ruraux : total, en ménages. Le tirage systématique n'est proposé que si n<sub>I</sub> divise 2 000 avec un pas d'au moins 71 ménages.</p>
+  <div class="grille4">
+    <div><label for="var3">variable d'intérêt</label><select id="var3">
+      <option value="T" selected>dépense des ménages</option>
+      <option value="I">ménages connectés à internet</option>
+      <option value="R">ménages ruraux</option></select></div>
+    <div><label for="nI3">nombre de districts n<sub>I</sub></label><input id="nI3" type="number" value="5" min="2" max="40"></div>
+    <div><label for="K3">nombre d'enquêtes K</label><input id="K3" type="number" value="5000" min="100" max="50000"></div>
+    <div><label for="gr3">graine de la simulation</label><input id="gr3" type="number" value="11"></div>
+  </div>
+  <button onclick="simuler()">Simuler</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+  <div id="graphe3"></div>
+</div>
+
+<p class="avertissement">Rappels : tirage proportionnel à la taille, p<sub>i</sub> = x<sub>i</sub>/X. Avec remise : Ŷ<sub>HH</sub> = (1/n) Σ y<sub>(j)</sub>/p<sub>(j)</sub>, V = (1/n) Σ<sub>i</sub> p<sub>i</sub> (y<sub>i</sub>/p<sub>i</sub> − Y)², variance estimée s<sub>z</sub>²/n. Sans remise : π<sub>i</sub> = n x<sub>i</sub>/X, Ŷ<sub>HT</sub> = Σ y<sub>i</sub>/π<sub>i</sub>. Districts tirés selon leur nombre de ménages : la dépense moyenne s'estime par la moyenne simple des moyennes de district.</p>
+
+<script>
+
+const DIS = {"M":[71,46,32,50,43,56,70,30,31,36,55,34,48,60,22,47,43,46,68,26,49,25,45,40,45,52,44,33,27,26,39,41,20,47,47,34,55,18,15,29,26,43,46,46,47,13,43,22,30,39],"T":[498040,438050,283870,463530,536910,430320,766730,237350,265270,274830,398400,255330,422100,597630,157810,378170,250610,414300,613670,206950,320680,190160,391210,322870,413300,319610,425150,372340,183900,183930,335170,282780,146480,436790,416480,231970,422890,169930,88450,189230,150170,294350,210150,278530,320520,96320,172200,113360,202750,251330],"I":[59,36,21,40,39,46,56,23,26,20,44,30,38,47,16,27,17,21,54,19,31,21,36,34,33,33,38,28,17,15,23,19,15,35,34,25,38,16,5,9,13,19,15,31,34,8,13,5,8,18],"p":"00000000000000000011111111111111222222222223333333","u":"uuuuuuuuuuuuuuurrruuuuuuuuuurrrruuuuuurrrrruuurrrr"}, C = {"N":2000,"Ybar":7911.435,"S2":15874547.76}, T975 = [12.706,4.303,3.182,2.776,2.571,2.447,2.365,2.306,2.262,2.228,2.201,2.179,2.16,2.145,2.131,2.12,2.11,2.101,2.093,2.086,2.08,2.074,2.069,2.064,2.06,2.056,2.052,2.048,2.045,2.042,2.04,2.037,2.035,2.032,2.03,2.028,2.026,2.024,2.023,2.021,2.02,2.018,2.017,2.015,2.014,2.013,2.012,2.011,2.01,2.009,2.008,2.007,2.006,2.005,2.004,2.003,2.002,2.002,2.001,2.0];
+const PROVS = ['Tanger-Assilah', 'Tétouan', 'Larache', 'Al Hoceïma'];
+const NI = DIS.M.length, NPOP = C.N, YBAR = C.Ybar;
+DIS.R = DIS.M.map((m, i) => DIS.u[i] === 'r' ? m : 0);
+const CUM = []; DIS.M.reduce((a, m, i) => (CUM[i] = a + m), 0);
+const MMAX = Math.max(...DIS.M);
+const SYS_OK = [2, 4, 5, 8, 10, 16, 20, 25];
+function fmt(x, d) { return x.toLocaleString('fr-FR', {minimumFractionDigits: d, maximumFractionDigits: d}); }
+function lire(id) { return parseFloat(String(document.getElementById(id).value).replace(/\s/g, '').replace(',', '.')); }
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function varc(v) { const m = v.reduce((a, b) => a + b, 0) / v.length; return v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1); }
+function tq(ddl) { return ddl <= T975.length ? T975[ddl - 1] : 1.96; }
+function district(a) {   // premier i tel que C_i >= a (recherche dichotomique)
+  let lo = 0, hi = NI - 1;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (CUM[mid] >= a) hi = mid; else lo = mid + 1; }
+  return lo;
+}
+function pointsSys(r, nI) { const k = NPOP / nI; return Array.from({length: nI}, (_, j) => r + j * k); }
+
+// ---------------------------------------------------------------- panneau 1
+function changerMode() {
+  const mode = document.getElementById('mode1').value, lab = document.querySelector('label[for=pts1]');
+  if (mode === 'sys') { lab.textContent = 'départ r (entre 1 et le pas k)'; document.getElementById('pts1').value = '341'; }
+  else { lab.textContent = 'nombres tirés entre 1 et 2 000'; document.getElementById('pts1').value = '1704 358 53 1280 731'; }
+  document.getElementById('nI1').value = 5; estimerPPT();
+}
+function lireNI(id, sys) {
+  const nI = parseInt(document.getElementById(id).value);
+  if (isNaN(nI) || nI < 2 || nI > 40) throw new Error('n_I doit être compris entre 2 et 40.');
+  if (sys && !SYS_OK.includes(nI)) throw new Error('pour le tirage systématique, n_I doit diviser 2 000 et le pas k = 2 000/n_I doit dépasser la plus grande taille (71 ménages) : n_I = ' + SYS_OK.join(', ') + '.');
+  return nI;
+}
+function exactSys(nI) {   // tous les départs r = 1..k : espérance, variance exacte, échantillons distincts
+  const k = NPOP / nI, est = [], vus = new Set();
+  for (let r = 1; r <= k; r++) {
+    const ids = pointsSys(r, nI).map(district); vus.add(ids.join(','));
+    est.push(ids.reduce((a, i) => a + DIS.T[i] / DIS.M[i], 0) / nI);
+  }
+  const m = est.reduce((a, b) => a + b, 0) / k, V = est.reduce((a, b) => a + (b - m) ** 2, 0) / k;
+  return {m: Math.round(m * 1e6) / 1e6, V, distincts: vus.size, k};   // arrondi : évite 7 911,43 pour 7 911,435
+}
+function vHH(yv, nI) {   // variance de Hansen-Hurwitz du total, mesure de taille M_i
+  const Y = yv.reduce((a, b) => a + b, 0);
+  return yv.reduce((a, v, i) => { const p = DIS.M[i] / NPOP; return a + p * (v / p - Y) ** 2; }, 0) / nI;
+}
+function afficherPPT(points, mode) {
+  const res = document.getElementById('resultat1'), nI = points.length, sys = mode === 'sys';
+  const ids = points.map(district), moy = ids.map(i => DIS.T[i] / DIS.M[i]);
+  let html = '<div class="defile"><table class="res"><tr><th>point</th><th>intervalle ]C<sub>i−1</sub> ; C<sub>i</sub>]</th><th>district</th><th>province, milieu</th><th>M<sub>i</sub></th><th>' + (sys ? 'π<sub>i</sub> = n<sub>I</sub> M<sub>i</sub>/N' : 'p<sub>i</sub> = M<sub>i</sub>/N') + '</th><th>moyenne Ȳ<sub>i</sub> (dh)</th></tr>';
+  ids.forEach((i, j) => {
+    const lo = i > 0 ? CUM[i - 1] : 0;
+    html += `<tr><td>${fmt(points[j], points[j] % 1 ? 1 : 0)}</td><td>]${fmt(lo, 0)} ; ${fmt(CUM[i], 0)}]</td><td>${i + 1}</td><td>${PROVS[+DIS.p[i]]}, ${DIS.u[i] === 'u' ? 'urbain' : 'rural'}</td><td>${DIS.M[i]}</td><td>${fmt((sys ? nI : 1) * DIS.M[i] / NPOP, 4)}</td><td>${fmt(moy[j], 2)}</td></tr>`;
+  });
+  html += '</table></div>';
+  const est = moy.reduce((a, b) => a + b, 0) / nI, s2 = varc(moy), se = Math.sqrt(s2 / nI), t = tq(nI - 1);
+  const distincts = new Set(ids).size, menages = [...new Set(ids)].reduce((a, i) => a + DIS.M[i], 0);
+  const lo = est - t * se, hi = est + t * se, ok = lo <= YBAR && YBAR <= hi;
+  html += `<p>Estimation de la dépense moyenne (moyenne simple des ${nI} moyennes Ȳ<sub>i</sub>) : <span class="valeur">${fmt(est, 2)} dh</span>, pour Ȳ = ${fmt(YBAR, 2)} dh (erreur ${fmt(est - YBAR, 1)} dh). Total estimé : ${fmt(NPOP * est, 0)} dh. Districts distincts : ${distincts} ; ménages à enquêter : ${menages}.</p>`;
+  html += `<table class="res"><tr><th>variance estimée s²/n<sub>I</sub></th><th>erreur-type estimée</th><th>intervalle à 95 % (t = ${fmt(t, 3)}, ${nI - 1} ddl)</th><th>${sys ? 'écart-type exact (tous les départs)' : 'écart-type exact (Hansen-Hurwitz)'}</th></tr>`;
+  const exact = sys ? Math.sqrt(exactSys(nI).V) : Math.sqrt(vHH(DIS.T, nI)) / NPOP;
+  html += `<tr><td>${fmt(s2 / nI, 0)}</td><td>${fmt(se, 1)}</td><td><span class="valeur ${ok ? 'ok' : 'ko'}">[${fmt(lo, 1)} ; ${fmt(hi, 1)}]</span></td><td>${fmt(exact, 1)}</td></tr></table>`;
+  if (sys) { const E = exactSys(nI);
+    html += `<p class="petit">Pas k = ${fmt(E.k, 0)} : les ${fmt(E.k, 0)} départs donnent ${E.distincts} échantillons distincts ; beaucoup de paires de districts ne sont jamais tirées ensemble (π<sub>kl</sub> = 0), d'où la variance calculée comme avec remise. Espérance sur tous les départs : ${fmt(E.m, 2)} dh, sans biais.</p>`; }
+  else html += `<p class="petit">Avec remise, un district peut sortir deux fois : il compte alors deux fois dans la moyenne. Chaque tirage apporte en moyenne Σ M<sub>i</sub>²/N = ${fmt(DIS.M.reduce((a, m) => a + m * m, 0) / NPOP, 1)} ménages. En vert, un intervalle qui contient Ȳ.</p>`;
+  res.innerHTML = html;
+}
+function lirePoints(nI, sys) {
+  const brut = document.getElementById('pts1').value.trim().split(/[\s;]+/).filter(s => s !== '').map(s => parseFloat(s.replace(',', '.')));
+  if (brut.some(isNaN)) throw new Error('les nombres doivent être numériques.');
+  if (sys) {
+    if (brut.length !== 1) throw new Error('indiquer un seul départ r.');
+    const k = NPOP / nI, r = brut[0];
+    if (r <= 0 || r > k) throw new Error(`le départ r doit être compris entre 1 et k = ${fmt(k, 0)}.`);
+    return pointsSys(r, nI);
+  }
+  if (brut.length < 2) throw new Error('il faut au moins deux nombres.');
+  if (brut.length > 40) throw new Error('au plus 40 tirages.');
+  if (brut.some(a => a < 1 || a > NPOP || a % 1)) throw new Error('chaque nombre doit être un entier entre 1 et 2 000.');
+  return brut;
+}
+function estimerPPT() {
+  const err = document.getElementById('erreur1'); err.textContent = ''; document.getElementById('resultat1').innerHTML = '';
+  try {
+    const mode = document.getElementById('mode1').value, sys = mode === 'sys';
+    let nI;
+    if (sys) nI = lireNI('nI1', true);
+    else { const pts = lirePoints(0, false); document.getElementById('nI1').value = pts.length; afficherPPT(pts, mode); return; }
+    afficherPPT(lirePoints(nI, true), mode);
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+function tirerPPT() {
+  const err = document.getElementById('erreur1'); err.textContent = ''; document.getElementById('resultat1').innerHTML = '';
+  try {
+    const mode = document.getElementById('mode1').value, sys = mode === 'sys', nI = lireNI('nI1', sys), g = parseInt(document.getElementById('gr1').value);
+    if (isNaN(g)) throw new Error('la graine doit être un nombre entier.');
+    const alea = mulberry32(g);
+    let pts;
+    if (sys) { const r = 1 + Math.floor(alea() * NPOP / nI); document.getElementById('pts1').value = r; pts = pointsSys(r, nI); }
+    else { pts = Array.from({length: nI}, () => 1 + Math.floor(alea() * NPOP)); document.getElementById('pts1').value = pts.join(' '); }
+    document.getElementById('gr1').value = g + 1;
+    afficherPPT(pts, mode);
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+
+// ---------------------------------------------------------------- panneau 2
+const EXCALC = [
+  {mode: 'hh', X: '100', N: '100', d: '140 20\n320 40'},
+  {mode: 'ht', X: '200', N: '200', d: '186 30\n300 40\n87 15\n172.5 25'},
+  {mode: 'hh', X: '18', N: '5', d: '4 2\n14 6'}];
+function exempleCalc() {
+  const e = EXCALC[parseInt(document.getElementById('ex2').value)];
+  document.getElementById('mode2').value = e.mode; document.getElementById('X2').value = e.X;
+  document.getElementById('N2').value = e.N; document.getElementById('donnees2').value = e.d; calculer();
+}
+function calculer() {
+  const err = document.getElementById('erreur2'), res = document.getElementById('resultat2');
+  err.textContent = ''; res.innerHTML = '';
+  try {
+    const mode = document.getElementById('mode2').value, X = lire('X2'), Nraw = document.getElementById('N2').value.trim();
+    const Nel = Nraw === '' ? NaN : lire('N2');
+    if (isNaN(X) || X <= 0) throw new Error('la taille totale X doit être un nombre positif.');
+    if (Nraw !== '' && (isNaN(Nel) || Nel <= 0)) throw new Error('N doit être un nombre positif, ou rester vide.');
+    const lignes = document.getElementById('donnees2').value.trim().split(/\n+/).filter(l => l.trim() !== '');
+    const U = lignes.map((l, j) => { const v = l.trim().split(/[\s;]+/).map(s => parseFloat(s.replace(',', '.')));
+      if (v.length !== 2 || v.some(isNaN)) throw new Error(`ligne ${j + 1} : il faut deux nombres, y puis x.`);
+      if (v[1] <= 0 || v[1] > X) throw new Error(`ligne ${j + 1} : la taille x doit être positive et au plus X.`);
+      return {y: v[0], x: v[1]}; });
+    const n = U.length;
+    if (n < 2) throw new Error('il faut au moins deux unités tirées pour estimer la variance.');
+    const ht = mode === 'ht';
+    if (ht && U.some(u => n * u.x > X)) throw new Error('sans remise, une unité a π = n x/X > 1 : il faut la prendre d\'office et tirer les autres parmi le reste.');
+    const z = U.map(u => u.y / (u.x / X));   // y/p : estimation du total par un seul tirage
+    const est = z.reduce((a, b) => a + b, 0) / n, s2 = varc(z), V = s2 / n, se = Math.sqrt(V), t = tq(n - 1);
+    let html = '<table class="res"><tr><th>unité</th><th>y<sub>i</sub></th><th>x<sub>i</sub></th><th>' + (ht ? 'π<sub>i</sub> = n x<sub>i</sub>/X' : 'p<sub>i</sub> = x<sub>i</sub>/X') + '</th><th>' + (ht ? 'y<sub>i</sub>/π<sub>i</sub>' : 'z<sub>i</sub> = y<sub>i</sub>/p<sub>i</sub>') + '</th><th>y<sub>i</sub>/x<sub>i</sub></th></tr>';
+    U.forEach((u, j) => { const pr = (ht ? n : 1) * u.x / X;
+      html += `<tr><td>${j + 1}</td><td>${fmt(u.y, 2)}</td><td>${fmt(u.x, 2)}</td><td>${fmt(pr, 4)}</td><td>${fmt(u.y / pr, 2)}</td><td>${fmt(u.y / u.x, 4)}</td></tr>`; });
+    html += '</table>';
+    html += `<p>${ht ? 'Horvitz-Thompson Ŷ<sub>HT</sub> = Σ y<sub>i</sub>/π<sub>i</sub>' : 'Hansen-Hurwitz Ŷ<sub>HH</sub> = moyenne des z<sub>i</sub>'} : <span class="valeur">${fmt(est, 2)}</span></p>`;
+    html += `<table class="res"><tr><th>s<sub>z</sub>² (z = y/p)</th><th>variance estimée s<sub>z</sub>²/n</th><th>erreur-type</th><th>coefficient de variation</th><th>intervalle à 95 % (t = ${fmt(t, 3)})</th></tr>`;
+    html += `<tr><td>${fmt(s2, 2)}</td><td>${fmt(V, 2)}</td><td>${fmt(se, 3)}</td><td>${est !== 0 ? fmt(100 * se / Math.abs(est), 1) + ' %' : '—'}</td><td>[${fmt(est - t * se, 2)} ; ${fmt(est + t * se, 2)}]</td></tr></table>`;
+    if (!isNaN(Nel)) html += `<p>Moyenne par unité élémentaire : Ŷ/N = ${fmt(est, 2)}/${fmt(Nel, 0)} = <span class="valeur">${fmt(est / Nel, 4)}</span>, erreur-type ${fmt(se / Nel, 4)}.</p>`;
+    const r = U.map(u => u.y / u.x), rmin = Math.min(...r), rmax = Math.max(...r);
+    html += `<p class="petit">Les rapports y<sub>i</sub>/x<sub>i</sub> vont de ${fmt(rmin, 3)} à ${fmt(rmax, 3)} : plus ils sont proches, plus les z<sub>i</sub> se ressemblent et plus l'estimation est précise. ${ht ? 'Sans remise, la variance exacte demande les π<sub>kl</sub> (Sen-Yates-Grundy) ; le calcul ci-dessus, comme avec remise, est l\'approximation usuelle.' : 'La variance s<sub>z</sub>²/n est sans biais quels que soient les p<sub>i</sub>.'}</p>`;
+    res.innerHTML = html;
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+
+// ---------------------------------------------------------------- panneau 3
+function histo(series, vrai, unite) {
+  const tous = series.flatMap(s => s.v), lo = Math.min(...tous), hi = Math.max(...tous), k = 40, w = (hi - lo) / k || 1;
+  const W = 640, Hs = 80, m = 30, X = v => m + (v - lo) / ((hi - lo) || 1) * (W - 2 * m);
+  const hs = series.map(s => { const h = new Array(k).fill(0); s.v.forEach(v => { let i = Math.floor((v - lo) / w); if (i >= k) i = k - 1; h[i]++; }); return h; });
+  const hm = Math.max(...hs.flat());
+  let s = `<svg viewBox="0 0 ${W} ${series.length * Hs + 48}" width="100%" role="img" aria-label="distribution des estimations simulées">`;
+  series.forEach((se, r) => { const base = (r + 1) * Hs;
+    hs[r].forEach((c, i) => { const bh = (Hs - 22) * c / hm; s += `<rect x="${X(lo + i * w)}" y="${base - bh}" width="${Math.max((W - 2 * m) / k - 1, 1)}" height="${bh}" fill="${se.c}" opacity="0.6"></rect>`; });
+    s += `<line x1="${m}" x2="${W - m}" y1="${base}" y2="${base}" stroke="#888"></line>`;
+    s += `<text x="${W - m}" y="${base - Hs + 30}" font-size="12" text-anchor="end" fill="${se.c}">${se.nom}</text>`; });
+  s += `<line x1="${X(vrai)}" x2="${X(vrai)}" y1="8" y2="${series.length * Hs}" stroke="#4a3b8c" stroke-width="2" stroke-dasharray="5,3"></line>`;
+  s += `<text x="${X(vrai) + 5}" y="16" font-size="12" fill="#4a3b8c">vraie valeur ${fmt(vrai, 0)}</text>`;
+  const etendue = hi - lo, pas = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000].find(p => etendue / p <= 8) || 10000;
+  for (let v = Math.ceil(lo / pas) * pas; v <= hi; v += pas) s += `<text x="${X(v)}" y="${series.length * Hs + 16}" font-size="11" text-anchor="middle" fill="#666">${fmt(v, 0)}</text>`;
+  s += `<text x="${W / 2}" y="${series.length * Hs + 38}" font-size="12" text-anchor="middle" fill="#444">estimation (${unite})</text>`;
+  return s + '</svg>';
+}
+function simuler() {
+  const err = document.getElementById('erreur3'), res = document.getElementById('resultat3'), gr = document.getElementById('graphe3');
+  err.textContent = ''; res.innerHTML = ''; gr.innerHTML = '';
+  try {
+    const nI = lireNI('nI3', false), K = parseInt(document.getElementById('K3').value), g = parseInt(document.getElementById('gr3').value);
+    if (isNaN(K) || K < 100 || K > 50000) throw new Error('K doit être compris entre 100 et 50 000.');
+    if (isNaN(g)) throw new Error('la graine doit être un nombre entier.');
+    const cle = document.getElementById('var3').value, yv = DIS[cle], Ytot = yv.reduce((a, b) => a + b, 0);
+    const parMenage = cle === 'T', ech = parMenage ? 1 / NPOP : 1, unite = parMenage ? 'dh par ménage' : 'ménages', vrai = Ytot * ech;
+    const sys = SYS_OK.includes(nI), k = NPOP / nI, alea = mulberry32(g);
+    const plans = [{nom: 'égales, Horvitz-Thompson', c: '#5a5a5a', v: []}, {nom: 'égales, ratio', c: '#1f6fb2', v: []},
+                   {nom: 'selon la taille, Hansen-Hurwitz', c: '#2e8b57', v: []}];
+    if (sys) plans.push({nom: 'selon la taille, systématique', c: '#e08000', v: []});
+    const idx = Array.from({length: NI}, (_, i) => i);
+    for (let r = 0; r < K; r++) {
+      for (let j = 0; j < nI; j++) { const h = j + Math.floor(alea() * (NI - j)); const t = idx[j]; idx[j] = idx[h]; idx[h] = t; }
+      let sy = 0, sm = 0; for (let j = 0; j < nI; j++) { sy += yv[idx[j]]; sm += DIS.M[idx[j]]; }
+      plans[0].v.push(NI / nI * sy * ech); plans[1].v.push(NPOP * sy / sm * ech);
+      let zh = 0; for (let j = 0; j < nI; j++) { const i = district(1 + Math.floor(alea() * NPOP)); zh += yv[i] / DIS.M[i] * NPOP; }
+      plans[2].v.push(zh / nI * ech);
+      if (sys) { const d0 = 1 + Math.floor(alea() * k); let zs = 0;
+        for (let j = 0; j < nI; j++) { const i = district(d0 + j * k); zs += yv[i] / DIS.M[i] * NPOP; } plans[3].v.push(zs / nI * ech); }
+    }
+    // variances théoriques
+    const fI = nI / NI, Sy2 = varc(yv), R = Ytot / NPOP, Se2 = varc(yv.map((v, i) => v - R * DIS.M[i]));
+    const th = [Math.sqrt(NI * NI * (1 - fI) * Sy2 / nI) * ech, Math.sqrt(NI * NI * (1 - fI) * Se2 / nI) * ech, Math.sqrt(vHH(yv, nI)) * ech];
+    if (sys) { const est = []; for (let d0 = 1; d0 <= k; d0++) { let zs = 0; for (let j = 0; j < nI; j++) { const i = district(d0 + j * k); zs += yv[i] / DIS.M[i] * NPOP; } est.push(zs / nI * ech); }
+      const m = est.reduce((a, b) => a + b, 0) / k; th.push(Math.sqrt(est.reduce((a, b) => a + (b - m) ** 2, 0) / k)); }
+    let html = `<table class="res"><tr><th>${nI} districts, ${K} enquêtes</th><th>moyenne des estimations</th><th>écart-type simulé</th><th>écart-type théorique</th><th>coefficient de variation</th></tr>`;
+    plans.forEach((p, j) => { const m = p.v.reduce((a, b) => a + b, 0) / K, sd = Math.sqrt(p.v.reduce((a, b) => a + (b - m) ** 2, 0) / (K - 1));
+      html += `<tr><td>${p.nom}</td><td>${fmt(m, 1)}</td><td>${fmt(sd, 1)}</td><td>${fmt(th[j], 1)}${j === 1 ? ' (approchée)' : ''}</td><td>${fmt(100 * th[j] / vrai, 1)} %</td></tr>`; });
+    html += '</table>';
+    const rap = th[2] / th[0];
+    html += `<p>Vraie valeur : ${fmt(vrai, parMenage ? 2 : 0)} ${unite}. Rapport des écarts-types, Hansen-Hurwitz / Horvitz-Thompson à probabilités égales : <span class="valeur ${rap < 1 ? 'ok' : 'ko'}">${fmt(rap, 3)}</span> : le tirage selon la taille fait ${rap < 1 ? 'mieux' : '<b>moins bien</b>'} pour cette variable.</p>`;
+    html += `<p class="petit">Le tirage proportionnel au nombre de ménages réussit quand le total du district suit sa taille (dépense, ménages connectés). Pour les ménages ruraux, groupés dans quelques districts, y<sub>i</sub>/p<sub>i</sub> vaut N ou 0 : la taille n'aide plus, il faut stratifier. Le générateur de cette page n'est pas celui de numpy : les écarts-types simulés diffèrent un peu de ceux des diapositives.</p>`;
+    res.innerHTML = html;
+    gr.innerHTML = histo(plans, vrai, unite);
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+window.onload = () => { estimerPPT(); calculer(); simuler(); };
+
+</script>
+</body>
+</html>

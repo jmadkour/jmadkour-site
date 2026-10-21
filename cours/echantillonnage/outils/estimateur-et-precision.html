@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 2 — Estimateur, biais et précision — Application interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+<style>
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  table.res { width: 100%; }
+  .petit { font-size: 0.85em; color: var(--cgris); }
+  .valeur { display: inline-block; padding: 0.15em 0.6em; border-radius: 5px; font-family: "Courier New", monospace; }
+  .defile { max-height: 320px; overflow-y: auto; }
+  @media (max-width: 640px) { .grille4, .grille3, .grille2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 2 — Estimateur, biais et précision</h1>
+<p class="sous-titre">Application interactive — Échantillonnage</p>
+
+
+<div class="panneau">
+  <h2>Simulateur d'intervalles de confiance</h2>
+  <p class="petit">On tire des sondages aléatoires simples dans la population du cours (2 000 ménages). Pour chacun, on calcule ȳ, l'erreur-type estimée √[(1 − n/N) s²/n] et l'intervalle ȳ ± z × erreur-type, puis on compte les intervalles qui contiennent la vraie moyenne Ȳ.</p>
+  <div class="grille4">
+    <div><label for="n1">taille de l'échantillon n</label><input id="n1" type="number" value="200" min="2" max="1999"></div>
+    <div><label for="r1">nombre d'échantillons</label><select id="r1"><option value="100">100</option><option value="1000">1 000</option><option value="5000" selected>5 000</option><option value="20000">20 000</option></select></div>
+    <div><label for="z1">niveau de confiance</label><select id="z1"><option value="1.645">90 % (z = 1,645)</option><option value="1.96" selected>95 % (z = 1,96)</option><option value="2.576">99 % (z = 2,576)</option></select></div>
+    <div><label for="g1">graine (facultative)</label><input type="text" id="g1" value="" placeholder="hasard"></div>
+  </div>
+  <button onclick="simulerIC()">Tirer les échantillons</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <div id="graphe1"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Calculatrice de l'estimateur de Horvitz-Thompson</h2>
+  <p class="petit">Saisir les valeurs y<sub>k</sub> des unités tirées et leurs probabilités d'inclusion π<sub>k</sub> (fractions acceptées : 1/3). Les probabilités doubles π<sub>kl</sub> servent à estimer la variance.</p>
+  <label for="ex2">exemple du chapitre</label>
+  <select id="ex2" onchange="exemple()">
+    <option value="sas" selected>mini-population, aléatoire simple de 2 ménages, échantillon {A, E}</option>
+    <option value="groupes">mini-population, un ménage par groupe, échantillon {A, D}</option>
+    <option value="bernoulli">mini-population, plan de Bernoulli (π = 0,4), échantillon {B, E}</option>
+    <option value="trois">trois unités, plan à probabilités inégales, échantillon {2, 3}</option>
+  </select>
+  <div class="grille2">
+    <div><label for="y2">valeurs y<sub>k</sub> des unités tirées</label><input type="text" id="y2" value="4 14"></div>
+    <div><label for="p2">probabilités d'inclusion π<sub>k</sub></label><input type="text" id="p2" value="0.4 0.4"></div>
+  </div>
+  <div class="grille2">
+    <div><label for="N2">taille de la population N (facultative, pour la moyenne)</label><input type="text" id="N2" value="5"></div>
+    <div><label for="m2">probabilités doubles π<sub>kl</sub></label><select id="m2" onchange="afficherMatrice()">
+      <option value="sas" selected>aléatoire simple : n(n − 1)/[N(N − 1)]</option>
+      <option value="indep">tirages indépendants : π<sub>k</sub> π<sub>l</sub></option>
+      <option value="matrice">saisies dans la matrice ci-dessous</option>
+      <option value="aucune">inconnues : estimation du total seulement</option>
+    </select></div>
+  </div>
+  <div id="zoneMatrice2">
+    <label for="t2">matrice des π<sub>kl</sub> : une ligne par unité tirée, dans l'ordre des valeurs (la diagonale est π<sub>k</sub>)</label>
+    <textarea id="t2" rows="3" style="width: 100%; font-family: 'Courier New', monospace; padding: 0.5em;"></textarea>
+  </div>
+  <button onclick="calculerHT()">Calculer</button>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+</div>
+
+<div class="panneau">
+  <h2>Biais, variance et erreur quadratique moyenne</h2>
+  <p class="petit">Deux estimateurs d'un même paramètre, décrits par leur biais et leur écart-type. Valeurs par défaut : les deux estimateurs de la dépense moyenne du plan à 50 ménages par province (en dh).</p>
+  <div class="grille3">
+    <div><label for="na3">estimateur 1</label><input type="text" id="na3" value="50 par province, Horvitz-Thompson"></div>
+    <div><label for="ba3">biais</label><input type="text" id="ba3" value="0"></div>
+    <div><label for="sa3">écart-type</label><input type="text" id="sa3" value="298.4"></div>
+  </div>
+  <div class="grille3">
+    <div><label for="nb3">estimateur 2</label><input type="text" id="nb3" value="50 par province, moyenne brute"></div>
+    <div><label for="bb3">biais</label><input type="text" id="bb3" value="-411.1"></div>
+    <div><label for="sb3">écart-type</label><input type="text" id="sb3" value="246.6"></div>
+  </div>
+  <button onclick="comparerEQM()">Comparer</button>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+</div>
+
+<p class="avertissement">Rappels : Ŷ<sub>HT</sub> = Σ<sub>k∈S</sub> y<sub>k</sub>/π<sub>k</sub>, sans biais si tous les π<sub>k</sub> sont positifs. V(Ŷ<sub>HT</sub>) = Σ<sub>k</sub> Σ<sub>l</sub> Δ<sub>kl</sub> (y<sub>k</sub>/π<sub>k</sub>)(y<sub>l</sub>/π<sub>l</sub>), avec Δ<sub>kl</sub> = π<sub>kl</sub> − π<sub>k</sub>π<sub>l</sub> ; elle s'estime sans biais si tous les π<sub>kl</sub> sont positifs. EQM = V + B². Intervalle à 95 % : estimation ± 1,96 × erreur-type estimée.</p>
+
+<script>
+
+const DEP = [5520,11660,7690,7590,4910,8210,7330,7790,5350,4590,11750,5250,9070,6310,6050,10500,5310,11180,7620,6380,6410,10400,3990,7180,4770,8110,6790,8490,7440,2550,7840,6610,20370,3900,4550,9070,2570,7990,4750,3360,4410,12970,3910,14800,5820,4590,12550,5290,4190,4520,4790,9160,7520,5400,9870,5910,12350,4570,7890,8170,7850,4720,2860,8640,3810,10470,1840,2820,7780,6110,5260,4320,20250,15890,9010,5770,11430,5630,3490,5010,6490,3000,8830,23080,14140,14270,10190,10300,10970,9540,10260,12510,6590,10700,11840,11970,7870,13590,5990,12680,7740,9420,5240,12510,12330,9290,8750,8540,8450,11150,7680,3490,9200,5060,12080,2060,9450,7530,11050,7190,11050,4400,17320,7520,6830,6150,10440,6660,8550,24270,6510,7690,11350,5580,6610,3950,9290,3880,3990,6730,10690,4570,10720,4790,8210,10270,23840,9340,6900,8570,14710,6470,10050,3790,7420,10700,5700,8840,4700,8350,2040,10550,19760,9280,6880,4930,14200,7600,7430,11070,2800,5630,12690,9200,9210,7860,10020,6210,11440,19310,11670,9560,13090,10960,7960,17730,9840,8680,5600,6790,7680,11250,5230,5120,9250,11500,16720,13620,3870,16600,15600,4600,11260,6710,21090,13510,12850,7030,7620,18140,9410,16750,11500,29720,21300,16230,3380,12290,21000,12010,13140,16530,10990,5330,4700,15680,6320,12500,8490,11220,13670,16030,10140,5270,19350,7180,18800,2740,15910,11960,16200,6160,5100,11020,8020,8370,12130,6470,12420,9740,6340,10520,5500,3870,9820,5330,8770,2970,4890,10780,7500,8200,9650,3830,7420,1830,3480,4990,4220,2670,6780,15950,2680,1500,4770,13570,14920,3660,5500,6060,6350,6120,11880,4050,15680,10600,8760,11880,4900,8980,7530,10080,4450,7250,12180,6430,7030,14930,10710,7460,4550,15520,12700,11000,13340,19520,10670,21320,8870,12400,8270,8180,14470,9450,8130,8470,16590,2850,9070,12520,16200,16530,13060,15010,3040,10440,31040,10010,9530,8440,12270,7330,15310,15130,9530,12090,4800,7430,13610,13320,10440,6640,6130,11650,9730,6450,19030,8510,13640,13160,12690,10160,12250,6420,6270,13710,3700,4980,5030,11800,13820,14120,9760,6110,13430,4970,9140,12810,8310,10030,7600,4510,11970,13100,14220,4930,14470,10280,4030,7900,12830,11030,3950,3480,5810,3250,2560,7140,10960,6820,10070,3640,4590,8220,6910,11410,7470,5860,6450,14640,4410,3050,2100,4380,18340,4890,8160,10910,6550,2490,9010,11420,9580,8460,5070,6210,7970,4320,13030,9880,6430,19030,10620,14750,11180,3650,10560,5690,12040,7100,6290,10110,11520,3710,9210,7990,6430,2930,5690,6140,4190,11980,12490,2930,5920,6080,4250,2300,14350,10490,13850,8770,6290,5400,2860,11630,11120,8820,10220,9840,9200,9710,6140,3540,5340,4160,5920,9360,10150,8540,3140,4290,5950,6120,3970,10770,3320,5090,6410,4720,6870,11460,7670,7620,5010,8980,6840,10640,8450,9960,7940,5700,10790,5430,8750,5160,5830,10390,2180,4400,4710,12460,8750,8320,7530,10140,4880,7710,6040,7670,7030,5980,8160,12420,2480,10490,9240,5910,6220,10280,5670,3930,7340,7880,6990,4970,18590,6350,4860,6290,8910,14440,10360,4340,4140,4600,5900,4100,5410,6940,8970,3540,8870,5060,17550,4350,4780,5970,4610,11360,6860,16470,12020,2910,3040,11620,5920,6330,6060,6690,16310,8120,5100,9090,5300,5830,26370,2980,7600,9910,4950,10470,5300,6570,7020,8930,11530,6140,13580,7970,12850,11290,4150,4960,11060,5870,7740,8500,11980,13870,5080,6880,6120,12830,5490,5480,13330,13180,3840,3470,19960,15440,12750,7730,11060,8490,8630,12400,8900,8940,8510,9570,14190,12810,8930,8090,5310,9440,29120,8920,21830,7800,14230,10760,16020,17430,11340,8030,6960,12050,9380,5640,5390,2930,6460,5940,5720,8850,4410,17560,10560,4710,13540,16870,9950,6260,11290,2780,13620,10760,9640,9570,2380,8110,5180,10570,9370,10740,10970,10210,4580,13450,8670,5620,9390,8860,2750,9630,14100,6990,3290,4530,8120,2540,2520,10480,4530,7800,10080,8080,8660,4770,8500,7900,5920,12700,2670,10380,10860,4600,12190,9120,4200,8200,13400,9050,5860,6840,8660,6630,11860,6920,3680,3570,12770,8960,7930,5280,14520,5230,17280,12140,2790,11200,12160,5560,6330,7460,7440,3480,4610,9060,11700,4550,4220,5400,9190,6780,9680,7110,8030,7390,4400,10150,3680,2280,8220,1540,1720,5290,3700,3490,4800,3240,5630,6600,6210,4900,4390,3540,6460,15390,4910,3280,6370,5730,10680,2090,8020,12220,9160,5020,7350,9530,6550,4290,3710,8280,7650,6560,3950,5100,1860,5280,13480,7420,8050,10670,12960,4300,7550,8640,13230,9700,14980,4780,5630,9010,4420,2380,6770,9740,5370,16130,6820,10440,6170,4020,11840,4450,5470,6830,12500,10180,5540,11140,9100,4620,11110,8510,17360,10430,7580,2080,13330,9760,11280,16840,12810,8880,7700,9820,14290,6420,5460,6490,15850,9600,4540,14580,5410,11100,6380,11630,3760,7030,8850,6630,3570,13980,7700,10360,7020,9770,7860,11330,3680,8420,14810,10950,4980,10490,15790,13460,14900,7330,7770,24970,11630,11500,8750,6390,8440,5630,9070,7910,6540,4590,7450,7210,11280,7180,6010,9070,9260,14180,9780,8550,6780,7090,8740,11770,15820,7420,11110,5630,2030,2180,7530,3130,7640,2200,16600,4280,7580,4280,3100,10070,13290,4490,12120,4660,11600,9770,10990,8770,8940,13680,7020,6260,7150,4260,7860,9680,5410,3330,5160,5260,4120,8330,2730,4920,8860,6610,7340,6850,13220,6130,9580,2770,2740,9670,6850,5580,7120,7040,8160,5000,5730,5740,14640,3210,6510,2930,6990,5610,4740,4370,9310,5580,7600,6970,5500,6490,2620,8780,12790,3630,7030,14810,7790,3160,5370,1850,6060,6620,14290,2830,10040,7060,6540,11550,7510,4040,10270,5210,4500,10390,5520,2970,14760,1570,16540,7950,11950,11350,5180,3610,17630,14620,6540,13910,10360,9070,9480,10040,18750,5340,18280,6290,2610,13930,12300,12780,13970,5510,2750,5190,9090,7440,4790,10780,8140,6710,6450,3850,6690,3420,5450,6700,7160,6110,9930,9750,14320,5200,4680,6740,9300,5980,8710,7440,7030,7880,2680,2830,6970,6390,6830,17490,2000,4280,3370,6480,5270,13390,6890,9460,19470,5380,4540,11100,20270,7490,1970,4390,17360,13760,8870,8290,5240,4020,4110,10120,13790,10560,8340,8200,2480,11830,4940,4600,9540,4630,7130,13220,6750,9310,2800,7760,15830,11890,6590,9670,12570,10610,13160,6380,13260,7940,4850,7600,8010,6200,17860,7170,11780,14320,7690,9280,4370,2290,12480,10270,6550,7390,4150,18940,10540,9950,9450,6220,6060,9550,14820,9500,6830,9680,3010,6850,3700,14300,10520,4750,3720,5280,4820,7350,3800,6040,7290,2920,3900,7290,4170,3210,11960,2390,3600,5900,5850,10660,2530,6460,5960,2430,9210,4300,9690,2170,5350,2090,3880,5340,4730,9300,2800,9090,4800,5130,6420,7600,11470,5330,7480,13070,7630,10700,8380,2990,5510,8750,3270,13570,14040,3210,10540,5950,6410,14190,3890,10460,4710,23450,13090,14910,14870,13270,6620,15340,7830,10160,2450,4690,9670,8420,8700,8620,7360,5210,16410,9590,13430,8200,13020,8470,2610,7450,11060,5380,16420,7260,11270,15420,8930,11940,11020,17800,5680,6310,18830,7810,7350,11020,6770,5690,10290,17220,6600,20400,10580,6110,10840,10270,12230,11080,8800,12080,15940,13570,20140,7090,12660,9820,12020,12090,13360,6550,7160,8220,8740,5400,4700,10790,5510,3290,11800,4270,9180,5800,3690,8440,7700,10210,4810,5300,1520,5820,5830,6270,5230,11240,5240,11190,4930,6090,11260,8830,11080,6020,10630,9100,4790,11300,7170,7830,5230,2120,6120,4190,2410,3730,5890,9540,5860,10590,12460,5600,5460,5700,10300,8710,11040,9930,7840,5760,9830,4030,7170,10460,8390,9000,6290,3590,4940,8860,8700,7060,12850,10490,10480,7350,12850,8970,15340,10660,7350,6210,4800,3700,16710,4670,9120,5480,14460,6820,8400,4500,12060,6230,8570,5430,7920,3310,10500,5780,10890,6240,9810,5850,5130,6090,6360,9760,11230,8920,5540,11090,8270,6870,5130,6260,7710,3490,4520,12450,7450,4150,10370,4250,5090,5120,6740,6300,6170,4510,6100,4270,6830,6080,4770,12620,4430,7250,11730,4600,4910,8180,8790,3120,7330,4660,5210,4630,5690,5030,7290,18100,13460,4680,7610,3850,9630,5140,11190,4170,10420,6600,7010,9840,7510,9370,4570,7110,10760,7560,21170,18990,9320,5090,7920,7880,7890,8300,6750,12820,14930,2980,9880,12480,5300,18210,12110,13930,3010,5630,11220,14250,8490,10130,15670,9150,9600,10010,3540,9530,8270,7580,2590,7910,15430,11900,6650,9360,5130,5580,10110,11840,3100,4980,3590,14820,11800,5160,10580,12960,8990,7290,20360,2230,8240,11980,9200,14780,3930,13800,9790,5540,6070,8030,13970,6410,11600,12630,12630,5610,4780,5840,6350,16850,5140,6250,4740,12380,7850,6000,9280,11140,8340,7270,6100,4300,9470,6750,4160,6740,4530,6810,9440,8420,8340,5920,3450,4310,2370,16610,5430,3230,6860,2550,6080,11490,5100,8400,6560,4030,8520,6120,6150,8970,8070,14270,8220,5620,7810,10180,6250,6690,9160,5050,9400,7300,7780,6670,4880,7200,6730,5010,10350,6000,7200,4400,12210,5860,5600,7440,5980,8470,4780,15460,5330,9540,4280,6010,6710,10630,3010,7240,7170,5920,14240,4810,4050,7720,7170,7160,11940,12090,6870,11670,11650,8560,3960,13220,17490,4500,11840,6200,10390,12170,7440,8190,9540,6180,8980,10990,5470,8780,14550,3150,10850,3090,6940,4550,4640,7880,4010,8540,4490,4550,5600,7940,5820,6470,2490,11440,7060,6150,3470,5130,5110,5530,7090,3450,7240,7790,2650,11170,6020,3930,14870,8440,7060,8780,3930,7040,4680,6210,4510,5860,5600,3570,3870,14520,8500,7890,5160,2870,6570,10560,4120,6260,7300,3690,3720,4160,8910,1700,5990,8750,7990,6380,2990,4290,8610,9020,6020,3080,7300,3470,3370,4860,6770,6570,7950,4170,3800,7680,4170,7260,7070,7130,2060,9560,17530,10830,1490,6640,4800,3660,2400,9890,6260,5830,4060,9840,14870,5460,5190,7560,7200,4540,4210,2730,5470,6050,8790,3770,13000,7840,19870,3930,4090,7500,5980,11970,7330,3990,4080,6620,4920,5280,5770,4200,2310,3130,5070,4580,3310,3140,5580,4090,3000,2970,7740,5380,4280,7050,5960,4780,3040,2780,3560,1490,2770,3740,6440,4840,5080,2080,3010,5120,3430,4610,7280,2820,5070,5030,2950,2500,7050,2840,5910,1790,8170,6560,6790,5260,3870,7780,5620,4400,4180,15960,5120,3570,6090,4460,2010,6460,5760,6020,5070,4510,4370,4000,2960,5350,4790,18810,6190,4650,6310,6050,3300,6300,6060,8380,3950,7380,6530,5570,6900,7930,7140,10360,6550,3960,5400,9720,5180,1950,8830,6860,2600,3900,7500,6130,8570,9030,4690,10970,8810,8040,9470,10800,9290,5340,4100,7360,4180,4250,3220,8460,7080,4790,7070,7210,7790,8120,3760,5210,3530,5750,12110,8750,9990,3640,6580,11010,9080,10170,3720,7160,5900,7670,5010,14000,5980,7360,4100,4470,4880,4880,11780,13130,3880,1370,3010,4400,2290,5590,2990,10800,2340,3100,2290,2970,2550,5370,6070,5880,2260,1910,4060,4000,4200,4500,6750,4920,2890,4590,3560,3430,2440,7180,2580,2930,5290,3120,2360,5360,4480,4450,4640,5380,2710,3670,3640,2120,6000,5530,3690,8300,5230,6050,4860,11120,4930,2740,4860,6050,6760,4460,4770,9000,1830,2680,4100,4550,3730,8570,6220,8620,3210,13050,7770,7900,4560,3680,3210,4430,5150,5380,15180,6250,7780,7020,2100,9670,6260,3440,3360,8060,9080,10570,4020,3540,6700,11510,6460,3560,7070,7800,5770,2550,10020,9140,6210,7540,4640,4330,5060,4100,4100,2570,2820,8080,7670,7670,6900,5370,5990,8630,2760,6020,3770,5000,7260,4280,9450,7780,3940,18110,6730,3160,5270,8960,14710,6540];
+const N = DEP.length;
+const YBAR = DEP.reduce((a, b) => a + b, 0) / N;
+const S2 = DEP.reduce((a, b) => a + (b - YBAR) ** 2, 0) / (N - 1);
+function fmt(x, d) { return x.toLocaleString('fr-FR', {minimumFractionDigits: d, maximumFractionDigits: d}); }
+function nombre(t) {
+  t = t.trim().replace(',', '.');
+  if (t.includes('/')) { const [a, b] = t.split('/').map(parseFloat); return a / b; }
+  return t === '' ? NaN : Number(t);
+}
+function liste(t) { return t.trim() === '' ? [] : t.trim().split(/[\s;]+/).map(nombre); }
+
+// --------------------------------------------------------------------
+// 1. Simulateur d'intervalles de confiance
+// --------------------------------------------------------------------
+function generateur(txt) {
+  if (txt.trim() === '') return Math.random;
+  let a = parseInt(txt);
+  if (isNaN(a)) throw new Error('la graine doit être un nombre entier.');
+  a = a >>> 0;
+  return function () {                                   // mulberry32
+    a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const IDX = new Int32Array(N);
+function tirage(n, u) {                                  // Fisher-Yates partiel
+  for (let i = 0; i < n; i++) { const j = i + Math.floor(u() * (N - i)); const t = IDX[i]; IDX[i] = IDX[j]; IDX[j] = t; }
+  return IDX.subarray(0, n);
+}
+function grapheIC(iv) {
+  const W = 900, H = 300, mg = 62, md = 20, mh = 28, mb = 42;
+  let lo = Math.min(YBAR, ...iv.map(v => v[0])), hi = Math.max(YBAR, ...iv.map(v => v[2]));
+  const pad = 0.04 * (hi - lo); lo -= pad; hi += pad;
+  const X = i => mg + (i + 0.5) * (W - mg - md) / iv.length, Yp = v => mh + (hi - v) / (hi - lo) * (H - mh - mb);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="intervalles de confiance des premiers échantillons">`;
+  const brut = (hi - lo) / 5, mag = 10 ** Math.floor(Math.log10(brut));
+  const pas = [1, 2, 2.5, 5, 10].map(c => c * mag).find(c => c >= brut);
+  for (let v = Math.ceil(lo / pas) * pas; v <= hi; v += pas) { const y = Yp(v);
+    s += `<line x1="${mg}" x2="${W - md}" y1="${y}" y2="${y}" stroke="#e3e9ee"></line>`;
+    s += `<text x="${mg - 6}" y="${y + 4}" font-size="12" text-anchor="end" fill="#5a6b75">${fmt(v, 0)}</text>`; }
+  const ep = Math.max(1, Math.min(4, 0.55 * (W - mg - md) / iv.length));
+  iv.forEach((v, i) => { const ok = v[0] <= YBAR && YBAR <= v[2], x = X(i);
+    s += `<line x1="${x}" x2="${x}" y1="${Yp(v[2])}" y2="${Yp(v[0])}" stroke="${ok ? '#1f6fb2' : '#b56600'}" stroke-opacity="${ok ? 0.5 : 1}" stroke-width="${ok ? ep : ep + 1.5}"></line>`;
+    s += `<circle cx="${x}" cy="${Yp(v[1])}" r="${Math.min(2.2, ep)}" fill="${ok ? '#1f6fb2' : '#b56600'}"></circle>`; });
+  const yv = Yp(YBAR);
+  s += `<line x1="${mg}" x2="${W - md}" y1="${yv}" y2="${yv}" stroke="#4b3a8c" stroke-width="1.5" stroke-dasharray="6 4"></line>`;
+  s += `<text x="${W - md}" y="${mh - 10}" font-size="12" text-anchor="end" fill="#4b3a8c">pointillés : Ȳ = ${fmt(YBAR, 2)} dh ; en orange, les intervalles qui la manquent</text>`;
+  [1, Math.round(iv.length / 4), Math.round(iv.length / 2), Math.round(3 * iv.length / 4), iv.length].forEach(k => {
+    s += `<text x="${X(k - 1)}" y="${H - mb + 18}" font-size="12" text-anchor="middle" fill="#5a6b75">${k}</text>`; });
+  s += `<text x="${(mg + W - md) / 2}" y="${H - 6}" font-size="12" text-anchor="middle" fill="#5a6b75">numéro de l'échantillon (les ${iv.length} premiers)</text>`;
+  return s + '</svg>';
+}
+function simulerIC() {
+  const err = document.getElementById('erreur1'), res = document.getElementById('resultat1'), gr = document.getElementById('graphe1');
+  err.textContent = ''; res.innerHTML = ''; gr.innerHTML = '';
+  try {
+    const n = Number(document.getElementById('n1').value), R = parseInt(document.getElementById('r1').value);
+    const z = parseFloat(document.getElementById('z1').value), u = generateur(document.getElementById('g1').value);
+    if (!Number.isInteger(n) || n < 2 || n >= N) throw new Error('n doit être un entier compris entre 2 et ' + (N - 1) + '.');
+    for (let i = 0; i < N; i++) IDX[i] = i;
+    const f = n / N, iv = [];
+    let couvre = 0, bas = 0, haut = 0, sm = 0, sm2 = 0, sl = 0;
+    for (let r = 0; r < R; r++) {
+      const s = tirage(n, u);
+      let m = 0; for (let i = 0; i < n; i++) m += DEP[s[i]]; m /= n;
+      let q = 0; for (let i = 0; i < n; i++) q += (DEP[s[i]] - m) ** 2;
+      const e = Math.sqrt((1 - f) * q / (n - 1) / n), lo = m - z * e, hi = m + z * e;
+      if (hi < YBAR) bas++; else if (lo > YBAR) haut++; else couvre++;
+      sm += m; sm2 += m * m; sl += z * e;
+      if (iv.length < 100) iv.push([lo, m, hi]);
+    }
+    const c = couvre / R, moy = sm / R, et = Math.sqrt(Math.max(sm2 / R - moy * moy, 0) * R / Math.max(R - 1, 1));
+    const se = Math.sqrt((1 - f) * S2 / n), nominal = { '1.645': 90, '1.96': 95, '2.576': 99 }[String(z)];
+    const p0 = nominal / 100, ets = Math.sqrt(p0 * (1 - p0) / R), ecart = (c - p0) / ets;
+    let html = `<table class="res"><tr><th>vraie moyenne Ȳ</th><th>erreur-type exacte √[(1 − f) S²/n]</th><th>coefficient de variation de ȳ</th><th>marge à ${nominal} %</th></tr>
+      <tr><td>${fmt(YBAR, 2)} dh</td><td>${fmt(se, 2)} dh</td><td>${fmt(100 * se / YBAR, 2)} %</td><td>± ${fmt(z * se, 1)} dh</td></tr></table>`;
+    html += `<table class="res"><tr><th>échantillons</th><th>intervalles contenant Ȳ</th><th>couverture</th><th>trop bas</th><th>trop hauts</th><th>erreur-type de simulation</th></tr>
+      <tr><td>${fmt(R, 0)}</td><td>${fmt(couvre, 0)}</td><td><span class="valeur">${fmt(c, 4)}</span></td><td>${fmt(bas, 0)}</td><td>${fmt(haut, 0)}</td><td>${fmt(ets, 4)}</td></tr></table>`;
+    html += `<table class="res"><tr><th>moyenne des ȳ</th><th>écart-type des ȳ</th><th>demi-largeur moyenne des intervalles</th></tr>
+      <tr><td>${fmt(moy, 1)} dh</td><td>${R > 1 ? fmt(et, 1) + ' dh' : '—'}</td><td>${fmt(sl / R, 1)} dh</td></tr></table>`;
+    html += `<p class="petit">Écart au niveau annoncé (${fmt(p0, 2)}) : ${fmt(c - p0, 4)}, soit ${fmt(ecart, 1)} erreurs-types de simulation √[0,${nominal}(1 − 0,${nominal})/${fmt(R, 0)}]. Au-delà de 2 en valeur absolue, l'écart ne s'explique plus par le seul hasard des tirages. Dans le cours : 5 000 sondages de 200 ménages, couverture 0,9424 (188 intervalles trop bas, 100 trop hauts) : la dépense est asymétrique, les intervalles trop courts tombent surtout du côté bas.</p>`;
+    res.innerHTML = html;
+    gr.innerHTML = grapheIC(iv);
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+
+// --------------------------------------------------------------------
+// 2. Calculatrice de l'estimateur de Horvitz-Thompson
+// --------------------------------------------------------------------
+const EXEMPLES = {
+  sas: { y: '4 14', p: '0.4 0.4', N: '5', m: 'sas', t: '',
+    note: 'Diapositives : Ŷ<sub>HT</sub> = 2,5 × (4 + 14) = 45 et V̂ = 375 pour l\'échantillon {A, E}. La moyenne des dix V̂ possibles vaut V(Ŷ<sub>HT</sub>) = 108,75.' },
+  groupes: { y: '4 9', p: '1/3 1/2', N: '5', m: 'matrice', t: '1/3 1/6\n1/6 1/2',
+    note: 'Attention : dans ce plan, π<sub>AB</sub> = π<sub>AC</sub> = π<sub>BC</sub> = π<sub>DE</sub> = 0. L\'échantillon ne le montre pas, mais les deux estimateurs de la variance échouent : V̂ vaut 479 en moyenne et V̂<sub>SYG</sub> toujours 0, contre V = 39.' },
+  bernoulli: { y: '6 14', p: '0.4 0.4', N: '5', m: 'indep', t: '',
+    note: 'Feuille d\'exercices, exercice 1 : Ŷ<sub>HT</sub> = 50 et V̂ = 0,6 × (15² + 35²) = 870. La taille du plan étant aléatoire, seule la forme de Horvitz-Thompson s\'applique.' },
+  trois: { y: '21 40', p: '0.7 0.8', N: '3', m: 'matrice', t: '0.7 0.5\n0.5 0.8',
+    note: 'Diapositives, exercice 1 : y = 10, 21, 40 ; p({1,2}) = 0,2, p({1,3}) = 0,3, p({2,3}) = 0,5. Pour l\'échantillon {2, 3}, Ŷ<sub>HT</sub> = 30 + 50 = 80 ; V(Ŷ<sub>HT</sub>) = 129.' }
+};
+function afficherMatrice() {
+  document.getElementById('zoneMatrice2').style.display = document.getElementById('m2').value === 'matrice' ? 'block' : 'none';
+}
+function exemple() {
+  const e = EXEMPLES[document.getElementById('ex2').value];
+  document.getElementById('y2').value = e.y; document.getElementById('p2').value = e.p;
+  document.getElementById('N2').value = e.N; document.getElementById('m2').value = e.m;
+  document.getElementById('t2').value = e.t; afficherMatrice(); calculerHT();
+}
+function calculerHT() {
+  const err = document.getElementById('erreur2'), res = document.getElementById('resultat2');
+  err.textContent = ''; res.innerHTML = '';
+  try {
+    const y = liste(document.getElementById('y2').value), p = liste(document.getElementById('p2').value);
+    const Nt = document.getElementById('N2').value.trim(), Np = Nt === '' ? NaN : nombre(Nt);
+    const mode = document.getElementById('m2').value, n = y.length;
+    if (n < 1 || y.some(isNaN)) throw new Error('les valeurs y_k doivent être des nombres.');
+    if (n > 30) throw new Error('au plus 30 unités.');
+    if (p.length !== n) throw new Error(`il faut autant de probabilités π_k (${p.length}) que de valeurs (${n}).`);
+    if (p.some(v => isNaN(v) || v <= 0 || v > 1)) throw new Error('chaque π_k doit être dans ]0 ; 1].');
+    if (Nt !== '' && (!Number.isInteger(Np) || Np < n)) throw new Error('N doit être un entier au moins égal au nombre d\'unités tirées.');
+    const a = y.map((v, k) => v / p[k]), HT = a.reduce((s, v) => s + v, 0), sd = p.reduce((s, v) => s + 1 / v, 0);
+    // probabilités doubles
+    let P = null;
+    if (mode === 'sas') {
+      if (isNaN(Np)) throw new Error('le sondage aléatoire simple exige N.');
+      if (n < 2) throw new Error('il faut au moins deux unités pour estimer la variance.');
+      if (p.some(v => Math.abs(v - n / Np) > 1e-6)) throw new Error(`pour un sondage aléatoire simple de ${n} unités parmi ${Np}, tous les π_k valent n/N = ${fmt(n / Np, 4)}.`);
+      const q = n * (n - 1) / (Np * (Np - 1)); P = p.map((pk, k) => p.map((pl, l) => k === l ? pk : q));
+    } else if (mode === 'indep') {
+      P = p.map((pk, k) => p.map((pl, l) => k === l ? pk : pk * pl));
+    } else if (mode === 'matrice') {
+      const L = document.getElementById('t2').value.trim().split('\n').filter(l => l.trim() !== '').map(liste);
+      if (L.length !== n || L.some(l => l.length !== n || l.some(isNaN))) throw new Error(`la matrice doit avoir ${n} lignes de ${n} nombres.`);
+      for (let k = 0; k < n; k++) for (let l = 0; l < n; l++) {
+        if (Math.abs(L[k][l] - L[l][k]) > 1e-9) throw new Error('la matrice des π_kl doit être symétrique.');
+        if (k === l && Math.abs(L[k][k] - p[k]) > 1e-6) throw new Error(`la diagonale doit reprendre les π_k (ligne ${k + 1}).`);
+        if (k !== l && (L[k][l] < 0 || L[k][l] > Math.min(p[k], p[l]) + 1e-12)) throw new Error(`il faut 0 ≤ π_kl ≤ min(π_k, π_l) (ligne ${k + 1}, colonne ${l + 1}).`);
+      }
+      P = L;
+    }
+    let html = '<div class="defile"><table class="res"><tr><th>unité</th><th>y<sub>k</sub></th><th>π<sub>k</sub></th><th>poids d<sub>k</sub> = 1/π<sub>k</sub></th><th>y<sub>k</sub>/π<sub>k</sub></th></tr>';
+    y.forEach((v, k) => { html += `<tr><td>${k + 1}</td><td>${fmt(v, 2)}</td><td>${fmt(p[k], 4)}</td><td>${fmt(1 / p[k], 3)}</td><td>${fmt(a[k], 3)}</td></tr>`; });
+    html += '</table></div>';
+    html += `<table class="res"><tr><th>total estimé Ŷ<sub>HT</sub></th><th>somme des poids Σ d<sub>k</sub></th><th>moyenne estimée Ŷ<sub>HT</sub>/N</th></tr>
+      <tr><td><span class="valeur ok">${fmt(HT, 3)}</span></td><td>${fmt(sd, 3)}</td><td>${isNaN(Np) ? '— (N inconnu)' : fmt(HT / Np, 3)}</td></tr></table>`;
+    if (P) {
+      const nuls = [];
+      for (let k = 0; k < n; k++) for (let l = k + 1; l < n; l++) if (P[k][l] <= 0) nuls.push(`(${k + 1}, ${l + 1})`);
+      if (n <= 8) {
+        html += '<table class="res"><tr><th>π<sub>kl</sub></th>' + y.map((v, l) => `<th>${l + 1}</th>`).join('') + '</tr>';
+        P.forEach((row, k) => { html += `<tr><th>${k + 1}</th>` + row.map(v => `<td>${fmt(v, 4)}</td>`).join('') + '</tr>'; });
+        html += '</table>';
+      }
+      if (nuls.length) {
+        html += `<p><span class="valeur ko">variance non estimable</span> π<sub>kl</sub> = 0 pour ${nuls.join(', ')} : ces paires ne sont jamais observées ensemble, aucun estimateur sans biais de la variance n'existe.</p>`;
+      } else {
+        let vht = 0, vsyg = 0;
+        for (let k = 0; k < n; k++) for (let l = 0; l < n; l++) {
+          vht += (P[k][l] - p[k] * p[l]) / P[k][l] * a[k] * a[l];
+          if (l > k) vsyg += (p[k] * p[l] - P[k][l]) / P[k][l] * (a[k] - a[l]) ** 2;
+        }
+        const lignes = [['V̂ (forme de Horvitz-Thompson)', vht]];
+        if (mode !== 'indep') lignes.push(['V̂<sub>SYG</sub> (Sen-Yates-Grundy, taille fixe)', vsyg]);
+        html += '<table class="res"><tr><th>estimateur de la variance</th><th>V̂</th><th>erreur-type</th><th>CV</th><th>intervalle à 95 % du total</th><th>intervalle à 95 % de la moyenne</th></tr>';
+        lignes.forEach(([nom, v]) => {
+          if (v < -1e-9) { html += `<tr><td>${nom}</td><td>${fmt(v, 3)}</td><td colspan="4">négative : estimation inutilisable</td></tr>`; return; }
+          const e = Math.sqrt(Math.max(v, 0)), lo = HT - 1.96 * e, hi = HT + 1.96 * e;
+          html += `<tr><td>${nom}</td><td>${fmt(v, 3)}</td><td>${fmt(e, 3)}</td><td>${HT !== 0 ? fmt(100 * e / Math.abs(HT), 1) + ' %' : '—'}</td><td>[${fmt(lo, 2)} ; ${fmt(hi, 2)}]</td><td>${isNaN(Np) ? '—' : '[' + fmt(lo / Np, 3) + ' ; ' + fmt(hi / Np, 3) + ']'}</td></tr>`;
+        });
+        html += '</table>';
+        if (mode === 'indep') html += '<p class="petit">Plan de taille aléatoire : la forme de Sen-Yates-Grundy ne s\'applique pas. Avec des tirages indépendants, Δ<sub>kl</sub> = 0 et V̂ = Σ (1 − π<sub>k</sub>)(y<sub>k</sub>/π<sub>k</sub>)².</p>';
+        if (n < 30) html += '<p class="petit">Avec si peu d\'unités, l\'intervalle n\'est qu\'indicatif : l\'approximation normale suppose un grand échantillon.</p>';
+      }
+    } else {
+      html += '<p class="petit">Sans les π<sub>kl</sub>, le total s\'estime sans biais, mais pas sa variance.</p>';
+    }
+    const ex = EXEMPLES[document.getElementById('ex2').value];
+    const conforme = ex && ex.y === document.getElementById('y2').value && ex.p === document.getElementById('p2').value && ex.m === mode;
+    if (conforme) html += `<p class="petit">${ex.note}</p>`;
+    res.innerHTML = html;
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+
+// --------------------------------------------------------------------
+// 3. Biais, variance et EQM
+// --------------------------------------------------------------------
+function comparerEQM() {
+  const err = document.getElementById('erreur3'), res = document.getElementById('resultat3');
+  err.textContent = ''; res.innerHTML = '';
+  try {
+    const E = [['na3', 'ba3', 'sa3'], ['nb3', 'bb3', 'sb3']].map(([i, j, k]) => ({
+      nom: document.getElementById(i).value.trim() || 'estimateur',
+      B: nombre(document.getElementById(j).value), s: nombre(document.getElementById(k).value) }));
+    if (E.some(e => isNaN(e.B) || isNaN(e.s) || e.s < 0)) throw new Error('biais et écarts-types doivent être des nombres, les écarts-types positifs.');
+    const eqm = (e, k) => e.s * e.s / k + e.B * e.B;
+    let html = '<table class="res"><tr><th>estimateur</th><th>biais B</th><th>écart-type</th><th>variance V</th><th>EQM = V + B²</th><th>√EQM</th><th>part du biais dans l\'EQM</th></tr>';
+    E.forEach(e => { const q = eqm(e, 1);
+      html += `<tr><td>${e.nom}</td><td>${fmt(e.B, 1)}</td><td>${fmt(e.s, 1)}</td><td>${fmt(e.s * e.s, 1)}</td><td>${fmt(q, 1)}</td><td>${fmt(Math.sqrt(q), 1)}</td><td>${q > 0 ? fmt(100 * e.B * e.B / q, 1) + ' %' : '—'}</td></tr>`; });
+    html += '</table>';
+    const meilleur = eqm(E[0], 1) <= eqm(E[1], 1) ? 0 : 1;
+    html += `<p>À taille égale, le plus précis au sens de l'EQM est <span class="valeur ok">${E[meilleur].nom}</span>.</p>`;
+    const K = [1, 2, 4, 10, 100];
+    html += '<table class="res"><tr><th>n multiplié par</th>' + K.map(k => `<th>${k}</th>`).join('') + '</tr>';
+    E.forEach(e => { html += `<tr><td>√EQM, ${e.nom}</td>` + K.map(k => `<td>${fmt(Math.sqrt(eqm(e, k)), 1)}</td>`).join('') + '</tr>'; });
+    html += '</table>';
+    const dB = E[0].B ** 2 - E[1].B ** 2, dV = E[1].s ** 2 - E[0].s ** 2;
+    let phrase = 'Quand n grandit, la variance diminue mais le biais reste : la racine de l\'EQM ne descend jamais sous |B|.';
+    if (Math.abs(dB) > 1e-12 && dV / dB > 1) phrase += ` Le classement s'inverse quand n est multiplié par plus de ${fmt(dV / dB, 2)} : l'estimateur de plus faible biais finit par l'emporter.`;
+    else if (Math.abs(dB) > 1e-12) phrase += ' Ici, le classement ne change pas quand n augmente : l\'estimateur de plus faible biais l\'emporte toujours.';
+    const defaut = E[0].B === 0 && E[0].s === 298.4 && E[1].B === -411.1 && E[1].s === 246.6;
+    html += `<p class="petit">${phrase} Approximation : la variance est divisée par le facteur, sans correction de population finie${defaut ? ' (le cours, avec cette correction, donne √EQM = 422,7 dh pour la moyenne brute avec 200 ménages par province, soit n multiplié par 4)' : ''}.</p>`;
+    res.innerHTML = html;
+  } catch (e) { err.textContent = 'Erreur : ' + e.message; }
+}
+window.onload = () => { afficherMatrice(); simulerIC(); calculerHT(); comparerEQM(); };
+
+</script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script id="jm-theme-detect">
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("jm-theme"); } catch (e) {}
+  if (!t) { t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  document.documentElement.setAttribute("data-theme", t);
+  window.addEventListener("storage", function (e) {
+    if (e.key === "jm-theme" && e.newValue) { document.documentElement.setAttribute("data-theme", e.newValue); }
+  });
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapitre 6 — Le sondage stratifié — Application interactive</title>
+<style>
+  :root { --cdef: #1F6FB2; --cintu: #B56600; --cex: #1D9E75; --ceco: #1F6FB2; --cgris: #5A5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "TeX Gyre Pagella", serif; background: #FDFDFD; color: #1a1a1a; max-width: 980px; margin: 0 auto; padding: 1.5em; }
+  h1 { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--cdef); font-size: 1.5em; border-bottom: 2px solid var(--cdef); padding-bottom: 0.3em; }
+  .sous-titre { color: var(--cgris); font-family: "Helvetica Neue", Arial, sans-serif; margin-top: -0.6em; }
+  .panneau { background: white; border-left: 4px solid var(--cdef); border-radius: 6px; padding: 1em 1.2em; margin: 1em 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panneau h2 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 1.05em; color: var(--cdef); margin-top: 0; }
+  .panneau.prop { border-left-color: var(--ceco); } .panneau.prop h2 { color: var(--ceco); }
+  label { display: block; margin: 0.6em 0 0.2em; font-size: 0.92em; color: var(--cgris); }
+  input, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.95em; }
+  .grille4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1.2em; }
+  .grille2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.2em; }
+  button { margin-top: 1em; background: var(--cdef); color: white; border: none; padding: 0.6em 1.4em; border-radius: 5px; font-family: "Helvetica Neue", Arial, sans-serif; font-weight: bold; cursor: pointer; font-size: 0.95em; }
+  button:hover { background: #17578f; }
+  .panneau.prop button { background: var(--ceco); } .panneau.prop button:hover { background: #17578f; }
+  .erreur { color: #b00020; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 0.9em; margin-top: 0.6em; }
+  .resultat-zone { margin-top: 1em; font-family: "Helvetica Neue", Arial, sans-serif; }
+  table { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 0.86em; margin-top: 0.6em; width:100%; }
+  td, th { border: 1px solid #ccc; padding: 0.3em 0.6em; text-align: center; }
+  .avertissement { font-size: 0.82em; color: var(--cgris); font-style: italic; margin-top: 1em; }
+  svg { background: white; border-radius: 4px; }
+</style>
+<style id="jm-theme-override">
+/* Surcharge : palette et typographie du site jmadkour.org, synchronisee
+   avec son bascule clair/sombre (voir script jm-theme-detect ci-dessus).
+   Remplace la palette "polycopie" (violet, serif) utilisee par defaut
+   dans le bloc <style> d'origine de cette page. */
+:root {
+  --cdef: #1f6fb2; --ceco: #1f6fb2; --cex: #1d9e75; --cintu: #b56600; --cgris: #54707f;
+  --bg: #ffffff; --fg: #142a38; --border: #dbe6ee; --card-bg: #f6f9fb; --code-bg: #f3f7fa;
+  --danger: #b00020; --primary-dark: #17578f;
+}
+:root[data-theme="dark"] {
+  --cdef: #3aa0e6; --ceco: #3aa0e6; --cex: #37b47e; --cintu: #e0954a; --cgris: #9db4c0;
+  --bg: #0d1b26; --fg: #e7eef3; --border: #20455a; --card-bg: #13303d; --code-bg: #0f2733;
+  --danger: #e0554a; --primary-dark: #5bb3ef;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg) !important; }
+body {
+  background: var(--bg) !important; color: var(--fg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+h1, h2, h3, .panneau h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--cdef) !important; border-color: var(--cdef) !important;
+}
+.sous-titre, .aide, label { color: var(--cgris) !important; }
+.panneau {
+  background: var(--card-bg) !important; border: 1px solid var(--border) !important;
+  border-left: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: none !important;
+}
+input[type=number], input[type=text], select, textarea {
+  background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--border) !important;
+}
+button {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: var(--cdef) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
+}
+button:hover { background: var(--primary-dark) !important; }
+.erreur { color: var(--danger) !important; }
+table.res, table.res th, table.res td { border-color: var(--border) !important; }
+table.res th { background: var(--card-bg) !important; }
+.valeur { background: var(--cdef) !important; color: #ffffff !important; }
+.valeur.ok { background: var(--cex) !important; }
+.valeur.ko { background: var(--danger) !important; }
+</style>
+<style>
+  .grille3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.2em; }
+  table.res { width: 100%; }
+  .petit { font-size: 0.85em; color: var(--cgris); }
+  .valeur { display: inline-block; padding: 0.15em 0.6em; border-radius: 5px; font-family: "Courier New", monospace; }
+  .defile { max-height: 320px; overflow-y: auto; }
+  @media (max-width: 640px) { .grille4, .grille3, .grille2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Chapitre 6 — Le sondage stratifié</h1>
+<p class="sous-titre">Application interactive — Échantillonnage</p>
+
+
+<style>
+  .grille5 { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr; gap: 0 1em; }
+  .grille5 label { margin-top: 0.3em; }
+  .grille5 + .grille5 input { margin-top: 0.35em; }
+  .boutons button { margin-right: 0.6em; }
+  @media (max-width: 640px) { .grille5 { grid-template-columns: 1fr 1fr; } }
+</style>
+
+<div class="panneau">
+  <h2>Calculatrice d'un plan stratifié : allocation, variance, effet de plan</h2>
+  <p class="petit">Une ligne par strate (six au plus) : taille N<sub>h</sub>, moyenne Ȳ<sub>h</sub> (ou proportion P<sub>h</sub>), écart-type S<sub>h</sub> (calculé en N<sub>h</sub> − 1) et, si l'allocation est saisie, n<sub>h</sub>. Valeurs par défaut : les quatre provinces de la population du cours, n = 200, allocation proportionnelle ; les Ȳ<sub>h</sub> et S<sub>h</sub> sont saisis avec au moins quatre décimales pour retrouver exactement les résultats du chapitre. La variance totale S² est reconstituée à partir des strates par la décomposition intra + inter.</p>
+  <div class="grille2">
+    <div><label for="ex1">exemple du chapitre</label><select id="ex1" onchange="exemple()">
+      <option value="0" selected>provinces, dépense, allocation proportionnelle</option>
+      <option value="1">milieu, dépense, allocation proportionnelle</option>
+      <option value="2">milieu, ménages connectés (proportion)</option>
+      <option value="3">mini-population : A, B, C | D, E, un ménage par strate</option>
+      <option value="4">provinces, 50 ménages par province</option>
+      <option value="5">milieu, 100 ménages par milieu</option></select></div>
+    <div><label for="var1">variable étudiée</label><select id="var1" onchange="changerVariable()">
+      <option value="moy" selected>une moyenne : saisir Ȳₕ et Sₕ</option>
+      <option value="prop">une proportion : saisir Pₕ (Sₕ calculé)</option></select></div>
+  </div>
+  <div class="grille2">
+    <div><label for="n1">taille de l'échantillon n</label><input id="n1" type="text" value="200"></div>
+    <div><label for="al1">allocation</label><select id="al1">
+      <option value="prop" selected>proportionnelle : nₕ = n Wₕ</option>
+      <option value="egale">égale : nₕ = n / H</option>
+      <option value="saisie">saisie : colonne nₕ</option></select></div>
+  </div>
+  <div id="lignes1"></div>
+  <button onclick="calculer()">Calculer</button>
+  <div id="erreur1" class="erreur"></div>
+  <div id="resultat1" class="resultat-zone"></div>
+  <div id="graphe1"></div>
+</div>
+
+<div class="panneau prop">
+  <h2>Tirer un échantillon stratifié dans la population du cours</h2>
+  <p class="petit">On stratifie les 2 000 ménages, on répartit n proportionnellement (arrondi par la méthode des plus forts restes), puis on tire sans remise dans chaque strate. La graine rend le tirage reproductible ; le générateur de cette page n'est pas celui de numpy, l'échantillon diffère donc de celui des diapositives. La simulation compare le plan stratifié à un sondage aléatoire simple de même taille.</p>
+  <div class="grille4">
+    <div><label for="st2">variable de stratification</label><select id="st2">
+      <option value="province" selected>province (4 strates)</option>
+      <option value="milieu">milieu (2 strates)</option>
+      <option value="pm">province × milieu (8 strates)</option>
+      <option value="taille">taille du ménage (5 classes)</option></select></div>
+    <div><label for="n2">taille de l'échantillon n</label><input id="n2" type="number" value="200" min="10" max="1000"></div>
+    <div><label for="gr2">graine du générateur</label><input id="gr2" type="number" value="2026"></div>
+    <div><label for="R2">nombre d'enquêtes simulées</label><select id="R2">
+      <option value="500">500</option><option value="1000">1 000</option><option value="2000" selected>2 000</option><option value="5000">5 000</option></select></div>
+  </div>
+  <div class="boutons"><button onclick="tirer()">Tirer un échantillon</button><button onclick="simuler()">Simuler les enquêtes</button></div>
+  <div id="erreur2" class="erreur"></div>
+  <div id="resultat2" class="resultat-zone"></div>
+  <div id="erreur3" class="erreur"></div>
+  <div id="resultat3" class="resultat-zone"></div>
+  <div id="graphe3"></div>
+</div>
+
+<p class="avertissement">Formules du chapitre : W<sub>h</sub> = N<sub>h</sub>/N, f<sub>h</sub> = n<sub>h</sub>/N<sub>h</sub> ; ȳ<sub>st</sub> = Σ W<sub>h</sub> ȳ<sub>h</sub>, sans biais ; V(ȳ<sub>st</sub>) = Σ W<sub>h</sub>² (1 − f<sub>h</sub>) S<sub>h</sub>²/n<sub>h</sub>, estimée en remplaçant S<sub>h</sub>² par s<sub>h</sub>² (il faut n<sub>h</sub> ≥ 2). Allocation proportionnelle : n<sub>h</sub> = n W<sub>h</sub>, échantillon autopondéré, V<sub>prop</sub> = (1 − f)/n × Σ W<sub>h</sub> S<sub>h</sub>². Décomposition : (N − 1) S² = Σ (N<sub>h</sub> − 1) S<sub>h</sub>² + Σ N<sub>h</sub> (Ȳ<sub>h</sub> − Ȳ)². Effet de plan : deff = V<sub>plan</sub>/V<sub>SAS</sub>, avec V<sub>SAS</sub> = (1 − f) S²/n ; taille effective n/deff. Proportion : S<sub>h</sub>² = N<sub>h</sub>/(N<sub>h</sub> − 1) × P<sub>h</sub>(1 − P<sub>h</sub>).</p>
+
+<script>
+
+const DEP = [5520,11660,7690,7590,4910,8210,7330,7790,5350,4590,11750,5250,9070,6310,6050,10500,5310,11180,7620,6380,6410,10400,3990,7180,4770,8110,6790,8490,7440,2550,7840,6610,20370,3900,4550,9070,2570,7990,4750,3360,4410,12970,3910,14800,5820,4590,12550,5290,4190,4520,4790,9160,7520,5400,9870,5910,12350,4570,7890,8170,7850,4720,2860,8640,3810,10470,1840,2820,7780,6110,5260,4320,20250,15890,9010,5770,11430,5630,3490,5010,6490,3000,8830,23080,14140,14270,10190,10300,10970,9540,10260,12510,6590,10700,11840,11970,7870,13590,5990,12680,7740,9420,5240,12510,12330,9290,8750,8540,8450,11150,7680,3490,9200,5060,12080,2060,9450,7530,11050,7190,11050,4400,17320,7520,6830,6150,10440,6660,8550,24270,6510,7690,11350,5580,6610,3950,9290,3880,3990,6730,10690,4570,10720,4790,8210,10270,23840,9340,6900,8570,14710,6470,10050,3790,7420,10700,5700,8840,4700,8350,2040,10550,19760,9280,6880,4930,14200,7600,7430,11070,2800,5630,12690,9200,9210,7860,10020,6210,11440,19310,11670,9560,13090,10960,7960,17730,9840,8680,5600,6790,7680,11250,5230,5120,9250,11500,16720,13620,3870,16600,15600,4600,11260,6710,21090,13510,12850,7030,7620,18140,9410,16750,11500,29720,21300,16230,3380,12290,21000,12010,13140,16530,10990,5330,4700,15680,6320,12500,8490,11220,13670,16030,10140,5270,19350,7180,18800,2740,15910,11960,16200,6160,5100,11020,8020,8370,12130,6470,12420,9740,6340,10520,5500,3870,9820,5330,8770,2970,4890,10780,7500,8200,9650,3830,7420,1830,3480,4990,4220,2670,6780,15950,2680,1500,4770,13570,14920,3660,5500,6060,6350,6120,11880,4050,15680,10600,8760,11880,4900,8980,7530,10080,4450,7250,12180,6430,7030,14930,10710,7460,4550,15520,12700,11000,13340,19520,10670,21320,8870,12400,8270,8180,14470,9450,8130,8470,16590,2850,9070,12520,16200,16530,13060,15010,3040,10440,31040,10010,9530,8440,12270,7330,15310,15130,9530,12090,4800,7430,13610,13320,10440,6640,6130,11650,9730,6450,19030,8510,13640,13160,12690,10160,12250,6420,6270,13710,3700,4980,5030,11800,13820,14120,9760,6110,13430,4970,9140,12810,8310,10030,7600,4510,11970,13100,14220,4930,14470,10280,4030,7900,12830,11030,3950,3480,5810,3250,2560,7140,10960,6820,10070,3640,4590,8220,6910,11410,7470,5860,6450,14640,4410,3050,2100,4380,18340,4890,8160,10910,6550,2490,9010,11420,9580,8460,5070,6210,7970,4320,13030,9880,6430,19030,10620,14750,11180,3650,10560,5690,12040,7100,6290,10110,11520,3710,9210,7990,6430,2930,5690,6140,4190,11980,12490,2930,5920,6080,4250,2300,14350,10490,13850,8770,6290,5400,2860,11630,11120,8820,10220,9840,9200,9710,6140,3540,5340,4160,5920,9360,10150,8540,3140,4290,5950,6120,3970,10770,3320,5090,6410,4720,6870,11460,7670,7620,5010,8980,6840,10640,8450,9960,7940,5700,10790,5430,8750,5160,5830,10390,2180,4400,4710,12460,8750,8320,7530,10140,4880,7710,6040,7670,7030,5980,8160,12420,2480,10490,9240,5910,6220,10280,5670,3930,7340,7880,6990,4970,18590,6350,4860,6290,8910,14440,10360,4340,4140,4600,5900,4100,5410,6940,8970,3540,8870,5060,17550,4350,4780,5970,4610,11360,6860,16470,12020,2910,3040,11620,5920,6330,6060,6690,16310,8120,5100,9090,5300,5830,26370,2980,7600,9910,4950,10470,5300,6570,7020,8930,11530,6140,13580,7970,12850,11290,4150,4960,11060,5870,7740,8500,11980,13870,5080,6880,6120,12830,5490,5480,13330,13180,3840,3470,19960,15440,12750,7730,11060,8490,8630,12400,8900,8940,8510,9570,14190,12810,8930,8090,5310,9440,29120,8920,21830,7800,14230,10760,16020,17430,11340,8030,6960,12050,9380,5640,5390,2930,6460,5940,5720,8850,4410,17560,10560,4710,13540,16870,9950,6260,11290,2780,13620,10760,9640,9570,2380,8110,5180,10570,9370,10740,10970,10210,4580,13450,8670,5620,9390,8860,2750,9630,14100,6990,3290,4530,8120,2540,2520,10480,4530,7800,10080,8080,8660,4770,8500,7900,5920,12700,2670,10380,10860,4600,12190,9120,4200,8200,13400,9050,5860,6840,8660,6630,11860,6920,3680,3570,12770,8960,7930,5280,14520,5230,17280,12140,2790,11200,12160,5560,6330,7460,7440,3480,4610,9060,11700,4550,4220,5400,9190,6780,9680,7110,8030,7390,4400,10150,3680,2280,8220,1540,1720,5290,3700,3490,4800,3240,5630,6600,6210,4900,4390,3540,6460,15390,4910,3280,6370,5730,10680,2090,8020,12220,9160,5020,7350,9530,6550,4290,3710,8280,7650,6560,3950,5100,1860,5280,13480,7420,8050,10670,12960,4300,7550,8640,13230,9700,14980,4780,5630,9010,4420,2380,6770,9740,5370,16130,6820,10440,6170,4020,11840,4450,5470,6830,12500,10180,5540,11140,9100,4620,11110,8510,17360,10430,7580,2080,13330,9760,11280,16840,12810,8880,7700,9820,14290,6420,5460,6490,15850,9600,4540,14580,5410,11100,6380,11630,3760,7030,8850,6630,3570,13980,7700,10360,7020,9770,7860,11330,3680,8420,14810,10950,4980,10490,15790,13460,14900,7330,7770,24970,11630,11500,8750,6390,8440,5630,9070,7910,6540,4590,7450,7210,11280,7180,6010,9070,9260,14180,9780,8550,6780,7090,8740,11770,15820,7420,11110,5630,2030,2180,7530,3130,7640,2200,16600,4280,7580,4280,3100,10070,13290,4490,12120,4660,11600,9770,10990,8770,8940,13680,7020,6260,7150,4260,7860,9680,5410,3330,5160,5260,4120,8330,2730,4920,8860,6610,7340,6850,13220,6130,9580,2770,2740,9670,6850,5580,7120,7040,8160,5000,5730,5740,14640,3210,6510,2930,6990,5610,4740,4370,9310,5580,7600,6970,5500,6490,2620,8780,12790,3630,7030,14810,7790,3160,5370,1850,6060,6620,14290,2830,10040,7060,6540,11550,7510,4040,10270,5210,4500,10390,5520,2970,14760,1570,16540,7950,11950,11350,5180,3610,17630,14620,6540,13910,10360,9070,9480,10040,18750,5340,18280,6290,2610,13930,12300,12780,13970,5510,2750,5190,9090,7440,4790,10780,8140,6710,6450,3850,6690,3420,5450,6700,7160,6110,9930,9750,14320,5200,4680,6740,9300,5980,8710,7440,7030,7880,2680,2830,6970,6390,6830,17490,2000,4280,3370,6480,5270,13390,6890,9460,19470,5380,4540,11100,20270,7490,1970,4390,17360,13760,8870,8290,5240,4020,4110,10120,13790,10560,8340,8200,2480,11830,4940,4600,9540,4630,7130,13220,6750,9310,2800,7760,15830,11890,6590,9670,12570,10610,13160,6380,13260,7940,4850,7600,8010,6200,17860,7170,11780,14320,7690,9280,4370,2290,12480,10270,6550,7390,4150,18940,10540,9950,9450,6220,6060,9550,14820,9500,6830,9680,3010,6850,3700,14300,10520,4750,3720,5280,4820,7350,3800,6040,7290,2920,3900,7290,4170,3210,11960,2390,3600,5900,5850,10660,2530,6460,5960,2430,9210,4300,9690,2170,5350,2090,3880,5340,4730,9300,2800,9090,4800,5130,6420,7600,11470,5330,7480,13070,7630,10700,8380,2990,5510,8750,3270,13570,14040,3210,10540,5950,6410,14190,3890,10460,4710,23450,13090,14910,14870,13270,6620,15340,7830,10160,2450,4690,9670,8420,8700,8620,7360,5210,16410,9590,13430,8200,13020,8470,2610,7450,11060,5380,16420,7260,11270,15420,8930,11940,11020,17800,5680,6310,18830,7810,7350,11020,6770,5690,10290,17220,6600,20400,10580,6110,10840,10270,12230,11080,8800,12080,15940,13570,20140,7090,12660,9820,12020,12090,13360,6550,7160,8220,8740,5400,4700,10790,5510,3290,11800,4270,9180,5800,3690,8440,7700,10210,4810,5300,1520,5820,5830,6270,5230,11240,5240,11190,4930,6090,11260,8830,11080,6020,10630,9100,4790,11300,7170,7830,5230,2120,6120,4190,2410,3730,5890,9540,5860,10590,12460,5600,5460,5700,10300,8710,11040,9930,7840,5760,9830,4030,7170,10460,8390,9000,6290,3590,4940,8860,8700,7060,12850,10490,10480,7350,12850,8970,15340,10660,7350,6210,4800,3700,16710,4670,9120,5480,14460,6820,8400,4500,12060,6230,8570,5430,7920,3310,10500,5780,10890,6240,9810,5850,5130,6090,6360,9760,11230,8920,5540,11090,8270,6870,5130,6260,7710,3490,4520,12450,7450,4150,10370,4250,5090,5120,6740,6300,6170,4510,6100,4270,6830,6080,4770,12620,4430,7250,11730,4600,4910,8180,8790,3120,7330,4660,5210,4630,5690,5030,7290,18100,13460,4680,7610,3850,9630,5140,11190,4170,10420,6600,7010,9840,7510,9370,4570,7110,10760,7560,21170,18990,9320,5090,7920,7880,7890,8300,6750,12820,14930,2980,9880,12480,5300,18210,12110,13930,3010,5630,11220,14250,8490,10130,15670,9150,9600,10010,3540,9530,8270,7580,2590,7910,15430,11900,6650,9360,5130,5580,10110,11840,3100,4980,3590,14820,11800,5160,10580,12960,8990,7290,20360,2230,8240,11980,9200,14780,3930,13800,9790,5540,6070,8030,13970,6410,11600,12630,12630,5610,4780,5840,6350,16850,5140,6250,4740,12380,7850,6000,9280,11140,8340,7270,6100,4300,9470,6750,4160,6740,4530,6810,9440,8420,8340,5920,3450,4310,2370,16610,5430,3230,6860,2550,6080,11490,5100,8400,6560,4030,8520,6120,6150,8970,8070,14270,8220,5620,7810,10180,6250,6690,9160,5050,9400,7300,7780,6670,4880,7200,6730,5010,10350,6000,7200,4400,12210,5860,5600,7440,5980,8470,4780,15460,5330,9540,4280,6010,6710,10630,3010,7240,7170,5920,14240,4810,4050,7720,7170,7160,11940,12090,6870,11670,11650,8560,3960,13220,17490,4500,11840,6200,10390,12170,7440,8190,9540,6180,8980,10990,5470,8780,14550,3150,10850,3090,6940,4550,4640,7880,4010,8540,4490,4550,5600,7940,5820,6470,2490,11440,7060,6150,3470,5130,5110,5530,7090,3450,7240,7790,2650,11170,6020,3930,14870,8440,7060,8780,3930,7040,4680,6210,4510,5860,5600,3570,3870,14520,8500,7890,5160,2870,6570,10560,4120,6260,7300,3690,3720,4160,8910,1700,5990,8750,7990,6380,2990,4290,8610,9020,6020,3080,7300,3470,3370,4860,6770,6570,7950,4170,3800,7680,4170,7260,7070,7130,2060,9560,17530,10830,1490,6640,4800,3660,2400,9890,6260,5830,4060,9840,14870,5460,5190,7560,7200,4540,4210,2730,5470,6050,8790,3770,13000,7840,19870,3930,4090,7500,5980,11970,7330,3990,4080,6620,4920,5280,5770,4200,2310,3130,5070,4580,3310,3140,5580,4090,3000,2970,7740,5380,4280,7050,5960,4780,3040,2780,3560,1490,2770,3740,6440,4840,5080,2080,3010,5120,3430,4610,7280,2820,5070,5030,2950,2500,7050,2840,5910,1790,8170,6560,6790,5260,3870,7780,5620,4400,4180,15960,5120,3570,6090,4460,2010,6460,5760,6020,5070,4510,4370,4000,2960,5350,4790,18810,6190,4650,6310,6050,3300,6300,6060,8380,3950,7380,6530,5570,6900,7930,7140,10360,6550,3960,5400,9720,5180,1950,8830,6860,2600,3900,7500,6130,8570,9030,4690,10970,8810,8040,9470,10800,9290,5340,4100,7360,4180,4250,3220,8460,7080,4790,7070,7210,7790,8120,3760,5210,3530,5750,12110,8750,9990,3640,6580,11010,9080,10170,3720,7160,5900,7670,5010,14000,5980,7360,4100,4470,4880,4880,11780,13130,3880,1370,3010,4400,2290,5590,2990,10800,2340,3100,2290,2970,2550,5370,6070,5880,2260,1910,4060,4000,4200,4500,6750,4920,2890,4590,3560,3430,2440,7180,2580,2930,5290,3120,2360,5360,4480,4450,4640,5380,2710,3670,3640,2120,6000,5530,3690,8300,5230,6050,4860,11120,4930,2740,4860,6050,6760,4460,4770,9000,1830,2680,4100,4550,3730,8570,6220,8620,3210,13050,7770,7900,4560,3680,3210,4430,5150,5380,15180,6250,7780,7020,2100,9670,6260,3440,3360,8060,9080,10570,4020,3540,6700,11510,6460,3560,7070,7800,5770,2550,10020,9140,6210,7540,4640,4330,5060,4100,4100,2570,2820,8080,7670,7670,6900,5370,5990,8630,2760,6020,3770,5000,7260,4280,9450,7780,3940,18110,6730,3160,5270,8960,14710,6540];
+const CPROV = '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333', CMIL = '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111', CTAI = '12442321112211241322210112132022400402000403332101140011314131041200311024203100103423221333023431023202320222102030011040431134140221101001211012441132201204020142202102013201201431131220212300214404101043100223343201421430031200222040401240132131341301112000112010101024001430020142442313222232142004221214131340114012242402431130212100120101112132213003000142104011242044313301420220033120012322031000311200222102110114344020121420223010044011004341000441022220002444001003001233433323212142210200012212221441340320131021104201134000000220214011001430030011410201400103102121412101223242123412330043314233210233210242423132333322101121033034302041340111323203232202310140020233301123044043124313422200424340320441332124420232432332304001414023421034103240434144310344100241334033224111202414242222013231402442404244343422114203234111110403320403440444411432002234103221111413121342420040104000033020412404102013100102014132432003222210113030320232212202314320102130301411420310303124103223233241400241210012011010100110412000302201002123000023344002410031101001433104102132120144114132222121213424102213034120132322030440000201100200400212021011301002040110313134342012022020040304334314110124112041332101214134113331321400230431133101444232443334211432213124442201244314214442442423112102432434314144422013314013314422243434104121423043224243434001244214312330042241124211023104013203302110112331211031332414034444101001143022134400443242220321043403104301043044214023330310224324401014120421242310210221333001032020242211311233101311403222111011102224111403021404022001324422200240314323301201201201241310043314311421304103314224131223310442204423411030144112344042122431043341044402010332124313411014414140243443441441014331240144334421102323300243314120202041202210033031033111000124241113030410232110130011002141143232210200023122220101413012320311033110003440012224022313420032343413232410331421241330443344244114334401343214042310133141320421014311333334424414212120044344141202304214201343';
+const NPOP = DEP.length;
+function fmt(x, d) { return x.toLocaleString('fr-FR', {minimumFractionDigits: d, maximumFractionDigits: d}); }
+function lire(id) { const v = document.getElementById(id).value.trim().replace(/\s/g, '').replace(',', '.'); return v === '' ? NaN : parseFloat(v); }
+
+// ---------------------------------------------------------------- panneau 1
+const NL = 6;
+const EXEMPLES = [
+  {v: 'moy', n: 200, al: 'prop', L: [['Tanger-Assilah', 820, 8621.0366, 4271.1943, ''], ['Tétouan', 560, 8145.9286, 3873.1120, ''], ['Larache', 380, 7254.9737, 3593.1736, ''], ['Al Hoceïma', 240, 5979.2083, 2899.8961, '']]},
+  {v: 'moy', n: 200, al: 'prop', L: [['urbain', 1438, 8429.7775, 4134.1069, ''], ['rural', 562, 6585.1423, 3215.03166, '']]},
+  {v: 'prop', n: 200, al: 'prop', L: [['urbain', 1438, 0.767733, '', ''], ['rural', 562, 0.434164, '', '']]},
+  {v: 'moy', n: 2, al: 'saisie', L: [['A, B, C', 3, 5.666667, 1.527525, 1], ['D, E', 2, 11.5, 3.535534, 1]]},
+  {v: 'moy', n: 200, al: 'egale', L: [['Tanger-Assilah', 820, 8621.0366, 4271.1943, ''], ['Tétouan', 560, 8145.9286, 3873.1120, ''], ['Larache', 380, 7254.9737, 3593.1736, ''], ['Al Hoceïma', 240, 5979.2083, 2899.8961, '']]},
+  {v: 'moy', n: 200, al: 'saisie', L: [['urbain', 1438, 8429.7775, 4134.1069, 100], ['rural', 562, 6585.1423, 3215.03166, 100]]}
+];
+function construireLignes() {
+  let h = '';
+  for (let i = 0; i < NL; i++) {
+    const lab = (id, t) => i === 0 ? `<label for="${id}" id="lab_${id}">${t}</label>` : '';
+    const aria = t => i === 0 ? '' : ` aria-label="${t}, strate ${i + 1}"`;
+    h += `<div class="grille5">
+      <div>${lab('nom1_0', 'strate')}<input id="nom1_${i}" type="text"${aria('strate')}></div>
+      <div>${lab('Nh1_0', 'N<sub>h</sub>')}<input id="Nh1_${i}" type="text"${aria('N_h')}></div>
+      <div>${lab('Yh1_0', 'Ȳ<sub>h</sub>')}<input id="Yh1_${i}" type="text"${aria('moyenne')}></div>
+      <div>${lab('Sh1_0', 'S<sub>h</sub>')}<input id="Sh1_${i}" type="text"${aria('écart-type')}></div>
+      <div>${lab('nh1_0', 'n<sub>h</sub> (si saisie)')}<input id="nh1_${i}" type="text"${aria('n_h')}></div></div>`;
+  }
+  document.getElementById('lignes1').innerHTML = h;
+}
+function changerVariable() {
+  const p = document.getElementById('var1').value === 'prop';
+  document.getElementById('lab_Yh1_0').innerHTML = p ? 'P<sub>h</sub>' : 'Ȳ<sub>h</sub>';
+  document.getElementById('lab_Sh1_0').innerHTML = p ? 'S<sub>h</sub> (calculé)' : 'S<sub>h</sub>';
+  for (let i = 0; i < NL; i++) document.getElementById('Sh1_' + i).readOnly = p;
+}
+function exemple() {
+  const E = EXEMPLES[parseInt(document.getElementById('ex1').value)];
+  document.getElementById('var1').value = E.v; document.getElementById('n1').value = E.n; document.getElementById('al1').value = E.al;
+  for (let i = 0; i < NL; i++) {
+    const l = E.L[i] || ['', '', '', '', ''];
+    ['nom1_', 'Nh1_', 'Yh1_', 'Sh1_', 'nh1_'].forEach((p, j) => { document.getElementById(p + i).value = l[j]; });
+  }
+  changerVariable(); calculer();
+}
+function plusFortsRestes(n, Nh) {
+  const N = Nh.reduce((a, b) => a + b, 0), a = Nh.map(v => n * v / N), b = a.map(Math.floor);
+  let r = n - b.reduce((s, v) => s + v, 0);
+  const ordre = a.map((v, i) => i).sort((i, j) => (a[j] - b[j]) - (a[i] - b[i]));
+  for (let k = 0; k < r; k++) b[ordre[k]]++;
+  return b;
+}
+function barre(intra, inter) {
+  const W = 640, H = 64, m = 10, x = m + (W - 2 * m) * intra / (intra + inter), pi = 100 * inter / (intra + inter);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="part intra et inter de la variance totale">`;
+  s += `<rect x="${m}" y="8" width="${x - m}" height="28" fill="#1f6fb2" opacity="0.35"></rect>`;
+  s += `<rect x="${x}" y="8" width="${W - m - x}" height="28" fill="#b56600"></rect>`;
+  s += `<text x="${m + 6}" y="27" font-size="13" fill="#142a38">intra-strates ${fmt(100 - pi, 1)} %</text>`;
+  s += x - m > 340 ? `<text x="${x - 6}" y="27" font-size="13" text-anchor="end" fill="#b56600" font-weight="bold">inter-strates ${fmt(pi, 1)} %</text>`
+                   : `<text x="${x + 6}" y="27" font-size="13" fill="#ffffff" font-weight="bold">inter-strates ${fmt(pi, 1)} %</text>`;
+  s += `<text x="${W / 2}" y="56" font-size="12" text-anchor="middle" fill="#54707f">part de (N − 1) S² : la stratification retire la part inter-strates</text>`;
+  return s + '</svg>';
+}
+function calculer() {
+  const err = document.getElementById('erreur1'), res = document.getElementById('resultat1'), gr = document.getElementById('graphe1');
+  err.textContent = ''; res.innerHTML = ''; gr.innerHTML = '';
+  try {
+    const prop = document.getElementById('var1').value === 'prop', al = document.getElementById('al1').value;
+    const L = [];
+    for (let i = 0; i < NL; i++) {
+      const nom = document.getElementById('nom1_' + i).value.trim() || ('strate ' + (i + 1));
+      const Nh = lire('Nh1_' + i), Y = lire('Yh1_' + i);
+      let S = lire('Sh1_' + i); const ns = lire('nh1_' + i);
+      if (isNaN(Nh) && isNaN(Y)) continue;
+      if (isNaN(Nh) || Nh < 2 || Math.round(Nh) !== Nh) throw new Error(`strate ${i + 1} : N_h doit être un entier au moins égal à 2.`);
+      if (isNaN(Y)) throw new Error(`strate ${i + 1} : la moyenne (ou la proportion) manque.`);
+      if (prop) {
+        if (Y < 0 || Y > 1) throw new Error(`strate ${i + 1} : une proportion doit être comprise entre 0 et 1.`);
+        S = Math.sqrt(Nh / (Nh - 1) * Y * (1 - Y)); document.getElementById('Sh1_' + i).value = fmt(S, 5).replace(/\s/g, '');
+      } else if (isNaN(S) || S < 0) throw new Error(`strate ${i + 1} : l'écart-type S_h doit être un nombre positif.`);
+      L.push({nom, Nh, Y, S, ns});
+    }
+    if (L.length < 2) throw new Error('il faut au moins deux strates.');
+    const H = L.length, N = L.reduce((a, l) => a + l.Nh, 0);
+    let n = lire('n1');
+    if (al === 'saisie') {
+      L.forEach((l, i) => { if (isNaN(l.ns) || l.ns < 1) throw new Error(`strate « ${l.nom} » : saisir n_h ≥ 1 (allocation saisie).`); l.nh = l.ns; });
+      n = L.reduce((a, l) => a + l.nh, 0);
+    } else {
+      if (isNaN(n) || n < H) throw new Error(`n doit être un nombre au moins égal au nombre de strates (${H}).`);
+      L.forEach(l => { l.nh = al === 'prop' ? n * l.Nh / N : n / H; });
+    }
+    L.forEach(l => { if (l.nh > l.Nh) throw new Error(`strate « ${l.nom} » : n_h = ${fmt(l.nh, 1)} dépasse N_h = ${fmt(l.Nh, 0)}.`); });
+    if (n >= N) throw new Error('n doit être inférieur à N.');
+    const f = n / N;
+    let Ybar = 0, SW = 0, inter = 0, V = 0, intraEx = 0, interEx = 0, Ebrut = 0;
+    L.forEach(l => { l.W = l.Nh / N; l.f = l.nh / l.Nh; Ybar += l.W * l.Y; });
+    L.forEach(l => {
+      l.WS2 = l.W * l.S * l.S; l.v = l.W * l.W * (1 - l.f) * l.S * l.S / l.nh;
+      SW += l.WS2; inter += l.W * (l.Y - Ybar) ** 2; V += l.v;
+      intraEx += (l.Nh - 1) * l.S * l.S; interEx += l.Nh * (l.Y - Ybar) ** 2; Ebrut += l.nh * l.Y / n;
+    });
+    const S2 = (intraEx + interEx) / (N - 1), Vsas = (1 - f) * S2 / n, deff = V / Vsas;
+    const auto = L.every(l => Math.abs(l.f - L[0].f) < 1e-9);
+    // décimales : proportions, petites valeurs (mini-population) ou dirhams
+    const petit = !prop && Math.max(...L.map(l => Math.abs(l.Y))) < 100;
+    const dm = prop ? 4 : (petit ? 3 : 2), ds = prop ? 5 : (petit ? 4 : 2), dw = prop ? 5 : (petit ? 4 : 0), dv = prop ? 7 : (petit ? 4 : 1), dse = prop ? 4 : (petit ? 3 : 2);
+    let html = '<div class="defile"><table class="res"><tr><th>strate</th><th>N<sub>h</sub></th><th>W<sub>h</sub></th><th>' + (prop ? 'P<sub>h</sub>' : 'Ȳ<sub>h</sub>') +
+      '</th><th>S<sub>h</sub></th><th>n<sub>h</sub></th><th>f<sub>h</sub></th><th>poids d<sub>k</sub></th><th>W<sub>h</sub> S<sub>h</sub>²</th><th>W<sub>h</sub>² (1 − f<sub>h</sub>) S<sub>h</sub>²/n<sub>h</sub></th></tr>';
+    L.forEach(l => { html += `<tr><td>${l.nom}</td><td>${fmt(l.Nh, 0)}</td><td>${fmt(l.W, 4)}</td><td>${fmt(l.Y, dm)}</td><td>${fmt(l.S, ds)}</td><td>${fmt(l.nh, Number.isInteger(l.nh) ? 0 : 1)}</td><td>${fmt(l.f, 4)}</td><td>${fmt(1 / l.f, 2)}</td><td>${fmt(l.WS2, dw)}</td><td>${fmt(l.v, dv)}</td></tr>`; });
+    html += `<tr><th>ensemble</th><th>${fmt(N, 0)}</th><th>1</th><th>${fmt(Ybar, dm)}</th><th>${fmt(Math.sqrt(S2), ds)}</th><th>${fmt(n, Number.isInteger(n) ? 0 : 1)}</th><th>${fmt(f, 4)}</th><th></th><th>${fmt(SW, dw)}</th><th>${fmt(V, dv)}</th></tr></table></div>`;
+    if (al === 'prop' && L.some(l => Math.abs(l.nh - Math.round(l.nh)) > 1e-9)) {
+      const b = plusFortsRestes(Math.round(n), L.map(l => l.Nh));
+      html += `<p class="petit">Les n<sub>h</sub> = n W<sub>h</sub> ne sont pas entiers : on tire en pratique ${b.map((v, i) => fmt(v, 0) + ' (' + L[i].nom + ')').join(', ')}, arrondis par la méthode des plus forts restes. Les formules ci-dessous gardent n<sub>h</sub> = n W<sub>h</sub>.</p>`;
+    }
+    html += '<table class="res"><tr><th>grandeur</th><th>calcul</th><th>valeur</th></tr>';
+    html += `<tr><td>${prop ? 'proportion P' : 'moyenne Ȳ'}</td><td>Σ W<sub>h</sub> ${prop ? 'P' : 'Ȳ'}<sub>h</sub></td><td>${fmt(Ybar, dm)}</td></tr>`;
+    html += `<tr><td>variance totale S² (reconstituée)</td><td>[Σ (N<sub>h</sub> − 1) S<sub>h</sub>² + Σ N<sub>h</sub> (${prop ? 'P' : 'Ȳ'}<sub>h</sub> − ${prop ? 'P' : 'Ȳ'})²] / (N − 1)</td><td>${fmt(S2, dw)}</td></tr>`;
+    html += `<tr><td>intra / inter (approchés)</td><td>Σ W<sub>h</sub> S<sub>h</sub>² ; Σ W<sub>h</sub> (${prop ? 'P' : 'Ȳ'}<sub>h</sub> − ${prop ? 'P' : 'Ȳ'})²</td><td>${fmt(SW, dw)} ; ${fmt(inter, dw)}</td></tr>`;
+    html += `<tr><td>part inter-strates</td><td>Σ N<sub>h</sub> (${prop ? 'P' : 'Ȳ'}<sub>h</sub> − ${prop ? 'P' : 'Ȳ'})² / [(N − 1) S²]</td><td>${fmt(100 * interEx / (intraEx + interEx), 1)} %</td></tr>`;
+    html += `<tr><td>variance du plan stratifié</td><td>Σ W<sub>h</sub>² (1 − f<sub>h</sub>) S<sub>h</sub>²/n<sub>h</sub>${al === 'prop' ? ' = (1 − f)/n × Σ W<sub>h</sub> S<sub>h</sub>²' : ''}</td><td><span class="valeur ok">${fmt(V, dv)}</span></td></tr>`;
+    html += `<tr><td>erreur-type ; marge à 95 %</td><td>√V ; 1,96 √V</td><td>${fmt(Math.sqrt(V), dse)} ; ± ${fmt(1.96 * Math.sqrt(V), dse)}</td></tr>`;
+    html += `<tr><td>sondage aléatoire simple de même taille</td><td>(1 − f) S²/n ; erreur-type</td><td>${fmt(Vsas, dv)} ; ${fmt(Math.sqrt(Vsas), dse)}</td></tr>`;
+    html += `<tr><td>effet de plan</td><td>deff = V<sub>plan</sub>/V<sub>SAS</sub></td><td><span class="valeur ${deff <= 1 ? 'ok' : 'ko'}">${fmt(deff, 4)}</span></td></tr>`;
+    html += `<tr><td>taille effective</td><td>n/deff</td><td>${fmt(n / deff, 1)}</td></tr>`;
+    if (!auto) html += `<tr><td>moyenne non pondérée des n unités</td><td>espérance Σ n<sub>h</sub> ${prop ? 'P' : 'Ȳ'}<sub>h</sub>/n ; biais</td><td>${fmt(Ebrut, dm)} ; <span class="valeur ko">${fmt(Ebrut - Ybar, dm)}</span></td></tr>`;
+    html += '</table>';
+    let msg = auto ? `L'échantillon est <strong>autopondéré</strong> : chaque unité tirée a le poids ${fmt(1 / f, 2)}, et la moyenne simple des n unités est égale à ȳ<sub>st</sub>.`
+                   : `L'échantillon n'est <strong>pas autopondéré</strong> : les poids d<sub>k</sub> = N<sub>h</sub>/n<sub>h</sub> diffèrent, il faut pondérer ; la moyenne non pondérée est biaisée.`;
+    msg += deff <= 1 ? ` Le plan est plus précis qu'un sondage aléatoire simple de ${fmt(n, 0)} unités : il en vaut ${fmt(n / deff, 1)}.`
+                     : ` Ce plan est <strong>moins</strong> précis qu'un sondage aléatoire simple de même taille : l'allocation ne suit pas les poids des strates (chapitre 7).`;
+    if (L.some(l => l.nh < 2)) msg += ' Attention : une strate a moins de deux unités tirées ; la variance existe, mais elle ne peut pas être estimée à partir de l\'échantillon.';
+    res.innerHTML = html + `<p>${msg}</p>`;
+    gr.innerHTML = barre(intraEx, interEx);
+  } catch (ex) { err.textContent = 'Erreur : ' + ex.message; }
+}
+
+// ---------------------------------------------------------------- panneau 2
+const PROVS = ['Tanger-Assilah', 'Tétouan', 'Larache', 'Al Hoceïma'], MILS = ['urbain', 'rural'];
+const STRATES = {
+  province: {code: i => +CPROV[i], noms: PROVS},
+  milieu: {code: i => +CMIL[i], noms: MILS},
+  pm: {code: i => 2 * (+CPROV[i]) + (+CMIL[i]), noms: PROVS.flatMap(p => MILS.map(m => p + ' ' + m))},
+  taille: {code: i => +CTAI[i], noms: ['1 ou 2 personnes', '3 personnes', '4 personnes', '5 personnes', '6 personnes ou plus']}
+};
+const YBAR = DEP.reduce((a, b) => a + b, 0) / NPOP;
+const S2POP = DEP.reduce((a, b) => a + (b - YBAR) ** 2, 0) / (NPOP - 1);
+function mulberry32(a) {
+  return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function tirage(liste, k, alea) {
+  const c = liste.slice();
+  for (let i = 0; i < k; i++) { const j = i + Math.floor(alea() * (c.length - i)); const t = c[i]; c[i] = c[j]; c[j] = t; }
+  return c.slice(0, k);
+}
+function moyVar(idx) {
+  let s = 0, s2 = 0; idx.forEach(i => { s += DEP[i]; s2 += DEP[i] * DEP[i]; });
+  const m = idx.length, moy = s / m; return [moy, m > 1 ? (s2 - s * moy) / (m - 1) : NaN];
+}
+function plan() {
+  const cle = document.getElementById('st2').value, n = parseInt(document.getElementById('n2').value), St = STRATES[cle];
+  if (isNaN(n) || n < 10 || n > 1000) throw new Error('n doit être compris entre 10 et 1 000.');
+  const G = St.noms.map(() => []);
+  for (let i = 0; i < NPOP; i++) G[St.code(i)].push(i);
+  const nh = plusFortsRestes(n, G.map(g => g.length));
+  nh.forEach((v, h) => { if (v < 2) throw new Error(`avec n = ${n}, la strate « ${St.noms[h]} » recevrait ${v} unité(s) : il en faut au moins deux pour estimer la variance. Augmenter n.`); });
+  const T = G.map((g, h) => { const [m, v] = moyVar(g); return {nom: St.noms[h], g, Nh: g.length, W: g.length / NPOP, Y: m, S2: v, nh: nh[h]}; });
+  const V = T.reduce((a, t) => a + t.W * t.W * (1 - t.nh / t.Nh) * t.S2 / t.nh, 0), Vsas = (1 - n / NPOP) * S2POP / n;
+  return {T, n, V, Vsas};
+}
+function estimer(P, alea) {
+  let y = 0, v = 0; const det = [];
+  P.T.forEach(t => { const [m, s2] = moyVar(tirage(t.g, t.nh, alea)); y += t.W * m; v += t.W * t.W * (1 - t.nh / t.Nh) * s2 / t.nh; det.push([m, s2]); });
+  return [y, v, det];
+}
+function tirer() {
+  const err = document.getElementById('erreur2'), res = document.getElementById('resultat2');
+  err.textContent = ''; res.innerHTML = '';
+  try {
+    const P = plan(), g = parseInt(document.getElementById('gr2').value);
+    if (isNaN(g)) throw new Error('la graine doit être un nombre entier.');
+    const [y, v, det] = estimer(P, mulberry32(g)), se = Math.sqrt(v), lo = y - 1.96 * se, hi = y + 1.96 * se;
+    let html = '<div class="defile"><table class="res"><tr><th>strate</th><th>N<sub>h</sub></th><th>n<sub>h</sub></th><th>ȳ<sub>h</sub></th><th>s<sub>h</sub></th><th>vraie Ȳ<sub>h</sub></th><th>W<sub>h</sub> ȳ<sub>h</sub></th></tr>';
+    P.T.forEach((t, h) => { html += `<tr><td>${t.nom}</td><td>${fmt(t.Nh, 0)}</td><td>${fmt(t.nh, 0)}</td><td>${fmt(det[h][0], 2)}</td><td>${fmt(Math.sqrt(det[h][1]), 0)}</td><td>${fmt(t.Y, 2)}</td><td>${fmt(t.W * det[h][0], 1)}</td></tr>`; });
+    html += '</table></div><table class="res"><tr><th>estimation ȳ<sub>st</sub></th><th>variance estimée</th><th>erreur-type</th><th>intervalle à 95 %</th><th>erreur commise</th></tr>';
+    html += `<tr><td>${fmt(y, 2)}</td><td>${fmt(v, 1)}</td><td>${fmt(se, 2)}</td><td>[${fmt(lo, 1)} ; ${fmt(hi, 1)}]</td><td><span class="valeur ${lo <= YBAR && YBAR <= hi ? 'ok' : 'ko'}">${fmt(y - YBAR, 1)}</span></td></tr></table>`;
+    html += `<p>Vraie moyenne Ȳ = ${fmt(YBAR, 2)} dh : l'intervalle ${lo <= YBAR && YBAR <= hi ? 'la contient' : 'ne la contient pas'}. Variance exacte de ce plan (allocation arrondie) : ${fmt(P.V, 1)}, erreur-type ${fmt(Math.sqrt(P.V), 2)} ; sondage aléatoire simple de même taille : ${fmt(P.Vsas, 1)}, erreur-type ${fmt(Math.sqrt(P.Vsas), 2)} ; effet de plan <span class="valeur">${fmt(P.V / P.Vsas, 4)}</span>.</p>`;
+    res.innerHTML = html + '<p class="petit">Changer la graine donne un autre échantillon ; la même graine redonne toujours le même. Un échantillon ne juge pas un plan : la simulation ci-dessous le fait.</p>';
+  } catch (ex) { err.textContent = 'Erreur : ' + ex.message; }
+}
+function histo(series, vrai) {
+  const tous = series.flatMap(s => s.v), lo = Math.min(...tous), hi = Math.max(...tous), k = 36, w = (hi - lo) / k;
+  const W = 640, Hs = 92, m = 30, X = v => m + (v - lo) / (hi - lo) * (W - 2 * m);
+  const hs = series.map(s => { const h = new Array(k).fill(0); s.v.forEach(v => { let i = Math.floor((v - lo) / w); if (i >= k) i = k - 1; h[i]++; }); return h; });
+  const hm = Math.max(...hs.flat());
+  let s = `<svg viewBox="0 0 ${W} ${series.length * Hs + 48}" width="100%" role="img" aria-label="distribution des estimations simulées">`;
+  series.forEach((se, r) => { const base = (r + 1) * Hs;
+    hs[r].forEach((c, i) => { const bh = (Hs - 22) * c / hm; s += `<rect x="${X(lo + i * w)}" y="${base - bh}" width="${(W - 2 * m) / k - 1}" height="${bh}" fill="${se.c}" opacity="0.55"></rect>`; });
+    s += `<line x1="${m}" x2="${W - m}" y1="${base}" y2="${base}" stroke="#888"></line>`;
+    s += `<text x="${m}" y="${base - Hs + 30}" font-size="12" fill="${se.c}">${se.nom}</text>`; });
+  s += `<line x1="${X(vrai)}" x2="${X(vrai)}" y1="8" y2="${series.length * Hs}" stroke="#4a3b8c" stroke-width="2" stroke-dasharray="5,3"></line>`;
+  s += `<text x="${X(vrai) + 5}" y="16" font-size="12" fill="#4a3b8c">Ȳ = ${fmt(vrai, 0)}</text>`;
+  const pas = (hi - lo) > 2000 ? 500 : 250;
+  for (let v = Math.ceil(lo / pas) * pas; v <= hi; v += pas) s += `<text x="${X(v)}" y="${series.length * Hs + 16}" font-size="11" text-anchor="middle" fill="#666">${fmt(v, 0)}</text>`;
+  s += `<text x="${W / 2}" y="${series.length * Hs + 38}" font-size="12" text-anchor="middle" fill="#444">estimation de la dépense moyenne (dh)</text>`;
+  return s + '</svg>';
+}
+function simuler() {
+  const err = document.getElementById('erreur3'), res = document.getElementById('resultat3'), gr = document.getElementById('graphe3');
+  err.textContent = ''; res.innerHTML = ''; gr.innerHTML = '';
+  try {
+    const P = plan(), R = parseInt(document.getElementById('R2').value), g = parseInt(document.getElementById('gr2').value);
+    if (isNaN(g)) throw new Error('la graine doit être un nombre entier.');
+    const alea = mulberry32(g + 1), tous = Array.from({length: NPOP}, (_, i) => i), f = P.n / NPOP;
+    const sas = [], st = []; let cs = 0, cst = 0;
+    for (let r = 0; r < R; r++) {
+      const [m, s2] = moyVar(tirage(tous, P.n, alea)), es = 1.96 * Math.sqrt((1 - f) * s2 / P.n);
+      sas.push(m); if (Math.abs(m - YBAR) <= es) cs++;
+      const [y, v] = estimer(P, alea); st.push(y); if (Math.abs(y - YBAR) <= 1.96 * Math.sqrt(v)) cst++;
+    }
+    const resume = v => { const m = v.reduce((a, b) => a + b, 0) / R, sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (R - 1));
+      return [m, sd, v.filter(x => Math.abs(x - YBAR) < 300).length / R]; };
+    const a = resume(sas), b = resume(st);
+    let html = `<table class="res"><tr><th>plan (${fmt(R, 0)} enquêtes de ${fmt(P.n, 0)} ménages)</th><th>moyenne des estimations</th><th>écart-type observé</th><th>erreur-type théorique</th><th>à moins de 300 dh de Ȳ</th><th>couverture de l'IC à 95 %</th></tr>`;
+    html += `<tr><td>aléatoire simple</td><td>${fmt(a[0], 1)}</td><td>${fmt(a[1], 1)}</td><td>${fmt(Math.sqrt(P.Vsas), 1)}</td><td>${fmt(100 * a[2], 1)} %</td><td>${fmt(100 * cs / R, 1)} %</td></tr>`;
+    html += `<tr><td>stratifié, allocation proportionnelle</td><td>${fmt(b[0], 1)}</td><td>${fmt(b[1], 1)}</td><td>${fmt(Math.sqrt(P.V), 1)}</td><td>${fmt(100 * b[2], 1)} %</td><td>${fmt(100 * cst / R, 1)} %</td></tr></table>`;
+    res.innerHTML = html + `<p>Les deux plans sont centrés sur Ȳ = ${fmt(YBAR, 2)} dh. Rapport des variances observées : ${fmt(b[1] ** 2 / a[1] ** 2, 3)}, pour un effet de plan théorique de ${fmt(P.V / P.Vsas, 3)}. Le gain dépend de la variable de stratification : faible par province ou par milieu, net par taille du ménage.</p>`;
+    gr.innerHTML = histo([{v: sas, nom: 'aléatoire simple', c: '#5a6b75'}, {v: st, nom: 'stratifié', c: '#1f6fb2'}], YBAR);
+  } catch (ex) { err.textContent = 'Erreur : ' + ex.message; }
+}
+window.onload = () => { construireLignes(); exemple(); tirer(); simuler(); };
+
+</script>
+</body>
+</html>
