@@ -44,6 +44,7 @@ remet à jour dès qu'on relance ce script une fois le fichier déposé.
 """
 
 import argparse
+import html
 import os
 import re
 import sys
@@ -52,6 +53,7 @@ import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lecteur  # noqa: E402
+import normaliser  # noqa: E402
 from alleger_svg import alleger_fragment  # noqa: E402
 
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -72,9 +74,11 @@ def ecrire(chemin, texte):
 
 
 def titre_entete(texte):
-    m = re.search(r'^title:\s*"((?:[^"\\]|\\.)*)"\s*$', texte, re.M)
+    """Titre du cours : champ « pagetitle » (pages écrites depuis le
+    28/10/2026) ou « title » (pages plus anciennes) de l'en-tête."""
+    m = re.search(r'^(?:pagetitle|title):\s*"((?:[^"\\]|\\.)*)"\s*$', texte, re.M)
     if not m:
-        m = re.search(r"^title:\s*'?(.*?)'?\s*$", texte, re.M)
+        m = re.search(r"^(?:pagetitle|title):\s*'?(.*?)'?\s*$", texte, re.M)
         return m.group(1)
     return m.group(1).replace('\\"', '"').replace("\\\\", "\\")
 
@@ -86,7 +90,11 @@ def presentation(index):
         centre = centre.rsplit(":::\n::::\n", 1)[0].rstrip("\n")
         if not centre.endswith(lecteur.PARAGRAPHE_ACCUEIL):
             raise SystemExit("index.qmd : paragraphe final du lecteur introuvable")
-        return centre[: -len(lecteur.PARAGRAPHE_ACCUEIL)].rstrip("\n")
+        centre = centre[: -len(lecteur.PARAGRAPHE_ACCUEIL)].rstrip("\n")
+        # Bloc-titre visible écrit par lecteur.entete_accueil (depuis le 28/10/2026).
+        m = re.match(r"```\{=html\}\n" + re.escape(lecteur.DEBUT_ENTETE_ACCUEIL)
+                     + r".*?</header>\n```\n\n", centre, re.S)
+        return centre[m.end():] if m else centre
     # Ancien format : tout ce qui suit l'entête, jusqu'au paragraphe qui
     # annonçait le tableau (ou, à défaut, jusqu'au marqueur du tableau).
     corps = re.split(r"^---\s*$", index, maxsplit=2, flags=re.M)[2]
@@ -98,10 +106,26 @@ def presentation(index):
 
 
 def fragment_en_place(chemin):
+    """(fragment normalisé, étiquette) d'une page de chapitre en place.
+
+    Deux états possibles : page écrite depuis le 28/10/2026 (fragment
+    encadré par les marques de normaliser.py, étiquette dans l'en-tête), ou
+    page plus ancienne (fragment brut, avec son bloc-titre de Quarto, qu'on
+    normalise ici)."""
     texte = lire(chemin)
+    if normaliser.MARQUE_DEBUT in texte:
+        debut = texte.index(normaliser.MARQUE_DEBUT) + len(normaliser.MARQUE_DEBUT) + 1
+        fin = texte.index("\n" + normaliser.MARQUE_FIN)
+        m = re.search(r'<header class="jm-entete-chapitre" data-etiquette="([^"]*)">', texte)
+        return texte[debut:fin], (html.unescape(m.group(1)) if m else None)
     debut = texte.index('<div class="jm-lecteur-centre">\n') + len('<div class="jm-lecteur-centre">\n')
     fin = texte.index('\n<div class="jm-lecteur-nav">')
-    return texte[debut:fin]
+    return fragment_brut(texte[debut:fin])
+
+
+def fragment_brut(brut):
+    """(fragment normalisé, étiquette) d'un fragment brut du rendu Quarto."""
+    return normaliser.normaliser_fragment(brut), normaliser.etiquette_depuis_entete(brut)
 
 
 def ressources_presentes(dossier, slug):
@@ -123,25 +147,37 @@ def traiter(cours, sommaire, videos, fragments, verifier):
     titre = titre_entete(index)
     videos_cours = ((videos.get(cours) or {}).get("chapitres") or {})
 
-    pages = {index_chemin: lecteur.page_accueil(titre, chapitres, presentation(index))}
+    texte_presentation = presentation(index)
+    pages = {index_chemin: lecteur.page_accueil(
+        titre, chapitres, texte_presentation,
+        normaliser.description_cours(texte_presentation))}
     manquants = []
-    for i, (slug, _) in enumerate(chapitres):
+    sans_description = []
+    for i, (slug, titre_chapitre) in enumerate(chapitres):
         chemin = os.path.join(dossier, "chapitres", slug + ".qmd")
         if fragments:
             source = os.path.join(fragments, slug + ".html")
             if not os.path.isfile(source):
                 raise SystemExit("%s : fragment manquant %s" % (cours, source))
-            fragment = lire(source)
+            fragment, etiquette = fragment_brut(lire(source))
         elif os.path.isfile(chemin):
-            fragment = fragment_en_place(chemin)
+            fragment, etiquette = fragment_en_place(chemin)
         else:
             raise SystemExit("%s : pas de page %s et pas de --fragments" % (cours, chemin))
-        fragment = alleger_fragment(fragment)
+        # Nommer avant d'alléger : le nom ajoute quelques octets, qui peuvent
+        # faire franchir à une figure le seuil de l'allègement ; dans l'autre
+        # ordre, la page ne serait stable qu'au second passage.
+        fragment = alleger_fragment(normaliser.nommer_figures(fragment))
         dispo = ressources_presentes(dossier, slug)
         if len(dispo) < len(lecteur.RESSOURCES):
             manquants.append(slug)
         video = (videos_cours.get(slug) or "").strip() or None
-        pages[chemin] = lecteur.page_chapitre(titre, chapitres, i, fragment, dispo, video)
+        description = normaliser.description_chapitre(
+            titre, etiquette, titre_chapitre, fragment)
+        if normaliser.premiere_phrase_utile(fragment) is None:
+            sans_description.append(slug)
+        pages[chemin] = lecteur.page_chapitre(
+            titre, chapitres, i, fragment, dispo, video, etiquette, description)
 
     # Pages de chapitre qui ne correspondent plus à aucun slug.
     dossier_ch = os.path.join(dossier, "chapitres")
@@ -162,6 +198,8 @@ def traiter(cours, sommaire, videos, fragments, verifier):
     note = ""
     if manquants:
         note += "  ressources incomplètes : %d chapitre(s)" % len(manquants)
+    if sans_description:
+        note += "  description de repli : %d chapitre(s)" % len(sans_description)
     print("  %-32s %3d pages, %3d %s%s" % (cours, len(pages), changees, etat, note))
     for o in orphelines:
         print("      orpheline (absente de chapitres.yml) : chapitres/%s" % o)

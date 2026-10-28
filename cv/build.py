@@ -195,6 +195,11 @@ def ecrire_page(d):
     # de la page, la repeter ici alourdissait l'en-tete.
     A('subtitle: "%s"' % ident["titre"])
     A("sidebar: false")
+    # Description de la page pour les moteurs de recherche et les aperçus de
+    # partage (web.description dans cv.yml) ; n'apparaît pas dans la page.
+    desc = d.get("web", {}).get("description")
+    if desc:
+        A('description-meta: "%s"' % desc.replace('"', '\\"'))
     A("---")
     A("")
     A("<!-- Page produite par cv/build.py à partir de cv/cv.yml — ne pas modifier à la main. -->")

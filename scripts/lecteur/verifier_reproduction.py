@@ -5,8 +5,12 @@ Contrôle de non-régression du générateur.
 
 Pour chaque cours déjà passé au lecteur à 3 volets, relit les pages en
 place (index.qmd et chapitres/*.qmd), en extrait les éléments variables
-(contenu central, présentation, ressources liées), les fait réécrire par
-lecteur.py, et compare au texte d'origine, octet pour octet.
+(contenu central, étiquette du chapitre, présentation, ressources liées),
+les fait réécrire par lecteur.py, et compare au texte d'origine, octet pour
+octet. Les descriptions, déduites du contenu, sont recalculées de même.
+
+Ce contrôle suppose les pages au format du 28/10/2026 (contenu encadré par
+les marques de normaliser.py) : lancer d'abord generer_lecteur.py --migres.
 
 Aucun fichier n'est modifié. Code de sortie 0 si tout est identique.
 
@@ -14,6 +18,7 @@ Aucun fichier n'est modifié. Code de sortie 0 si tout est identique.
     python scripts/lecteur/verifier_reproduction.py algebre-lineaire
 """
 
+import html
 import os
 import re
 import sys
@@ -22,6 +27,8 @@ import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lecteur  # noqa: E402
+import normaliser  # noqa: E402
+import generer_lecteur  # noqa: E402
 
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 COURS = os.path.join(RACINE, "cours")
@@ -33,28 +40,28 @@ def lire(chemin):
 
 
 def titre_entete(texte):
-    m = re.search(r'^title: "((?:[^"\\]|\\.)*)"$', texte, re.M)
+    m = re.search(r'^(?:pagetitle|title): "((?:[^"\\]|\\.)*)"$', texte, re.M)
     return m.group(1).replace('\\"', '"').replace("\\\\", "\\")
 
 
 def extraire_chapitre(texte, slug):
-    debut = texte.index('<div class="jm-lecteur-centre">\n') + len('<div class="jm-lecteur-centre">\n')
-    fin = texte.index('\n<div class="jm-lecteur-nav">')
+    if normaliser.MARQUE_DEBUT not in texte:
+        raise ValueError("page au format ancien (relancer generer_lecteur.py)")
+    debut = texte.index(normaliser.MARQUE_DEBUT) + len(normaliser.MARQUE_DEBUT) + 1
+    fin = texte.index("\n" + normaliser.MARQUE_FIN)
     fragment = texte[debut:fin]
+    m = re.search(r'<header class="jm-entete-chapitre" data-etiquette="([^"]*)">', texte)
+    etiquette = html.unescape(m.group(1)) if m else None
     droite = texte[texte.index('<div class="jm-lecteur-droite">'):]
     dispo = {cle for cle, _, gabarit in lecteur.RESSOURCES
              if 'class="jm-ressource" href="%s"' % gabarit.format(slug=slug) in droite}
     m = re.search(r'<li><a class="jm-ressource" href="([^"]+)">Vidéo</a></li>', droite)
-    video = m.group(1) if m else None
-    return fragment, dispo, video
+    video = html.unescape(m.group(1)) if m else None
+    return fragment, etiquette, dispo, video
 
 
 def extraire_accueil(texte):
-    centre = texte.split("::: {.jm-lecteur-centre}\n", 1)[1]
-    centre = centre.rsplit(":::\n::::\n", 1)[0]
-    if not centre.rstrip("\n").endswith(lecteur.PARAGRAPHE_ACCUEIL):
-        raise ValueError("paragraphe final inattendu")
-    return centre.rstrip("\n")[: -len(lecteur.PARAGRAPHE_ACCUEIL)].rstrip("\n")
+    return generer_lecteur.presentation(texte)
 
 
 def verifier_cours(cours, sommaire):
@@ -63,14 +70,17 @@ def verifier_cours(cours, sommaire):
     ecarts = []
     index = lire(os.path.join(dossier, "index.qmd"))
     titre = titre_entete(index)
-    refait = lecteur.page_accueil(titre, chapitres, extraire_accueil(index))
+    pres = extraire_accueil(index)
+    refait = lecteur.page_accueil(titre, chapitres, pres, normaliser.description_cours(pres))
     if refait != index:
         ecarts.append("index.qmd")
     for i, (slug, _) in enumerate(chapitres):
         chemin = os.path.join(dossier, "chapitres", slug + ".qmd")
         texte = lire(chemin)
-        fragment, dispo, video = extraire_chapitre(texte, slug)
-        refait = lecteur.page_chapitre(titre, chapitres, i, fragment, dispo, video)
+        fragment, etiquette, dispo, video = extraire_chapitre(texte, slug)
+        description = normaliser.description_chapitre(titre, etiquette, chapitres[i][1], fragment)
+        refait = lecteur.page_chapitre(titre, chapitres, i, fragment, dispo, video,
+                                       etiquette, description)
         if refait != texte:
             ecarts.append("chapitres/%s.qmd" % slug)
     return len(chapitres) + 1, ecarts

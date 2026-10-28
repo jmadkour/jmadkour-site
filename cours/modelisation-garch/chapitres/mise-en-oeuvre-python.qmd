@@ -1,6 +1,6 @@
 ---
-title: "Modélisation GARCH de la volatilité"
-subtitle: "Mise en œuvre sur Python"
+pagetitle: "Mise en œuvre sur Python (Modélisation GARCH de la volatilité)"
+description: "Modélisation GARCH de la volatilité, chapitre 18. arch, de Kevin Sheppard, est l’équivalent Python de rugarch."
 sidebar: false
 toc: false
 page-layout: full
@@ -12,7 +12,8 @@ include-in-header:
 ```{=html}
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<details class="jm-sommaire" open>
+<summary class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</summary>
 <ul>
 <li><a class="jm-accueil" href="../index.qmd">Présentation du cours</a></li>
 <li><a class="" href="faits-stylises.qmd">Mandelbrot et les faits stylisés des rentabilités</a></li>
@@ -37,39 +38,26 @@ include-in-header:
 <li><a class="" href="etude-de-cas-r.qmd">Étude de cas sur données réelles — R</a></li>
 <li><a class="" href="etude-de-cas-python.qmd">Étude de cas sur données réelles — Python</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Modélisation GARCH de la volatilité</h1>
-<p class="subtitle lead">Chapitre 18 : Mise en œuvre sur Python</p>
-</div>
-<div class="quarto-title-meta-author">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">25 septembre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 18">
+<p class="jm-surtitre"><a href="../index.qmd">Modélisation GARCH de la volatilité</a>&nbsp;· Chapitre 18</p>
+<h1 class="jm-titre-chapitre">Mise en œuvre sur Python</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/mise-en-oeuvre-python.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/mise-en-oeuvre-python-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/mise-en-oeuvre-python-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/mise-en-oeuvre-python.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="avant-de-commencer">
-<h1>Avant de commencer</h1>
+<h2 class="h1">Avant de commencer</h2>
 <section class="level2" id="les-bibliothèques">
-<h2 class="anchored" data-anchor-id="les-bibliothèques">Les bibliothèques</h2>
+<h3 class="h2 anchored" data-anchor-id="les-bibliothèques">Les bibliothèques</h3>
 <div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a>pip install pandas numpy arch statsmodels matplotlib scipy</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
 <div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a aria-hidden="true" href="#cb2-1" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd, numpy <span class="im">as</span> np</span>
 <span id="cb2-2"><a aria-hidden="true" href="#cb2-2" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
@@ -86,9 +74,9 @@ La bibliothèque de référence
 </section>
 </section>
 <section class="level1" id="étape-1-décrire-et-détecter">
-<h1>Étape 1 — Décrire et détecter</h1>
+<h2 class="h1">Étape 1 — Décrire et détecter</h2>
 <section class="level2" id="charger-et-décrire">
-<h2 class="anchored" data-anchor-id="charger-et-décrire">Charger et décrire</h2>
+<h3 class="h2 anchored" data-anchor-id="charger-et-décrire">Charger et décrire</h3>
 <div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a aria-hidden="true" href="#cb3-1" tabindex="-1"></a>don <span class="op">=</span> pd.read_csv(<span class="st">"rentabilites.csv"</span>, parse_dates<span class="op">=</span>[<span class="st">"date"</span>])</span>
 <span id="cb3-2"><a aria-hidden="true" href="#cb3-2" tabindex="-1"></a>r <span class="op">=</span> don[<span class="st">"rentabilite"</span>]</span>
 <span id="cb3-3"><a aria-hidden="true" href="#cb3-3" tabindex="-1"></a>T <span class="op">=</span> <span class="bu">len</span>(r)                                     <span class="co"># 2500</span></span>
@@ -106,7 +94,7 @@ Le piège de scipy, à nouveau
 </div>
 </section>
 <section class="level2" id="les-deux-tests-de-départ">
-<h2 class="anchored" data-anchor-id="les-deux-tests-de-départ">Les deux tests de départ</h2>
+<h3 class="h2 anchored" data-anchor-id="les-deux-tests-de-départ">Les deux tests de départ</h3>
 <div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a aria-hidden="true" href="#cb5-1" tabindex="-1"></a><span class="bu">print</span>(acorr_ljungbox(r,    lags<span class="op">=</span>[<span class="dv">20</span>], return_df<span class="op">=</span><span class="va">True</span>).<span class="bu">round</span>(<span class="dv">3</span>))</span>
 <span id="cb5-2"><a aria-hidden="true" href="#cb5-2" tabindex="-1"></a><span class="bu">print</span>(acorr_ljungbox(r<span class="op">**</span><span class="dv">2</span>, lags<span class="op">=</span>[<span class="dv">20</span>], return_df<span class="op">=</span><span class="va">True</span>).<span class="bu">round</span>(<span class="dv">3</span>))</span>
 <span id="cb5-3"><a aria-hidden="true" href="#cb5-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"ARCH-LM :"</span>, het_arch(r, nlags<span class="op">=</span><span class="dv">12</span>)[:<span class="dv">2</span>])</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
@@ -120,9 +108,9 @@ ARCH-LM : (274.53, 3.1e-51)</code></pre>
 </section>
 </section>
 <section class="level1" id="étape-2-estimer">
-<h1>Étape 2 — Estimer</h1>
+<h2 class="h1">Étape 2 — Estimer</h2>
 <section class="level2" id="le-garch11-gaussien">
-<h2 class="anchored" data-anchor-id="le-garch11-gaussien">Le GARCH(1,1) gaussien</h2>
+<h3 class="h2 anchored" data-anchor-id="le-garch11-gaussien">Le GARCH(1,1) gaussien</h3>
 <div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a aria-hidden="true" href="#cb7-1" tabindex="-1"></a>g_norm <span class="op">=</span> arch_model(r, mean<span class="op">=</span><span class="st">"Constant"</span>, vol<span class="op">=</span><span class="st">"GARCH"</span>, p<span class="op">=</span><span class="dv">1</span>, q<span class="op">=</span><span class="dv">1</span>,</span>
 <span id="cb7-2"><a aria-hidden="true" href="#cb7-2" tabindex="-1"></a>                    dist<span class="op">=</span><span class="st">"normal"</span>).fit(disp<span class="op">=</span><span class="st">"off"</span>)</span>
 <span id="cb7-3"><a aria-hidden="true" href="#cb7-3" tabindex="-1"></a><span class="bu">print</span>(g_norm.summary())</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
@@ -142,7 +130,7 @@ Une convention à connaître
 </div>
 </section>
 <section class="level2" id="loi-de-student-puis-asymétrie">
-<h2 class="anchored" data-anchor-id="loi-de-student-puis-asymétrie">Loi de Student, puis asymétrie</h2>
+<h3 class="h2 anchored" data-anchor-id="loi-de-student-puis-asymétrie">Loi de Student, puis asymétrie</h3>
 <div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a aria-hidden="true" href="#cb9-1" tabindex="-1"></a>g_t   <span class="op">=</span> arch_model(r, mean<span class="op">=</span><span class="st">"Constant"</span>, vol<span class="op">=</span><span class="st">"GARCH"</span>, p<span class="op">=</span><span class="dv">1</span>, q<span class="op">=</span><span class="dv">1</span>,</span>
 <span id="cb9-2"><a aria-hidden="true" href="#cb9-2" tabindex="-1"></a>                   dist<span class="op">=</span><span class="st">"t"</span>).fit(disp<span class="op">=</span><span class="st">"off"</span>)</span>
 <span id="cb9-3"><a aria-hidden="true" href="#cb9-3" tabindex="-1"></a>g_gjr <span class="op">=</span> arch_model(r, mean<span class="op">=</span><span class="st">"Constant"</span>, vol<span class="op">=</span><span class="st">"GARCH"</span>, p<span class="op">=</span><span class="dv">1</span>, o<span class="op">=</span><span class="dv">1</span>, q<span class="op">=</span><span class="dv">1</span>,</span>
@@ -165,7 +153,7 @@ Le paramètre o de la bibliothèque
 </div>
 </section>
 <section class="level2" id="comparer">
-<h2 class="anchored" data-anchor-id="comparer">Comparer</h2>
+<h3 class="h2 anchored" data-anchor-id="comparer">Comparer</h3>
 <div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a aria-hidden="true" href="#cb11-1" tabindex="-1"></a><span class="cf">for</span> nom, m <span class="kw">in</span> [(<span class="st">"GARCH-norm"</span>, g_norm), (<span class="st">"GARCH-t"</span>, g_t), (<span class="st">"GJR-t"</span>, g_gjr)]:</span>
 <span id="cb11-2"><a aria-hidden="true" href="#cb11-2" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"</span><span class="sc">%-12s</span><span class="st"> logL </span><span class="sc">%9.2f</span><span class="st">   AIC </span><span class="sc">%8.2f</span><span class="st">   BIC </span><span class="sc">%8.2f</span><span class="st">"</span></span>
 <span id="cb11-3"><a aria-hidden="true" href="#cb11-3" tabindex="-1"></a>          <span class="op">%</span> (nom, m.loglikelihood, m.aic, m.bic))</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
@@ -181,9 +169,9 @@ Aux arrondis près, les chiffres de R
 </section>
 </section>
 <section class="level1" id="étape-3-valider">
-<h1>Étape 3 — Valider</h1>
+<h2 class="h1">Étape 3 — Valider</h2>
 <section class="level2" id="les-résidus-standardisés">
-<h2 class="anchored" data-anchor-id="les-résidus-standardisés">Les résidus standardisés</h2>
+<h3 class="h2 anchored" data-anchor-id="les-résidus-standardisés">Les résidus standardisés</h3>
 <div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a aria-hidden="true" href="#cb13-1" tabindex="-1"></a>z <span class="op">=</span> g_gjr.std_resid</span>
 <span id="cb13-2"><a aria-hidden="true" href="#cb13-2" tabindex="-1"></a><span class="bu">print</span>(acorr_ljungbox(z,    lags<span class="op">=</span>[<span class="dv">20</span>], return_df<span class="op">=</span><span class="va">True</span>).<span class="bu">round</span>(<span class="dv">3</span>))</span>
 <span id="cb13-3"><a aria-hidden="true" href="#cb13-3" tabindex="-1"></a><span class="bu">print</span>(acorr_ljungbox(z<span class="op">**</span><span class="dv">2</span>, lags<span class="op">=</span>[<span class="dv">20</span>], return_df<span class="op">=</span><span class="va">True</span>).<span class="bu">round</span>(<span class="dv">3</span>))</span>
@@ -197,10 +185,10 @@ Aux arrondis près, les chiffres de R
 kurtosis de z : 4.66</code></pre>
 </section>
 <section class="level2" id="les-résidus-standardisés-suite">
-<h2 class="anchored" data-anchor-id="les-résidus-standardisés-suite">Les résidus standardisés (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="les-résidus-standardisés-suite">Les résidus standardisés (suite)</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="129.14pt" id="svg_9fad464743b2af35489a" role="img" style="width:84.0%" viewbox="0 0 345.66 129.14" width="345.66pt">
+<p><svg height="129.14pt" id="svg_9fad464743b2af35489a" role="img" style="width:84.0%" viewbox="0 0 345.66 129.14" width="345.66pt" aria-label="Figure 1 : Les résidus standardisés (suite)">
 <defs>
 <g>
 <symbol id="svg_9fad464743b2af35489a_glyph0-0" overflow="visible">
@@ -558,7 +546,7 @@ kurtosis de z : 4.66</code></pre>
 </div>
 </section>
 <section class="level2" id="les-résidus-standardisés-suite-2">
-<h2 class="anchored" data-anchor-id="les-résidus-standardisés-suite-2">Les résidus standardisés (suite 2)</h2>
+<h3 class="h2 anchored" data-anchor-id="les-résidus-standardisés-suite-2">Les résidus standardisés (suite 2)</h3>
 <div class="definitionbox" title="Le modèle est validé">
 <div class="pedago-title">
 Le modèle est validé
@@ -567,14 +555,14 @@ Le modèle est validé
 </div>
 </section>
 <section class="level2" id="le-diagramme-quantile-quantile">
-<h2 class="anchored" data-anchor-id="le-diagramme-quantile-quantile">Le diagramme quantile-quantile</h2>
+<h3 class="h2 anchored" data-anchor-id="le-diagramme-quantile-quantile">Le diagramme quantile-quantile</h3>
 <div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a aria-hidden="true" href="#cb15-1" tabindex="-1"></a>nu <span class="op">=</span> g_gjr.params[<span class="st">"nu"</span>]</span>
 <span id="cb15-2"><a aria-hidden="true" href="#cb15-2" tabindex="-1"></a>qt <span class="op">=</span> stats.t.ppf((np.arange(<span class="dv">1</span>, T<span class="op">+</span><span class="dv">1</span>)<span class="op">-</span><span class="fl">0.5</span>)<span class="op">/</span>T, nu) <span class="op">/</span> np.sqrt(nu<span class="op">/</span>(nu<span class="op">-</span><span class="dv">2</span>))</span>
 <span id="cb15-3"><a aria-hidden="true" href="#cb15-3" tabindex="-1"></a>plt.scatter(qt, np.sort(z), s<span class="op">=</span><span class="dv">2</span>)</span>
 <span id="cb15-4"><a aria-hidden="true" href="#cb15-4" tabindex="-1"></a>plt.plot([<span class="op">-</span><span class="dv">6</span>, <span class="dv">6</span>], [<span class="op">-</span><span class="dv">6</span>, <span class="dv">6</span>], color<span class="op">=</span><span class="st">"orange"</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="156.58pt" id="svg_548410ce08726724ddbc" role="img" style="width:72.0%" viewbox="0 0 314.15 156.58" width="314.15pt">
+<p><svg height="156.58pt" id="svg_548410ce08726724ddbc" role="img" style="width:72.0%" viewbox="0 0 314.15 156.58" width="314.15pt" aria-label="Figure 2 : Le diagramme quantile-quantile">
 <defs>
 <g>
 <symbol id="svg_548410ce08726724ddbc_glyph0-0" overflow="visible">
@@ -1493,19 +1481,19 @@ Le modèle est validé
 </section>
 </section>
 <section class="level1" id="étape-4-prévoir-le-risque">
-<h1>Étape 4 — Prévoir le risque</h1>
+<h2 class="h1">Étape 4 — Prévoir le risque</h2>
 <section class="level2" id="la-prévision-de-volatilité">
-<h2 class="anchored" data-anchor-id="la-prévision-de-volatilité">La prévision de volatilité</h2>
+<h3 class="h2 anchored" data-anchor-id="la-prévision-de-volatilité">La prévision de volatilité</h3>
 <div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a aria-hidden="true" href="#cb16-1" tabindex="-1"></a>p <span class="op">=</span> g_gjr.forecast(horizon<span class="op">=</span><span class="dv">60</span>, reindex<span class="op">=</span><span class="va">False</span>)</span>
 <span id="cb16-2"><a aria-hidden="true" href="#cb16-2" tabindex="-1"></a>vol <span class="op">=</span> np.sqrt(p.variance.values[<span class="op">-</span><span class="dv">1</span>, :])</span>
 <span id="cb16-3"><a aria-hidden="true" href="#cb16-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"h=1 : </span><span class="sc">%.4f</span><span class="st">    h=10 : </span><span class="sc">%.4f</span><span class="st">    h=60 : </span><span class="sc">%.4f</span><span class="st">"</span> <span class="op">%</span> (vol[<span class="dv">0</span>], vol[<span class="dv">9</span>], vol[<span class="dv">59</span>]))</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div>
 <pre><code>h=1 : 0.7412    h=10 : 0.8474    h=60 : 1.1893</code></pre>
 </section>
 <section class="level2" id="la-prévision-de-volatilité-suite">
-<h2 class="anchored" data-anchor-id="la-prévision-de-volatilité-suite">La prévision de volatilité (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="la-prévision-de-volatilité-suite">La prévision de volatilité (suite)</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="136.96pt" id="svg_14366a23a863d2836e74" role="img" style="width:74.0%" viewbox="0 0 278.52 136.96" width="278.52pt">
+<p><svg height="136.96pt" id="svg_14366a23a863d2836e74" role="img" style="width:74.0%" viewbox="0 0 278.52 136.96" width="278.52pt" aria-label="Figure 3 : La prévision de volatilité (suite)">
 <defs>
 <g>
 <symbol id="svg_14366a23a863d2836e74_glyph0-0" overflow="visible">
@@ -1868,7 +1856,7 @@ Le modèle est validé
 </div>
 </section>
 <section class="level2" id="la-prévision-de-volatilité-suite-2">
-<h2 class="anchored" data-anchor-id="la-prévision-de-volatilité-suite-2">La prévision de volatilité (suite 2)</h2>
+<h3 class="h2 anchored" data-anchor-id="la-prévision-de-volatilité-suite-2">La prévision de volatilité (suite 2)</h3>
 <div class="intuitionbox" title="Le retour à la moyenne, lu dans trois nombres">
 <div class="pedago-title">
 Le retour à la moyenne, lu dans trois nombres
@@ -1877,7 +1865,7 @@ Le retour à la moyenne, lu dans trois nombres
 </div>
 </section>
 <section class="level2" id="la-var-conditionnelle-filtrée">
-<h2 class="anchored" data-anchor-id="la-var-conditionnelle-filtrée">La VaR conditionnelle filtrée</h2>
+<h3 class="h2 anchored" data-anchor-id="la-var-conditionnelle-filtrée">La VaR conditionnelle filtrée</h3>
 <div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a aria-hidden="true" href="#cb18-1" tabindex="-1"></a>q1    <span class="op">=</span> np.quantile(z, <span class="fl">0.01</span>)                  <span class="co"># quantile empirique</span></span>
 <span id="cb18-2"><a aria-hidden="true" href="#cb18-2" tabindex="-1"></a>var_c <span class="op">=</span> g_gjr.params[<span class="st">"mu"</span>] <span class="op">+</span> g_gjr.conditional_volatility <span class="op">*</span> q1</span>
 <span id="cb18-3"><a aria-hidden="true" href="#cb18-3" tabindex="-1"></a>var_u <span class="op">=</span> np.quantile(r, <span class="fl">0.01</span>)                  <span class="co"># seuil fixe</span></span>
@@ -1889,10 +1877,10 @@ Le retour à la moyenne, lu dans trois nombres
 <pre><code>dépassements : conditionnelle 25, inconditionnelle 25</code></pre>
 </section>
 <section class="level2" id="la-var-conditionnelle-filtrée-suite">
-<h2 class="anchored" data-anchor-id="la-var-conditionnelle-filtrée-suite">La VaR conditionnelle filtrée (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="la-var-conditionnelle-filtrée-suite">La VaR conditionnelle filtrée (suite)</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="152.86pt" id="svg_b37d2e4bbec78fe36ec1" role="img" style="width:88.0%" viewbox="0 0 344.12 152.86" width="344.12pt">
+<p><svg height="152.86pt" id="svg_b37d2e4bbec78fe36ec1" role="img" style="width:88.0%" viewbox="0 0 344.12 152.86" width="344.12pt" aria-label="Figure 4 : La VaR conditionnelle filtrée (suite)">
 <defs>
 <g>
 <symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-0" overflow="visible">
@@ -2400,7 +2388,7 @@ Le retour à la moyenne, lu dans trois nombres
 </div>
 </section>
 <section class="level2" id="le-backtesting">
-<h2 class="anchored" data-anchor-id="le-backtesting">Le backtesting</h2>
+<h3 class="h2 anchored" data-anchor-id="le-backtesting">Le backtesting</h3>
 <div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a aria-hidden="true" href="#cb20-1" tabindex="-1"></a><span class="kw">def</span> christoffersen(d, alpha<span class="op">=</span><span class="fl">0.01</span>):</span>
 <span id="cb20-2"><a aria-hidden="true" href="#cb20-2" tabindex="-1"></a>    n, n1 <span class="op">=</span> <span class="bu">len</span>(d), d.<span class="bu">sum</span>()</span>
 <span id="cb20-3"><a aria-hidden="true" href="#cb20-3" tabindex="-1"></a>    pi <span class="op">=</span> n1<span class="op">/</span>n</span>
@@ -2428,7 +2416,7 @@ Le résultat qui clôt le cours
 </div>
 </section>
 <section class="level2" id="lexpected-shortfall">
-<h2 class="anchored" data-anchor-id="lexpected-shortfall">L’expected shortfall</h2>
+<h3 class="h2 anchored" data-anchor-id="lexpected-shortfall">L’expected shortfall</h3>
 <div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a aria-hidden="true" href="#cb22-1" tabindex="-1"></a>es_c <span class="op">=</span> <span class="op">-</span>(g_gjr.params[<span class="st">"mu"</span>]</span>
 <span id="cb22-2"><a aria-hidden="true" href="#cb22-2" tabindex="-1"></a>         <span class="op">+</span> g_gjr.conditional_volatility <span class="op">*</span> z[z <span class="op">&lt;</span> np.quantile(z, <span class="fl">0.025</span>)].mean())</span>
 <span id="cb22-3"><a aria-hidden="true" href="#cb22-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"ES 97,5 </span><span class="sc">%%</span><span class="st"> moyen : </span><span class="sc">%.3f</span><span class="st">    VaR 99 </span><span class="sc">%%</span><span class="st"> moyenne : </span><span class="sc">%.3f</span><span class="st">"</span></span>
@@ -2442,12 +2430,12 @@ Ce que Bâle III demande
 </section>
 </section>
 <section class="level1" id="le-fil-conducteur">
-<h1>Le fil conducteur</h1>
+<h2 class="h1">Le fil conducteur</h2>
 <section class="level2" id="du-fait-stylisé-au-capital-réglementaire">
-<h2 class="anchored" data-anchor-id="du-fait-stylisé-au-capital-réglementaire">Du fait stylisé au capital réglementaire</h2>
+<h3 class="h2 anchored" data-anchor-id="du-fait-stylisé-au-capital-réglementaire">Du fait stylisé au capital réglementaire</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="58.85pt" id="svg_6ccccfcbdb112aedd51f" role="img" style="width:96.0%" viewbox="0 0 599.33 58.85" width="599.33pt">
+<p><svg height="58.85pt" id="svg_6ccccfcbdb112aedd51f" role="img" style="width:96.0%" viewbox="0 0 599.33 58.85" width="599.33pt" aria-label="Figure 5 : Du fait stylisé au capital réglementaire">
 <defs>
 <g>
 <symbol id="svg_6ccccfcbdb112aedd51f_glyph0-0" overflow="visible">
@@ -2966,9 +2954,9 @@ Le mot de la fin
 </section>
 </section>
 <section class="level1" id="synthèse">
-<h1>Synthèse</h1>
+<h2 class="h1">Synthèse</h2>
 <section class="level2" id="ce-quil-faut-retenir">
-<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h3>
 <div class="definitionbox" title="L'essentiel du chapitre 18">
 <div class="pedago-title">
 L’essentiel du chapitre 18
@@ -2991,13 +2979,14 @@ Ce que vous emportez vers le cours de Value at Risk
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="mise-en-oeuvre-r.qmd">&larr; Chapitre précédent<span class="jm-nav-label">Mise en œuvre sur R</span></a>
 <a class="jm-nav-suivant" href="etude-de-cas-r.qmd">Chapitre suivant &rarr;<span class="jm-nav-label">Étude de cas sur données réelles — R</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3>Ressources du chapitre</h3>
+<h2>Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/mise-en-oeuvre-python.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/mise-en-oeuvre-python-poly.pdf">Polycopié du chapitre</a></li>
