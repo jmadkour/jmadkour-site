@@ -60,47 +60,33 @@ Puis, dans une page : ajoutez `filters: [webr]` à l'en-tête et écrivez des bl
 > Astuce contenu léger : gardez les **vidéos sur YouTube** (intégrées, non stockées)
 > et optimisez les images — le site reste très en dessous de la limite de 1 Go.
 
-## Protection par mot de passe du parcours Doctorat
+## Accès au parcours Doctorat
 
-Le parcours Doctorat (`doctorat.qmd` et les neuf cours listés dedans, sous
-`cours/`) est chiffré par mot de passe avec [staticrypt](https://github.com/robinmoisson/staticrypt),
-qui chiffre les pages HTML côté client (AES) — aucune page ni diapositive ne
-sort en clair de la chaîne de publication. Le reste du site (Licence, Master,
-Informatique, etc.) n'est pas concerné.
+Depuis le 28/10/2026, le parcours Doctorat (`doctorat.qmd` et les neuf cours
+listés dedans, sous `cours/`) est **en accès libre**, comme le reste du site :
+les pages sont publiées en clair, apparaissent dans la recherche et dans le plan
+du site, et les moteurs peuvent les indexer.
 
-**Mise en place (une seule fois) :** dans le dépôt GitHub, allez dans
-**Settings → Secrets and variables → Actions → New repository secret**, et
-créez un secret nommé `STATICRYPT_PASSWORD` avec le mot de passe à distribuer
-aux étudiants du Doctorat. C'est tout — le pipeline s'occupe du reste à chaque
-publication.
+Auparavant, ces pages étaient chiffrées par mot de passe avec
+[staticrypt](https://github.com/robinmoisson/staticrypt) à chaque publication.
+Le script est conservé dans `scripts/archives/protect-doctorat.sh` ; le
+secret `STATICRYPT_PASSWORD` n'est plus utilisé et peut être supprimé du dépôt
+(**Settings → Secrets and variables → Actions**).
 
-**Comment ça marche :**
+**Pour rétablir la protection** (si un jour un cours devait redevenir
+réservé) :
 
-1. Le workflow rend le site (`quarto render`) sans le publier.
-2. `scripts/protect-doctorat.sh` retire les pages Doctorat de l'index de
-   recherche (`search.json`) et du plan du site (`sitemap.xml`), ajoute des
-   règles `Disallow` dans `robots.txt`, puis chiffre chaque page HTML du
-   parcours avec le mot de passe du secret `STATICRYPT_PASSWORD`.
-3. Le site (désormais protégé) est publié sur `gh-pages`.
+1. Recréer le secret `STATICRYPT_PASSWORD` avec le mot de passe à distribuer.
+2. Remettre `scripts/archives/protect-doctorat.sh` dans `scripts/`.
+3. Dans `.github/workflows/publish.yml`, ajouter après l'étape
+   « Retirer du plan du site… » une étape d'installation de Node.js
+   (`actions/setup-node`, version 22) puis une étape
+   `bash scripts/protect-doctorat.sh _site` avec
+   `env: STATICRYPT_PASSWORD: ${{ secrets.STATICRYPT_PASSWORD }}`.
 
-Pour changer le mot de passe : modifiez simplement la valeur du secret
-`STATICRYPT_PASSWORD`, puis relancez le workflow (`Actions` → *Publier le
-site* → *Run workflow*, ou un nouveau `git push`).
-
-Pour prévisualiser le résultat en local avant de pousser :
-
-```bash
-export STATICRYPT_PASSWORD="le-mot-de-passe"
-quarto render
-./scripts/protect-doctorat.sh
-npx serve _site   # ou tout autre serveur statique local
-```
-
-**Limite connue :** staticrypt ne chiffre que le HTML. Les PDF des
-diapositives (`cours/<dossier>/slides/*.pdf`) ne sont donc pas chiffrés — ils
-ne sont plus référencés nulle part en clair (recherche, plan du site, pages
-HTML désormais protégées), mais un lien direct vers un PDF, s'il était deviné
-ou partagé, resterait accessible sans mot de passe.
+Le script retire alors les pages de l'index de recherche et du plan du site,
+puis chiffre le HTML des neuf cours et de `doctorat.html`. Limite connue :
+staticrypt ne chiffre que le HTML, pas les PDF.
 
 ## Structure
 
@@ -117,7 +103,7 @@ jmadkour-site/
 │       ├── index.qmd
 │       └── regression-simple.qmd   chapitre interactif (démo + code R)
 ├── CNAME                jmadkour.org
-├── scripts/
-│   └── protect-doctorat.sh   chiffrement du parcours Doctorat (staticrypt)
-└── .github/workflows/publish.yml   déploiement automatique (render → protection → publication)
+├── scripts/             générateurs et contrôles (lecteur de chapitres, accueil, plan du site…)
+│   └── archives/        scripts inutilisés (protection du Doctorat par mot de passe)
+└── .github/workflows/publish.yml   déploiement automatique (rendu → nettoyage du plan du site → publication)
 ```

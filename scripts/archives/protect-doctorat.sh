@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 # =====================================================================
+#  ARCHIVÉ le 28/10/2026 : le parcours Doctorat est en accès libre, ce
+#  script n'est plus appelé par le workflow de publication. Il est
+#  conservé pour pouvoir rétablir la protection (voir README.md, section
+#  « Accès au parcours Doctorat »). Chemin d'origine : scripts/.
+# =====================================================================
+# =====================================================================
 #  Protège par mot de passe le parcours Doctorat du site (via staticrypt).
 #
 #  À exécuter après `quarto render` (qui produit _site/) et avant la

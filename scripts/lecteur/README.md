@@ -77,10 +77,9 @@ respecter : déposer les fichiers d'abord, régénérer les pages ensuite.
    `index.qmd` garde sa présentation et son syllabus ; le tableau est
    remplacé par le lecteur.
 
-Pour le Doctorat : `scripts/protect-doctorat.sh` chiffre récursivement tout
-le HTML des neuf dossiers de cours, donc le nouveau dossier `chapitres/`
-le sera sans rien changer. Les PDF (diapositives, polycopiés, exercices),
-eux, ne sont pas chiffrables par staticrypt.
+Pour le Doctorat : le parcours est en accès libre depuis le 28/10/2026
+(plus de chiffrement), les nouvelles pages `chapitres/` sont donc publiées
+comme celles des autres niveaux.
 
 ## Les figures
 

@@ -6,8 +6,8 @@ d'indexer : les pages de redirection (<meta http-equiv="refresh">) et celles
 qui se déclarent <meta name="robots" content="noindex">.
 
 Quarto n'offre pas, dans la version utilisée, d'option pour exclure une page
-du plan du site ; ce script s'en charge après le rendu. À lancer avant
-protect-doctorat.sh (voir .github/workflows/publish.yml) :
+du plan du site ; ce script s'en charge après le rendu, avant la publication
+(voir .github/workflows/publish.yml) :
 
     quarto render
     python3 scripts/nettoyer-sitemap.py            # _site par défaut
