@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Modélisation GARCH de la volatilité, chapitre 20. Non pour répéter, mais pour contrôler. Deux bibliothèques écrites par des équipes différentes, deux optimiseurs différents : si elles concluent la…">
 
-<title>Modélisation GARCH de la volatilité – Jaouad Madkour</title>
+<title>Étude de cas sur données réelles — Python (Modélisation GARCH de la volatilité) – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -46,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b626d73c4c936ccc3cb08be7d45d1df6.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-4a81b521e20b8a0d9edba7313f3ee218.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-2e1988c4a830338585f6d0d114f9611f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -75,14 +76,25 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
-<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
-     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
-     latérale, l'onglet du navigateur et la recherche du site. Seul son
-     affichage en tête de page, redondant avec la barre latérale, disparaît.
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours et les
+     pages de niveau. Le titre reste déclaré dans l'entête du fichier : il
+     alimente l'onglet du navigateur et la recherche du site. Depuis le
+     28/10/2026 le bloc n'est plus retiré de la page (display: none), mais
+     seulement sorti de l'écran : le titre h1 reste donc dans la page pour les
+     lecteurs d'écran, qui n'avaient plus aucun titre à annoncer. Le bloc des
+     métadonnées (auteur, affiliation, date), lui, reste caché.
      Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
 <style>
   header#title-block-header,
-  .quarto-title-block { display: none; }
+  .quarto-title-block {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  header#title-block-header .quarto-title-meta,
+  header#title-block-header .quarto-title-meta-author,
+  .quarto-title-block .quarto-title-meta,
+  .quarto-title-block .quarto-title-meta-author { display: none; }
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
@@ -129,8 +141,11 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur > * { grid-column: auto !important; }
 
 @media (max-width: 991px) {
-  .jm-lecteur { grid-template-columns: 1fr !important; }
-  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+  .jm-lecteur { grid-template-columns: 1fr !important; gap: 1rem; }
+  .jm-lecteur-gauche { position: static !important; }
+  /* Les ressources du chapitre sont repeintes en puces sous le titre
+     (.jm-ressources-mobile) : le panneau, tout en bas de page, est masqué. */
+  .jm-lecteur-droite { display: none; }
 }
 
 /* ---------- Volet gauche : sommaire du cours ---------- */
@@ -181,12 +196,14 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 12px;
   padding: 1rem 1.1rem;
 }
-.jm-lecteur-droite h3 {
+.jm-lecteur-droite h2 {
   font-size: .8rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: #54707f;
   margin: 0 0 .7rem;
+  padding: 0;
+  border: 0;
 }
 .jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
 .jm-lecteur-droite li { margin-bottom: .55rem; }
@@ -195,11 +212,13 @@ ul.task-list li input[type="checkbox"] {
   font-weight: 600;
 }
 .jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+/* Textes inactifs : au moins 4,5:1 sur le fond du panneau (WCAG AA). Avant le
+   28/10/2026 : 2,3:1 en thème clair, 3,5:1 en thème sombre. */
 .jm-lecteur-droite .jm-indisponible {
-  color: #9aa9b2; font-weight: 500; cursor: default;
+  color: #566b77; font-weight: 500; cursor: default;
 }
 .jm-lecteur-droite .jm-reserve {
-  color: #9aa9b2; font-style: italic;
+  color: #566b77; font-style: italic;
 }
 
 /* ---------- Navigation précédent / suivant ---------- */
@@ -271,6 +290,71 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
 .jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
 
+/* ---------- En-tête du chapitre : seul titre h1 de la page ---------- */
+.jm-entete-chapitre { margin: 0 0 1.1rem; }
+.jm-entete-chapitre .jm-surtitre {
+  margin: 0 0 .3rem; font-size: .9rem; color: #3d5a6b;
+}
+.jm-entete-chapitre .jm-surtitre a {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+/* Plus grand que les titres de section (classe .h1 de Bootstrap, jusqu'à 2,5 rem). */
+.jm-titre-chapitre {
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 2.7rem); font-weight: 700; line-height: 1.15;
+  margin: 0; padding: 0; border: 0;
+}
+
+/* ---------- Sommaire du cours : toujours ouvert sur ordinateur, replié sur
+   téléphone (script placé après le <details>, voir lecteur.py) ---------- */
+.jm-lecteur-gauche details.jm-sommaire > summary {
+  list-style: none; cursor: default; pointer-events: none;
+  color: inherit; /* Bootstrap grise les <summary> */
+}
+.jm-lecteur-gauche details.jm-sommaire > summary::-webkit-details-marker { display: none; }
+@media (max-width: 991px) {
+  .jm-lecteur-gauche details.jm-sommaire > summary {
+    pointer-events: auto; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .65rem .8rem; margin: 0; border: 1px solid #dbe6ee; border-radius: 10px;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  }
+  .jm-lecteur-gauche details.jm-sommaire > summary::after {
+    content: "\25BE"; font-size: 1.05rem; transition: transform .15s ease;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary::after { transform: rotate(180deg); }
+  .jm-lecteur-gauche details.jm-sommaire > ul {
+    border: 1px solid #dbe6ee; border-top: 0; border-radius: 0 0 10px 10px;
+    padding: .4rem .4rem .5rem;
+  }
+}
+
+/* ---------- Ressources du chapitre en puces (téléphone seulement) ---------- */
+.jm-ressources-mobile { display: none; }
+@media (max-width: 991px) {
+  .jm-ressources-mobile { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.1rem; }
+  .jm-ressources-mobile a.jm-ressource {
+    display: inline-block; padding: .4rem .85rem; border: 1px solid #1f6fb2;
+    border-radius: 999px; font-size: .88rem; font-weight: 600; color: #1f6fb2;
+    text-decoration: none;
+  }
+}
+
+/* ---------- Titres des sections : abaissés d'un niveau dans le HTML
+   (h1 -> h2, h2 -> h3), apparence inchangée grâce aux classes .h1 et
+   .h2 de Bootstrap ajoutées par normaliser.py. ---------- */
+.jm-lecteur-centre h2, .jm-lecteur-centre h3 { overflow-wrap: anywhere; }
+
+/* ---------- Débordements : formules, tableaux, figures ---------- */
+.jm-lecteur-centre .katex-display {
+  overflow-x: auto; overflow-y: hidden; max-width: 100%;
+}
+.jm-lecteur-centre svg[role="img"] { max-width: 100%; height: auto; }
+@media (max-width: 991px) {
+  .jm-lecteur-centre table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
 /* =====================================================================
    Mode sombre — posé par Quarto sur <body class="quarto-dark">
    ===================================================================== */
@@ -282,14 +366,18 @@ body.quarto-dark .jm-lecteur-gauche a.jm-actif {
   color: #3aa0e6;
 }
 body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-entete-chapitre .jm-surtitre { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > summary,
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > ul { border-color: #20455a; }
+body.quarto-dark .jm-ressources-mobile a.jm-ressource { color: #5bb3ef; border-color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite {
   background: #13303d;
   border-color: #20455a;
 }
-body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite h2 { color: #9db4c0; }
 body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite .jm-indisponible,
-body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #a8bdc9; }
 body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
 body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
@@ -328,9 +416,11 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
      n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
      ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
      pages où il détecte des maths (cf. html-math-method: katex du site) :
-     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     chargement de KaTeX (copie hébergée sur le site : assets/katex/, version
+     0.19.1, voir VERSION.txt ; le CDN en « latest » a été abandonné le
+     28/10/2026), puis un scan DOMContentLoaded
      de tous les éléments .math qui les rend en place. -->
-<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="../../../assets/katex/katex.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () {
  var mathElements = document.getElementsByClassName("math");
  var macros = [];
@@ -345,15 +435,21 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
    });
 }}});
 </script>
-<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="../../../assets/katex/katex.min.css">
 
 
-<meta property="og:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
-<meta property="og:description" content="Étude de cas sur données réelles — Python">
+<meta property="og:title" content="Étude de cas sur données réelles — Python (Modélisation GARCH de la volatilité)">
+<meta property="og:description" content="Modélisation GARCH de la volatilité, chapitre 20. Non pour répéter, mais pour contrôler. Deux bibliothèques écrites par des équipes différentes, deux optimiseurs différents : si elles concluent la…">
+<meta property="og:image" content="https://jmadkour.org/assets/og-jmadkour.png">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
-<meta name="twitter:description" content="Étude de cas sur données réelles — Python">
+<meta property="og:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:title" content="Étude de cas sur données réelles — Python (Modélisation GARCH de la volatilité)">
+<meta name="twitter:description" content="Modélisation GARCH de la volatilité, chapitre 20. Non pour répéter, mais pour contrôler. Deux bibliothèques écrites par des équipes différentes, deux optimiseurs différents : si elles concluent la…">
+<meta name="twitter:image" content="https://jmadkour.org/assets/og-jmadkour.png">
+<meta name="twitter:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://jmadkour.org/cours/modelisation-garch/chapitres/etude-de-cas-python.html">
 </head>
 
 <body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
@@ -601,32 +697,16 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
-
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Modélisation GARCH de la volatilité</h1>
-<p class="subtitle lead">Étude de cas sur données réelles — Python</p>
-</div>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta column-page">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<details class="jm-sommaire" open="">
+<summary class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</summary>
 <ul>
 <li><a class="jm-accueil" href="../../../cours/modelisation-garch/index.html">Présentation du cours</a></li>
 <li><a class="" href="../../../cours/modelisation-garch/chapitres/faits-stylises.html">Mandelbrot et les faits stylisés des rentabilités</a></li>
@@ -651,39 +731,26 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <li><a class="" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-r.html">Étude de cas sur données réelles — R</a></li>
 <li><a class="jm-actif" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-python.html">Étude de cas sur données réelles — Python</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Modélisation GARCH de la volatilité</h1>
-<p class="subtitle lead">Chapitre 20 : Étude de cas sur données réelles — Python</p>
-</div>
-<div class="quarto-title-meta-author column-page">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">25 septembre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 20">
+<p class="jm-surtitre"><a href="../../../cours/modelisation-garch/index.html">Modélisation GARCH de la volatilité</a>&nbsp;· Chapitre 20</p>
+<h1 class="jm-titre-chapitre">Étude de cas sur données réelles — Python</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/etude-de-cas-python.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/etude-de-cas-python-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/etude-de-cas-python-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/etude-de-cas-python.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="avant-de-commencer">
-<h1>Avant de commencer</h1>
+<h2 class="h1 anchored" data-anchor-id="avant-de-commencer">Avant de commencer</h2>
 <section class="level2" id="le-même-travail-lautre-chaîne">
-<h2 class="anchored" data-anchor-id="le-même-travail-lautre-chaîne">Le même travail, l’autre chaîne</h2>
+<h3 class="h2 anchored" data-anchor-id="le-même-travail-lautre-chaîne">Le même travail, l’autre chaîne</h3>
 <div class="intuitionbox" title="Pourquoi refaire">
 <div class="pedago-title">
 Pourquoi refaire
@@ -693,7 +760,7 @@ Pourquoi refaire
 </div>
 </section>
 <section class="level2" id="les-bibliothèques">
-<h2 class="anchored" data-anchor-id="les-bibliothèques">Les bibliothèques</h2>
+<h3 class="h2 anchored" data-anchor-id="les-bibliothèques">Les bibliothèques</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a>pip install pandas numpy yfinance arch statsmodels matplotlib scipy</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a aria-hidden="true" href="#cb2-1" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd, numpy <span class="im">as</span> np</span>
 <span id="cb2-2"><a aria-hidden="true" href="#cb2-2" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
@@ -707,9 +774,9 @@ Pourquoi refaire
 </section>
 </section>
 <section class="level1" id="obtenir-les-données">
-<h1>Obtenir les données</h1>
+<h2 class="h1 anchored" data-anchor-id="obtenir-les-données">Obtenir les données</h2>
 <section class="level2" id="les-deux-voies">
-<h2 class="anchored" data-anchor-id="les-deux-voies">Les deux voies</h2>
+<h3 class="h2 anchored" data-anchor-id="les-deux-voies">Les deux voies</h3>
 <div class="definitionbox" title="Voie 1 — Google Finance par Google Sheets">
 <div class="pedago-title">
 Voie 1 — Google Finance par Google Sheets
@@ -730,7 +797,7 @@ Voie 2 — téléchargement programmatique
 </div>
 </section>
 <section class="level2" id="les-deux-voies-suite">
-<h2 class="anchored" data-anchor-id="les-deux-voies-suite">Les deux voies (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="les-deux-voies-suite">Les deux voies (suite)</h3>
 <div class="ecobox" title="Le rappel du chapitre précédent">
 <div class="pedago-title">
 Le rappel du chapitre précédent
@@ -740,7 +807,7 @@ Le rappel du chapitre précédent
 </div>
 </section>
 <section class="level2" id="un-contrôle-avant-de-continuer">
-<h2 class="anchored" data-anchor-id="un-contrôle-avant-de-continuer">Un contrôle avant de continuer</h2>
+<h3 class="h2 anchored" data-anchor-id="un-contrôle-avant-de-continuer">Un contrôle avant de continuer</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a aria-hidden="true" href="#cb6-1" tabindex="-1"></a><span class="bu">print</span>(P.index.<span class="bu">min</span>().date(), <span class="st">"→"</span>, P.index.<span class="bu">max</span>().date(), <span class="st">" "</span>, <span class="bu">len</span>(P), <span class="st">"cotations"</span>)</span>
 <span id="cb6-2"><a aria-hidden="true" href="#cb6-2" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"valeurs manquantes :"</span>, P.isna().<span class="bu">sum</span>())</span>
 <span id="cb6-3"><a aria-hidden="true" href="#cb6-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"jours dupliqués    :"</span>, P.index.duplicated().<span class="bu">sum</span>())</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
@@ -755,7 +822,7 @@ Trois vérifications qui évitent des heures perdues
 </section>
 </section>
 <section class="level1" id="étape-1-prix-rentabilités">
-<h1>Étape 1 — Prix, rentabilités</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-1-prix-rentabilités">Étape 1 — Prix, rentabilités</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a aria-hidden="true" href="#cb7-1" tabindex="-1"></a>r <span class="op">=</span> <span class="dv">100</span> <span class="op">*</span> np.log(P).diff().dropna()</span>
 <span id="cb7-2"><a aria-hidden="true" href="#cb7-2" tabindex="-1"></a>T <span class="op">=</span> <span class="bu">len</span>(r)</span>
 <span id="cb7-3"><a aria-hidden="true" href="#cb7-3" tabindex="-1"></a></span>
@@ -771,13 +838,13 @@ Le piège de scipy, une dernière fois
 <p>Sans <code>fisher=False</code>, <code>stats.kurtosis</code> renvoie l’excès. On lirait 3 au lieu de 6 et l’on conclurait à des queues normales.</p>
 </div>
 <section class="level2" id="regarder">
-<h2 class="anchored" data-anchor-id="regarder">Regarder</h2>
+<h3 class="h2 anchored" data-anchor-id="regarder">Regarder</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a aria-hidden="true" href="#cb8-1" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="dv">5</span>), sharex<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb8-2"><a aria-hidden="true" href="#cb8-2" tabindex="-1"></a>ax[<span class="dv">0</span>].plot(P.index, P, lw<span class="op">=</span><span class="fl">0.7</span>, color<span class="op">=</span><span class="st">"grey"</span>)<span class="op">;</span>        ax[<span class="dv">0</span>].set_ylabel(<span class="st">"prix"</span>)</span>
 <span id="cb8-3"><a aria-hidden="true" href="#cb8-3" tabindex="-1"></a>ax[<span class="dv">1</span>].plot(r.index, r, lw<span class="op">=</span><span class="fl">0.5</span>, color<span class="op">=</span><span class="st">"steelblue"</span>)<span class="op">;</span>   ax[<span class="dv">1</span>].set_ylabel(<span class="st">"r (%)"</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="117.24pt" id="svg_7f0bef46dcad12617635" role="img" style="width:88.0%" viewbox="0 0 322.18 117.24" width="322.18pt">
+<p><svg height="117.24pt" id="svg_7f0bef46dcad12617635" role="img" style="width:88.0%" viewbox="0 0 322.18 117.24" width="322.18pt" aria-label="Figure 1 : Regarder">
 <defs>
 <g>
 <symbol id="svg_7f0bef46dcad12617635_glyph0-0" overflow="visible">
@@ -988,7 +1055,7 @@ Le piège de scipy, une dernière fois
 </section>
 </section>
 <section class="level1" id="étape-2-stationnarité">
-<h1>Étape 2 — Stationnarité</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-2-stationnarité">Étape 2 — Stationnarité</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a aria-hidden="true" href="#cb9-1" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"ADF  sur r      : stat </span><span class="sc">%.2f</span><span class="st">  p </span><span class="sc">%.4f</span><span class="st">"</span> <span class="op">%</span> adfuller(r, autolag<span class="op">=</span><span class="st">"AIC"</span>)[:<span class="dv">2</span>])</span>
 <span id="cb9-2"><a aria-hidden="true" href="#cb9-2" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"KPSS sur r      : stat </span><span class="sc">%.3f</span><span class="st">  p </span><span class="sc">%.3f</span><span class="st">"</span> <span class="op">%</span> kpss(r, regression<span class="op">=</span><span class="st">"c"</span>, nlags<span class="op">=</span><span class="st">"auto"</span>)[:<span class="dv">2</span>])</span>
 <span id="cb9-3"><a aria-hidden="true" href="#cb9-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"ADF  sur ln(P)  : stat </span><span class="sc">%.2f</span><span class="st">  p </span><span class="sc">%.4f</span><span class="st">"</span> <span class="op">%</span> adfuller(np.log(P), autolag<span class="op">=</span><span class="st">"AIC"</span>)[:<span class="dv">2</span>])</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1002,7 +1069,7 @@ Le verdict attendu
 </div>
 </section>
 <section class="level1" id="étape-3-léquation-moyenne">
-<h1>Étape 3 — L’équation moyenne</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-3-léquation-moyenne">Étape 3 — L’équation moyenne</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a aria-hidden="true" href="#cb10-1" tabindex="-1"></a><span class="bu">print</span>(acorr_ljungbox(r, lags<span class="op">=</span>[<span class="dv">20</span>], return_df<span class="op">=</span><span class="va">True</span>).<span class="bu">round</span>(<span class="dv">4</span>))</span>
 <span id="cb10-2"><a aria-hidden="true" href="#cb10-2" tabindex="-1"></a></span>
 <span id="cb10-3"><a aria-hidden="true" href="#cb10-3" tabindex="-1"></a>res <span class="op">=</span> []</span>
@@ -1027,7 +1094,7 @@ Deux issues, toutes deux normales
 <p>Dans les deux cas, le coefficient est trop petit pour être exploitable après coûts de transaction.</p>
 </div>
 <section class="level2" id="le-test-arch">
-<h2 class="anchored" data-anchor-id="le-test-arch">Le test ARCH</h2>
+<h3 class="h2 anchored" data-anchor-id="le-test-arch">Le test ARCH</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a aria-hidden="true" href="#cb11-1" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"LB sur e   :"</span>, acorr_ljungbox(e,    lags<span class="op">=</span>[<span class="dv">20</span>], return_df<span class="op">=</span><span class="va">True</span>).values[<span class="dv">0</span>].<span class="bu">round</span>(<span class="dv">3</span>))</span>
 <span id="cb11-2"><a aria-hidden="true" href="#cb11-2" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"LB sur e²  :"</span>, acorr_ljungbox(e<span class="op">**</span><span class="dv">2</span>, lags<span class="op">=</span>[<span class="dv">20</span>], return_df<span class="op">=</span><span class="va">True</span>).values[<span class="dv">0</span>].<span class="bu">round</span>(<span class="dv">3</span>))</span>
 <span id="cb11-3"><a aria-hidden="true" href="#cb11-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"ARCH-LM    :"</span>, het_arch(e, nlags<span class="op">=</span><span class="dv">12</span>)[:<span class="dv">2</span>])</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1041,7 +1108,7 @@ Le contraste, invariable
 </section>
 </section>
 <section class="level1" id="étape-4-modèle-de-variance">
-<h1>Étape 4 — Modèle de variance</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-4-modèle-de-variance">Étape 4 — Modèle de variance</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a aria-hidden="true" href="#cb12-1" tabindex="-1"></a><span class="kw">def</span> ajuster(o, loi):</span>
 <span id="cb12-2"><a aria-hidden="true" href="#cb12-2" tabindex="-1"></a>    <span class="cf">return</span> arch_model(r, mean<span class="op">=</span><span class="st">"ARX"</span>, lags<span class="op">=</span>p_opt, vol<span class="op">=</span><span class="st">"GARCH"</span>,</span>
 <span id="cb12-3"><a aria-hidden="true" href="#cb12-3" tabindex="-1"></a>                      p<span class="op">=</span><span class="dv">1</span>, o<span class="op">=</span>o, q<span class="op">=</span><span class="dv">1</span>, dist<span class="op">=</span>loi).fit(disp<span class="op">=</span><span class="st">"off"</span>)</span>
@@ -1060,7 +1127,7 @@ Le classement attendu
 <p>Le BIC décroît à chaque étape : la loi de Student gagne beaucoup, l’asymétrie gagne encore.</p>
 </div>
 <section class="level2" id="lire-les-résultats">
-<h2 class="anchored" data-anchor-id="lire-les-résultats">Lire les résultats</h2>
+<h3 class="h2 anchored" data-anchor-id="lire-les-résultats">Lire les résultats</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a aria-hidden="true" href="#cb13-1" tabindex="-1"></a>a, gm, b <span class="op">=</span> g3.params[<span class="st">"alpha[1]"</span>], g3.params[<span class="st">"gamma[1]"</span>], g3.params[<span class="st">"beta[1]"</span>]</span>
 <span id="cb13-2"><a aria-hidden="true" href="#cb13-2" tabindex="-1"></a>pers <span class="op">=</span> a <span class="op">+</span> gm<span class="op">/</span><span class="dv">2</span> <span class="op">+</span> b</span>
 <span id="cb13-3"><a aria-hidden="true" href="#cb13-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"persistance </span><span class="sc">%.4f</span><span class="st">   demi-vie </span><span class="sc">%.1f</span><span class="st"> jours   nu </span><span class="sc">%.2f</span><span class="st">"</span></span>
@@ -1068,7 +1135,7 @@ Le classement attendu
 <span id="cb13-5"><a aria-hidden="true" href="#cb13-5" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"impact d'un choc négatif / positif : </span><span class="sc">%.2f</span><span class="st">"</span> <span class="op">%</span> ((a<span class="op">+</span>gm)<span class="op">/</span>a))</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="148.22pt" id="svg_7a858502d0e9a969a676" role="img" style="width:70.0%" viewbox="0 0 275.62 148.22" width="275.62pt">
+<p><svg height="148.22pt" id="svg_7a858502d0e9a969a676" role="img" style="width:70.0%" viewbox="0 0 275.62 148.22" width="275.62pt" aria-label="Figure 2 : Lire les résultats">
 <defs>
 <g>
 <symbol id="svg_7a858502d0e9a969a676_glyph0-0" overflow="visible">
@@ -1476,7 +1543,7 @@ Ce qu’on lit sur un indice large
 </section>
 </section>
 <section class="level1" id="étape-5-valider">
-<h1>Étape 5 — Valider</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-5-valider">Étape 5 — Valider</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a aria-hidden="true" href="#cb14-1" tabindex="-1"></a>z <span class="op">=</span> g3.std_resid.dropna()</span>
 <span id="cb14-2"><a aria-hidden="true" href="#cb14-2" tabindex="-1"></a><span class="bu">print</span>(acorr_ljungbox(z,    lags<span class="op">=</span>[<span class="dv">20</span>], return_df<span class="op">=</span><span class="va">True</span>).values[<span class="dv">0</span>].<span class="bu">round</span>(<span class="dv">3</span>))</span>
 <span id="cb14-3"><a aria-hidden="true" href="#cb14-3" tabindex="-1"></a><span class="bu">print</span>(acorr_ljungbox(z<span class="op">**</span><span class="dv">2</span>, lags<span class="op">=</span>[<span class="dv">20</span>], return_df<span class="op">=</span><span class="va">True</span>).values[<span class="dv">0</span>].<span class="bu">round</span>(<span class="dv">3</span>))</span>
@@ -1487,7 +1554,7 @@ Ce qu’on lit sur un indice large
 <span id="cb14-8"><a aria-hidden="true" href="#cb14-8" tabindex="-1"></a>plt.scatter(qt, np.sort(z), s<span class="op">=</span><span class="dv">2</span>)<span class="op">;</span> plt.plot([<span class="op">-</span><span class="dv">6</span>, <span class="dv">6</span>], [<span class="op">-</span><span class="dv">6</span>, <span class="dv">6</span>], color<span class="op">=</span><span class="st">"orange"</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="129.14pt" id="svg_9fad464743b2af35489a" role="img" style="width:84.0%" viewbox="0 0 345.66 129.14" width="345.66pt">
+<p><svg height="129.14pt" id="svg_9fad464743b2af35489a" role="img" style="width:84.0%" viewbox="0 0 345.66 129.14" width="345.66pt" aria-label="Figure 3 : Étape 5 — Valider">
 <defs>
 <g>
 <symbol id="svg_9fad464743b2af35489a_glyph0-0" overflow="visible">
@@ -1851,9 +1918,9 @@ Le critère
 </div>
 </section>
 <section class="level1" id="étape-6-var-et-backtesting">
-<h1>Étape 6 — VaR et backtesting</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-6-var-et-backtesting">Étape 6 — VaR et backtesting</h2>
 <section class="level2" id="les-deux-mesures">
-<h2 class="anchored" data-anchor-id="les-deux-mesures">Les deux mesures</h2>
+<h3 class="h2 anchored" data-anchor-id="les-deux-mesures">Les deux mesures</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a aria-hidden="true" href="#cb15-1" tabindex="-1"></a>q1    <span class="op">=</span> np.quantile(z, <span class="fl">0.01</span>)</span>
 <span id="cb15-2"><a aria-hidden="true" href="#cb15-2" tabindex="-1"></a>h     <span class="op">=</span> g3.conditional_volatility</span>
 <span id="cb15-3"><a aria-hidden="true" href="#cb15-3" tabindex="-1"></a>mu_t  <span class="op">=</span> r <span class="op">-</span> g3.resid                      <span class="co"># moyenne conditionnelle ajustée</span></span>
@@ -1866,10 +1933,10 @@ Le critère
 <span id="cb15-10"><a aria-hidden="true" href="#cb15-10" tabindex="-1"></a>      <span class="op">%</span> (dep_c.<span class="bu">sum</span>(), dep_u.<span class="bu">sum</span>(), <span class="fl">0.01</span><span class="op">*</span>T))</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="level2" id="les-deux-mesures-suite">
-<h2 class="anchored" data-anchor-id="les-deux-mesures-suite">Les deux mesures (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="les-deux-mesures-suite">Les deux mesures (suite)</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="152.86pt" id="svg_b37d2e4bbec78fe36ec1" role="img" style="width:86.0%" viewbox="0 0 344.12 152.86" width="344.12pt">
+<p><svg height="152.86pt" id="svg_b37d2e4bbec78fe36ec1" role="img" style="width:86.0%" viewbox="0 0 344.12 152.86" width="344.12pt" aria-label="Figure 4 : Les deux mesures (suite)">
 <defs>
 <g>
 <symbol id="svg_b37d2e4bbec78fe36ec1_glyph0-0" overflow="visible">
@@ -2377,7 +2444,7 @@ Le critère
 </div>
 </section>
 <section class="level2" id="kupiec-et-christoffersen">
-<h2 class="anchored" data-anchor-id="kupiec-et-christoffersen">Kupiec et Christoffersen</h2>
+<h3 class="h2 anchored" data-anchor-id="kupiec-et-christoffersen">Kupiec et Christoffersen</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a aria-hidden="true" href="#cb16-1" tabindex="-1"></a><span class="kw">def</span> backtest(d, alpha<span class="op">=</span><span class="fl">0.01</span>):</span>
 <span id="cb16-2"><a aria-hidden="true" href="#cb16-2" tabindex="-1"></a>    n, n1 <span class="op">=</span> <span class="bu">len</span>(d), <span class="bu">int</span>(d.<span class="bu">sum</span>())<span class="op">;</span> pi <span class="op">=</span> n1<span class="op">/</span>n</span>
 <span id="cb16-3"><a aria-hidden="true" href="#cb16-3" tabindex="-1"></a>    lg <span class="op">=</span> <span class="kw">lambda</span> x: np.log(x) <span class="cf">if</span> x <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
@@ -2399,7 +2466,7 @@ Le critère
 <span id="cb16-19"><a aria-hidden="true" href="#cb16-19" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"</span><span class="sc">%-17s</span><span class="st"> LR_uc </span><span class="sc">%6.2f</span><span class="st">   LR_ind </span><span class="sc">%6.2f</span><span class="st">   LR_cc </span><span class="sc">%6.2f</span><span class="st">"</span> <span class="op">%</span> (nom, uc, ind, cc))</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="level2" id="kupiec-et-christoffersen-suite">
-<h2 class="anchored" data-anchor-id="kupiec-et-christoffersen-suite">Kupiec et Christoffersen (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="kupiec-et-christoffersen-suite">Kupiec et Christoffersen (suite)</h3>
 <div class="definitionbox" title="Les seuils">
 <div class="pedago-title">
 Les seuils
@@ -2416,7 +2483,7 @@ Le résultat typique sur dix ans d’indice
 </div>
 </section>
 <section class="level2" id="lexpected-shortfall">
-<h2 class="anchored" data-anchor-id="lexpected-shortfall">L’expected shortfall</h2>
+<h3 class="h2 anchored" data-anchor-id="lexpected-shortfall">L’expected shortfall</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a aria-hidden="true" href="#cb17-1" tabindex="-1"></a>seuil <span class="op">=</span> np.quantile(z, <span class="fl">0.025</span>)</span>
 <span id="cb17-2"><a aria-hidden="true" href="#cb17-2" tabindex="-1"></a>es_c  <span class="op">=</span> <span class="op">-</span>(mu_t <span class="op">+</span> h <span class="op">*</span> z[z <span class="op">&lt;</span> seuil].mean())</span>
 <span id="cb17-3"><a aria-hidden="true" href="#cb17-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"ES 97,5 </span><span class="sc">%%</span><span class="st"> moyen : </span><span class="sc">%.3f</span><span class="st">    VaR 99 </span><span class="sc">%%</span><span class="st"> moyenne : </span><span class="sc">%.3f</span><span class="st">"</span></span>
@@ -2424,7 +2491,7 @@ Le résultat typique sur dix ans d’indice
 </section>
 </section>
 <section class="level1" id="comparer-r-et-python">
-<h1>Comparer R et Python</h1>
+<h2 class="h1 anchored" data-anchor-id="comparer-r-et-python">Comparer R et Python</h2>
 <div class="definitionbox" title="Ce qu'il faut vérifier après avoir fait les deux">
 <div class="pedago-title">
 Ce qu’il faut vérifier après avoir fait les deux
@@ -2467,10 +2534,10 @@ Si l’écart est plus grand
 </div>
 </section>
 <section class="level1" id="le-fil-conducteur">
-<h1>Le fil conducteur</h1>
+<h2 class="h1 anchored" data-anchor-id="le-fil-conducteur">Le fil conducteur</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="58.85pt" id="svg_6ccccfcbdb112aedd51f" role="img" style="width:96.0%" viewbox="0 0 599.33 58.85" width="599.33pt">
+<p><svg height="58.85pt" id="svg_6ccccfcbdb112aedd51f" role="img" style="width:96.0%" viewbox="0 0 599.33 58.85" width="599.33pt" aria-label="Figure 5 : Le fil conducteur">
 <defs>
 <g>
 <symbol id="svg_6ccccfcbdb112aedd51f_glyph0-0" overflow="visible">
@@ -2988,9 +3055,9 @@ Ce que l’étudiant sait faire à ce stade
 </div>
 </section>
 <section class="level1" id="synthèse">
-<h1>Synthèse</h1>
+<h2 class="h1 anchored" data-anchor-id="synthèse">Synthèse</h2>
 <section class="level2" id="ce-quil-faut-retenir">
-<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h3>
 <div class="definitionbox" title="L'essentiel du chapitre 20">
 <div class="pedago-title">
 L’essentiel du chapitre 20
@@ -3013,12 +3080,13 @@ Le mot de la fin
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="../../../cours/modelisation-garch/chapitres/etude-de-cas-r.html">← Chapitre précédent<span class="jm-nav-label">Étude de cas sur données réelles — R</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3 class="anchored">Ressources du chapitre</h3>
+<h2 class="anchored">Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/etude-de-cas-python.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/etude-de-cas-python-poly.pdf">Polycopié du chapitre</a></li>

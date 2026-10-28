@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Analyse mathématique, chapitre 4. Aucune décision économique réaliste n’est libre de toute contrainte : un budget, une capacité de production, une quantité qui ne peut être négative.">
 
-<title>Analyse mathématique – Jaouad Madkour</title>
+<title>Optimisation des fonctions de plusieurs variables (Analyse mathématique) – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -46,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b626d73c4c936ccc3cb08be7d45d1df6.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-4a81b521e20b8a0d9edba7313f3ee218.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-2e1988c4a830338585f6d0d114f9611f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -75,14 +76,25 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
-<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
-     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
-     latérale, l'onglet du navigateur et la recherche du site. Seul son
-     affichage en tête de page, redondant avec la barre latérale, disparaît.
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours et les
+     pages de niveau. Le titre reste déclaré dans l'entête du fichier : il
+     alimente l'onglet du navigateur et la recherche du site. Depuis le
+     28/10/2026 le bloc n'est plus retiré de la page (display: none), mais
+     seulement sorti de l'écran : le titre h1 reste donc dans la page pour les
+     lecteurs d'écran, qui n'avaient plus aucun titre à annoncer. Le bloc des
+     métadonnées (auteur, affiliation, date), lui, reste caché.
      Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
 <style>
   header#title-block-header,
-  .quarto-title-block { display: none; }
+  .quarto-title-block {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  header#title-block-header .quarto-title-meta,
+  header#title-block-header .quarto-title-meta-author,
+  .quarto-title-block .quarto-title-meta,
+  .quarto-title-block .quarto-title-meta-author { display: none; }
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
@@ -129,8 +141,11 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur > * { grid-column: auto !important; }
 
 @media (max-width: 991px) {
-  .jm-lecteur { grid-template-columns: 1fr !important; }
-  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+  .jm-lecteur { grid-template-columns: 1fr !important; gap: 1rem; }
+  .jm-lecteur-gauche { position: static !important; }
+  /* Les ressources du chapitre sont repeintes en puces sous le titre
+     (.jm-ressources-mobile) : le panneau, tout en bas de page, est masqué. */
+  .jm-lecteur-droite { display: none; }
 }
 
 /* ---------- Volet gauche : sommaire du cours ---------- */
@@ -181,12 +196,14 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 12px;
   padding: 1rem 1.1rem;
 }
-.jm-lecteur-droite h3 {
+.jm-lecteur-droite h2 {
   font-size: .8rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: #54707f;
   margin: 0 0 .7rem;
+  padding: 0;
+  border: 0;
 }
 .jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
 .jm-lecteur-droite li { margin-bottom: .55rem; }
@@ -195,11 +212,13 @@ ul.task-list li input[type="checkbox"] {
   font-weight: 600;
 }
 .jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+/* Textes inactifs : au moins 4,5:1 sur le fond du panneau (WCAG AA). Avant le
+   28/10/2026 : 2,3:1 en thème clair, 3,5:1 en thème sombre. */
 .jm-lecteur-droite .jm-indisponible {
-  color: #9aa9b2; font-weight: 500; cursor: default;
+  color: #566b77; font-weight: 500; cursor: default;
 }
 .jm-lecteur-droite .jm-reserve {
-  color: #9aa9b2; font-style: italic;
+  color: #566b77; font-style: italic;
 }
 
 /* ---------- Navigation précédent / suivant ---------- */
@@ -271,6 +290,71 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
 .jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
 
+/* ---------- En-tête du chapitre : seul titre h1 de la page ---------- */
+.jm-entete-chapitre { margin: 0 0 1.1rem; }
+.jm-entete-chapitre .jm-surtitre {
+  margin: 0 0 .3rem; font-size: .9rem; color: #3d5a6b;
+}
+.jm-entete-chapitre .jm-surtitre a {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+/* Plus grand que les titres de section (classe .h1 de Bootstrap, jusqu'à 2,5 rem). */
+.jm-titre-chapitre {
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 2.7rem); font-weight: 700; line-height: 1.15;
+  margin: 0; padding: 0; border: 0;
+}
+
+/* ---------- Sommaire du cours : toujours ouvert sur ordinateur, replié sur
+   téléphone (script placé après le <details>, voir lecteur.py) ---------- */
+.jm-lecteur-gauche details.jm-sommaire > summary {
+  list-style: none; cursor: default; pointer-events: none;
+  color: inherit; /* Bootstrap grise les <summary> */
+}
+.jm-lecteur-gauche details.jm-sommaire > summary::-webkit-details-marker { display: none; }
+@media (max-width: 991px) {
+  .jm-lecteur-gauche details.jm-sommaire > summary {
+    pointer-events: auto; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .65rem .8rem; margin: 0; border: 1px solid #dbe6ee; border-radius: 10px;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  }
+  .jm-lecteur-gauche details.jm-sommaire > summary::after {
+    content: "\25BE"; font-size: 1.05rem; transition: transform .15s ease;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary::after { transform: rotate(180deg); }
+  .jm-lecteur-gauche details.jm-sommaire > ul {
+    border: 1px solid #dbe6ee; border-top: 0; border-radius: 0 0 10px 10px;
+    padding: .4rem .4rem .5rem;
+  }
+}
+
+/* ---------- Ressources du chapitre en puces (téléphone seulement) ---------- */
+.jm-ressources-mobile { display: none; }
+@media (max-width: 991px) {
+  .jm-ressources-mobile { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.1rem; }
+  .jm-ressources-mobile a.jm-ressource {
+    display: inline-block; padding: .4rem .85rem; border: 1px solid #1f6fb2;
+    border-radius: 999px; font-size: .88rem; font-weight: 600; color: #1f6fb2;
+    text-decoration: none;
+  }
+}
+
+/* ---------- Titres des sections : abaissés d'un niveau dans le HTML
+   (h1 -> h2, h2 -> h3), apparence inchangée grâce aux classes .h1 et
+   .h2 de Bootstrap ajoutées par normaliser.py. ---------- */
+.jm-lecteur-centre h2, .jm-lecteur-centre h3 { overflow-wrap: anywhere; }
+
+/* ---------- Débordements : formules, tableaux, figures ---------- */
+.jm-lecteur-centre .katex-display {
+  overflow-x: auto; overflow-y: hidden; max-width: 100%;
+}
+.jm-lecteur-centre svg[role="img"] { max-width: 100%; height: auto; }
+@media (max-width: 991px) {
+  .jm-lecteur-centre table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
 /* =====================================================================
    Mode sombre — posé par Quarto sur <body class="quarto-dark">
    ===================================================================== */
@@ -282,14 +366,18 @@ body.quarto-dark .jm-lecteur-gauche a.jm-actif {
   color: #3aa0e6;
 }
 body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-entete-chapitre .jm-surtitre { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > summary,
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > ul { border-color: #20455a; }
+body.quarto-dark .jm-ressources-mobile a.jm-ressource { color: #5bb3ef; border-color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite {
   background: #13303d;
   border-color: #20455a;
 }
-body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite h2 { color: #9db4c0; }
 body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite .jm-indisponible,
-body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #a8bdc9; }
 body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
 body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
@@ -328,9 +416,11 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
      n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
      ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
      pages où il détecte des maths (cf. html-math-method: katex du site) :
-     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     chargement de KaTeX (copie hébergée sur le site : assets/katex/, version
+     0.19.1, voir VERSION.txt ; le CDN en « latest » a été abandonné le
+     28/10/2026), puis un scan DOMContentLoaded
      de tous les éléments .math qui les rend en place. -->
-<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="../../../assets/katex/katex.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () {
  var mathElements = document.getElementsByClassName("math");
  var macros = [];
@@ -345,15 +435,21 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
    });
 }}});
 </script>
-<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="../../../assets/katex/katex.min.css">
 
 
-<meta property="og:title" content="Analyse mathématique – Jaouad Madkour">
-<meta property="og:description" content="Optimisation des fonctions de plusieurs variables">
+<meta property="og:title" content="Optimisation des fonctions de plusieurs variables (Analyse mathématique)">
+<meta property="og:description" content="Analyse mathématique, chapitre 4. Aucune décision économique réaliste n’est libre de toute contrainte : un budget, une capacité de production, une quantité qui ne peut être négative.">
+<meta property="og:image" content="https://jmadkour.org/assets/og-jmadkour.png">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Analyse mathématique – Jaouad Madkour">
-<meta name="twitter:description" content="Optimisation des fonctions de plusieurs variables">
+<meta property="og:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:title" content="Optimisation des fonctions de plusieurs variables (Analyse mathématique)">
+<meta name="twitter:description" content="Analyse mathématique, chapitre 4. Aucune décision économique réaliste n’est libre de toute contrainte : un budget, une capacité de production, une quantité qui ne peut être négative.">
+<meta name="twitter:image" content="https://jmadkour.org/assets/og-jmadkour.png">
+<meta name="twitter:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://jmadkour.org/cours/analyse-mathematique/chapitres/optimisation-plusieurs-variables.html">
 </head>
 
 <body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
@@ -601,32 +697,16 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
-
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Analyse mathématique</h1>
-<p class="subtitle lead">Optimisation des fonctions de plusieurs variables</p>
-</div>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta column-page">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Analyse mathématique</div>
+<details class="jm-sommaire" open="">
+<summary class="jm-lecteur-titre-cours">Analyse mathématique</summary>
 <ul>
 <li><a class="jm-accueil" href="../../../cours/analyse-mathematique/index.html">Présentation du cours</a></li>
 <li><a class="" href="../../../cours/analyse-mathematique/chapitres/rappels-ensembles-fonctions.html">Rappels : ensembles de nombres et fonctions</a></li>
@@ -635,39 +715,26 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <li><a class="" href="../../../cours/analyse-mathematique/chapitres/fonctions-plusieurs-variables.html">Fonctions de plusieurs variables</a></li>
 <li><a class="jm-actif" href="../../../cours/analyse-mathematique/chapitres/optimisation-plusieurs-variables.html">Optimisation des fonctions de plusieurs variables</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Analyse mathématique</h1>
-<p class="subtitle lead">Chapitre 4 : Optimisation des fonctions de plusieurs variables</p>
-</div>
-<div class="quarto-title-meta-author column-page">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">24 septembre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 4">
+<p class="jm-surtitre"><a href="../../../cours/analyse-mathematique/index.html">Analyse mathématique</a>&nbsp;· Chapitre 4</p>
+<h1 class="jm-titre-chapitre">Optimisation des fonctions de plusieurs variables</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/optimisation-plusieurs-variables.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/optimisation-plusieurs-variables-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/optimisation-plusieurs-variables-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/optimisation-plusieurs-variables.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="avant-de-commencer">
-<h1>Avant de commencer</h1>
+<h2 class="h1 anchored" data-anchor-id="avant-de-commencer">Avant de commencer</h2>
 <section class="level2" id="pourquoi-ce-chapitre">
-<h2 class="anchored" data-anchor-id="pourquoi-ce-chapitre">Pourquoi ce chapitre</h2>
+<h3 class="h2 anchored" data-anchor-id="pourquoi-ce-chapitre">Pourquoi ce chapitre</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">Pourquoi ce chapitre ?</summary>
 <div class="pedago-body">
@@ -683,9 +750,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="extrema-libres">
-<h1>Extrema libres</h1>
+<h2 class="h1 anchored" data-anchor-id="extrema-libres">Extrema libres</h2>
 <section class="level2" id="définitions">
-<h2 class="anchored" data-anchor-id="définitions">Définitions</h2>
+<h3 class="h2 anchored" data-anchor-id="définitions">Définitions</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Extrema d’une fonction de <span class="math inline">n</span> variables</summary>
 <div class="pedago-body">
@@ -705,7 +772,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="condition-suffisante-dexistence">
-<h2 class="anchored" data-anchor-id="condition-suffisante-dexistence">Condition suffisante d’existence</h2>
+<h3 class="h2 anchored" data-anchor-id="condition-suffisante-dexistence">Condition suffisante d’existence</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Existence d’extrema globaux (Weierstrass, cas multivarié)</summary>
 <div class="pedago-body">
@@ -720,7 +787,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="condition-nécessaire-du-premier-ordre">
-<h2 class="anchored" data-anchor-id="condition-nécessaire-du-premier-ordre">Condition nécessaire du premier ordre</h2>
+<h3 class="h2 anchored" data-anchor-id="condition-nécessaire-du-premier-ordre">Condition nécessaire du premier ordre</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Point critique</summary>
 <div class="pedago-body">
@@ -735,7 +802,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="concavité-convexité-le-raccourci-global">
-<h2 class="anchored" data-anchor-id="concavité-convexité-le-raccourci-global">Concavité, convexité : le raccourci global</h2>
+<h3 class="h2 anchored" data-anchor-id="concavité-convexité-le-raccourci-global">Concavité, convexité : le raccourci global</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Critère de convexité/concavité</summary>
 <div class="pedago-body">
@@ -748,7 +815,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="application-en-sciences-économiques-la-firme">
-<h2 class="anchored" data-anchor-id="application-en-sciences-économiques-la-firme">Application en sciences économiques : la firme</h2>
+<h3 class="h2 anchored" data-anchor-id="application-en-sciences-économiques-la-firme">Application en sciences économiques : la firme</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">Application en sciences économiques : la firme</summary>
 <div class="pedago-body">
@@ -757,7 +824,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="condition-suffisante-du-second-ordre-la-hessienne">
-<h2 class="anchored" data-anchor-id="condition-suffisante-du-second-ordre-la-hessienne">Condition suffisante du second ordre : la hessienne</h2>
+<h3 class="h2 anchored" data-anchor-id="condition-suffisante-du-second-ordre-la-hessienne">Condition suffisante du second ordre : la hessienne</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Classification par la hessienne</summary>
 <div class="pedago-body">
@@ -784,7 +851,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="condition-suffisante-du-second-ordre-la-hessienne-suite">
-<h2 class="anchored" data-anchor-id="condition-suffisante-du-second-ordre-la-hessienne-suite">Condition suffisante du second ordre : la hessienne (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="condition-suffisante-du-second-ordre-la-hessienne-suite">Condition suffisante du second ordre : la hessienne (suite)</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Exemple : un point-selle et un minimum non global</summary>
 <div class="pedago-body">
@@ -802,9 +869,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="extrema-contraintes-dégalité">
-<h1>Extrema, contraintes d’égalité</h1>
+<h2 class="h1 anchored" data-anchor-id="extrema-contraintes-dégalité">Extrema, contraintes d’égalité</h2>
 <section class="level2" id="le-problème-et-le-lagrangien">
-<h2 class="anchored" data-anchor-id="le-problème-et-le-lagrangien">Le problème et le lagrangien</h2>
+<h3 class="h2 anchored" data-anchor-id="le-problème-et-le-lagrangien">Le problème et le lagrangien</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Problème lié et lagrangien</summary>
 <div class="pedago-body">
@@ -819,7 +886,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-théorème-de-lagrange">
-<h2 class="anchored" data-anchor-id="le-théorème-de-lagrange">Le théorème de Lagrange</h2>
+<h3 class="h2 anchored" data-anchor-id="le-théorème-de-lagrange">Le théorème de Lagrange</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Théorème de Lagrange</summary>
 <div class="pedago-body">
@@ -840,7 +907,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="interprétation-du-multiplicateur">
-<h2 class="anchored" data-anchor-id="interprétation-du-multiplicateur">Interprétation du multiplicateur</h2>
+<h3 class="h2 anchored" data-anchor-id="interprétation-du-multiplicateur">Interprétation du multiplicateur</h3>
 <div class="columns">
 <div class="column" style="width:55%;">
 <details class="definitionbox" open="">
@@ -852,7 +919,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </div><div class="column" style="width:45%;">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="152.15pt" id="svg_32ab800412d3492a89d4" role="img" style="width:100.0%" viewbox="0 0 199.08 152.15" width="199.08pt">
+<p><svg height="152.15pt" id="svg_32ab800412d3492a89d4" role="img" style="width:100.0%" viewbox="0 0 199.08 152.15" width="199.08pt" aria-label="Figure 1 : Interprétation du multiplicateur">
 <defs>
 <g>
 <symbol id="svg_32ab800412d3492a89d4_glyph0-0" overflow="visible">
@@ -1050,7 +1117,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="classification-des-candidats">
-<h2 class="anchored" data-anchor-id="classification-des-candidats">Classification des candidats</h2>
+<h3 class="h2 anchored" data-anchor-id="classification-des-candidats">Classification des candidats</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Hessienne partielle et conditions du second ordre</summary>
 <div class="pedago-body">
@@ -1073,9 +1140,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="extrema-inégalités">
-<h1>Extrema, inégalités</h1>
+<h2 class="h1 anchored" data-anchor-id="extrema-inégalités">Extrema, inégalités</h2>
 <section class="level2" id="contraintes-saturées-et-régularité">
-<h2 class="anchored" data-anchor-id="contraintes-saturées-et-régularité">Contraintes saturées et régularité</h2>
+<h3 class="h2 anchored" data-anchor-id="contraintes-saturées-et-régularité">Contraintes saturées et régularité</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Vocabulaire</summary>
 <div class="pedago-body">
@@ -1095,7 +1162,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="contraintes-saturées-et-régularité-suite">
-<h2 class="anchored" data-anchor-id="contraintes-saturées-et-régularité-suite">Contraintes saturées et régularité (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="contraintes-saturées-et-régularité-suite">Contraintes saturées et régularité (suite)</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Exemple : extrema sur un disque fermé</summary>
 <div class="pedago-body">
@@ -1104,7 +1171,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-théorème-de-kuhn-et-tucker">
-<h2 class="anchored" data-anchor-id="le-théorème-de-kuhn-et-tucker">Le théorème de Kuhn et Tucker</h2>
+<h3 class="h2 anchored" data-anchor-id="le-théorème-de-kuhn-et-tucker">Le théorème de Kuhn et Tucker</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Conditions de Kuhn-Tucker (maximisation)</summary>
 <div class="pedago-body">
@@ -1120,7 +1187,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-théorème-de-kuhn-et-tucker-suite">
-<h2 class="anchored" data-anchor-id="le-théorème-de-kuhn-et-tucker-suite">Le théorème de Kuhn et Tucker (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="le-théorème-de-kuhn-et-tucker-suite">Le théorème de Kuhn et Tucker (suite)</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Retour à l’exemple, via Kuhn-Tucker</summary>
 <div class="pedago-body">
@@ -1135,7 +1202,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-théorème-de-kuhn-et-tucker-suite-2">
-<h2 class="anchored" data-anchor-id="le-théorème-de-kuhn-et-tucker-suite-2">Le théorème de Kuhn et Tucker (suite 2)</h2>
+<h3 class="h2 anchored" data-anchor-id="le-théorème-de-kuhn-et-tucker-suite-2">Le théorème de Kuhn et Tucker (suite 2)</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">Application en sciences économiques : capacité de production</summary>
 <div class="pedago-body">
@@ -1145,9 +1212,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="synthèse">
-<h1>Synthèse</h1>
+<h2 class="h1 anchored" data-anchor-id="synthèse">Synthèse</h2>
 <section class="level2" id="ce-quil-faut-retenir">
-<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">L’essentiel du chapitre 4</summary>
 <div class="pedago-body">
@@ -1167,12 +1234,13 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="../../../cours/analyse-mathematique/chapitres/fonctions-plusieurs-variables.html">← Chapitre précédent<span class="jm-nav-label">Fonctions de plusieurs variables</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3 class="anchored">Ressources du chapitre</h3>
+<h2 class="anchored">Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/optimisation-plusieurs-variables.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/optimisation-plusieurs-variables-poly.pdf">Polycopié du chapitre</a></li>

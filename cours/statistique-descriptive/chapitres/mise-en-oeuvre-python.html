@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Statistique descriptive, chapitre 15. Les nombres. Le chapitre 14 a retrouvé en R chaque résultat du cours ; Python retrouve les mêmes — à condition d’éviter les mêmes pièges de convention, plus un.">
 
-<title>Statistique descriptive – Jaouad Madkour</title>
+<title>Mise en œuvre sur Python (Statistique descriptive) – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -46,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b626d73c4c936ccc3cb08be7d45d1df6.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-4a81b521e20b8a0d9edba7313f3ee218.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-2e1988c4a830338585f6d0d114f9611f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -75,14 +76,25 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
-<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
-     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
-     latérale, l'onglet du navigateur et la recherche du site. Seul son
-     affichage en tête de page, redondant avec la barre latérale, disparaît.
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours et les
+     pages de niveau. Le titre reste déclaré dans l'entête du fichier : il
+     alimente l'onglet du navigateur et la recherche du site. Depuis le
+     28/10/2026 le bloc n'est plus retiré de la page (display: none), mais
+     seulement sorti de l'écran : le titre h1 reste donc dans la page pour les
+     lecteurs d'écran, qui n'avaient plus aucun titre à annoncer. Le bloc des
+     métadonnées (auteur, affiliation, date), lui, reste caché.
      Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
 <style>
   header#title-block-header,
-  .quarto-title-block { display: none; }
+  .quarto-title-block {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  header#title-block-header .quarto-title-meta,
+  header#title-block-header .quarto-title-meta-author,
+  .quarto-title-block .quarto-title-meta,
+  .quarto-title-block .quarto-title-meta-author { display: none; }
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
@@ -129,8 +141,11 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur > * { grid-column: auto !important; }
 
 @media (max-width: 991px) {
-  .jm-lecteur { grid-template-columns: 1fr !important; }
-  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+  .jm-lecteur { grid-template-columns: 1fr !important; gap: 1rem; }
+  .jm-lecteur-gauche { position: static !important; }
+  /* Les ressources du chapitre sont repeintes en puces sous le titre
+     (.jm-ressources-mobile) : le panneau, tout en bas de page, est masqué. */
+  .jm-lecteur-droite { display: none; }
 }
 
 /* ---------- Volet gauche : sommaire du cours ---------- */
@@ -181,12 +196,14 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 12px;
   padding: 1rem 1.1rem;
 }
-.jm-lecteur-droite h3 {
+.jm-lecteur-droite h2 {
   font-size: .8rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: #54707f;
   margin: 0 0 .7rem;
+  padding: 0;
+  border: 0;
 }
 .jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
 .jm-lecteur-droite li { margin-bottom: .55rem; }
@@ -195,11 +212,13 @@ ul.task-list li input[type="checkbox"] {
   font-weight: 600;
 }
 .jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+/* Textes inactifs : au moins 4,5:1 sur le fond du panneau (WCAG AA). Avant le
+   28/10/2026 : 2,3:1 en thème clair, 3,5:1 en thème sombre. */
 .jm-lecteur-droite .jm-indisponible {
-  color: #9aa9b2; font-weight: 500; cursor: default;
+  color: #566b77; font-weight: 500; cursor: default;
 }
 .jm-lecteur-droite .jm-reserve {
-  color: #9aa9b2; font-style: italic;
+  color: #566b77; font-style: italic;
 }
 
 /* ---------- Navigation précédent / suivant ---------- */
@@ -271,6 +290,71 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
 .jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
 
+/* ---------- En-tête du chapitre : seul titre h1 de la page ---------- */
+.jm-entete-chapitre { margin: 0 0 1.1rem; }
+.jm-entete-chapitre .jm-surtitre {
+  margin: 0 0 .3rem; font-size: .9rem; color: #3d5a6b;
+}
+.jm-entete-chapitre .jm-surtitre a {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+/* Plus grand que les titres de section (classe .h1 de Bootstrap, jusqu'à 2,5 rem). */
+.jm-titre-chapitre {
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 2.7rem); font-weight: 700; line-height: 1.15;
+  margin: 0; padding: 0; border: 0;
+}
+
+/* ---------- Sommaire du cours : toujours ouvert sur ordinateur, replié sur
+   téléphone (script placé après le <details>, voir lecteur.py) ---------- */
+.jm-lecteur-gauche details.jm-sommaire > summary {
+  list-style: none; cursor: default; pointer-events: none;
+  color: inherit; /* Bootstrap grise les <summary> */
+}
+.jm-lecteur-gauche details.jm-sommaire > summary::-webkit-details-marker { display: none; }
+@media (max-width: 991px) {
+  .jm-lecteur-gauche details.jm-sommaire > summary {
+    pointer-events: auto; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .65rem .8rem; margin: 0; border: 1px solid #dbe6ee; border-radius: 10px;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  }
+  .jm-lecteur-gauche details.jm-sommaire > summary::after {
+    content: "\25BE"; font-size: 1.05rem; transition: transform .15s ease;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary::after { transform: rotate(180deg); }
+  .jm-lecteur-gauche details.jm-sommaire > ul {
+    border: 1px solid #dbe6ee; border-top: 0; border-radius: 0 0 10px 10px;
+    padding: .4rem .4rem .5rem;
+  }
+}
+
+/* ---------- Ressources du chapitre en puces (téléphone seulement) ---------- */
+.jm-ressources-mobile { display: none; }
+@media (max-width: 991px) {
+  .jm-ressources-mobile { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.1rem; }
+  .jm-ressources-mobile a.jm-ressource {
+    display: inline-block; padding: .4rem .85rem; border: 1px solid #1f6fb2;
+    border-radius: 999px; font-size: .88rem; font-weight: 600; color: #1f6fb2;
+    text-decoration: none;
+  }
+}
+
+/* ---------- Titres des sections : abaissés d'un niveau dans le HTML
+   (h1 -> h2, h2 -> h3), apparence inchangée grâce aux classes .h1 et
+   .h2 de Bootstrap ajoutées par normaliser.py. ---------- */
+.jm-lecteur-centre h2, .jm-lecteur-centre h3 { overflow-wrap: anywhere; }
+
+/* ---------- Débordements : formules, tableaux, figures ---------- */
+.jm-lecteur-centre .katex-display {
+  overflow-x: auto; overflow-y: hidden; max-width: 100%;
+}
+.jm-lecteur-centre svg[role="img"] { max-width: 100%; height: auto; }
+@media (max-width: 991px) {
+  .jm-lecteur-centre table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
 /* =====================================================================
    Mode sombre — posé par Quarto sur <body class="quarto-dark">
    ===================================================================== */
@@ -282,14 +366,18 @@ body.quarto-dark .jm-lecteur-gauche a.jm-actif {
   color: #3aa0e6;
 }
 body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-entete-chapitre .jm-surtitre { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > summary,
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > ul { border-color: #20455a; }
+body.quarto-dark .jm-ressources-mobile a.jm-ressource { color: #5bb3ef; border-color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite {
   background: #13303d;
   border-color: #20455a;
 }
-body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite h2 { color: #9db4c0; }
 body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite .jm-indisponible,
-body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #a8bdc9; }
 body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
 body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
@@ -328,9 +416,11 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
      n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
      ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
      pages où il détecte des maths (cf. html-math-method: katex du site) :
-     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     chargement de KaTeX (copie hébergée sur le site : assets/katex/, version
+     0.19.1, voir VERSION.txt ; le CDN en « latest » a été abandonné le
+     28/10/2026), puis un scan DOMContentLoaded
      de tous les éléments .math qui les rend en place. -->
-<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="../../../assets/katex/katex.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () {
  var mathElements = document.getElementsByClassName("math");
  var macros = [];
@@ -345,15 +435,21 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
    });
 }}});
 </script>
-<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="../../../assets/katex/katex.min.css">
 
 
-<meta property="og:title" content="Statistique descriptive – Jaouad Madkour">
-<meta property="og:description" content="Mise en œuvre sur Python">
+<meta property="og:title" content="Mise en œuvre sur Python (Statistique descriptive)">
+<meta property="og:description" content="Statistique descriptive, chapitre 15. Les nombres. Le chapitre 14 a retrouvé en R chaque résultat du cours ; Python retrouve les mêmes — à condition d’éviter les mêmes pièges de convention, plus un.">
+<meta property="og:image" content="https://jmadkour.org/assets/og-jmadkour.png">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Statistique descriptive – Jaouad Madkour">
-<meta name="twitter:description" content="Mise en œuvre sur Python">
+<meta property="og:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:title" content="Mise en œuvre sur Python (Statistique descriptive)">
+<meta name="twitter:description" content="Statistique descriptive, chapitre 15. Les nombres. Le chapitre 14 a retrouvé en R chaque résultat du cours ; Python retrouve les mêmes — à condition d’éviter les mêmes pièges de convention, plus un.">
+<meta name="twitter:image" content="https://jmadkour.org/assets/og-jmadkour.png">
+<meta name="twitter:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://jmadkour.org/cours/statistique-descriptive/chapitres/mise-en-oeuvre-python.html">
 </head>
 
 <body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
@@ -601,32 +697,16 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
-
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Statistique descriptive</h1>
-<p class="subtitle lead">Mise en œuvre sur Python</p>
-</div>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta column-page">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Statistique descriptive</div>
+<details class="jm-sommaire" open="">
+<summary class="jm-lecteur-titre-cours">Statistique descriptive</summary>
 <ul>
 <li><a class="jm-accueil" href="../../../cours/statistique-descriptive/index.html">Présentation du cours</a></li>
 <li><a class="" href="../../../cours/statistique-descriptive/chapitres/objet-de-la-statistique.html">Qu'est-ce que la statistique ?</a></li>
@@ -646,39 +726,26 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <li><a class="" href="../../../cours/statistique-descriptive/chapitres/mise-en-oeuvre-r.html">Mise en œuvre sur R</a></li>
 <li><a class="jm-actif" href="../../../cours/statistique-descriptive/chapitres/mise-en-oeuvre-python.html">Mise en œuvre sur Python</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Statistique descriptive</h1>
-<p class="subtitle lead">Chapitre 15 : Mise en œuvre sur Python</p>
-</div>
-<div class="quarto-title-meta-author column-page">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">12 octobre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 15">
+<p class="jm-surtitre"><a href="../../../cours/statistique-descriptive/index.html">Statistique descriptive</a>&nbsp;· Chapitre 15</p>
+<h1 class="jm-titre-chapitre">Mise en œuvre sur Python</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/mise-en-oeuvre-python.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/mise-en-oeuvre-python-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/mise-en-oeuvre-python-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/mise-en-oeuvre-python.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="la-même-chaîne-un-autre-outil">
-<h1>La même chaîne, un autre outil</h1>
+<h2 class="h1 anchored" data-anchor-id="la-même-chaîne-un-autre-outil">La même chaîne, un autre outil</h2>
 <section class="level2" id="ce-qui-change-ce-qui-ne-change-pas">
-<h2 class="anchored" data-anchor-id="ce-qui-change-ce-qui-ne-change-pas">Ce qui change, ce qui ne change pas</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-qui-change-ce-qui-ne-change-pas">Ce qui change, ce qui ne change pas</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Les quatre bibliothèques</summary>
 <div class="pedago-body">
@@ -723,7 +790,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-seul-vrai-piège-du-chapitre">
-<h2 class="anchored" data-anchor-id="le-seul-vrai-piège-du-chapitre">Le seul vrai piège du chapitre</h2>
+<h3 class="h2 anchored" data-anchor-id="le-seul-vrai-piège-du-chapitre">Le seul vrai piège du chapitre</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">Deux bibliothèques, deux conventions opposées</summary>
 <div class="pedago-body">
@@ -743,9 +810,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="charger-et-explorer">
-<h1>Charger et explorer</h1>
+<h2 class="h1 anchored" data-anchor-id="charger-et-explorer">Charger et explorer</h2>
 <section class="level2" id="limport">
-<h2 class="anchored" data-anchor-id="limport">L’import</h2>
+<h3 class="h2 anchored" data-anchor-id="limport">L’import</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a aria-hidden="true" href="#cb3-1" tabindex="-1"></a>sal <span class="op">=</span> pd.read_csv(<span class="st">"salaires.csv"</span>)</span>
 <span id="cb3-2"><a aria-hidden="true" href="#cb3-2" tabindex="-1"></a>sal.info()                                     <span class="co"># types, manquants</span></span>
 <span id="cb3-3"><a aria-hidden="true" href="#cb3-3" tabindex="-1"></a>sal[[<span class="st">"salaire"</span>, <span class="st">"anciennete"</span>]].describe()      <span class="co"># quantitatives</span></span>
@@ -758,7 +825,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-sortie-de-describe">
-<h2 class="anchored" data-anchor-id="la-sortie-de-describe">La sortie de describe()</h2>
+<h3 class="h2 anchored" data-anchor-id="la-sortie-de-describe">La sortie de describe()</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Les deux variables quantitatives</summary>
 <div class="pedago-body">
@@ -781,7 +848,7 @@ max    19050.000000   35.000000</code></pre>
 </details>
 </section>
 <section class="level2" id="les-variables-qualitatives">
-<h2 class="anchored" data-anchor-id="les-variables-qualitatives">Les variables qualitatives</h2>
+<h3 class="h2 anchored" data-anchor-id="les-variables-qualitatives">Les variables qualitatives</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">La sortie de describe() sur les trois qualitatives</summary>
 <div class="pedago-body">
@@ -800,7 +867,7 @@ freq       219             180  285</code></pre>
 </details>
 </section>
 <section class="level2" id="qui-divise-par-quoi">
-<h2 class="anchored" data-anchor-id="qui-divise-par-quoi">Qui divise par quoi</h2>
+<h3 class="h2 anchored" data-anchor-id="qui-divise-par-quoi">Qui divise par quoi</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Les fonctions de dispersion, et leur diviseur</summary>
 <div class="pedago-body">
@@ -847,7 +914,7 @@ freq       219             180  285</code></pre>
 </details>
 </section>
 <section class="level2" id="le-contrôle-des-types">
-<h2 class="anchored" data-anchor-id="le-contrôle-des-types">Le contrôle des types</h2>
+<h3 class="h2 anchored" data-anchor-id="le-contrôle-des-types">Le contrôle des types</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a aria-hidden="true" href="#cb6-1" tabindex="-1"></a>sal.isna().<span class="bu">sum</span>()          <span class="co"># 0 partout : aucune valeur manquante</span></span>
 <span id="cb6-2"><a aria-hidden="true" href="#cb6-2" tabindex="-1"></a>sal.salaire.nunique()     <span class="co"># 381 valeurs distinctes : continue</span></span>
 <span id="cb6-3"><a aria-hidden="true" href="#cb6-3" tabindex="-1"></a>sal.dtypes</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
@@ -865,7 +932,7 @@ dtype: object</code></pre>
 </details>
 </section>
 <section class="level2" id="un-salaire-lu-comme-du-texte">
-<h2 class="anchored" data-anchor-id="un-salaire-lu-comme-du-texte">Un salaire lu comme du texte</h2>
+<h3 class="h2 anchored" data-anchor-id="un-salaire-lu-comme-du-texte">Un salaire lu comme du texte</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">Le premier réflexe, comme en R</summary>
 <div class="pedago-body">
@@ -886,9 +953,9 @@ dtype: object</code></pre>
 </section>
 </section>
 <section class="level1" id="le-tableau-statistique">
-<h1>Le tableau statistique</h1>
+<h2 class="h1 anchored" data-anchor-id="le-tableau-statistique">Le tableau statistique</h2>
 <section class="level2" id="variable-qualitative">
-<h2 class="anchored" data-anchor-id="variable-qualitative">Variable qualitative</h2>
+<h3 class="h2 anchored" data-anchor-id="variable-qualitative">Variable qualitative</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a aria-hidden="true" href="#cb9-1" tabindex="-1"></a>n  <span class="op">=</span> <span class="bu">len</span>(sal)</span>
 <span id="cb9-2"><a aria-hidden="true" href="#cb9-2" tabindex="-1"></a>ni <span class="op">=</span> sal.diplome.value_counts().sort_index()</span>
 <span id="cb9-3"><a aria-hidden="true" href="#cb9-3" tabindex="-1"></a>fi <span class="op">=</span> ni <span class="op">/</span> n</span>
@@ -907,7 +974,7 @@ Bac+5    107  0.214  500  1.000</code></pre>
 </details>
 </section>
 <section class="level2" id="trier-lindex-nest-pas-décoratif">
-<h2 class="anchored" data-anchor-id="trier-lindex-nest-pas-décoratif">Trier l’index n’est pas décoratif</h2>
+<h3 class="h2 anchored" data-anchor-id="trier-lindex-nest-pas-décoratif">Trier l’index n’est pas décoratif</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">Le tri par effectif décroissant</summary>
 <div class="pedago-body">
@@ -926,7 +993,7 @@ Bac+5    107  0.214  500  1.000</code></pre>
 </details>
 </section>
 <section class="level2" id="variable-continue">
-<h2 class="anchored" data-anchor-id="variable-continue">Variable continue</h2>
+<h3 class="h2 anchored" data-anchor-id="variable-continue">Variable continue</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a aria-hidden="true" href="#cb12-1" tabindex="-1"></a>bornes <span class="op">=</span> [<span class="dv">2000</span>, <span class="dv">4000</span>, <span class="dv">6000</span>, <span class="dv">8000</span>, <span class="dv">10000</span>, <span class="dv">14000</span>, <span class="dv">20000</span>]</span>
 <span id="cb12-2"><a aria-hidden="true" href="#cb12-2" tabindex="-1"></a>cl <span class="op">=</span> pd.cut(sal.salaire, bins<span class="op">=</span>bornes, right<span class="op">=</span><span class="va">False</span>)   <span class="co"># [a ; b[</span></span>
 <span id="cb12-3"><a aria-hidden="true" href="#cb12-3" tabindex="-1"></a>nk <span class="op">=</span> cl.value_counts().sort_index()                  <span class="co"># effectifs</span></span>
@@ -941,7 +1008,7 @@ Bac+5    107  0.214  500  1.000</code></pre>
 </details>
 </section>
 <section class="level2" id="le-tableau-de-référence-en-python">
-<h2 class="anchored" data-anchor-id="le-tableau-de-référence-en-python">Le tableau de référence, en Python</h2>
+<h3 class="h2 anchored" data-anchor-id="le-tableau-de-référence-en-python">Le tableau de référence, en Python</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">La sortie</summary>
 <div class="pedago-body">
@@ -963,7 +1030,7 @@ salaire
 </details>
 </section>
 <section class="level2" id="sur-données-groupées">
-<h2 class="anchored" data-anchor-id="sur-données-groupées">Sur données groupées</h2>
+<h3 class="h2 anchored" data-anchor-id="sur-données-groupées">Sur données groupées</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a aria-hidden="true" href="#cb14-1" tabindex="-1"></a>nk <span class="op">=</span> nk.to_numpy()</span>
 <span id="cb14-2"><a aria-hidden="true" href="#cb14-2" tabindex="-1"></a>ci <span class="op">=</span> (np.array(bornes[:<span class="op">-</span><span class="dv">1</span>]) <span class="op">+</span> np.array(bornes[<span class="dv">1</span>:])) <span class="op">/</span> <span class="dv">2</span>   <span class="co"># centres</span></span>
 <span id="cb14-3"><a aria-hidden="true" href="#cb14-3" tabindex="-1"></a>mg <span class="op">=</span> (nk <span class="op">*</span> ci).<span class="bu">sum</span>() <span class="op">/</span> n                       <span class="co"># 7210     moyenne</span></span>
@@ -980,9 +1047,9 @@ salaire
 </section>
 </section>
 <section class="level1" id="les-graphiques">
-<h1>Les graphiques</h1>
+<h2 class="h1 anchored" data-anchor-id="les-graphiques">Les graphiques</h2>
 <section class="level2" id="les-quatre-représentations">
-<h2 class="anchored" data-anchor-id="les-quatre-représentations">Les quatre représentations</h2>
+<h3 class="h2 anchored" data-anchor-id="les-quatre-représentations">Les quatre représentations</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a aria-hidden="true" href="#cb15-1" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="dv">7</span>))</span>
 <span id="cb15-2"><a aria-hidden="true" href="#cb15-2" tabindex="-1"></a>sal.diplome.value_counts().sort_index().plot.bar(</span>
 <span id="cb15-3"><a aria-hidden="true" href="#cb15-3" tabindex="-1"></a>    ax<span class="op">=</span>ax[<span class="dv">0</span>,<span class="dv">0</span>], color<span class="op">=</span><span class="st">"steelblue"</span>, rot<span class="op">=</span><span class="dv">0</span>, title<span class="op">=</span><span class="st">"Diplôme"</span>)</span>
@@ -998,10 +1065,10 @@ salaire
 <span id="cb15-13"><a aria-hidden="true" href="#cb15-13" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="level2" id="ce-que-python-affiche">
-<h2 class="anchored" data-anchor-id="ce-que-python-affiche">Ce que Python affiche</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-que-python-affiche">Ce que Python affiche</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="316.08pt" id="svg_0806c5ad368790b02a68" role="img" style="width:80.0%" viewbox="0 0 560.909531 316.08" width="560.909531pt">
+<p><svg height="316.08pt" id="svg_0806c5ad368790b02a68" role="img" style="width:80.0%" viewbox="0 0 560.909531 316.08" width="560.909531pt" aria-label="Figure 1 : Ce que Python affiche">
 <metadata>
 <rdf:rdf xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <cc:work>
@@ -3786,7 +3853,7 @@ z
 </div>
 </section>
 <section class="level2" id="largument-densitytrue">
-<h2 class="anchored" data-anchor-id="largument-densitytrue">L’argument density=True</h2>
+<h3 class="h2 anchored" data-anchor-id="largument-densitytrue">L’argument density=True</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">L’équivalent exact de freq = FALSE en R</summary>
 <div class="pedago-body">
@@ -3802,13 +3869,13 @@ z
 </details>
 </section>
 <section class="level2" id="les-boîtes-à-moustaches">
-<h2 class="anchored" data-anchor-id="les-boîtes-à-moustaches">Les boîtes à moustaches</h2>
+<h3 class="h2 anchored" data-anchor-id="les-boîtes-à-moustaches">Les boîtes à moustaches</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a aria-hidden="true" href="#cb16-1" tabindex="-1"></a>sal.boxplot(column<span class="op">=</span><span class="st">"salaire"</span>, by<span class="op">=</span><span class="st">"diplome"</span>, grid<span class="op">=</span><span class="va">False</span>)</span>
 <span id="cb16-2"><a aria-hidden="true" href="#cb16-2" tabindex="-1"></a>plt.suptitle(<span class="st">""</span>)<span class="op">;</span> plt.title(<span class="st">"Salaire selon le diplôme"</span>)</span>
 <span id="cb16-3"><a aria-hidden="true" href="#cb16-3" tabindex="-1"></a>plt.ylabel(<span class="st">"dirhams"</span>)<span class="op">;</span> plt.show()</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="221.07pt" id="svg_7a4afeca471ec8ebe42a" role="img" style="width:62.0%" viewbox="0 0 418.743594 221.07" width="418.743594pt">
+<p><svg height="221.07pt" id="svg_7a4afeca471ec8ebe42a" role="img" style="width:62.0%" viewbox="0 0 418.743594 221.07" width="418.743594pt" aria-label="Figure 2 : Les boîtes à moustaches">
 <metadata>
 <rdf:rdf xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <cc:work>
@@ -4856,9 +4923,9 @@ z
 </section>
 </section>
 <section class="level1" id="les-indicateurs-univariés">
-<h1>Les indicateurs univariés</h1>
+<h2 class="h1 anchored" data-anchor-id="les-indicateurs-univariés">Les indicateurs univariés</h2>
 <section class="level2" id="tendance-centrale-dispersion-forme">
-<h2 class="anchored" data-anchor-id="tendance-centrale-dispersion-forme">Tendance centrale, dispersion, forme</h2>
+<h3 class="h2 anchored" data-anchor-id="tendance-centrale-dispersion-forme">Tendance centrale, dispersion, forme</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a aria-hidden="true" href="#cb17-1" tabindex="-1"></a>x <span class="op">=</span> sal.salaire</span>
 <span id="cb17-2"><a aria-hidden="true" href="#cb17-2" tabindex="-1"></a>resume <span class="op">=</span> {</span>
 <span id="cb17-3"><a aria-hidden="true" href="#cb17-3" tabindex="-1"></a>    <span class="st">"moyenne"</span>: x.mean(),         <span class="st">"mediane"</span>: x.median(),</span>
@@ -4872,7 +4939,7 @@ z
 <span id="cb17-11"><a aria-hidden="true" href="#cb17-11" tabindex="-1"></a>pd.Series(resume).<span class="bu">round</span>(<span class="dv">3</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="level2" id="le-résultat">
-<h2 class="anchored" data-anchor-id="le-résultat">Le résultat</h2>
+<h3 class="h2 anchored" data-anchor-id="le-résultat">Le résultat</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Les indicateurs des chapitres 5 à 8, à la troisième décimale</summary>
 <div class="pedago-body">
@@ -4891,7 +4958,7 @@ aplatissement        4.837</code></pre>
 </details>
 </section>
 <section class="level2" id="une-même-forme-plusieurs-réponses">
-<h2 class="anchored" data-anchor-id="une-même-forme-plusieurs-réponses">Une même forme, plusieurs réponses</h2>
+<h3 class="h2 anchored" data-anchor-id="une-même-forme-plusieurs-réponses">Une même forme, plusieurs réponses</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Quatre appels sur les mêmes 500 salaires</summary>
 <div class="pedago-body">
@@ -4938,7 +5005,7 @@ aplatissement        4.837</code></pre>
 </details>
 </section>
 <section class="level2" id="concentration">
-<h2 class="anchored" data-anchor-id="concentration">Concentration</h2>
+<h3 class="h2 anchored" data-anchor-id="concentration">Concentration</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a aria-hidden="true" href="#cb19-1" tabindex="-1"></a><span class="kw">def</span> gini(v):</span>
 <span id="cb19-2"><a aria-hidden="true" href="#cb19-2" tabindex="-1"></a>    v <span class="op">=</span> np.sort(np.asarray(v, dtype<span class="op">=</span><span class="bu">float</span>))<span class="op">;</span> m <span class="op">=</span> <span class="bu">len</span>(v)</span>
 <span id="cb19-3"><a aria-hidden="true" href="#cb19-3" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">2</span><span class="op">*</span>np.<span class="bu">sum</span>(np.arange(<span class="dv">1</span>, m<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>v)<span class="op">/</span>(m<span class="op">*</span>v.<span class="bu">sum</span>()) <span class="op">-</span> (m<span class="op">+</span><span class="dv">1</span>)<span class="op">/</span>m</span>
@@ -4954,10 +5021,10 @@ aplatissement        4.837</code></pre>
 <span id="cb19-13"><a aria-hidden="true" href="#cb19-13" tabindex="-1"></a>plt.ylabel(<span class="st">"part cumulée de la masse salariale"</span>)<span class="op">;</span> plt.show()</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="level2" id="la-courbe-et-laire-de-concentration">
-<h2 class="anchored" data-anchor-id="la-courbe-et-laire-de-concentration">La courbe et l’aire de concentration</h2>
+<h3 class="h2 anchored" data-anchor-id="la-courbe-et-laire-de-concentration">La courbe et l’aire de concentration</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="247.592pt" id="svg_ac28a72e1dffce912b80" role="img" style="width:44.0%" viewbox="0 0 272.620156 247.592" width="272.620156pt">
+<p><svg height="247.592pt" id="svg_ac28a72e1dffce912b80" role="img" style="width:44.0%" viewbox="0 0 272.620156 247.592" width="272.620156pt" aria-label="Figure 3 : La courbe et l’aire de concentration">
 <metadata>
 <rdf:rdf xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <cc:work>
@@ -6815,9 +6882,9 @@ L 270.460156 2.16
 </section>
 </section>
 <section class="level1" id="le-bivarié">
-<h1>Le bivarié</h1>
+<h2 class="h1 anchored" data-anchor-id="le-bivarié">Le bivarié</h2>
 <section class="level2" id="contingence">
-<h2 class="anchored" data-anchor-id="contingence">Contingence</h2>
+<h3 class="h2 anchored" data-anchor-id="contingence">Contingence</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a aria-hidden="true" href="#cb20-1" tabindex="-1"></a>T <span class="op">=</span> pd.crosstab(sal.diplome, sal.region)</span>
 <span id="cb20-2"><a aria-hidden="true" href="#cb20-2" tabindex="-1"></a>pd.crosstab(sal.diplome, sal.region, margins<span class="op">=</span><span class="va">True</span>)       <span class="co"># marges</span></span>
 <span id="cb20-3"><a aria-hidden="true" href="#cb20-3" tabindex="-1"></a>pd.crosstab(sal.diplome, sal.region, normalize<span class="op">=</span><span class="st">"index"</span>)  <span class="co"># lignes</span></span>
@@ -6832,7 +6899,7 @@ L 270.460156 2.16
 </details>
 </section>
 <section class="level2" id="les-profils-lignes">
-<h2 class="anchored" data-anchor-id="les-profils-lignes">Les profils-lignes</h2>
+<h3 class="h2 anchored" data-anchor-id="les-profils-lignes">Les profils-lignes</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">La sortie de normalize = index</summary>
 <div class="pedago-body">
@@ -6851,7 +6918,7 @@ Bac+5     0.103       0.299  0.215           0.383</code></pre>
 </details>
 </section>
 <section class="level2" id="les-effectifs-théoriques">
-<h2 class="anchored" data-anchor-id="les-effectifs-théoriques">Les effectifs théoriques</h2>
+<h3 class="h2 anchored" data-anchor-id="les-effectifs-théoriques">Les effectifs théoriques</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">np.outer, la formule du chapitre 10 sans boucle</summary>
 <div class="pedago-body">
@@ -6871,7 +6938,7 @@ Bac+5      17.3        29.3   21.8            38.5</code></pre>
 </details>
 </section>
 <section class="level2" id="conditionnelles">
-<h2 class="anchored" data-anchor-id="conditionnelles">Conditionnelles</h2>
+<h3 class="h2 anchored" data-anchor-id="conditionnelles">Conditionnelles</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a aria-hidden="true" href="#cb23-1" tabindex="-1"></a>sal.groupby(<span class="st">"diplome"</span>).salaire.agg(</span>
 <span id="cb23-2"><a aria-hidden="true" href="#cb23-2" tabindex="-1"></a>    n<span class="op">=</span><span class="st">"size"</span>, moyenne<span class="op">=</span><span class="st">"mean"</span>, ecart_type<span class="op">=</span><span class="kw">lambda</span> v: v.std(ddof<span class="op">=</span><span class="dv">0</span>),</span>
 <span id="cb23-3"><a aria-hidden="true" href="#cb23-3" tabindex="-1"></a>    mediane<span class="op">=</span><span class="st">"median"</span>).<span class="bu">round</span>(<span class="dv">1</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
@@ -6893,7 +6960,7 @@ Bac+5    107   9534.4      2872.1   8900.0</code></pre>
 </details>
 </section>
 <section class="level2" id="décomposition-de-la-variance">
-<h2 class="anchored" data-anchor-id="décomposition-de-la-variance">Décomposition de la variance</h2>
+<h3 class="h2 anchored" data-anchor-id="décomposition-de-la-variance">Décomposition de la variance</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a aria-hidden="true" href="#cb25-1" tabindex="-1"></a>g  <span class="op">=</span> sal.groupby(<span class="st">"diplome"</span>).salaire</span>
 <span id="cb25-2"><a aria-hidden="true" href="#cb25-2" tabindex="-1"></a>nj <span class="op">=</span> g.size()<span class="op">;</span> mj <span class="op">=</span> g.mean()<span class="op">;</span> vj <span class="op">=</span> g.<span class="bu">apply</span>(<span class="kw">lambda</span> v: v.var(ddof<span class="op">=</span><span class="dv">0</span>))</span>
 <span id="cb25-3"><a aria-hidden="true" href="#cb25-3" tabindex="-1"></a>mg <span class="op">=</span> sal.salaire.mean()</span>
@@ -6908,7 +6975,7 @@ Bac+5    107   9534.4      2872.1   8900.0</code></pre>
 </details>
 </section>
 <section class="level2" id="covariance-corrélation-ajustement">
-<h2 class="anchored" data-anchor-id="covariance-corrélation-ajustement">Covariance, corrélation, ajustement</h2>
+<h3 class="h2 anchored" data-anchor-id="covariance-corrélation-ajustement">Covariance, corrélation, ajustement</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a aria-hidden="true" href="#cb26-1" tabindex="-1"></a>z <span class="op">=</span> sal.anciennete</span>
 <span id="cb26-2"><a aria-hidden="true" href="#cb26-2" tabindex="-1"></a></span>
 <span id="cb26-3"><a aria-hidden="true" href="#cb26-3" tabindex="-1"></a>cov <span class="op">=</span> np.cov(z, x, ddof<span class="op">=</span><span class="dv">0</span>)[<span class="dv">0</span>, <span class="dv">1</span>]        <span class="co"># 9859.91</span></span>
@@ -6925,7 +6992,7 @@ Bac+5    107   9534.4      2872.1   8900.0</code></pre>
 </details>
 </section>
 <section class="level2" id="la-version-statsmodels">
-<h2 class="anchored" data-anchor-id="la-version-statsmodels">La version statsmodels</h2>
+<h3 class="h2 anchored" data-anchor-id="la-version-statsmodels">La version statsmodels</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a aria-hidden="true" href="#cb27-1" tabindex="-1"></a><span class="im">import</span> statsmodels.formula.api <span class="im">as</span> smf</span>
 <span id="cb27-2"><a aria-hidden="true" href="#cb27-2" tabindex="-1"></a>mod <span class="op">=</span> smf.ols(<span class="st">"salaire ~ anciennete"</span>, data<span class="op">=</span>sal).fit()</span>
 <span id="cb27-3"><a aria-hidden="true" href="#cb27-3" tabindex="-1"></a><span class="bu">print</span>(mod.summary())</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
@@ -6943,7 +7010,7 @@ Bac+5    107   9534.4      2872.1   8900.0</code></pre>
 </details>
 </section>
 <section class="level2" id="la-sortie-de-summary">
-<h2 class="anchored" data-anchor-id="la-sortie-de-summary">La sortie de summary()</h2>
+<h3 class="h2 anchored" data-anchor-id="la-sortie-de-summary">La sortie de summary()</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Un extrait</summary>
 <div class="pedago-body">
@@ -6966,7 +7033,7 @@ Skew:          0.985     Kurtosis:            4.494</code></pre>
 </details>
 </section>
 <section class="level2" id="le-graphique-final">
-<h2 class="anchored" data-anchor-id="le-graphique-final">Le graphique final</h2>
+<h3 class="h2 anchored" data-anchor-id="le-graphique-final">Le graphique final</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a aria-hidden="true" href="#cb29-1" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">5</span>))</span>
 <span id="cb29-2"><a aria-hidden="true" href="#cb29-2" tabindex="-1"></a>plt.scatter(z, x, s<span class="op">=</span><span class="dv">8</span>, alpha<span class="op">=</span><span class="fl">.35</span>, color<span class="op">=</span><span class="st">"steelblue"</span>)</span>
 <span id="cb29-3"><a aria-hidden="true" href="#cb29-3" tabindex="-1"></a>xx <span class="op">=</span> np.linspace(<span class="dv">0</span>, <span class="dv">35</span>, <span class="dv">2</span>)</span>
@@ -6982,10 +7049,10 @@ Skew:          0.985     Kurtosis:            4.494</code></pre>
 </details>
 </section>
 <section class="level2" id="le-nuage-et-sa-droite">
-<h2 class="anchored" data-anchor-id="le-nuage-et-sa-droite">Le nuage et sa droite</h2>
+<h3 class="h2 anchored" data-anchor-id="le-nuage-et-sa-droite">Le nuage et sa droite</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="236.504pt" id="svg_022bdcef89ca06a08d33" role="img" style="width:78.0%" viewbox="0 0 407.223594 236.504" width="407.223594pt">
+<p><svg height="236.504pt" id="svg_022bdcef89ca06a08d33" role="img" style="width:78.0%" viewbox="0 0 407.223594 236.504" width="407.223594pt" aria-label="Figure 4 : Le nuage et sa droite">
 <metadata>
 <rdf:rdf xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <cc:work>
@@ -8469,9 +8536,9 @@ z
 </section>
 </section>
 <section class="level1" id="comparaison-des-deux-langages">
-<h1>Comparaison des deux langages</h1>
+<h2 class="h1 anchored" data-anchor-id="comparaison-des-deux-langages">Comparaison des deux langages</h2>
 <section class="level2" id="importer-et-résumer">
-<h2 class="anchored" data-anchor-id="importer-et-résumer">Importer et résumer</h2>
+<h3 class="h2 anchored" data-anchor-id="importer-et-résumer">Importer et résumer</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">R et Python, côte à côte</summary>
 <div class="pedago-body">
@@ -8528,7 +8595,7 @@ z
 </details>
 </section>
 <section class="level2" id="les-indicateurs">
-<h2 class="anchored" data-anchor-id="les-indicateurs">Les indicateurs</h2>
+<h3 class="h2 anchored" data-anchor-id="les-indicateurs">Les indicateurs</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">R et Python, côte à côte</summary>
 <div class="pedago-body">
@@ -8585,7 +8652,7 @@ z
 </details>
 </section>
 <section class="level2" id="le-bivarié-1">
-<h2 class="anchored" data-anchor-id="le-bivarié-1">Le bivarié</h2>
+<h3 class="h2 anchored" data-anchor-id="le-bivarié-1">Le bivarié</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">R et Python, côte à côte</summary>
 <div class="pedago-body">
@@ -8643,9 +8710,9 @@ z
 </section>
 </section>
 <section class="level1" id="sentraîner">
-<h1>S’entraîner</h1>
+<h2 class="h1 anchored" data-anchor-id="sentraîner">S’entraîner</h2>
 <section class="level2" id="exercice-1-trois-écarts-types-pour-une-série">
-<h2 class="anchored" data-anchor-id="exercice-1-trois-écarts-types-pour-une-série">Exercice 1 : trois écarts-types pour une série</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-1-trois-écarts-types-pour-une-série">Exercice 1 : trois écarts-types pour une série</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Les dix salariés, en Python</summary>
 <div class="pedago-body">
@@ -8664,7 +8731,7 @@ z
 </details>
 </section>
 <section class="level2" id="exercice-1-solution">
-<h2 class="anchored" data-anchor-id="exercice-1-solution">Exercice 1 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-1-solution">Exercice 1 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">ddof et rang des quantiles</summary>
 <div class="pedago-body">
@@ -8677,7 +8744,7 @@ z
 </details>
 </section>
 <section class="level2" id="exercice-2-les-quantiles-groupés-à-la-main">
-<h2 class="anchored" data-anchor-id="exercice-2-les-quantiles-groupés-à-la-main">Exercice 2 : les quantiles groupés à la main</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-2-les-quantiles-groupés-à-la-main">Exercice 2 : les quantiles groupés à la main</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Ce que fait np.interp</summary>
 <div class="pedago-body">
@@ -8716,7 +8783,7 @@ z
 </details>
 </section>
 <section class="level2" id="exercice-2-solution">
-<h2 class="anchored" data-anchor-id="exercice-2-solution">Exercice 2 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-2-solution">Exercice 2 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Interpolation dans la classe</summary>
 <div class="pedago-body">
@@ -8728,7 +8795,7 @@ z
 </details>
 </section>
 <section class="level2" id="exercice-3-traduire-un-script-r">
-<h2 class="anchored" data-anchor-id="exercice-3-traduire-un-script-r">Exercice 3 : traduire un script R</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-3-traduire-un-script-r">Exercice 3 : traduire un script R</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Cinq lignes de R, à écrire en Python</summary>
 <div class="pedago-body">
@@ -8742,7 +8809,7 @@ z
 </details>
 </section>
 <section class="level2" id="exercice-3-solution">
-<h2 class="anchored" data-anchor-id="exercice-3-solution">Exercice 3 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-3-solution">Exercice 3 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">La traduction</summary>
 <div class="pedago-body">
@@ -8762,9 +8829,9 @@ z
 </section>
 </section>
 <section class="level1" id="ce-quil-faut-retenir">
-<h1>Ce qu’il faut retenir</h1>
+<h2 class="h1 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
 <section class="level2" id="le-résumé-du-chapitre">
-<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<h3 class="h2 anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Sept points</summary>
 <div class="pedago-body">
@@ -8781,7 +8848,7 @@ z
 </details>
 </section>
 <section class="level2" id="bilan-des-seize-chapitres">
-<h2 class="anchored" data-anchor-id="bilan-des-seize-chapitres">Bilan des seize chapitres</h2>
+<h3 class="h2 anchored" data-anchor-id="bilan-des-seize-chapitres">Bilan des seize chapitres</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Le fil complet</summary>
 <div class="pedago-body">
@@ -8852,7 +8919,7 @@ z
 </details>
 </section>
 <section class="level2" id="la-phrase-qui-résume-le-semestre">
-<h2 class="anchored" data-anchor-id="la-phrase-qui-résume-le-semestre">La phrase qui résume le semestre</h2>
+<h3 class="h2 anchored" data-anchor-id="la-phrase-qui-résume-le-semestre">La phrase qui résume le semestre</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">Résumer, et savoir ce qu’on a laissé de côté</summary>
 <div class="pedago-body">
@@ -8867,7 +8934,7 @@ z
 </details>
 </section>
 <section class="level2" id="et-maintenant">
-<h2 class="anchored" data-anchor-id="et-maintenant">Et maintenant</h2>
+<h3 class="h2 anchored" data-anchor-id="et-maintenant">Et maintenant</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">Lequel choisir</summary>
 <div class="pedago-body">
@@ -8883,12 +8950,13 @@ z
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="../../../cours/statistique-descriptive/chapitres/mise-en-oeuvre-r.html">← Chapitre précédent<span class="jm-nav-label">Mise en œuvre sur R</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3 class="anchored">Ressources du chapitre</h3>
+<h2 class="anchored">Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/mise-en-oeuvre-python.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/mise-en-oeuvre-python-poly.pdf">Polycopié du chapitre</a></li>

@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Statistique inférentielle, chapitre 7. Pour estimer une moyenne, on prend la moyenne : personne n’hésite.">
 
-<title>Statistique inférentielle – Jaouad Madkour</title>
+<title>Construire un estimateur (Statistique inférentielle) – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -46,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b626d73c4c936ccc3cb08be7d45d1df6.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-4a81b521e20b8a0d9edba7313f3ee218.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-2e1988c4a830338585f6d0d114f9611f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -75,14 +76,25 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
-<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
-     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
-     latérale, l'onglet du navigateur et la recherche du site. Seul son
-     affichage en tête de page, redondant avec la barre latérale, disparaît.
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours et les
+     pages de niveau. Le titre reste déclaré dans l'entête du fichier : il
+     alimente l'onglet du navigateur et la recherche du site. Depuis le
+     28/10/2026 le bloc n'est plus retiré de la page (display: none), mais
+     seulement sorti de l'écran : le titre h1 reste donc dans la page pour les
+     lecteurs d'écran, qui n'avaient plus aucun titre à annoncer. Le bloc des
+     métadonnées (auteur, affiliation, date), lui, reste caché.
      Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
 <style>
   header#title-block-header,
-  .quarto-title-block { display: none; }
+  .quarto-title-block {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  header#title-block-header .quarto-title-meta,
+  header#title-block-header .quarto-title-meta-author,
+  .quarto-title-block .quarto-title-meta,
+  .quarto-title-block .quarto-title-meta-author { display: none; }
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
@@ -129,8 +141,11 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur > * { grid-column: auto !important; }
 
 @media (max-width: 991px) {
-  .jm-lecteur { grid-template-columns: 1fr !important; }
-  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+  .jm-lecteur { grid-template-columns: 1fr !important; gap: 1rem; }
+  .jm-lecteur-gauche { position: static !important; }
+  /* Les ressources du chapitre sont repeintes en puces sous le titre
+     (.jm-ressources-mobile) : le panneau, tout en bas de page, est masqué. */
+  .jm-lecteur-droite { display: none; }
 }
 
 /* ---------- Volet gauche : sommaire du cours ---------- */
@@ -181,12 +196,14 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 12px;
   padding: 1rem 1.1rem;
 }
-.jm-lecteur-droite h3 {
+.jm-lecteur-droite h2 {
   font-size: .8rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: #54707f;
   margin: 0 0 .7rem;
+  padding: 0;
+  border: 0;
 }
 .jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
 .jm-lecteur-droite li { margin-bottom: .55rem; }
@@ -195,11 +212,13 @@ ul.task-list li input[type="checkbox"] {
   font-weight: 600;
 }
 .jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+/* Textes inactifs : au moins 4,5:1 sur le fond du panneau (WCAG AA). Avant le
+   28/10/2026 : 2,3:1 en thème clair, 3,5:1 en thème sombre. */
 .jm-lecteur-droite .jm-indisponible {
-  color: #9aa9b2; font-weight: 500; cursor: default;
+  color: #566b77; font-weight: 500; cursor: default;
 }
 .jm-lecteur-droite .jm-reserve {
-  color: #9aa9b2; font-style: italic;
+  color: #566b77; font-style: italic;
 }
 
 /* ---------- Navigation précédent / suivant ---------- */
@@ -271,6 +290,71 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
 .jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
 
+/* ---------- En-tête du chapitre : seul titre h1 de la page ---------- */
+.jm-entete-chapitre { margin: 0 0 1.1rem; }
+.jm-entete-chapitre .jm-surtitre {
+  margin: 0 0 .3rem; font-size: .9rem; color: #3d5a6b;
+}
+.jm-entete-chapitre .jm-surtitre a {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+/* Plus grand que les titres de section (classe .h1 de Bootstrap, jusqu'à 2,5 rem). */
+.jm-titre-chapitre {
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 2.7rem); font-weight: 700; line-height: 1.15;
+  margin: 0; padding: 0; border: 0;
+}
+
+/* ---------- Sommaire du cours : toujours ouvert sur ordinateur, replié sur
+   téléphone (script placé après le <details>, voir lecteur.py) ---------- */
+.jm-lecteur-gauche details.jm-sommaire > summary {
+  list-style: none; cursor: default; pointer-events: none;
+  color: inherit; /* Bootstrap grise les <summary> */
+}
+.jm-lecteur-gauche details.jm-sommaire > summary::-webkit-details-marker { display: none; }
+@media (max-width: 991px) {
+  .jm-lecteur-gauche details.jm-sommaire > summary {
+    pointer-events: auto; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .65rem .8rem; margin: 0; border: 1px solid #dbe6ee; border-radius: 10px;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  }
+  .jm-lecteur-gauche details.jm-sommaire > summary::after {
+    content: "\25BE"; font-size: 1.05rem; transition: transform .15s ease;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary::after { transform: rotate(180deg); }
+  .jm-lecteur-gauche details.jm-sommaire > ul {
+    border: 1px solid #dbe6ee; border-top: 0; border-radius: 0 0 10px 10px;
+    padding: .4rem .4rem .5rem;
+  }
+}
+
+/* ---------- Ressources du chapitre en puces (téléphone seulement) ---------- */
+.jm-ressources-mobile { display: none; }
+@media (max-width: 991px) {
+  .jm-ressources-mobile { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.1rem; }
+  .jm-ressources-mobile a.jm-ressource {
+    display: inline-block; padding: .4rem .85rem; border: 1px solid #1f6fb2;
+    border-radius: 999px; font-size: .88rem; font-weight: 600; color: #1f6fb2;
+    text-decoration: none;
+  }
+}
+
+/* ---------- Titres des sections : abaissés d'un niveau dans le HTML
+   (h1 -> h2, h2 -> h3), apparence inchangée grâce aux classes .h1 et
+   .h2 de Bootstrap ajoutées par normaliser.py. ---------- */
+.jm-lecteur-centre h2, .jm-lecteur-centre h3 { overflow-wrap: anywhere; }
+
+/* ---------- Débordements : formules, tableaux, figures ---------- */
+.jm-lecteur-centre .katex-display {
+  overflow-x: auto; overflow-y: hidden; max-width: 100%;
+}
+.jm-lecteur-centre svg[role="img"] { max-width: 100%; height: auto; }
+@media (max-width: 991px) {
+  .jm-lecteur-centre table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
 /* =====================================================================
    Mode sombre — posé par Quarto sur <body class="quarto-dark">
    ===================================================================== */
@@ -282,14 +366,18 @@ body.quarto-dark .jm-lecteur-gauche a.jm-actif {
   color: #3aa0e6;
 }
 body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-entete-chapitre .jm-surtitre { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > summary,
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > ul { border-color: #20455a; }
+body.quarto-dark .jm-ressources-mobile a.jm-ressource { color: #5bb3ef; border-color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite {
   background: #13303d;
   border-color: #20455a;
 }
-body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite h2 { color: #9db4c0; }
 body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite .jm-indisponible,
-body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #a8bdc9; }
 body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
 body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
@@ -328,9 +416,11 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
      n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
      ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
      pages où il détecte des maths (cf. html-math-method: katex du site) :
-     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     chargement de KaTeX (copie hébergée sur le site : assets/katex/, version
+     0.19.1, voir VERSION.txt ; le CDN en « latest » a été abandonné le
+     28/10/2026), puis un scan DOMContentLoaded
      de tous les éléments .math qui les rend en place. -->
-<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="../../../assets/katex/katex.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () {
  var mathElements = document.getElementsByClassName("math");
  var macros = [];
@@ -345,15 +435,21 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
    });
 }}});
 </script>
-<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="../../../assets/katex/katex.min.css">
 
 
-<meta property="og:title" content="Statistique inférentielle – Jaouad Madkour">
-<meta property="og:description" content="Construire un estimateur">
+<meta property="og:title" content="Construire un estimateur (Statistique inférentielle)">
+<meta property="og:description" content="Statistique inférentielle, chapitre 7. Pour estimer une moyenne, on prend la moyenne : personne n’hésite.">
+<meta property="og:image" content="https://jmadkour.org/assets/og-jmadkour.png">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Statistique inférentielle – Jaouad Madkour">
-<meta name="twitter:description" content="Construire un estimateur">
+<meta property="og:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:title" content="Construire un estimateur (Statistique inférentielle)">
+<meta name="twitter:description" content="Statistique inférentielle, chapitre 7. Pour estimer une moyenne, on prend la moyenne : personne n’hésite.">
+<meta name="twitter:image" content="https://jmadkour.org/assets/og-jmadkour.png">
+<meta name="twitter:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://jmadkour.org/cours/statistique-inferentielle/chapitres/construire-un-estimateur.html">
 </head>
 
 <body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
@@ -601,32 +697,16 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
-
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Statistique inférentielle</h1>
-<p class="subtitle lead">Construire un estimateur</p>
-</div>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta column-page">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Statistique inférentielle</div>
+<details class="jm-sommaire" open="">
+<summary class="jm-lecteur-titre-cours">Statistique inférentielle</summary>
 <ul>
 <li><a class="jm-accueil" href="../../../cours/statistique-inferentielle/index.html">Présentation du cours</a></li>
 <li><a class="" href="../../../cours/statistique-inferentielle/chapitres/troisieme-face.html">La troisième face</a></li>
@@ -652,39 +732,26 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <li><a class="" href="../../../cours/statistique-inferentielle/chapitres/tester-un-coefficient.html">Tester un coefficient</a></li>
 <li><a class="" href="../../../cours/statistique-inferentielle/chapitres/mise-en-oeuvre-r-python.html">Mise en œuvre sur R et Python</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Statistique inférentielle</h1>
-<p class="subtitle lead">Chapitre 7 : Construire un estimateur</p>
-</div>
-<div class="quarto-title-meta-author column-page">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">22 octobre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 7">
+<p class="jm-surtitre"><a href="../../../cours/statistique-inferentielle/index.html">Statistique inférentielle</a>&nbsp;· Chapitre 7</p>
+<h1 class="jm-titre-chapitre">Construire un estimateur</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/construire-un-estimateur.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/construire-un-estimateur-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/construire-un-estimateur-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/construire-un-estimateur.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="deux-méthodes">
-<h1>Deux méthodes</h1>
+<h2 class="h1 anchored" data-anchor-id="deux-méthodes">Deux méthodes</h2>
 <section class="level2" id="pourquoi-il-faut-une-méthode">
-<h2 class="anchored" data-anchor-id="pourquoi-il-faut-une-méthode">Pourquoi il faut une méthode</h2>
+<h3 class="h2 anchored" data-anchor-id="pourquoi-il-faut-une-méthode">Pourquoi il faut une méthode</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">L’évidence s’arrête vite</summary>
 <div class="pedago-body">
@@ -701,7 +768,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-cadre-commun">
-<h2 class="anchored" data-anchor-id="le-cadre-commun">Le cadre commun</h2>
+<h3 class="h2 anchored" data-anchor-id="le-cadre-commun">Le cadre commun</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Un modèle paramétrique</summary>
 <div class="pedago-body">
@@ -718,9 +785,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="la-méthode-des-moments">
-<h1>La méthode des moments</h1>
+<h2 class="h1 anchored" data-anchor-id="la-méthode-des-moments">La méthode des moments</h2>
 <section class="level2" id="le-principe">
-<h2 class="anchored" data-anchor-id="le-principe">Le principe</h2>
+<h3 class="h2 anchored" data-anchor-id="le-principe">Le principe</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Une équation par paramètre</summary>
 <div class="pedago-body">
@@ -768,7 +835,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="un-exemple-complet-les-pannes-dune-machine">
-<h2 class="anchored" data-anchor-id="un-exemple-complet-les-pannes-dune-machine">Un exemple complet : les pannes d’une machine</h2>
+<h3 class="h2 anchored" data-anchor-id="un-exemple-complet-les-pannes-dune-machine">Un exemple complet : les pannes d’une machine</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Cinq durées entre deux pannes</summary>
 <div class="pedago-body">
@@ -785,7 +852,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="deux-paramètres-deux-équations">
-<h2 class="anchored" data-anchor-id="deux-paramètres-deux-équations">Deux paramètres, deux équations</h2>
+<h3 class="h2 anchored" data-anchor-id="deux-paramètres-deux-équations">Deux paramètres, deux équations</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Le cas de la loi normale</summary>
 <div class="pedago-body">
@@ -801,7 +868,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="ses-mérites-et-ses-limites">
-<h2 class="anchored" data-anchor-id="ses-mérites-et-ses-limites">Ses mérites et ses limites</h2>
+<h3 class="h2 anchored" data-anchor-id="ses-mérites-et-ses-limites">Ses mérites et ses limites</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">Simple, mais rustique</summary>
 <div class="pedago-body">
@@ -819,12 +886,12 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="le-maximum-de-vraisemblance">
-<h1>Le maximum de vraisemblance</h1>
+<h2 class="h1 anchored" data-anchor-id="le-maximum-de-vraisemblance">Le maximum de vraisemblance</h2>
 <section class="level2" id="retourner-la-question-des-probabilités">
-<h2 class="anchored" data-anchor-id="retourner-la-question-des-probabilités">Retourner la question des probabilités</h2>
+<h3 class="h2 anchored" data-anchor-id="retourner-la-question-des-probabilités">Retourner la question des probabilités</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="183.37" id="svg_3ba82728af0ae9a8face" role="img" style="width:92.0%" viewbox="0 0 487.73 183.37" width="487.73">
+<p><svg height="183.37" id="svg_3ba82728af0ae9a8face" role="img" style="width:92.0%" viewbox="0 0 487.73 183.37" width="487.73" aria-label="Figure 1 : Retourner la question des probabilités">
 <defs>
 <g>
 <g id="svg_3ba82728af0ae9a8face_glyph-0-0">
@@ -2046,7 +2113,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </div>
 </section>
 <section class="level2" id="la-définition">
-<h2 class="anchored" data-anchor-id="la-définition">La définition</h2>
+<h3 class="h2 anchored" data-anchor-id="la-définition">La définition</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Fonction de vraisemblance</summary>
 <div class="pedago-body">
@@ -2064,7 +2131,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-technique-de-calcul">
-<h2 class="anchored" data-anchor-id="la-technique-de-calcul">La technique de calcul</h2>
+<h3 class="h2 anchored" data-anchor-id="la-technique-de-calcul">La technique de calcul</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">On maximise le logarithme</summary>
 <div class="pedago-body">
@@ -2082,7 +2149,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-même-courbe-que-dans-lintroduction">
-<h2 class="anchored" data-anchor-id="la-même-courbe-que-dans-lintroduction">La même courbe que dans l’introduction</h2>
+<h3 class="h2 anchored" data-anchor-id="la-même-courbe-que-dans-lintroduction">La même courbe que dans l’introduction</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Treize Bac+5 sur cinquante</summary>
 <div class="pedago-body">
@@ -2098,7 +2165,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-cas-général-de-bernoulli">
-<h2 class="anchored" data-anchor-id="le-cas-général-de-bernoulli">Le cas général de Bernoulli</h2>
+<h3 class="h2 anchored" data-anchor-id="le-cas-général-de-bernoulli">Le cas général de Bernoulli</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">k succès sur n essais</summary>
 <div class="pedago-body">
@@ -2113,7 +2180,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="lexponentielle-par-la-vraisemblance">
-<h2 class="anchored" data-anchor-id="lexponentielle-par-la-vraisemblance">L’exponentielle, par la vraisemblance</h2>
+<h3 class="h2 anchored" data-anchor-id="lexponentielle-par-la-vraisemblance">L’exponentielle, par la vraisemblance</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Les cinq durées entre pannes</summary>
 <div class="pedago-body">
@@ -2128,7 +2195,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-loi-normale-par-la-vraisemblance">
-<h2 class="anchored" data-anchor-id="la-loi-normale-par-la-vraisemblance">La loi normale, par la vraisemblance</h2>
+<h3 class="h2 anchored" data-anchor-id="la-loi-normale-par-la-vraisemblance">La loi normale, par la vraisemblance</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Deux équations</summary>
 <div class="pedago-body">
@@ -2144,10 +2211,10 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="luniforme-là-où-les-deux-méthodes-divergent">
-<h2 class="anchored" data-anchor-id="luniforme-là-où-les-deux-méthodes-divergent">L’uniforme : là où les deux méthodes divergent</h2>
+<h3 class="h2 anchored" data-anchor-id="luniforme-là-où-les-deux-méthodes-divergent">L’uniforme : là où les deux méthodes divergent</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="157.75" id="svg_deb0497d06e3f1695384" role="img" style="width:86.0%" viewbox="0 0 285.42 157.75" width="285.42">
+<p><svg height="157.75" id="svg_deb0497d06e3f1695384" role="img" style="width:86.0%" viewbox="0 0 285.42 157.75" width="285.42" aria-label="Figure 2 : L’uniforme : là où les deux méthodes divergent">
 <defs>
 <g>
 <g id="svg_deb0497d06e3f1695384_glyph-0-0">
@@ -2762,7 +2829,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </div>
 </section>
 <section class="level2" id="ce-que-montre-la-courbe">
-<h2 class="anchored" data-anchor-id="ce-que-montre-la-courbe">Ce que montre la courbe</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-que-montre-la-courbe">Ce que montre la courbe</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Une vraisemblance qui saute</summary>
 <div class="pedago-body">
@@ -2777,7 +2844,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="les-deux-méthodes-simulées">
-<h2 class="anchored" data-anchor-id="les-deux-méthodes-simulées">Les deux méthodes, simulées</h2>
+<h3 class="h2 anchored" data-anchor-id="les-deux-méthodes-simulées">Les deux méthodes, simulées</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Loi uniforme sur [0 ; 10], vingt mille échantillons de 10</summary>
 <div class="pedago-body">
@@ -2835,9 +2902,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="les-propriétés-du-maximum-de-vraisemblance">
-<h1>Les propriétés du maximum de vraisemblance</h1>
+<h2 class="h1 anchored" data-anchor-id="les-propriétés-du-maximum-de-vraisemblance">Les propriétés du maximum de vraisemblance</h2>
 <section class="level2" id="pourquoi-il-domine">
-<h2 class="anchored" data-anchor-id="pourquoi-il-domine">Pourquoi il domine</h2>
+<h3 class="h2 anchored" data-anchor-id="pourquoi-il-domine">Pourquoi il domine</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Ses quatre propriétés</summary>
 <div class="pedago-body">
@@ -2857,7 +2924,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="linvariance-au-travail">
-<h2 class="anchored" data-anchor-id="linvariance-au-travail">L’invariance, au travail</h2>
+<h3 class="h2 anchored" data-anchor-id="linvariance-au-travail">L’invariance, au travail</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Trois grandeurs dérivées, sans nouveau calcul</summary>
 <div class="pedago-body">
@@ -2899,7 +2966,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="ses-limites">
-<h2 class="anchored" data-anchor-id="ses-limites">Ses limites</h2>
+<h3 class="h2 anchored" data-anchor-id="ses-limites">Ses limites</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">Trois réserves à connaître</summary>
 <div class="pedago-body">
@@ -2919,10 +2986,10 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="postuler-une-loi-ce-que-cela-coûte">
-<h2 class="anchored" data-anchor-id="postuler-une-loi-ce-que-cela-coûte">Postuler une loi : ce que cela coûte</h2>
+<h3 class="h2 anchored" data-anchor-id="postuler-une-loi-ce-que-cela-coûte">Postuler une loi : ce que cela coûte</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="157.62" id="svg_073f01fb4424ae47def1" role="img" style="width:90.0%" viewbox="0 0 300.55 157.62" width="300.55">
+<p><svg height="157.62" id="svg_073f01fb4424ae47def1" role="img" style="width:90.0%" viewbox="0 0 300.55 157.62" width="300.55" aria-label="Figure 3 : Postuler une loi : ce que cela coûte">
 <defs>
 <g>
 <g id="svg_073f01fb4424ae47def1_glyph-0-0">
@@ -3397,7 +3464,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </div>
 </section>
 <section class="level2" id="une-loi-normale-pour-nos-salaires">
-<h2 class="anchored" data-anchor-id="une-loi-normale-pour-nos-salaires">Une loi normale pour nos salaires ?</h2>
+<h3 class="h2 anchored" data-anchor-id="une-loi-normale-pour-nos-salaires">Une loi normale pour nos salaires ?</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Ce que la normale prédit, ce que l’on observe</summary>
 <div class="pedago-body">
@@ -3446,9 +3513,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="sentraîner">
-<h1>S’entraîner</h1>
+<h2 class="h1 anchored" data-anchor-id="sentraîner">S’entraîner</h2>
 <section class="level2" id="exercice-1-les-réclamations-quotidiennes">
-<h2 class="anchored" data-anchor-id="exercice-1-les-réclamations-quotidiennes">Exercice 1 : les réclamations quotidiennes</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-1-les-réclamations-quotidiennes">Exercice 1 : les réclamations quotidiennes</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Une loi de Poisson</summary>
 <div class="pedago-body">
@@ -3462,7 +3529,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-1-solution">
-<h2 class="anchored" data-anchor-id="exercice-1-solution">Exercice 1 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-1-solution">Exercice 1 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Les deux méthodes s’accordent</summary>
 <div class="pedago-body">
@@ -3475,7 +3542,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-2-la-durée-des-appels">
-<h2 class="anchored" data-anchor-id="exercice-2-la-durée-des-appels">Exercice 2 : la durée des appels</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-2-la-durée-des-appels">Exercice 2 : la durée des appels</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Une loi exponentielle</summary>
 <div class="pedago-body">
@@ -3489,7 +3556,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-2-solution">
-<h2 class="anchored" data-anchor-id="exercice-2-solution">Exercice 2 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-2-solution">Exercice 2 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Une estimation, toutes les probabilités</summary>
 <div class="pedago-body">
@@ -3508,7 +3575,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-3-le-taux-dattrition">
-<h2 class="anchored" data-anchor-id="exercice-3-le-taux-dattrition">Exercice 3 : le taux d’attrition</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-3-le-taux-dattrition">Exercice 3 : le taux d’attrition</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Des clients qui partent</summary>
 <div class="pedago-body">
@@ -3522,7 +3589,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-3-solution">
-<h2 class="anchored" data-anchor-id="exercice-3-solution">Exercice 3 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-3-solution">Exercice 3 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Bernoulli, puis l’invariance</summary>
 <div class="pedago-body">
@@ -3536,9 +3603,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="ce-quil-faut-retenir">
-<h1>Ce qu’il faut retenir</h1>
+<h2 class="h1 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
 <section class="level2" id="le-résumé-du-chapitre">
-<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<h3 class="h2 anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Six points</summary>
 <div class="pedago-body">
@@ -3554,7 +3621,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-suite">
-<h2 class="anchored" data-anchor-id="la-suite">La suite</h2>
+<h3 class="h2 anchored" data-anchor-id="la-suite">La suite</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">Une estimation ponctuelle est presque sûrement fausse</summary>
 <div class="pedago-body">
@@ -3572,13 +3639,14 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="../../../cours/statistique-inferentielle/chapitres/qualites-d-un-estimateur.html">← Chapitre précédent<span class="jm-nav-label">Les qualités d'un estimateur</span></a>
 <a class="jm-nav-suivant" href="../../../cours/statistique-inferentielle/chapitres/principe-intervalle-confiance.html">Chapitre suivant →<span class="jm-nav-label">Le principe de l'intervalle de confiance</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3 class="anchored">Ressources du chapitre</h3>
+<h2 class="anchored">Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/construire-un-estimateur.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/construire-un-estimateur-poly.pdf">Polycopié du chapitre</a></li>

@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Modélisation GARCH de la volatilité, chapitre 9. Pour la prévision de volatilité, ce choix compte peu. Pour la gestion du risque, il est décisif.">
 
-<title>Modélisation GARCH de la volatilité – Jaouad Madkour</title>
+<title>La loi des innovations (Modélisation GARCH de la volatilité) – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -46,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b626d73c4c936ccc3cb08be7d45d1df6.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-4a81b521e20b8a0d9edba7313f3ee218.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-2e1988c4a830338585f6d0d114f9611f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -75,14 +76,25 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
-<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
-     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
-     latérale, l'onglet du navigateur et la recherche du site. Seul son
-     affichage en tête de page, redondant avec la barre latérale, disparaît.
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours et les
+     pages de niveau. Le titre reste déclaré dans l'entête du fichier : il
+     alimente l'onglet du navigateur et la recherche du site. Depuis le
+     28/10/2026 le bloc n'est plus retiré de la page (display: none), mais
+     seulement sorti de l'écran : le titre h1 reste donc dans la page pour les
+     lecteurs d'écran, qui n'avaient plus aucun titre à annoncer. Le bloc des
+     métadonnées (auteur, affiliation, date), lui, reste caché.
      Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
 <style>
   header#title-block-header,
-  .quarto-title-block { display: none; }
+  .quarto-title-block {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  header#title-block-header .quarto-title-meta,
+  header#title-block-header .quarto-title-meta-author,
+  .quarto-title-block .quarto-title-meta,
+  .quarto-title-block .quarto-title-meta-author { display: none; }
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
@@ -129,8 +141,11 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur > * { grid-column: auto !important; }
 
 @media (max-width: 991px) {
-  .jm-lecteur { grid-template-columns: 1fr !important; }
-  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+  .jm-lecteur { grid-template-columns: 1fr !important; gap: 1rem; }
+  .jm-lecteur-gauche { position: static !important; }
+  /* Les ressources du chapitre sont repeintes en puces sous le titre
+     (.jm-ressources-mobile) : le panneau, tout en bas de page, est masqué. */
+  .jm-lecteur-droite { display: none; }
 }
 
 /* ---------- Volet gauche : sommaire du cours ---------- */
@@ -181,12 +196,14 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 12px;
   padding: 1rem 1.1rem;
 }
-.jm-lecteur-droite h3 {
+.jm-lecteur-droite h2 {
   font-size: .8rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: #54707f;
   margin: 0 0 .7rem;
+  padding: 0;
+  border: 0;
 }
 .jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
 .jm-lecteur-droite li { margin-bottom: .55rem; }
@@ -195,11 +212,13 @@ ul.task-list li input[type="checkbox"] {
   font-weight: 600;
 }
 .jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+/* Textes inactifs : au moins 4,5:1 sur le fond du panneau (WCAG AA). Avant le
+   28/10/2026 : 2,3:1 en thème clair, 3,5:1 en thème sombre. */
 .jm-lecteur-droite .jm-indisponible {
-  color: #9aa9b2; font-weight: 500; cursor: default;
+  color: #566b77; font-weight: 500; cursor: default;
 }
 .jm-lecteur-droite .jm-reserve {
-  color: #9aa9b2; font-style: italic;
+  color: #566b77; font-style: italic;
 }
 
 /* ---------- Navigation précédent / suivant ---------- */
@@ -271,6 +290,71 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
 .jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
 
+/* ---------- En-tête du chapitre : seul titre h1 de la page ---------- */
+.jm-entete-chapitre { margin: 0 0 1.1rem; }
+.jm-entete-chapitre .jm-surtitre {
+  margin: 0 0 .3rem; font-size: .9rem; color: #3d5a6b;
+}
+.jm-entete-chapitre .jm-surtitre a {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+/* Plus grand que les titres de section (classe .h1 de Bootstrap, jusqu'à 2,5 rem). */
+.jm-titre-chapitre {
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 2.7rem); font-weight: 700; line-height: 1.15;
+  margin: 0; padding: 0; border: 0;
+}
+
+/* ---------- Sommaire du cours : toujours ouvert sur ordinateur, replié sur
+   téléphone (script placé après le <details>, voir lecteur.py) ---------- */
+.jm-lecteur-gauche details.jm-sommaire > summary {
+  list-style: none; cursor: default; pointer-events: none;
+  color: inherit; /* Bootstrap grise les <summary> */
+}
+.jm-lecteur-gauche details.jm-sommaire > summary::-webkit-details-marker { display: none; }
+@media (max-width: 991px) {
+  .jm-lecteur-gauche details.jm-sommaire > summary {
+    pointer-events: auto; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .65rem .8rem; margin: 0; border: 1px solid #dbe6ee; border-radius: 10px;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  }
+  .jm-lecteur-gauche details.jm-sommaire > summary::after {
+    content: "\25BE"; font-size: 1.05rem; transition: transform .15s ease;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary::after { transform: rotate(180deg); }
+  .jm-lecteur-gauche details.jm-sommaire > ul {
+    border: 1px solid #dbe6ee; border-top: 0; border-radius: 0 0 10px 10px;
+    padding: .4rem .4rem .5rem;
+  }
+}
+
+/* ---------- Ressources du chapitre en puces (téléphone seulement) ---------- */
+.jm-ressources-mobile { display: none; }
+@media (max-width: 991px) {
+  .jm-ressources-mobile { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.1rem; }
+  .jm-ressources-mobile a.jm-ressource {
+    display: inline-block; padding: .4rem .85rem; border: 1px solid #1f6fb2;
+    border-radius: 999px; font-size: .88rem; font-weight: 600; color: #1f6fb2;
+    text-decoration: none;
+  }
+}
+
+/* ---------- Titres des sections : abaissés d'un niveau dans le HTML
+   (h1 -> h2, h2 -> h3), apparence inchangée grâce aux classes .h1 et
+   .h2 de Bootstrap ajoutées par normaliser.py. ---------- */
+.jm-lecteur-centre h2, .jm-lecteur-centre h3 { overflow-wrap: anywhere; }
+
+/* ---------- Débordements : formules, tableaux, figures ---------- */
+.jm-lecteur-centre .katex-display {
+  overflow-x: auto; overflow-y: hidden; max-width: 100%;
+}
+.jm-lecteur-centre svg[role="img"] { max-width: 100%; height: auto; }
+@media (max-width: 991px) {
+  .jm-lecteur-centre table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
 /* =====================================================================
    Mode sombre — posé par Quarto sur <body class="quarto-dark">
    ===================================================================== */
@@ -282,14 +366,18 @@ body.quarto-dark .jm-lecteur-gauche a.jm-actif {
   color: #3aa0e6;
 }
 body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-entete-chapitre .jm-surtitre { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > summary,
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > ul { border-color: #20455a; }
+body.quarto-dark .jm-ressources-mobile a.jm-ressource { color: #5bb3ef; border-color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite {
   background: #13303d;
   border-color: #20455a;
 }
-body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite h2 { color: #9db4c0; }
 body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite .jm-indisponible,
-body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #a8bdc9; }
 body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
 body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
@@ -328,9 +416,11 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
      n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
      ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
      pages où il détecte des maths (cf. html-math-method: katex du site) :
-     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     chargement de KaTeX (copie hébergée sur le site : assets/katex/, version
+     0.19.1, voir VERSION.txt ; le CDN en « latest » a été abandonné le
+     28/10/2026), puis un scan DOMContentLoaded
      de tous les éléments .math qui les rend en place. -->
-<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="../../../assets/katex/katex.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () {
  var mathElements = document.getElementsByClassName("math");
  var macros = [];
@@ -345,15 +435,21 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
    });
 }}});
 </script>
-<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="../../../assets/katex/katex.min.css">
 
 
-<meta property="og:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
-<meta property="og:description" content="La loi des innovations">
+<meta property="og:title" content="La loi des innovations (Modélisation GARCH de la volatilité)">
+<meta property="og:description" content="Modélisation GARCH de la volatilité, chapitre 9. Pour la prévision de volatilité, ce choix compte peu. Pour la gestion du risque, il est décisif.">
+<meta property="og:image" content="https://jmadkour.org/assets/og-jmadkour.png">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Modélisation GARCH de la volatilité – Jaouad Madkour">
-<meta name="twitter:description" content="La loi des innovations">
+<meta property="og:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:title" content="La loi des innovations (Modélisation GARCH de la volatilité)">
+<meta name="twitter:description" content="Modélisation GARCH de la volatilité, chapitre 9. Pour la prévision de volatilité, ce choix compte peu. Pour la gestion du risque, il est décisif.">
+<meta name="twitter:image" content="https://jmadkour.org/assets/og-jmadkour.png">
+<meta name="twitter:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://jmadkour.org/cours/modelisation-garch/chapitres/loi-innovations.html">
 </head>
 
 <body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
@@ -601,32 +697,16 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
-
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Modélisation GARCH de la volatilité</h1>
-<p class="subtitle lead">La loi des innovations</p>
-</div>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta column-page">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</div>
+<details class="jm-sommaire" open="">
+<summary class="jm-lecteur-titre-cours">Modélisation GARCH de la volatilité</summary>
 <ul>
 <li><a class="jm-accueil" href="../../../cours/modelisation-garch/index.html">Présentation du cours</a></li>
 <li><a class="" href="../../../cours/modelisation-garch/chapitres/faits-stylises.html">Mandelbrot et les faits stylisés des rentabilités</a></li>
@@ -651,39 +731,26 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <li><a class="" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-r.html">Étude de cas sur données réelles — R</a></li>
 <li><a class="" href="../../../cours/modelisation-garch/chapitres/etude-de-cas-python.html">Étude de cas sur données réelles — Python</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Modélisation GARCH de la volatilité</h1>
-<p class="subtitle lead">Chapitre 9 : La loi des innovations</p>
-</div>
-<div class="quarto-title-meta-author column-page">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">25 septembre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 9">
+<p class="jm-surtitre"><a href="../../../cours/modelisation-garch/index.html">Modélisation GARCH de la volatilité</a>&nbsp;· Chapitre 9</p>
+<h1 class="jm-titre-chapitre">La loi des innovations</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/loi-innovations.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/loi-innovations-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/loi-innovations-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/loi-innovations.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="avant-de-commencer">
-<h1>Avant de commencer</h1>
+<h2 class="h1 anchored" data-anchor-id="avant-de-commencer">Avant de commencer</h2>
 <section class="level2" id="la-question-laissée-en-suspens">
-<h2 class="anchored" data-anchor-id="la-question-laissée-en-suspens">La question laissée en suspens</h2>
+<h3 class="h2 anchored" data-anchor-id="la-question-laissée-en-suspens">La question laissée en suspens</h3>
 <p>Le modèle s’écrit <span class="math inline">\varepsilon_t = \sqrt{h_t}\,z_t</span> avec <span class="math inline">z_t</span> i.i.d. centrée réduite. Nous avons entièrement spécifié <span class="math inline">h_t</span>. Reste à choisir la loi de <span class="math inline">z_t</span>.</p>
 <div class="intuitionbox" title="Ce qui se joue ici">
 <div class="pedago-title">
@@ -695,9 +762,9 @@ Ce qui se joue ici
 </section>
 </section>
 <section class="level1" id="la-loi-normale">
-<h1>La loi normale</h1>
+<h2 class="h1 anchored" data-anchor-id="la-loi-normale">La loi normale</h2>
 <section class="level2" id="le-point-de-départ">
-<h2 class="anchored" data-anchor-id="le-point-de-départ">Le point de départ</h2>
+<h3 class="h2 anchored" data-anchor-id="le-point-de-départ">Le point de départ</h3>
 <div class="definitionbox" title="GARCH gaussien">
 <div class="pedago-title">
 GARCH gaussien
@@ -713,7 +780,7 @@ Ce qu’elle apporte
 </div>
 </section>
 <section class="level2" id="ce-quelle-ne-suffit-pas-à-faire">
-<h2 class="anchored" data-anchor-id="ce-quelle-ne-suffit-pas-à-faire">Ce qu’elle ne suffit pas à faire</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-quelle-ne-suffit-pas-à-faire">Ce qu’elle ne suffit pas à faire</h3>
 <div class="examplebox" title="Le test, sur les données du cours">
 <div class="pedago-title">
 Le test, sur les données du cours
@@ -732,9 +799,9 @@ Le diagnostic
 </section>
 </section>
 <section class="level1" id="la-loi-de-student">
-<h1>La loi de Student</h1>
+<h2 class="h1 anchored" data-anchor-id="la-loi-de-student">La loi de Student</h2>
 <section class="level2" id="la-spécification">
-<h2 class="anchored" data-anchor-id="la-spécification">La spécification</h2>
+<h3 class="h2 anchored" data-anchor-id="la-spécification">La spécification</h3>
 <div class="definitionbox" title="Student standardisée (Bollerslev, 1987)">
 <div class="pedago-title">
 Student standardisée (Bollerslev, 1987)
@@ -749,7 +816,7 @@ Son kurtosis
 </div>
 </section>
 <section class="level2" id="lire-le-paramètre">
-<h2 class="anchored" data-anchor-id="lire-le-paramètre">Lire le paramètre</h2>
+<h3 class="h2 anchored" data-anchor-id="lire-le-paramètre">Lire le paramètre</h3>
 <div class="examplebox" title="Quelques valeurs">
 <div class="pedago-title">
 Quelques valeurs
@@ -796,10 +863,10 @@ Le paramètre est directement interprétable
 </div>
 </section>
 <section class="level2" id="sur-les-données-du-cours">
-<h2 class="anchored" data-anchor-id="sur-les-données-du-cours">Sur les données du cours</h2>
+<h3 class="h2 anchored" data-anchor-id="sur-les-données-du-cours">Sur les données du cours</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="156.58pt" id="svg_548410ce08726724ddbc" role="img" style="width:80.0%" viewbox="0 0 314.15 156.58" width="314.15pt">
+<p><svg height="156.58pt" id="svg_548410ce08726724ddbc" role="img" style="width:80.0%" viewbox="0 0 314.15 156.58" width="314.15pt" aria-label="Figure 1 : Sur les données du cours">
 <defs>
 <g>
 <symbol id="svg_548410ce08726724ddbc_glyph0-0" overflow="visible">
@@ -1731,9 +1798,9 @@ Le gain, chiffré
 </section>
 </section>
 <section class="level1" id="lasymétrie">
-<h1>L’asymétrie</h1>
+<h2 class="h1 anchored" data-anchor-id="lasymétrie">L’asymétrie</h2>
 <section class="level2" id="un-troisième-fait-sur-la-loi">
-<h2 class="anchored" data-anchor-id="un-troisième-fait-sur-la-loi">Un troisième fait sur la loi</h2>
+<h3 class="h2 anchored" data-anchor-id="un-troisième-fait-sur-la-loi">Un troisième fait sur la loi</h3>
 <div class="definitionbox" title="Skewness négative">
 <div class="pedago-title">
 Skewness négative
@@ -1749,7 +1816,7 @@ Ne pas confondre avec l’effet de levier
 </div>
 </section>
 <section class="level2" id="la-student-asymétrique">
-<h2 class="anchored" data-anchor-id="la-student-asymétrique">La Student asymétrique</h2>
+<h3 class="h2 anchored" data-anchor-id="la-student-asymétrique">La Student asymétrique</h3>
 <div class="definitionbox" title="Fernández et Steel (1998)">
 <div class="pedago-title">
 Fernández et Steel (1998)
@@ -1758,7 +1825,7 @@ Fernández et Steel (1998)
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="131.9pt" id="svg_e9a3fd3410ed32ece3da" role="img" style="width:88.0%" viewbox="0 0 339.69 131.9" width="339.69pt">
+<p><svg height="131.9pt" id="svg_e9a3fd3410ed32ece3da" role="img" style="width:88.0%" viewbox="0 0 339.69 131.9" width="339.69pt" aria-label="Figure 2 : La Student asymétrique">
 <defs>
 <g>
 <symbol id="svg_e9a3fd3410ed32ece3da_glyph0-0" overflow="visible">
@@ -2155,9 +2222,9 @@ Lecture
 </section>
 </section>
 <section class="level1" id="les-autres-lois-usuelles">
-<h1>Les autres lois usuelles</h1>
+<h2 class="h1 anchored" data-anchor-id="les-autres-lois-usuelles">Les autres lois usuelles</h2>
 <section class="level2" id="le-tableau">
-<h2 class="anchored" data-anchor-id="le-tableau">Le tableau</h2>
+<h3 class="h2 anchored" data-anchor-id="le-tableau">Le tableau</h3>
 <div class="definitionbox" title="Quatre choix, quatre profils">
 <div class="pedago-title">
 Quatre choix, quatre profils
@@ -2210,7 +2277,7 @@ La GED, en un mot
 </div>
 </section>
 <section class="level2" id="comment-choisir">
-<h2 class="anchored" data-anchor-id="comment-choisir">Comment choisir</h2>
+<h3 class="h2 anchored" data-anchor-id="comment-choisir">Comment choisir</h3>
 <div class="definitionbox" title="Une procédure en trois temps">
 <div class="pedago-title">
 Une procédure en trois temps
@@ -2229,7 +2296,7 @@ Le critère de décision
 </div>
 </section>
 <section class="level2" id="ce-que-le-choix-change-vraiment">
-<h2 class="anchored" data-anchor-id="ce-que-le-choix-change-vraiment">Ce que le choix change vraiment</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-que-le-choix-change-vraiment">Ce que le choix change vraiment</h3>
 <div class="examplebox" title="Le quantile à 1 pour cent, à volatilité identique">
 <div class="pedago-title">
 Le quantile à 1 pour cent, à volatilité identique
@@ -2269,9 +2336,9 @@ Un tiers d’écart sur le capital réglementaire
 </section>
 </section>
 <section class="level1" id="synthèse">
-<h1>Synthèse</h1>
+<h2 class="h1 anchored" data-anchor-id="synthèse">Synthèse</h2>
 <section class="level2" id="ce-quil-faut-retenir">
-<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h3>
 <div class="definitionbox" title="L'essentiel du chapitre 9">
 <div class="pedago-title">
 L’essentiel du chapitre 9
@@ -2294,13 +2361,14 @@ Vers la partie IV
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="../../../cours/modelisation-garch/chapitres/dualite-arma.html">← Chapitre précédent<span class="jm-nav-label">La dualité GARCH et ARMA sur les carrés</span></a>
 <a class="jm-nav-suivant" href="../../../cours/modelisation-garch/chapitres/egarch.html">Chapitre suivant →<span class="jm-nav-label">L'effet de levier et l'EGARCH de Nelson</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3 class="anchored">Ressources du chapitre</h3>
+<h2 class="anchored">Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/loi-innovations.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/loi-innovations-poly.pdf">Polycopié du chapitre</a></li>

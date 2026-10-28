@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Statistique inférentielle, chapitre 6. Un estimateur peut être sans biais et ne pas converger. Il peut converger et rester biaisé à distance finie.">
 
-<title>Statistique inférentielle – Jaouad Madkour</title>
+<title>Les qualités d’un estimateur (Statistique inférentielle) – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -46,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b626d73c4c936ccc3cb08be7d45d1df6.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-4a81b521e20b8a0d9edba7313f3ee218.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-2e1988c4a830338585f6d0d114f9611f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -75,14 +76,25 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
-<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
-     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
-     latérale, l'onglet du navigateur et la recherche du site. Seul son
-     affichage en tête de page, redondant avec la barre latérale, disparaît.
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours et les
+     pages de niveau. Le titre reste déclaré dans l'entête du fichier : il
+     alimente l'onglet du navigateur et la recherche du site. Depuis le
+     28/10/2026 le bloc n'est plus retiré de la page (display: none), mais
+     seulement sorti de l'écran : le titre h1 reste donc dans la page pour les
+     lecteurs d'écran, qui n'avaient plus aucun titre à annoncer. Le bloc des
+     métadonnées (auteur, affiliation, date), lui, reste caché.
      Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
 <style>
   header#title-block-header,
-  .quarto-title-block { display: none; }
+  .quarto-title-block {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  header#title-block-header .quarto-title-meta,
+  header#title-block-header .quarto-title-meta-author,
+  .quarto-title-block .quarto-title-meta,
+  .quarto-title-block .quarto-title-meta-author { display: none; }
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
@@ -129,8 +141,11 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur > * { grid-column: auto !important; }
 
 @media (max-width: 991px) {
-  .jm-lecteur { grid-template-columns: 1fr !important; }
-  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+  .jm-lecteur { grid-template-columns: 1fr !important; gap: 1rem; }
+  .jm-lecteur-gauche { position: static !important; }
+  /* Les ressources du chapitre sont repeintes en puces sous le titre
+     (.jm-ressources-mobile) : le panneau, tout en bas de page, est masqué. */
+  .jm-lecteur-droite { display: none; }
 }
 
 /* ---------- Volet gauche : sommaire du cours ---------- */
@@ -181,12 +196,14 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 12px;
   padding: 1rem 1.1rem;
 }
-.jm-lecteur-droite h3 {
+.jm-lecteur-droite h2 {
   font-size: .8rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: #54707f;
   margin: 0 0 .7rem;
+  padding: 0;
+  border: 0;
 }
 .jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
 .jm-lecteur-droite li { margin-bottom: .55rem; }
@@ -195,11 +212,13 @@ ul.task-list li input[type="checkbox"] {
   font-weight: 600;
 }
 .jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+/* Textes inactifs : au moins 4,5:1 sur le fond du panneau (WCAG AA). Avant le
+   28/10/2026 : 2,3:1 en thème clair, 3,5:1 en thème sombre. */
 .jm-lecteur-droite .jm-indisponible {
-  color: #9aa9b2; font-weight: 500; cursor: default;
+  color: #566b77; font-weight: 500; cursor: default;
 }
 .jm-lecteur-droite .jm-reserve {
-  color: #9aa9b2; font-style: italic;
+  color: #566b77; font-style: italic;
 }
 
 /* ---------- Navigation précédent / suivant ---------- */
@@ -271,6 +290,71 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
 .jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
 
+/* ---------- En-tête du chapitre : seul titre h1 de la page ---------- */
+.jm-entete-chapitre { margin: 0 0 1.1rem; }
+.jm-entete-chapitre .jm-surtitre {
+  margin: 0 0 .3rem; font-size: .9rem; color: #3d5a6b;
+}
+.jm-entete-chapitre .jm-surtitre a {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+/* Plus grand que les titres de section (classe .h1 de Bootstrap, jusqu'à 2,5 rem). */
+.jm-titre-chapitre {
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 2.7rem); font-weight: 700; line-height: 1.15;
+  margin: 0; padding: 0; border: 0;
+}
+
+/* ---------- Sommaire du cours : toujours ouvert sur ordinateur, replié sur
+   téléphone (script placé après le <details>, voir lecteur.py) ---------- */
+.jm-lecteur-gauche details.jm-sommaire > summary {
+  list-style: none; cursor: default; pointer-events: none;
+  color: inherit; /* Bootstrap grise les <summary> */
+}
+.jm-lecteur-gauche details.jm-sommaire > summary::-webkit-details-marker { display: none; }
+@media (max-width: 991px) {
+  .jm-lecteur-gauche details.jm-sommaire > summary {
+    pointer-events: auto; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .65rem .8rem; margin: 0; border: 1px solid #dbe6ee; border-radius: 10px;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  }
+  .jm-lecteur-gauche details.jm-sommaire > summary::after {
+    content: "\25BE"; font-size: 1.05rem; transition: transform .15s ease;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary::after { transform: rotate(180deg); }
+  .jm-lecteur-gauche details.jm-sommaire > ul {
+    border: 1px solid #dbe6ee; border-top: 0; border-radius: 0 0 10px 10px;
+    padding: .4rem .4rem .5rem;
+  }
+}
+
+/* ---------- Ressources du chapitre en puces (téléphone seulement) ---------- */
+.jm-ressources-mobile { display: none; }
+@media (max-width: 991px) {
+  .jm-ressources-mobile { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.1rem; }
+  .jm-ressources-mobile a.jm-ressource {
+    display: inline-block; padding: .4rem .85rem; border: 1px solid #1f6fb2;
+    border-radius: 999px; font-size: .88rem; font-weight: 600; color: #1f6fb2;
+    text-decoration: none;
+  }
+}
+
+/* ---------- Titres des sections : abaissés d'un niveau dans le HTML
+   (h1 -> h2, h2 -> h3), apparence inchangée grâce aux classes .h1 et
+   .h2 de Bootstrap ajoutées par normaliser.py. ---------- */
+.jm-lecteur-centre h2, .jm-lecteur-centre h3 { overflow-wrap: anywhere; }
+
+/* ---------- Débordements : formules, tableaux, figures ---------- */
+.jm-lecteur-centre .katex-display {
+  overflow-x: auto; overflow-y: hidden; max-width: 100%;
+}
+.jm-lecteur-centre svg[role="img"] { max-width: 100%; height: auto; }
+@media (max-width: 991px) {
+  .jm-lecteur-centre table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
 /* =====================================================================
    Mode sombre — posé par Quarto sur <body class="quarto-dark">
    ===================================================================== */
@@ -282,14 +366,18 @@ body.quarto-dark .jm-lecteur-gauche a.jm-actif {
   color: #3aa0e6;
 }
 body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-entete-chapitre .jm-surtitre { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > summary,
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > ul { border-color: #20455a; }
+body.quarto-dark .jm-ressources-mobile a.jm-ressource { color: #5bb3ef; border-color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite {
   background: #13303d;
   border-color: #20455a;
 }
-body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite h2 { color: #9db4c0; }
 body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite .jm-indisponible,
-body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #a8bdc9; }
 body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
 body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
@@ -328,9 +416,11 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
      n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
      ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
      pages où il détecte des maths (cf. html-math-method: katex du site) :
-     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     chargement de KaTeX (copie hébergée sur le site : assets/katex/, version
+     0.19.1, voir VERSION.txt ; le CDN en « latest » a été abandonné le
+     28/10/2026), puis un scan DOMContentLoaded
      de tous les éléments .math qui les rend en place. -->
-<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="../../../assets/katex/katex.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () {
  var mathElements = document.getElementsByClassName("math");
  var macros = [];
@@ -345,15 +435,21 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
    });
 }}});
 </script>
-<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="../../../assets/katex/katex.min.css">
 
 
-<meta property="og:title" content="Statistique inférentielle – Jaouad Madkour">
-<meta property="og:description" content="Les qualités d’un estimateur">
+<meta property="og:title" content="Les qualités d’un estimateur (Statistique inférentielle)">
+<meta property="og:description" content="Statistique inférentielle, chapitre 6. Un estimateur peut être sans biais et ne pas converger. Il peut converger et rester biaisé à distance finie.">
+<meta property="og:image" content="https://jmadkour.org/assets/og-jmadkour.png">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Statistique inférentielle – Jaouad Madkour">
-<meta name="twitter:description" content="Les qualités d’un estimateur">
+<meta property="og:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:title" content="Les qualités d’un estimateur (Statistique inférentielle)">
+<meta name="twitter:description" content="Statistique inférentielle, chapitre 6. Un estimateur peut être sans biais et ne pas converger. Il peut converger et rester biaisé à distance finie.">
+<meta name="twitter:image" content="https://jmadkour.org/assets/og-jmadkour.png">
+<meta name="twitter:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://jmadkour.org/cours/statistique-inferentielle/chapitres/qualites-d-un-estimateur.html">
 </head>
 
 <body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
@@ -601,32 +697,16 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
-
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Statistique inférentielle</h1>
-<p class="subtitle lead">Les qualités d’un estimateur</p>
-</div>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta column-page">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Statistique inférentielle</div>
+<details class="jm-sommaire" open="">
+<summary class="jm-lecteur-titre-cours">Statistique inférentielle</summary>
 <ul>
 <li><a class="jm-accueil" href="../../../cours/statistique-inferentielle/index.html">Présentation du cours</a></li>
 <li><a class="" href="../../../cours/statistique-inferentielle/chapitres/troisieme-face.html">La troisième face</a></li>
@@ -652,39 +732,26 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <li><a class="" href="../../../cours/statistique-inferentielle/chapitres/tester-un-coefficient.html">Tester un coefficient</a></li>
 <li><a class="" href="../../../cours/statistique-inferentielle/chapitres/mise-en-oeuvre-r-python.html">Mise en œuvre sur R et Python</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Statistique inférentielle</h1>
-<p class="subtitle lead">Chapitre 6 : Les qualités d’un estimateur</p>
-</div>
-<div class="quarto-title-meta-author column-page">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">22 octobre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 6">
+<p class="jm-surtitre"><a href="../../../cours/statistique-inferentielle/index.html">Statistique inférentielle</a>&nbsp;· Chapitre 6</p>
+<h1 class="jm-titre-chapitre">Les qualités d'un estimateur</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/qualites-d-un-estimateur.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/qualites-d-un-estimateur-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/qualites-d-un-estimateur-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/qualites-d-un-estimateur.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="trois-qualités">
-<h1>Trois qualités</h1>
+<h2 class="h1 anchored" data-anchor-id="trois-qualités">Trois qualités</h2>
 <section class="level2" id="ce-que-lon-demande-à-un-estimateur">
-<h2 class="anchored" data-anchor-id="ce-que-lon-demande-à-un-estimateur">Ce que l’on demande à un estimateur</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-que-lon-demande-à-un-estimateur">Ce que l’on demande à un estimateur</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Les trois critères</summary>
 <div class="pedago-body">
@@ -727,7 +794,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="les-estimateurs-du-chapitre-5-au-regard-des-trois-critères">
-<h2 class="anchored" data-anchor-id="les-estimateurs-du-chapitre-5-au-regard-des-trois-critères">Les estimateurs du chapitre 5, au regard des trois critères</h2>
+<h3 class="h2 anchored" data-anchor-id="les-estimateurs-du-chapitre-5-au-regard-des-trois-critères">Les estimateurs du chapitre 5, au regard des trois critères</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Un premier bilan</summary>
 <div class="pedago-body">
@@ -786,9 +853,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="la-convergence">
-<h1>La convergence</h1>
+<h2 class="h1 anchored" data-anchor-id="la-convergence">La convergence</h2>
 <section class="level2" id="la-définition">
-<h2 class="anchored" data-anchor-id="la-définition">La définition</h2>
+<h3 class="h2 anchored" data-anchor-id="la-définition">La définition</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Estimateur convergent</summary>
 <div class="pedago-body">
@@ -806,10 +873,10 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-convergence-vue-sur-nos-salaires">
-<h2 class="anchored" data-anchor-id="la-convergence-vue-sur-nos-salaires">La convergence, vue sur nos salaires</h2>
+<h3 class="h2 anchored" data-anchor-id="la-convergence-vue-sur-nos-salaires">La convergence, vue sur nos salaires</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="163.27" id="svg_3478aa1c0cf209b463f4" role="img" style="width:92.0%" viewbox="0 0 326.29 163.27" width="326.29">
+<p><svg height="163.27" id="svg_3478aa1c0cf209b463f4" role="img" style="width:92.0%" viewbox="0 0 326.29 163.27" width="326.29" aria-label="Figure 1 : La convergence, vue sur nos salaires">
 <defs>
 <g>
 <g id="svg_3478aa1c0cf209b463f4_glyph-0-0">
@@ -1334,7 +1401,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </div>
 </section>
 <section class="level2" id="ce-que-montrent-les-trois-trajectoires">
-<h2 class="anchored" data-anchor-id="ce-que-montrent-les-trois-trajectoires">Ce que montrent les trois trajectoires</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-que-montrent-les-trois-trajectoires">Ce que montrent les trois trajectoires</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Ajouter les salariés un à un</summary>
 <div class="pedago-body">
@@ -1350,7 +1417,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="sans-biais-et-pourtant-non-convergent">
-<h2 class="anchored" data-anchor-id="sans-biais-et-pourtant-non-convergent">Sans biais, et pourtant non convergent</h2>
+<h3 class="h2 anchored" data-anchor-id="sans-biais-et-pourtant-non-convergent">Sans biais, et pourtant non convergent</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">La moyenne de la première et de la dernière observation</summary>
 <div class="pedago-body">
@@ -1365,7 +1432,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="biaisé-et-pourtant-convergent">
-<h2 class="anchored" data-anchor-id="biaisé-et-pourtant-convergent">Biaisé, et pourtant convergent</h2>
+<h3 class="h2 anchored" data-anchor-id="biaisé-et-pourtant-convergent">Biaisé, et pourtant convergent</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">La variance divisée par n</summary>
 <div class="pedago-body">
@@ -1402,7 +1469,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-convergence-nest-pas-la-précision">
-<h2 class="anchored" data-anchor-id="la-convergence-nest-pas-la-précision">La convergence n’est pas la précision</h2>
+<h3 class="h2 anchored" data-anchor-id="la-convergence-nest-pas-la-précision">La convergence n’est pas la précision</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">Une distinction opérationnelle</summary>
 <div class="pedago-body">
@@ -1420,9 +1487,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="lefficacité">
-<h1>L’efficacité</h1>
+<h2 class="h1 anchored" data-anchor-id="lefficacité">L’efficacité</h2>
 <section class="level2" id="comparer-deux-estimateurs-sans-biais">
-<h2 class="anchored" data-anchor-id="comparer-deux-estimateurs-sans-biais">Comparer deux estimateurs sans biais</h2>
+<h3 class="h2 anchored" data-anchor-id="comparer-deux-estimateurs-sans-biais">Comparer deux estimateurs sans biais</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Estimateur efficace</summary>
 <div class="pedago-body">
@@ -1440,7 +1507,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="ce-que-lefficacité-coûte-en-observations">
-<h2 class="anchored" data-anchor-id="ce-que-lefficacité-coûte-en-observations">Ce que l’efficacité coûte en observations</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-que-lefficacité-coûte-en-observations">Ce que l’efficacité coûte en observations</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Une taille équivalente</summary>
 <div class="pedago-body">
@@ -1456,7 +1523,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="quand-la-médiane-reprend-lavantage">
-<h2 class="anchored" data-anchor-id="quand-la-médiane-reprend-lavantage">Quand la médiane reprend l’avantage</h2>
+<h3 class="h2 anchored" data-anchor-id="quand-la-médiane-reprend-lavantage">Quand la médiane reprend l’avantage</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">Une coquille dans le fichier</summary>
 <div class="pedago-body">
@@ -1473,7 +1540,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="queues-épaisses-la-médiane-devient-plus-efficace">
-<h2 class="anchored" data-anchor-id="queues-épaisses-la-médiane-devient-plus-efficace">Queues épaisses : la médiane devient plus efficace</h2>
+<h3 class="h2 anchored" data-anchor-id="queues-épaisses-la-médiane-devient-plus-efficace">Queues épaisses : la médiane devient plus efficace</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Une population de Student à 3 degrés de liberté</summary>
 <div class="pedago-body">
@@ -1510,12 +1577,12 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="lerreur-quadratique-moyenne">
-<h1>L’erreur quadratique moyenne</h1>
+<h2 class="h1 anchored" data-anchor-id="lerreur-quadratique-moyenne">L’erreur quadratique moyenne</h2>
 <section class="level2" id="un-critère-qui-réunit-les-deux">
-<h2 class="anchored" data-anchor-id="un-critère-qui-réunit-les-deux">Un critère qui réunit les deux</h2>
+<h3 class="h2 anchored" data-anchor-id="un-critère-qui-réunit-les-deux">Un critère qui réunit les deux</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="182.44" id="svg_c266578b745b5ffd31ef" role="img" style="width:92.0%" viewbox="0 0 492.73 182.44" width="492.73">
+<p><svg height="182.44" id="svg_c266578b745b5ffd31ef" role="img" style="width:92.0%" viewbox="0 0 492.73 182.44" width="492.73" aria-label="Figure 2 : Un critère qui réunit les deux">
 <defs>
 <g>
 <g id="svg_c266578b745b5ffd31ef_glyph-0-0">
@@ -2866,7 +2933,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </div>
 </section>
 <section class="level2" id="la-décomposition">
-<h2 class="anchored" data-anchor-id="la-décomposition">La décomposition</h2>
+<h3 class="h2 anchored" data-anchor-id="la-décomposition">La décomposition</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Erreur quadratique moyenne</summary>
 <div class="pedago-body">
@@ -2881,7 +2948,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="une-seule-mesure-de-lerreur-totale">
-<h2 class="anchored" data-anchor-id="une-seule-mesure-de-lerreur-totale">Une seule mesure de l’erreur totale</h2>
+<h3 class="h2 anchored" data-anchor-id="une-seule-mesure-de-lerreur-totale">Une seule mesure de l’erreur totale</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">Viser et grouper</summary>
 <div class="pedago-body">
@@ -2934,7 +3001,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-résultat-qui-dérange">
-<h2 class="anchored" data-anchor-id="le-résultat-qui-dérange">Le résultat qui dérange</h2>
+<h3 class="h2 anchored" data-anchor-id="le-résultat-qui-dérange">Le résultat qui dérange</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Le minimum n’est pas en zéro de biais</summary>
 <div class="pedago-body">
@@ -2951,10 +3018,10 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-cas-de-la-variance">
-<h2 class="anchored" data-anchor-id="le-cas-de-la-variance">Le cas de la variance</h2>
+<h3 class="h2 anchored" data-anchor-id="le-cas-de-la-variance">Le cas de la variance</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="158.79" id="svg_02548cc4e9c94478a3d0" role="img" style="width:86.0%" viewbox="0 0 311.35 158.79" width="311.35">
+<p><svg height="158.79" id="svg_02548cc4e9c94478a3d0" role="img" style="width:86.0%" viewbox="0 0 311.35 158.79" width="311.35" aria-label="Figure 3 : Le cas de la variance">
 <defs>
 <g>
 <g id="svg_02548cc4e9c94478a3d0_glyph-0-0">
@@ -3453,7 +3520,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </div>
 </section>
 <section class="level2" id="trois-diviseurs-trois-erreurs">
-<h2 class="anchored" data-anchor-id="trois-diviseurs-trois-erreurs">Trois diviseurs, trois erreurs</h2>
+<h3 class="h2 anchored" data-anchor-id="trois-diviseurs-trois-erreurs">Trois diviseurs, trois erreurs</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">Population normale, n = 10</summary>
 <div class="pedago-body">
@@ -3500,7 +3567,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="rétrécir-la-moyenne-un-gain-qui-dépend-de-linconnu">
-<h2 class="anchored" data-anchor-id="rétrécir-la-moyenne-un-gain-qui-dépend-de-linconnu">Rétrécir la moyenne : un gain qui dépend de l’inconnu</h2>
+<h3 class="h2 anchored" data-anchor-id="rétrécir-la-moyenne-un-gain-qui-dépend-de-linconnu">Rétrécir la moyenne : un gain qui dépend de l’inconnu</h3>
 <details class="examplebox" open="">
 <summary class="pedago-title">L’estimateur c fois la moyenne</summary>
 <div class="pedago-body">
@@ -3539,9 +3606,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="sentraîner">
-<h1>S’entraîner</h1>
+<h2 class="h1 anchored" data-anchor-id="sentraîner">S’entraîner</h2>
 <section class="level2" id="exercice-1-trois-recettes-trois-critères">
-<h2 class="anchored" data-anchor-id="exercice-1-trois-recettes-trois-critères">Exercice 1 : trois recettes, trois critères</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-1-trois-recettes-trois-critères">Exercice 1 : trois recettes, trois critères</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Reprise du chapitre 5</summary>
 <div class="pedago-body">
@@ -3555,7 +3622,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-1-solution">
-<h2 class="anchored" data-anchor-id="exercice-1-solution">Exercice 1 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-1-solution">Exercice 1 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Biais, variance, EQM</summary>
 <div class="pedago-body">
@@ -3568,7 +3635,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-2-estimer-une-petite-proportion">
-<h2 class="anchored" data-anchor-id="exercice-2-estimer-une-petite-proportion">Exercice 2 : estimer une petite proportion</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-2-estimer-une-petite-proportion">Exercice 2 : estimer une petite proportion</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Deux recettes pour un taux de défaut</summary>
 <div class="pedago-body">
@@ -3582,7 +3649,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-2-solution">
-<h2 class="anchored" data-anchor-id="exercice-2-solution">Exercice 2 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-2-solution">Exercice 2 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Un biais qui paie au milieu, pas aux bords</summary>
 <div class="pedago-body">
@@ -3595,7 +3662,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-3-une-valeur-aberrante">
-<h2 class="anchored" data-anchor-id="exercice-3-une-valeur-aberrante">Exercice 3 : une valeur aberrante</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-3-une-valeur-aberrante">Exercice 3 : une valeur aberrante</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Neuf loyers</summary>
 <div class="pedago-body">
@@ -3609,7 +3676,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="exercice-3-solution">
-<h2 class="anchored" data-anchor-id="exercice-3-solution">Exercice 3 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-3-solution">Exercice 3 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Une saisie, deux réactions</summary>
 <div class="pedago-body">
@@ -3629,9 +3696,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="ce-quil-faut-retenir">
-<h1>Ce qu’il faut retenir</h1>
+<h2 class="h1 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
 <section class="level2" id="le-résumé-du-chapitre">
-<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<h3 class="h2 anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Six points</summary>
 <div class="pedago-body">
@@ -3647,7 +3714,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-suite">
-<h2 class="anchored" data-anchor-id="la-suite">La suite</h2>
+<h3 class="h2 anchored" data-anchor-id="la-suite">La suite</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">D’où viennent les estimateurs ?</summary>
 <div class="pedago-body">
@@ -3665,13 +3732,14 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="../../../cours/statistique-inferentielle/chapitres/estimateur-et-biais.html">← Chapitre précédent<span class="jm-nav-label">Estimateur et biais</span></a>
 <a class="jm-nav-suivant" href="../../../cours/statistique-inferentielle/chapitres/construire-un-estimateur.html">Chapitre suivant →<span class="jm-nav-label">Construire un estimateur</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3 class="anchored">Ressources du chapitre</h3>
+<h2 class="anchored">Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/qualites-d-un-estimateur.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/qualites-d-un-estimateur-poly.pdf">Polycopié du chapitre</a></li>

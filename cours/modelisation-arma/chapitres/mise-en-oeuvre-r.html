@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Modélisation ARMA des rentabilités financières, chapitre 16. 2 000 rentabilités quotidiennes simulées, fournies avec le cours. Trois colonnes : date, prix, rentabilite (en pourcentage).">
 
-<title>Modélisation ARMA des rentabilités financières – Jaouad Madkour</title>
+<title>Mise en œuvre sur R (Modélisation ARMA des rentabilités financières) – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -46,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b626d73c4c936ccc3cb08be7d45d1df6.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-4a81b521e20b8a0d9edba7313f3ee218.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-2e1988c4a830338585f6d0d114f9611f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -75,14 +76,25 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
-<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
-     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
-     latérale, l'onglet du navigateur et la recherche du site. Seul son
-     affichage en tête de page, redondant avec la barre latérale, disparaît.
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours et les
+     pages de niveau. Le titre reste déclaré dans l'entête du fichier : il
+     alimente l'onglet du navigateur et la recherche du site. Depuis le
+     28/10/2026 le bloc n'est plus retiré de la page (display: none), mais
+     seulement sorti de l'écran : le titre h1 reste donc dans la page pour les
+     lecteurs d'écran, qui n'avaient plus aucun titre à annoncer. Le bloc des
+     métadonnées (auteur, affiliation, date), lui, reste caché.
      Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
 <style>
   header#title-block-header,
-  .quarto-title-block { display: none; }
+  .quarto-title-block {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  header#title-block-header .quarto-title-meta,
+  header#title-block-header .quarto-title-meta-author,
+  .quarto-title-block .quarto-title-meta,
+  .quarto-title-block .quarto-title-meta-author { display: none; }
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
@@ -129,8 +141,11 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur > * { grid-column: auto !important; }
 
 @media (max-width: 991px) {
-  .jm-lecteur { grid-template-columns: 1fr !important; }
-  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+  .jm-lecteur { grid-template-columns: 1fr !important; gap: 1rem; }
+  .jm-lecteur-gauche { position: static !important; }
+  /* Les ressources du chapitre sont repeintes en puces sous le titre
+     (.jm-ressources-mobile) : le panneau, tout en bas de page, est masqué. */
+  .jm-lecteur-droite { display: none; }
 }
 
 /* ---------- Volet gauche : sommaire du cours ---------- */
@@ -181,12 +196,14 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 12px;
   padding: 1rem 1.1rem;
 }
-.jm-lecteur-droite h3 {
+.jm-lecteur-droite h2 {
   font-size: .8rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: #54707f;
   margin: 0 0 .7rem;
+  padding: 0;
+  border: 0;
 }
 .jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
 .jm-lecteur-droite li { margin-bottom: .55rem; }
@@ -195,11 +212,13 @@ ul.task-list li input[type="checkbox"] {
   font-weight: 600;
 }
 .jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+/* Textes inactifs : au moins 4,5:1 sur le fond du panneau (WCAG AA). Avant le
+   28/10/2026 : 2,3:1 en thème clair, 3,5:1 en thème sombre. */
 .jm-lecteur-droite .jm-indisponible {
-  color: #9aa9b2; font-weight: 500; cursor: default;
+  color: #566b77; font-weight: 500; cursor: default;
 }
 .jm-lecteur-droite .jm-reserve {
-  color: #9aa9b2; font-style: italic;
+  color: #566b77; font-style: italic;
 }
 
 /* ---------- Navigation précédent / suivant ---------- */
@@ -271,6 +290,71 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
 .jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
 
+/* ---------- En-tête du chapitre : seul titre h1 de la page ---------- */
+.jm-entete-chapitre { margin: 0 0 1.1rem; }
+.jm-entete-chapitre .jm-surtitre {
+  margin: 0 0 .3rem; font-size: .9rem; color: #3d5a6b;
+}
+.jm-entete-chapitre .jm-surtitre a {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+/* Plus grand que les titres de section (classe .h1 de Bootstrap, jusqu'à 2,5 rem). */
+.jm-titre-chapitre {
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 2.7rem); font-weight: 700; line-height: 1.15;
+  margin: 0; padding: 0; border: 0;
+}
+
+/* ---------- Sommaire du cours : toujours ouvert sur ordinateur, replié sur
+   téléphone (script placé après le <details>, voir lecteur.py) ---------- */
+.jm-lecteur-gauche details.jm-sommaire > summary {
+  list-style: none; cursor: default; pointer-events: none;
+  color: inherit; /* Bootstrap grise les <summary> */
+}
+.jm-lecteur-gauche details.jm-sommaire > summary::-webkit-details-marker { display: none; }
+@media (max-width: 991px) {
+  .jm-lecteur-gauche details.jm-sommaire > summary {
+    pointer-events: auto; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .65rem .8rem; margin: 0; border: 1px solid #dbe6ee; border-radius: 10px;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  }
+  .jm-lecteur-gauche details.jm-sommaire > summary::after {
+    content: "\25BE"; font-size: 1.05rem; transition: transform .15s ease;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary::after { transform: rotate(180deg); }
+  .jm-lecteur-gauche details.jm-sommaire > ul {
+    border: 1px solid #dbe6ee; border-top: 0; border-radius: 0 0 10px 10px;
+    padding: .4rem .4rem .5rem;
+  }
+}
+
+/* ---------- Ressources du chapitre en puces (téléphone seulement) ---------- */
+.jm-ressources-mobile { display: none; }
+@media (max-width: 991px) {
+  .jm-ressources-mobile { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.1rem; }
+  .jm-ressources-mobile a.jm-ressource {
+    display: inline-block; padding: .4rem .85rem; border: 1px solid #1f6fb2;
+    border-radius: 999px; font-size: .88rem; font-weight: 600; color: #1f6fb2;
+    text-decoration: none;
+  }
+}
+
+/* ---------- Titres des sections : abaissés d'un niveau dans le HTML
+   (h1 -> h2, h2 -> h3), apparence inchangée grâce aux classes .h1 et
+   .h2 de Bootstrap ajoutées par normaliser.py. ---------- */
+.jm-lecteur-centre h2, .jm-lecteur-centre h3 { overflow-wrap: anywhere; }
+
+/* ---------- Débordements : formules, tableaux, figures ---------- */
+.jm-lecteur-centre .katex-display {
+  overflow-x: auto; overflow-y: hidden; max-width: 100%;
+}
+.jm-lecteur-centre svg[role="img"] { max-width: 100%; height: auto; }
+@media (max-width: 991px) {
+  .jm-lecteur-centre table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
 /* =====================================================================
    Mode sombre — posé par Quarto sur <body class="quarto-dark">
    ===================================================================== */
@@ -282,14 +366,18 @@ body.quarto-dark .jm-lecteur-gauche a.jm-actif {
   color: #3aa0e6;
 }
 body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-entete-chapitre .jm-surtitre { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > summary,
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > ul { border-color: #20455a; }
+body.quarto-dark .jm-ressources-mobile a.jm-ressource { color: #5bb3ef; border-color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite {
   background: #13303d;
   border-color: #20455a;
 }
-body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite h2 { color: #9db4c0; }
 body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite .jm-indisponible,
-body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #a8bdc9; }
 body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
 body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
@@ -328,9 +416,11 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
      n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
      ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
      pages où il détecte des maths (cf. html-math-method: katex du site) :
-     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     chargement de KaTeX (copie hébergée sur le site : assets/katex/, version
+     0.19.1, voir VERSION.txt ; le CDN en « latest » a été abandonné le
+     28/10/2026), puis un scan DOMContentLoaded
      de tous les éléments .math qui les rend en place. -->
-<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="../../../assets/katex/katex.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () {
  var mathElements = document.getElementsByClassName("math");
  var macros = [];
@@ -345,15 +435,21 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
    });
 }}});
 </script>
-<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="../../../assets/katex/katex.min.css">
 
 
-<meta property="og:title" content="Modélisation ARMA des rentabilités financières – Jaouad Madkour">
-<meta property="og:description" content="Mise en œuvre sur R">
+<meta property="og:title" content="Mise en œuvre sur R (Modélisation ARMA des rentabilités financières)">
+<meta property="og:description" content="Modélisation ARMA des rentabilités financières, chapitre 16. 2 000 rentabilités quotidiennes simulées, fournies avec le cours. Trois colonnes : date, prix, rentabilite (en pourcentage).">
+<meta property="og:image" content="https://jmadkour.org/assets/og-jmadkour.png">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Modélisation ARMA des rentabilités financières – Jaouad Madkour">
-<meta name="twitter:description" content="Mise en œuvre sur R">
+<meta property="og:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:title" content="Mise en œuvre sur R (Modélisation ARMA des rentabilités financières)">
+<meta name="twitter:description" content="Modélisation ARMA des rentabilités financières, chapitre 16. 2 000 rentabilités quotidiennes simulées, fournies avec le cours. Trois colonnes : date, prix, rentabilite (en pourcentage).">
+<meta name="twitter:image" content="https://jmadkour.org/assets/og-jmadkour.png">
+<meta name="twitter:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://jmadkour.org/cours/modelisation-arma/chapitres/mise-en-oeuvre-r.html">
 </head>
 
 <body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
@@ -601,32 +697,16 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
-
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Modélisation ARMA des rentabilités financières</h1>
-<p class="subtitle lead">Mise en œuvre sur R</p>
-</div>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta column-page">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Modélisation ARMA des rentabilités financières</div>
+<details class="jm-sommaire" open="">
+<summary class="jm-lecteur-titre-cours">Modélisation ARMA des rentabilités financières</summary>
 <ul>
 <li><a class="jm-accueil" href="../../../cours/modelisation-arma/index.html">Présentation du cours</a></li>
 <li><a class="" href="../../../cours/modelisation-arma/chapitres/processus-stochastique.html">Variable aléatoire et processus stochastique</a></li>
@@ -648,39 +728,26 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <li><a class="jm-actif" href="../../../cours/modelisation-arma/chapitres/mise-en-oeuvre-r.html">Mise en œuvre sur R</a></li>
 <li><a class="" href="../../../cours/modelisation-arma/chapitres/mise-en-oeuvre-python.html">Mise en œuvre sur Python</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Modélisation ARMA des rentabilités financières</h1>
-<p class="subtitle lead">Chapitre 16 : Mise en œuvre sur R</p>
-</div>
-<div class="quarto-title-meta-author column-page">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">25 septembre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 16">
+<p class="jm-surtitre"><a href="../../../cours/modelisation-arma/index.html">Modélisation ARMA des rentabilités financières</a>&nbsp;· Chapitre 16</p>
+<h1 class="jm-titre-chapitre">Mise en œuvre sur R</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/mise-en-oeuvre-r.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/mise-en-oeuvre-r-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/mise-en-oeuvre-r-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/mise-en-oeuvre-r.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="avant-de-commencer">
-<h1>Avant de commencer</h1>
+<h2 class="h1 anchored" data-anchor-id="avant-de-commencer">Avant de commencer</h2>
 <section class="level2" id="le-jeu-de-données">
-<h2 class="anchored" data-anchor-id="le-jeu-de-données">Le jeu de données</h2>
+<h3 class="h2 anchored" data-anchor-id="le-jeu-de-données">Le jeu de données</h3>
 <div class="definitionbox" title="Le fichier rentabilites.csv">
 <div class="pedago-title">
 Le fichier rentabilites.csv
@@ -695,7 +762,7 @@ Pourquoi des données simulées
 </div>
 </section>
 <section class="level2" id="les-bibliothèques">
-<h2 class="anchored" data-anchor-id="les-bibliothèques">Les bibliothèques</h2>
+<h3 class="h2 anchored" data-anchor-id="les-bibliothèques">Les bibliothèques</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"forecast"</span>, <span class="st">"tseries"</span>, <span class="st">"FinTS"</span>))</span>
 <span id="cb1-2"><a aria-hidden="true" href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(forecast)   <span class="co"># Acf, Pacf, auto.arima, forecast, checkresiduals</span></span>
 <span id="cb1-3"><a aria-hidden="true" href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(tseries)    <span class="co"># adf.test, kpss.test, jarque.bera.test</span></span>
@@ -703,9 +770,9 @@ Pourquoi des données simulées
 </section>
 </section>
 <section class="level1" id="étape-1-lire-et-décrire">
-<h1>Étape 1 — Lire et décrire</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-1-lire-et-décrire">Étape 1 — Lire et décrire</h2>
 <section class="level2" id="charger-la-série">
-<h2 class="anchored" data-anchor-id="charger-la-série">Charger la série</h2>
+<h3 class="h2 anchored" data-anchor-id="charger-la-série">Charger la série</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a aria-hidden="true" href="#cb2-1" tabindex="-1"></a>don <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"rentabilites.csv"</span>, <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb2-2"><a aria-hidden="true" href="#cb2-2" tabindex="-1"></a>don<span class="sc">$</span>date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(don<span class="sc">$</span>date)</span>
 <span id="cb2-3"><a aria-hidden="true" href="#cb2-3" tabindex="-1"></a>r <span class="ot">&lt;-</span> don<span class="sc">$</span>rentabilite</span>
@@ -718,7 +785,7 @@ Pourquoi des données simulées
     0.0300     1.1764    -5.8412     4.9037</code></pre>
 </section>
 <section class="level2" id="les-faits-stylisés-en-trois-nombres">
-<h2 class="anchored" data-anchor-id="les-faits-stylisés-en-trois-nombres">Les faits stylisés, en trois nombres</h2>
+<h3 class="h2 anchored" data-anchor-id="les-faits-stylisés-en-trois-nombres">Les faits stylisés, en trois nombres</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a aria-hidden="true" href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(moments)</span>
 <span id="cb5-2"><a aria-hidden="true" href="#cb5-2" tabindex="-1"></a><span class="fu">skewness</span>(r)     <span class="co"># -0.19</span></span>
 <span id="cb5-3"><a aria-hidden="true" href="#cb5-3" tabindex="-1"></a><span class="fu">kurtosis</span>(r)     <span class="co">#  6.60</span></span>
@@ -732,13 +799,13 @@ Ce que ces nombres disent
 </div>
 </section>
 <section class="level2" id="regarder-la-série">
-<h2 class="anchored" data-anchor-id="regarder-la-série">Regarder la série</h2>
+<h3 class="h2 anchored" data-anchor-id="regarder-la-série">Regarder la série</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a aria-hidden="true" href="#cb6-1" tabindex="-1"></a><span class="fu">plot</span>(don<span class="sc">$</span>date, r, <span class="at">type =</span> <span class="st">"l"</span>, <span class="at">col =</span> <span class="st">"steelblue"</span>,</span>
 <span id="cb6-2"><a aria-hidden="true" href="#cb6-2" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">""</span>, <span class="at">ylab =</span> <span class="st">"rentabilité (%)"</span>)</span>
 <span id="cb6-3"><a aria-hidden="true" href="#cb6-3" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">0</span>, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">"grey40"</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="111.56pt" id="svg_d134b2f36e1181084c73" role="img" style="width:80.0%" viewbox="0 0 318.92 111.56" width="318.92pt">
+<p><svg height="111.56pt" id="svg_d134b2f36e1181084c73" role="img" style="width:80.0%" viewbox="0 0 318.92 111.56" width="318.92pt" aria-label="Figure 1 : Regarder la série">
 <defs>
 <g>
 <symbol id="svg_d134b2f36e1181084c73_glyph0-0" overflow="visible">
@@ -933,9 +1000,9 @@ Ce qu’on voit avant tout calcul
 </section>
 </section>
 <section class="level1" id="étape-2-la-stationnarité">
-<h1>Étape 2 — La stationnarité</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-2-la-stationnarité">Étape 2 — La stationnarité</h2>
 <section class="level2" id="les-trois-tests-du-chapitre-8">
-<h2 class="anchored" data-anchor-id="les-trois-tests-du-chapitre-8">Les trois tests du chapitre 8</h2>
+<h3 class="h2 anchored" data-anchor-id="les-trois-tests-du-chapitre-8">Les trois tests du chapitre 8</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a aria-hidden="true" href="#cb7-1" tabindex="-1"></a><span class="fu">adf.test</span>(r)                 <span class="co"># H0 : racine unitaire</span></span>
 <span id="cb7-2"><a aria-hidden="true" href="#cb7-2" tabindex="-1"></a><span class="fu">pp.test</span>(r)                  <span class="co"># idem, Phillips-Perron</span></span>
 <span id="cb7-3"><a aria-hidden="true" href="#cb7-3" tabindex="-1"></a><span class="fu">kpss.test</span>(r, <span class="at">null =</span> <span class="st">"Level"</span>) <span class="co"># H0 : stationnarité</span></span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
@@ -947,7 +1014,7 @@ KPSS Test for Level Stationarity
 KPSS Level = 0.1174, Truncation lag parameter = 8, p-value = 0.1</code></pre>
 </section>
 <section class="level2" id="croiser-les-conclusions">
-<h2 class="anchored" data-anchor-id="croiser-les-conclusions">Croiser les conclusions</h2>
+<h3 class="h2 anchored" data-anchor-id="croiser-les-conclusions">Croiser les conclusions</h3>
 <div class="definitionbox" title="Lecture">
 <div class="pedago-title">
 Lecture
@@ -964,15 +1031,15 @@ Un avertissement de R à ne pas mal lire
 </section>
 </section>
 <section class="level1" id="étape-3-identifier">
-<h1>Étape 3 — Identifier</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-3-identifier">Étape 3 — Identifier</h2>
 <section class="level2" id="les-corrélogrammes">
-<h2 class="anchored" data-anchor-id="les-corrélogrammes">Les corrélogrammes</h2>
+<h3 class="h2 anchored" data-anchor-id="les-corrélogrammes">Les corrélogrammes</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a aria-hidden="true" href="#cb9-1" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
 <span id="cb9-2"><a aria-hidden="true" href="#cb9-2" tabindex="-1"></a><span class="fu">Acf</span>(r,  <span class="at">lag.max =</span> <span class="dv">20</span>, <span class="at">main =</span> <span class="st">"ACF des rentabilités"</span>)</span>
 <span id="cb9-3"><a aria-hidden="true" href="#cb9-3" tabindex="-1"></a><span class="fu">Pacf</span>(r, <span class="at">lag.max =</span> <span class="dv">20</span>, <span class="at">main =</span> <span class="st">"PACF des rentabilités"</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="134.81pt" id="svg_cb865e0c12412a94ea49" role="img" style="width:82.0%" viewbox="0 0 351.06 134.81" width="351.06pt">
+<p><svg height="134.81pt" id="svg_cb865e0c12412a94ea49" role="img" style="width:82.0%" viewbox="0 0 351.06 134.81" width="351.06pt" aria-label="Figure 2 : Les corrélogrammes">
 <defs>
 <g>
 <symbol id="svg_cb865e0c12412a94ea49_glyph0-0" overflow="visible">
@@ -1420,7 +1487,7 @@ Le diagnostic, et il est décevant
 </div>
 </section>
 <section class="level2" id="le-test-de-blancheur-demblée">
-<h2 class="anchored" data-anchor-id="le-test-de-blancheur-demblée">Le test de blancheur, d’emblée</h2>
+<h3 class="h2 anchored" data-anchor-id="le-test-de-blancheur-demblée">Le test de blancheur, d’emblée</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a aria-hidden="true" href="#cb10-1" tabindex="-1"></a><span class="fu">Box.test</span>(r, <span class="at">lag =</span> <span class="dv">20</span>, <span class="at">type =</span> <span class="st">"Ljung-Box"</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <pre><code>Box-Ljung test
 X-squared = 20.351, df = 20, p-value = 0.4368</code></pre>
@@ -1433,7 +1500,7 @@ Conclusion
 </div>
 </section>
 <section class="level2" id="la-sélection-automatique">
-<h2 class="anchored" data-anchor-id="la-sélection-automatique">La sélection automatique</h2>
+<h3 class="h2 anchored" data-anchor-id="la-sélection-automatique">La sélection automatique</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a aria-hidden="true" href="#cb12-1" tabindex="-1"></a><span class="fu">auto.arima</span>(r, <span class="at">max.p =</span> <span class="dv">4</span>, <span class="at">max.q =</span> <span class="dv">4</span>, <span class="at">d =</span> <span class="dv">0</span>,</span>
 <span id="cb12-2"><a aria-hidden="true" href="#cb12-2" tabindex="-1"></a>           <span class="at">seasonal =</span> <span class="cn">FALSE</span>, <span class="at">ic =</span> <span class="st">"bic"</span>, <span class="at">stepwise =</span> <span class="cn">FALSE</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <pre><code>Series: r
@@ -1449,7 +1516,7 @@ Ce que le BIC retient
 </div>
 </section>
 <section class="level2" id="comparer-les-candidats-à-la-main">
-<h2 class="anchored" data-anchor-id="comparer-les-candidats-à-la-main">Comparer les candidats à la main</h2>
+<h3 class="h2 anchored" data-anchor-id="comparer-les-candidats-à-la-main">Comparer les candidats à la main</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a aria-hidden="true" href="#cb14-1" tabindex="-1"></a>grille <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">p =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">q =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">3</span>)</span>
 <span id="cb14-2"><a aria-hidden="true" href="#cb14-2" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">apply</span>(grille, <span class="dv">1</span>, <span class="cf">function</span>(o) {</span>
 <span id="cb14-3"><a aria-hidden="true" href="#cb14-3" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">try</span>(<span class="fu">arima</span>(r, <span class="at">order =</span> <span class="fu">c</span>(o[<span class="dv">1</span>], <span class="dv">0</span>, o[<span class="dv">2</span>])), <span class="at">silent =</span> <span class="cn">TRUE</span>)</span>
@@ -1471,9 +1538,9 @@ La lecture
 </section>
 </section>
 <section class="level1" id="étape-4-estimer-et-valider">
-<h1>Étape 4 — Estimer et valider</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-4-estimer-et-valider">Étape 4 — Estimer et valider</h2>
 <section class="level2" id="estimer-pour-la-démonstration">
-<h2 class="anchored" data-anchor-id="estimer-pour-la-démonstration">Estimer, pour la démonstration</h2>
+<h3 class="h2 anchored" data-anchor-id="estimer-pour-la-démonstration">Estimer, pour la démonstration</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a aria-hidden="true" href="#cb16-1" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="fu">arima</span>(r, <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span>
 <span id="cb16-2"><a aria-hidden="true" href="#cb16-2" tabindex="-1"></a>mod</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <pre><code>Coefficients:
@@ -1489,7 +1556,7 @@ Comment lire ce tableau
 </div>
 </section>
 <section class="level2" id="valider">
-<h2 class="anchored" data-anchor-id="valider">Valider</h2>
+<h3 class="h2 anchored" data-anchor-id="valider">Valider</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a aria-hidden="true" href="#cb18-1" tabindex="-1"></a><span class="fu">checkresiduals</span>(mod, <span class="at">lag =</span> <span class="dv">20</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <pre><code>Ljung-Box test
 Q* = 20.06, df = 19, p-value = 0.3907</code></pre>
@@ -1497,10 +1564,10 @@ Q* = 20.06, df = 19, p-value = 0.3907</code></pre>
 <span id="cb20-2"><a aria-hidden="true" href="#cb20-2" tabindex="-1"></a><span class="fu">jarque.bera.test</span>(res)   <span class="co"># rejeté : queues épaisses</span></span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="level2" id="valider-suite">
-<h2 class="anchored" data-anchor-id="valider-suite">Valider (suite)</h2>
+<h3 class="h2 anchored" data-anchor-id="valider-suite">Valider (suite)</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="108.31pt" id="svg_daf287b8e41b7ff6dd48" role="img" style="width:62.0%" viewbox="0 0 245.6 108.31" width="245.6pt">
+<p><svg height="108.31pt" id="svg_daf287b8e41b7ff6dd48" role="img" style="width:62.0%" viewbox="0 0 245.6 108.31" width="245.6pt" aria-label="Figure 3 : Valider (suite)">
 <defs>
 <g>
 <symbol id="svg_daf287b8e41b7ff6dd48_glyph0-0" overflow="visible">
@@ -1714,7 +1781,7 @@ Q* = 20.06, df = 19, p-value = 0.3907</code></pre>
 </div>
 </section>
 <section class="level2" id="valider-suite-2">
-<h2 class="anchored" data-anchor-id="valider-suite-2">Valider (suite 2)</h2>
+<h3 class="h2 anchored" data-anchor-id="valider-suite-2">Valider (suite 2)</h3>
 <div class="definitionbox" title="Verdict">
 <div class="pedago-title">
 Verdict
@@ -1724,9 +1791,9 @@ Verdict
 </section>
 </section>
 <section class="level1" id="étape-5-prévoir">
-<h1>Étape 5 — Prévoir</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-5-prévoir">Étape 5 — Prévoir</h2>
 <section class="level2" id="prévision-ponctuelle-et-intervalle">
-<h2 class="anchored" data-anchor-id="prévision-ponctuelle-et-intervalle">Prévision ponctuelle et intervalle</h2>
+<h3 class="h2 anchored" data-anchor-id="prévision-ponctuelle-et-intervalle">Prévision ponctuelle et intervalle</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a aria-hidden="true" href="#cb21-1" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">forecast</span>(mod, <span class="at">h =</span> <span class="dv">10</span>, <span class="at">level =</span> <span class="fu">c</span>(<span class="dv">80</span>, <span class="dv">95</span>))</span>
 <span id="cb21-2"><a aria-hidden="true" href="#cb21-2" tabindex="-1"></a>p</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <pre><code>    Point Forecast     Lo 95    Hi 95
@@ -1743,9 +1810,9 @@ Le chapitre 15, illustré en trois lignes
 </section>
 </section>
 <section class="level1" id="étape-6-ce-qui-a-échappé">
-<h1>Étape 6 — Ce qui a échappé</h1>
+<h2 class="h1 anchored" data-anchor-id="étape-6-ce-qui-a-échappé">Étape 6 — Ce qui a échappé</h2>
 <section class="level2" id="regarder-les-résidus-au-carré">
-<h2 class="anchored" data-anchor-id="regarder-les-résidus-au-carré">Regarder les résidus au carré</h2>
+<h3 class="h2 anchored" data-anchor-id="regarder-les-résidus-au-carré">Regarder les résidus au carré</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a aria-hidden="true" href="#cb23-1" tabindex="-1"></a><span class="fu">Acf</span>(res<span class="sc">^</span><span class="dv">2</span>, <span class="at">lag.max =</span> <span class="dv">20</span>, <span class="at">main =</span> <span class="st">"ACF des résidus au carré"</span>)</span>
 <span id="cb23-2"><a aria-hidden="true" href="#cb23-2" tabindex="-1"></a><span class="fu">Box.test</span>(res<span class="sc">^</span><span class="dv">2</span>, <span class="at">lag =</span> <span class="dv">20</span>, <span class="at">type =</span> <span class="st">"Ljung-Box"</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <pre><code>Box-Ljung test
@@ -1785,7 +1852,7 @@ Le contraste, en deux nombres
 </div>
 </section>
 <section class="level2" id="le-test-arch">
-<h2 class="anchored" data-anchor-id="le-test-arch">Le test ARCH</h2>
+<h3 class="h2 anchored" data-anchor-id="le-test-arch">Le test ARCH</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a aria-hidden="true" href="#cb25-1" tabindex="-1"></a><span class="fu">ArchTest</span>(res, <span class="at">lags =</span> <span class="dv">12</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <pre><code>ARCH LM-test; Null hypothesis: no ARCH effects
 Chi-squared = 274.53, df = 12, p-value &lt; 2.2e-16</code></pre>
@@ -1798,7 +1865,7 @@ La conclusion de tout le cours, obtenue en une commande
 </div>
 </section>
 <section class="level2" id="ce-quil-faut-modéliser-maintenant">
-<h2 class="anchored" data-anchor-id="ce-quil-faut-modéliser-maintenant">Ce qu’il faut modéliser maintenant</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-quil-faut-modéliser-maintenant">Ce qu’il faut modéliser maintenant</h3>
 <div class="ecobox" title="La suite, en R">
 <div class="pedago-title">
 La suite, en R
@@ -1814,9 +1881,9 @@ La suite, en R
 </section>
 </section>
 <section class="level1" id="synthèse">
-<h1>Synthèse</h1>
+<h2 class="h1 anchored" data-anchor-id="synthèse">Synthèse</h2>
 <section class="level2" id="ce-quil-faut-retenir">
-<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h3>
 <div class="definitionbox" title="L'essentiel du chapitre 16">
 <div class="pedago-title">
 L’essentiel du chapitre 16
@@ -1839,13 +1906,14 @@ Vers le chapitre 17
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="../../../cours/modelisation-arma/chapitres/prevision.html">← Chapitre précédent<span class="jm-nav-label">La prévision : ponctuelle, par intervalle, par densité</span></a>
 <a class="jm-nav-suivant" href="../../../cours/modelisation-arma/chapitres/mise-en-oeuvre-python.html">Chapitre suivant →<span class="jm-nav-label">Mise en œuvre sur Python</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3 class="anchored">Ressources du chapitre</h3>
+<h2 class="anchored">Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/mise-en-oeuvre-r.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/mise-en-oeuvre-r-poly.pdf">Polycopié du chapitre</a></li>

@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Calcul stochastique pour la finance, chapitre 4. L’irrégularité n’est pas un défaut du modèle : c’est ce qui le rend réaliste. Il faut donc un calcul qui l’accepte.">
 
-<title>Calcul stochastique pour la finance – Jaouad Madkour</title>
+<title>De l’équation différentielle à l’équation différentielle stochastique (Calcul stochastique pour la finance) – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -46,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b626d73c4c936ccc3cb08be7d45d1df6.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-4a81b521e20b8a0d9edba7313f3ee218.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-2e1988c4a830338585f6d0d114f9611f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -75,14 +76,25 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
-<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
-     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
-     latérale, l'onglet du navigateur et la recherche du site. Seul son
-     affichage en tête de page, redondant avec la barre latérale, disparaît.
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours et les
+     pages de niveau. Le titre reste déclaré dans l'entête du fichier : il
+     alimente l'onglet du navigateur et la recherche du site. Depuis le
+     28/10/2026 le bloc n'est plus retiré de la page (display: none), mais
+     seulement sorti de l'écran : le titre h1 reste donc dans la page pour les
+     lecteurs d'écran, qui n'avaient plus aucun titre à annoncer. Le bloc des
+     métadonnées (auteur, affiliation, date), lui, reste caché.
      Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
 <style>
   header#title-block-header,
-  .quarto-title-block { display: none; }
+  .quarto-title-block {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  header#title-block-header .quarto-title-meta,
+  header#title-block-header .quarto-title-meta-author,
+  .quarto-title-block .quarto-title-meta,
+  .quarto-title-block .quarto-title-meta-author { display: none; }
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
@@ -129,8 +141,11 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur > * { grid-column: auto !important; }
 
 @media (max-width: 991px) {
-  .jm-lecteur { grid-template-columns: 1fr !important; }
-  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+  .jm-lecteur { grid-template-columns: 1fr !important; gap: 1rem; }
+  .jm-lecteur-gauche { position: static !important; }
+  /* Les ressources du chapitre sont repeintes en puces sous le titre
+     (.jm-ressources-mobile) : le panneau, tout en bas de page, est masqué. */
+  .jm-lecteur-droite { display: none; }
 }
 
 /* ---------- Volet gauche : sommaire du cours ---------- */
@@ -181,12 +196,14 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 12px;
   padding: 1rem 1.1rem;
 }
-.jm-lecteur-droite h3 {
+.jm-lecteur-droite h2 {
   font-size: .8rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: #54707f;
   margin: 0 0 .7rem;
+  padding: 0;
+  border: 0;
 }
 .jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
 .jm-lecteur-droite li { margin-bottom: .55rem; }
@@ -195,11 +212,13 @@ ul.task-list li input[type="checkbox"] {
   font-weight: 600;
 }
 .jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+/* Textes inactifs : au moins 4,5:1 sur le fond du panneau (WCAG AA). Avant le
+   28/10/2026 : 2,3:1 en thème clair, 3,5:1 en thème sombre. */
 .jm-lecteur-droite .jm-indisponible {
-  color: #9aa9b2; font-weight: 500; cursor: default;
+  color: #566b77; font-weight: 500; cursor: default;
 }
 .jm-lecteur-droite .jm-reserve {
-  color: #9aa9b2; font-style: italic;
+  color: #566b77; font-style: italic;
 }
 
 /* ---------- Navigation précédent / suivant ---------- */
@@ -271,6 +290,71 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
 .jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
 
+/* ---------- En-tête du chapitre : seul titre h1 de la page ---------- */
+.jm-entete-chapitre { margin: 0 0 1.1rem; }
+.jm-entete-chapitre .jm-surtitre {
+  margin: 0 0 .3rem; font-size: .9rem; color: #3d5a6b;
+}
+.jm-entete-chapitre .jm-surtitre a {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+/* Plus grand que les titres de section (classe .h1 de Bootstrap, jusqu'à 2,5 rem). */
+.jm-titre-chapitre {
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 2.7rem); font-weight: 700; line-height: 1.15;
+  margin: 0; padding: 0; border: 0;
+}
+
+/* ---------- Sommaire du cours : toujours ouvert sur ordinateur, replié sur
+   téléphone (script placé après le <details>, voir lecteur.py) ---------- */
+.jm-lecteur-gauche details.jm-sommaire > summary {
+  list-style: none; cursor: default; pointer-events: none;
+  color: inherit; /* Bootstrap grise les <summary> */
+}
+.jm-lecteur-gauche details.jm-sommaire > summary::-webkit-details-marker { display: none; }
+@media (max-width: 991px) {
+  .jm-lecteur-gauche details.jm-sommaire > summary {
+    pointer-events: auto; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .65rem .8rem; margin: 0; border: 1px solid #dbe6ee; border-radius: 10px;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  }
+  .jm-lecteur-gauche details.jm-sommaire > summary::after {
+    content: "\25BE"; font-size: 1.05rem; transition: transform .15s ease;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary::after { transform: rotate(180deg); }
+  .jm-lecteur-gauche details.jm-sommaire > ul {
+    border: 1px solid #dbe6ee; border-top: 0; border-radius: 0 0 10px 10px;
+    padding: .4rem .4rem .5rem;
+  }
+}
+
+/* ---------- Ressources du chapitre en puces (téléphone seulement) ---------- */
+.jm-ressources-mobile { display: none; }
+@media (max-width: 991px) {
+  .jm-ressources-mobile { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.1rem; }
+  .jm-ressources-mobile a.jm-ressource {
+    display: inline-block; padding: .4rem .85rem; border: 1px solid #1f6fb2;
+    border-radius: 999px; font-size: .88rem; font-weight: 600; color: #1f6fb2;
+    text-decoration: none;
+  }
+}
+
+/* ---------- Titres des sections : abaissés d'un niveau dans le HTML
+   (h1 -> h2, h2 -> h3), apparence inchangée grâce aux classes .h1 et
+   .h2 de Bootstrap ajoutées par normaliser.py. ---------- */
+.jm-lecteur-centre h2, .jm-lecteur-centre h3 { overflow-wrap: anywhere; }
+
+/* ---------- Débordements : formules, tableaux, figures ---------- */
+.jm-lecteur-centre .katex-display {
+  overflow-x: auto; overflow-y: hidden; max-width: 100%;
+}
+.jm-lecteur-centre svg[role="img"] { max-width: 100%; height: auto; }
+@media (max-width: 991px) {
+  .jm-lecteur-centre table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
 /* =====================================================================
    Mode sombre — posé par Quarto sur <body class="quarto-dark">
    ===================================================================== */
@@ -282,14 +366,18 @@ body.quarto-dark .jm-lecteur-gauche a.jm-actif {
   color: #3aa0e6;
 }
 body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-entete-chapitre .jm-surtitre { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > summary,
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > ul { border-color: #20455a; }
+body.quarto-dark .jm-ressources-mobile a.jm-ressource { color: #5bb3ef; border-color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite {
   background: #13303d;
   border-color: #20455a;
 }
-body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite h2 { color: #9db4c0; }
 body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite .jm-indisponible,
-body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #a8bdc9; }
 body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
 body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
@@ -328,9 +416,11 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
      n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
      ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
      pages où il détecte des maths (cf. html-math-method: katex du site) :
-     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     chargement de KaTeX (copie hébergée sur le site : assets/katex/, version
+     0.19.1, voir VERSION.txt ; le CDN en « latest » a été abandonné le
+     28/10/2026), puis un scan DOMContentLoaded
      de tous les éléments .math qui les rend en place. -->
-<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="../../../assets/katex/katex.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () {
  var mathElements = document.getElementsByClassName("math");
  var macros = [];
@@ -345,15 +435,21 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
    });
 }}});
 </script>
-<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="../../../assets/katex/katex.min.css">
 
 
-<meta property="og:title" content="Calcul stochastique pour la finance – Jaouad Madkour">
-<meta property="og:description" content="De l’équation différentielle à l’équation différentielle stochastique">
+<meta property="og:title" content="De l’équation différentielle à l’équation différentielle stochastique (Calcul stochastique pour la finance)">
+<meta property="og:description" content="Calcul stochastique pour la finance, chapitre 4. L’irrégularité n’est pas un défaut du modèle : c’est ce qui le rend réaliste. Il faut donc un calcul qui l’accepte.">
+<meta property="og:image" content="https://jmadkour.org/assets/og-jmadkour.png">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Calcul stochastique pour la finance – Jaouad Madkour">
-<meta name="twitter:description" content="De l’équation différentielle à l’équation différentielle stochastique">
+<meta property="og:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:title" content="De l’équation différentielle à l’équation différentielle stochastique (Calcul stochastique pour la finance)">
+<meta name="twitter:description" content="Calcul stochastique pour la finance, chapitre 4. L’irrégularité n’est pas un défaut du modèle : c’est ce qui le rend réaliste. Il faut donc un calcul qui l’accepte.">
+<meta name="twitter:image" content="https://jmadkour.org/assets/og-jmadkour.png">
+<meta name="twitter:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://jmadkour.org/cours/calcul-stochastique/chapitres/des-edo-aux-eds.html">
 </head>
 
 <body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
@@ -601,32 +697,16 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
-
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Calcul stochastique pour la finance</h1>
-<p class="subtitle lead">De l’équation différentielle à l’équation différentielle stochastique</p>
-</div>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta column-page">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Calcul stochastique pour la finance</div>
+<details class="jm-sommaire" open="">
+<summary class="jm-lecteur-titre-cours">Calcul stochastique pour la finance</summary>
 <ul>
 <li><a class="jm-accueil" href="../../../cours/calcul-stochastique/index.html">Présentation du cours</a></li>
 <li><a class="" href="../../../cours/calcul-stochastique/chapitres/temps-discret-temps-continu.html">Du temps discret au temps continu</a></li>
@@ -642,46 +722,33 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <li><a class="" href="../../../cours/calcul-stochastique/chapitres/formule-black-scholes.html">Probabilité risque-neutre et formule de Black-Scholes</a></li>
 <li><a class="" href="../../../cours/calcul-stochastique/chapitres/simulation-ouverture.html">Simuler, et ce qui vient après</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Calcul stochastique pour la finance</h1>
-<p class="subtitle lead">Chapitre 4 : De l’équation différentielle à l’équation différentielle stochastique</p>
-</div>
-<div class="quarto-title-meta-author column-page">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">25 septembre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 4">
+<p class="jm-surtitre"><a href="../../../cours/calcul-stochastique/index.html">Calcul stochastique pour la finance</a>&nbsp;· Chapitre 4</p>
+<h1 class="jm-titre-chapitre">De l'équation différentielle à l'équation différentielle stochastique</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/des-edo-aux-eds.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/des-edo-aux-eds-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/des-edo-aux-eds-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/des-edo-aux-eds.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="avant-de-commencer">
-<h1>Avant de commencer</h1>
+<h2 class="h1 anchored" data-anchor-id="avant-de-commencer">Avant de commencer</h2>
 <section class="level2" id="le-programme-du-chapitre">
-<h2 class="anchored" data-anchor-id="le-programme-du-chapitre">Le programme du chapitre</h2>
+<h3 class="h2 anchored" data-anchor-id="le-programme-du-chapitre">Le programme du chapitre</h3>
 <p>Nous voulons écrire l’équivalent stochastique de <span class="math inline">\dot{x} = a\,x</span>. Trois étapes : constater que la voie naturelle est fermée, trouver l’écriture qui la contourne, et mesurer ce que le hasard change au calcul.</p>
 </section>
 </section>
 <section class="level1" id="la-voie-fermée">
-<h1>La voie fermée</h1>
+<h2 class="h1 anchored" data-anchor-id="la-voie-fermée">La voie fermée</h2>
 <section class="level2" id="la-tentation">
-<h2 class="anchored" data-anchor-id="la-tentation">La tentation</h2>
+<h3 class="h2 anchored" data-anchor-id="la-tentation">La tentation</h3>
 <p>On voudrait écrire :</p>
 <p><span class="math display"> \dot{x}(t) = a\,x(t) + b\,x(t)\,\xi(t), </span></p>
 <p>où <span class="math inline">\xi(t)</span> serait un « bruit blanc en temps continu ».</p>
@@ -693,7 +760,7 @@ Pourquoi cela n’a pas de sens
 </div>
 </section>
 <section class="level2" id="ce-nest-pas-une-difficulté-technique">
-<h2 class="anchored" data-anchor-id="ce-nest-pas-une-difficulté-technique">Ce n’est pas une difficulté technique</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-nest-pas-une-difficulté-technique">Ce n’est pas une difficulté technique</h3>
 <div class="definitionbox" title="Le fond du problème">
 <div class="pedago-title">
 Le fond du problème
@@ -704,9 +771,9 @@ Le fond du problème
 </section>
 </section>
 <section class="level1" id="lécriture-différentielle">
-<h1>L’écriture différentielle</h1>
+<h2 class="h1 anchored" data-anchor-id="lécriture-différentielle">L’écriture différentielle</h2>
 <section class="level2" id="renoncer-à-la-dérivée">
-<h2 class="anchored" data-anchor-id="renoncer-à-la-dérivée">Renoncer à la dérivée</h2>
+<h3 class="h2 anchored" data-anchor-id="renoncer-à-la-dérivée">Renoncer à la dérivée</h3>
 <p>La solution consiste à ne jamais diviser par <span class="math inline">dt</span>. On écrit directement les <strong>accroissements</strong> :</p>
 <div class="definitionbox" title="Équation différentielle stochastique (EDS)">
 <div class="pedago-title">
@@ -722,7 +789,7 @@ Comment la lire
 </div>
 </section>
 <section class="level2" id="ce-que-cette-écriture-signifie-exactement">
-<h2 class="anchored" data-anchor-id="ce-que-cette-écriture-signifie-exactement">Ce que cette écriture signifie exactement</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-que-cette-écriture-signifie-exactement">Ce que cette écriture signifie exactement</h3>
 <p>L’écriture différentielle est une <strong>abréviation</strong>. Son sens rigoureux est intégral :</p>
 <p><span class="math display"> X_t = X_0 + \int_0^t a(X_s,s)\,ds + \int_0^t b(X_s,s)\,dW_s. </span></p>
 <div class="definitionbox" title="Le point à ne pas manquer">
@@ -733,7 +800,7 @@ Le point à ne pas manquer
 </div>
 </section>
 <section class="level2" id="dérive-et-diffusion">
-<h2 class="anchored" data-anchor-id="dérive-et-diffusion">Dérive et diffusion</h2>
+<h3 class="h2 anchored" data-anchor-id="dérive-et-diffusion">Dérive et diffusion</h3>
 <div class="definitionbox" title="Les deux coefficients">
 <div class="pedago-title">
 Les deux coefficients
@@ -751,10 +818,10 @@ Lecture financière
 </div>
 </section>
 <section class="level2" id="une-trajectoire-contre-une-loi">
-<h2 class="anchored" data-anchor-id="une-trajectoire-contre-une-loi">Une trajectoire contre une loi</h2>
+<h3 class="h2 anchored" data-anchor-id="une-trajectoire-contre-une-loi">Une trajectoire contre une loi</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="141.22pt" id="svg_4838791ce7b905dae951" role="img" style="width:90.0%" viewbox="0 0 347.76 141.22" width="347.76pt">
+<p><svg height="141.22pt" id="svg_4838791ce7b905dae951" role="img" style="width:90.0%" viewbox="0 0 347.76 141.22" width="347.76pt" aria-label="Figure 1 : Une trajectoire contre une loi">
 <defs>
 <g>
 <symbol id="svg_4838791ce7b905dae951_glyph0-0" overflow="visible">
@@ -1123,9 +1190,9 @@ Lecture financière
 </section>
 </section>
 <section class="level1" id="le-tableau-de-correspondance">
-<h1>Le tableau de correspondance</h1>
+<h2 class="h1 anchored" data-anchor-id="le-tableau-de-correspondance">Le tableau de correspondance</h2>
 <section class="level2" id="colonne-par-colonne">
-<h2 class="anchored" data-anchor-id="colonne-par-colonne">Colonne par colonne</h2>
+<h3 class="h2 anchored" data-anchor-id="colonne-par-colonne">Colonne par colonne</h3>
 
 <table class="caption-top table">
 <colgroup>
@@ -1193,16 +1260,16 @@ La ligne à retenir
 </section>
 </section>
 <section class="level1" id="ce-que-change-le-hasard">
-<h1>Ce que change le hasard</h1>
+<h2 class="h1 anchored" data-anchor-id="ce-que-change-le-hasard">Ce que change le hasard</h2>
 <section class="level2" id="le-règne-du-second-ordre">
-<h2 class="anchored" data-anchor-id="le-règne-du-second-ordre">Le règne du second ordre</h2>
+<h3 class="h2 anchored" data-anchor-id="le-règne-du-second-ordre">Le règne du second ordre</h3>
 <p>Développons <span class="math inline">f(X_t)</span> à l’ordre deux :</p>
 <p><span class="math display"> df = f'(X)\,dX + \tfrac{1}{2}f''(X)\,(dX)^2 + \cdots </span></p>
 <p>En calcul classique, <span class="math inline">(dx)^2</span> est d’ordre <span class="math inline">(dt)^2</span> : négligeable. Ici, avec <span class="math inline">dX = a\,dt + b\,dW</span> :</p>
 <p><span class="math display"> (dX)^2 = a^2(dt)^2 + 2ab\,dt\,dW + b^2(dW)^2. </span></p>
 </section>
 <section class="level2" id="la-règle-de-multiplication">
-<h2 class="anchored" data-anchor-id="la-règle-de-multiplication">La règle de multiplication</h2>
+<h3 class="h2 anchored" data-anchor-id="la-règle-de-multiplication">La règle de multiplication</h3>
 <div class="definitionbox" title="Ce qui survit et ce qui disparaît">
 <div class="pedago-title">
 Ce qui survit et ce qui disparaît
@@ -1219,9 +1286,9 @@ La conséquence, annoncée
 </section>
 </section>
 <section class="level1" id="synthèse">
-<h1>Synthèse</h1>
+<h2 class="h1 anchored" data-anchor-id="synthèse">Synthèse</h2>
 <section class="level2" id="ce-quil-faut-retenir">
-<h2 class="anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h3>
 <div class="definitionbox" title="L'essentiel du chapitre 4">
 <div class="pedago-title">
 L’essentiel du chapitre 4
@@ -1242,13 +1309,14 @@ Vers le chapitre 5
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="../../../cours/calcul-stochastique/chapitres/equations-differentielles.html">← Chapitre précédent<span class="jm-nav-label">Modèles dynamiques et équations différentielles</span></a>
 <a class="jm-nav-suivant" href="../../../cours/calcul-stochastique/chapitres/integrale-ito.html">Chapitre suivant →<span class="jm-nav-label">L'intégrale stochastique d'Itô</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3 class="anchored">Ressources du chapitre</h3>
+<h2 class="anchored">Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/des-edo-aux-eds.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/des-edo-aux-eds-poly.pdf">Polycopié du chapitre</a></li>

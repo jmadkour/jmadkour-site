@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="description" content="Statistique descriptive, chapitre 14. Si R a lu salaire comme un facteur, c’est qu’une ligne contient du texte — un espace, une virgule décimale, un « n.d. ».">
 
-<title>Statistique descriptive – Jaouad Madkour</title>
+<title>Mise en œuvre sur R (Statistique descriptive) – Jaouad Madkour</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -46,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b626d73c4c936ccc3cb08be7d45d1df6.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-7c99d3b7375163d8b4f3fd84da41ca3f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../../site_libs/bootstrap/bootstrap-dark-a9e5e8a5e2fa2b701f6bd74ce66e18f5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-4a81b521e20b8a0d9edba7313f3ee218.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-2e1988c4a830338585f6d0d114f9611f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -75,14 +76,25 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
-<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours.
-     Le titre reste déclaré dans l'entête du fichier : il alimente la barre
-     latérale, l'onglet du navigateur et la recherche du site. Seul son
-     affichage en tête de page, redondant avec la barre latérale, disparaît.
+<!-- Masque le bloc-titre à l'affichage sur les pages d'accueil de cours et les
+     pages de niveau. Le titre reste déclaré dans l'entête du fichier : il
+     alimente l'onglet du navigateur et la recherche du site. Depuis le
+     28/10/2026 le bloc n'est plus retiré de la page (display: none), mais
+     seulement sorti de l'écran : le titre h1 reste donc dans la page pour les
+     lecteurs d'écran, qui n'avaient plus aucun titre à annoncer. Le bloc des
+     métadonnées (auteur, affiliation, date), lui, reste caché.
      Les deux sélecteurs couvrent les variantes de balisage de Quarto. -->
 <style>
   header#title-block-header,
-  .quarto-title-block { display: none; }
+  .quarto-title-block {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  header#title-block-header .quarto-title-meta,
+  header#title-block-header .quarto-title-meta-author,
+  .quarto-title-block .quarto-title-meta,
+  .quarto-title-block .quarto-title-meta-author { display: none; }
   /* Sans le bloc-titre, le contenu remonte trop haut sous la barre de menu. */
   main.content > *:first-child { margin-top: 0.6rem; }
 </style>
@@ -129,8 +141,11 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur > * { grid-column: auto !important; }
 
 @media (max-width: 991px) {
-  .jm-lecteur { grid-template-columns: 1fr !important; }
-  .jm-lecteur-gauche, .jm-lecteur-droite { position: static !important; }
+  .jm-lecteur { grid-template-columns: 1fr !important; gap: 1rem; }
+  .jm-lecteur-gauche { position: static !important; }
+  /* Les ressources du chapitre sont repeintes en puces sous le titre
+     (.jm-ressources-mobile) : le panneau, tout en bas de page, est masqué. */
+  .jm-lecteur-droite { display: none; }
 }
 
 /* ---------- Volet gauche : sommaire du cours ---------- */
@@ -181,12 +196,14 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 12px;
   padding: 1rem 1.1rem;
 }
-.jm-lecteur-droite h3 {
+.jm-lecteur-droite h2 {
   font-size: .8rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: #54707f;
   margin: 0 0 .7rem;
+  padding: 0;
+  border: 0;
 }
 .jm-lecteur-droite ul { list-style: none; padding: 0; margin: 0 0 0; }
 .jm-lecteur-droite li { margin-bottom: .55rem; }
@@ -195,11 +212,13 @@ ul.task-list li input[type="checkbox"] {
   font-weight: 600;
 }
 .jm-lecteur-droite a.jm-ressource:hover { text-decoration: underline; }
+/* Textes inactifs : au moins 4,5:1 sur le fond du panneau (WCAG AA). Avant le
+   28/10/2026 : 2,3:1 en thème clair, 3,5:1 en thème sombre. */
 .jm-lecteur-droite .jm-indisponible {
-  color: #9aa9b2; font-weight: 500; cursor: default;
+  color: #566b77; font-weight: 500; cursor: default;
 }
 .jm-lecteur-droite .jm-reserve {
-  color: #9aa9b2; font-style: italic;
+  color: #566b77; font-style: italic;
 }
 
 /* ---------- Navigation précédent / suivant ---------- */
@@ -271,6 +290,71 @@ ul.task-list li input[type="checkbox"] {
 .jm-lecteur-centre div.columns { display: flex; gap: min(4vw, 1.5em); flex-wrap: wrap; }
 .jm-lecteur-centre div.column { flex: auto; overflow-x: auto; }
 
+/* ---------- En-tête du chapitre : seul titre h1 de la page ---------- */
+.jm-entete-chapitre { margin: 0 0 1.1rem; }
+.jm-entete-chapitre .jm-surtitre {
+  margin: 0 0 .3rem; font-size: .9rem; color: #3d5a6b;
+}
+.jm-entete-chapitre .jm-surtitre a {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+/* Plus grand que les titres de section (classe .h1 de Bootstrap, jusqu'à 2,5 rem). */
+.jm-titre-chapitre {
+  font-size: clamp(2rem, 1.4rem + 1.8vw, 2.7rem); font-weight: 700; line-height: 1.15;
+  margin: 0; padding: 0; border: 0;
+}
+
+/* ---------- Sommaire du cours : toujours ouvert sur ordinateur, replié sur
+   téléphone (script placé après le <details>, voir lecteur.py) ---------- */
+.jm-lecteur-gauche details.jm-sommaire > summary {
+  list-style: none; cursor: default; pointer-events: none;
+  color: inherit; /* Bootstrap grise les <summary> */
+}
+.jm-lecteur-gauche details.jm-sommaire > summary::-webkit-details-marker { display: none; }
+@media (max-width: 991px) {
+  .jm-lecteur-gauche details.jm-sommaire > summary {
+    pointer-events: auto; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .65rem .8rem; margin: 0; border: 1px solid #dbe6ee; border-radius: 10px;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  }
+  .jm-lecteur-gauche details.jm-sommaire > summary::after {
+    content: "\25BE"; font-size: 1.05rem; transition: transform .15s ease;
+  }
+  .jm-lecteur-gauche details.jm-sommaire[open] > summary::after { transform: rotate(180deg); }
+  .jm-lecteur-gauche details.jm-sommaire > ul {
+    border: 1px solid #dbe6ee; border-top: 0; border-radius: 0 0 10px 10px;
+    padding: .4rem .4rem .5rem;
+  }
+}
+
+/* ---------- Ressources du chapitre en puces (téléphone seulement) ---------- */
+.jm-ressources-mobile { display: none; }
+@media (max-width: 991px) {
+  .jm-ressources-mobile { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.1rem; }
+  .jm-ressources-mobile a.jm-ressource {
+    display: inline-block; padding: .4rem .85rem; border: 1px solid #1f6fb2;
+    border-radius: 999px; font-size: .88rem; font-weight: 600; color: #1f6fb2;
+    text-decoration: none;
+  }
+}
+
+/* ---------- Titres des sections : abaissés d'un niveau dans le HTML
+   (h1 -> h2, h2 -> h3), apparence inchangée grâce aux classes .h1 et
+   .h2 de Bootstrap ajoutées par normaliser.py. ---------- */
+.jm-lecteur-centre h2, .jm-lecteur-centre h3 { overflow-wrap: anywhere; }
+
+/* ---------- Débordements : formules, tableaux, figures ---------- */
+.jm-lecteur-centre .katex-display {
+  overflow-x: auto; overflow-y: hidden; max-width: 100%;
+}
+.jm-lecteur-centre svg[role="img"] { max-width: 100%; height: auto; }
+@media (max-width: 991px) {
+  .jm-lecteur-centre table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
 /* =====================================================================
    Mode sombre — posé par Quarto sur <body class="quarto-dark">
    ===================================================================== */
@@ -282,14 +366,18 @@ body.quarto-dark .jm-lecteur-gauche a.jm-actif {
   color: #3aa0e6;
 }
 body.quarto-dark .jm-lecteur-centre .quarto-title-block .subtitle { color: #9db4c0; }
+body.quarto-dark .jm-entete-chapitre .jm-surtitre { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > summary,
+body.quarto-dark .jm-lecteur-gauche details.jm-sommaire > ul { border-color: #20455a; }
+body.quarto-dark .jm-ressources-mobile a.jm-ressource { color: #5bb3ef; border-color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite {
   background: #13303d;
   border-color: #20455a;
 }
-body.quarto-dark .jm-lecteur-droite h3 { color: #9db4c0; }
+body.quarto-dark .jm-lecteur-droite h2 { color: #9db4c0; }
 body.quarto-dark .jm-lecteur-droite a.jm-ressource { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-droite .jm-indisponible,
-body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #6c8494; }
+body.quarto-dark .jm-lecteur-droite .jm-reserve { color: #a8bdc9; }
 body.quarto-dark .jm-lecteur-nav { border-top-color: #20455a; }
 body.quarto-dark .jm-lecteur-nav a { color: #5bb3ef; }
 body.quarto-dark .jm-lecteur-nav .jm-nav-label { color: #9db4c0; }
@@ -328,9 +416,11 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
      n'injecte donc pas lui-même les ressources KaTeX ici. On reprend donc
      ici, à l'identique, le mécanisme que Quarto insère lui-même sur les
      pages où il détecte des maths (cf. html-math-method: katex du site) :
-     chargement de KaTeX depuis le même CDN, puis un scan DOMContentLoaded
+     chargement de KaTeX (copie hébergée sur le site : assets/katex/, version
+     0.19.1, voir VERSION.txt ; le CDN en « latest » a été abandonné le
+     28/10/2026), puis un scan DOMContentLoaded
      de tous les éléments .math qui les rend en place. -->
-<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+<script>window.backupDefine = window.define; window.define = undefined;</script><script>window.backupDefine = window.define; window.define = undefined;</script><script src="../../../assets/katex/katex.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () {
  var mathElements = document.getElementsByClassName("math");
  var macros = [];
@@ -345,15 +435,21 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
    });
 }}});
 </script>
-<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+<script>window.define = window.backupDefine; window.backupDefine = undefined;</script><script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="../../../assets/katex/katex.min.css">
 
 
-<meta property="og:title" content="Statistique descriptive – Jaouad Madkour">
-<meta property="og:description" content="Mise en œuvre sur R">
+<meta property="og:title" content="Mise en œuvre sur R (Statistique descriptive)">
+<meta property="og:description" content="Statistique descriptive, chapitre 14. Si R a lu salaire comme un facteur, c’est qu’une ligne contient du texte — un espace, une virgule décimale, un « n.d. ».">
+<meta property="og:image" content="https://jmadkour.org/assets/og-jmadkour.png">
 <meta property="og:site_name" content="Jaouad Madkour">
-<meta name="twitter:title" content="Statistique descriptive – Jaouad Madkour">
-<meta name="twitter:description" content="Mise en œuvre sur R">
+<meta property="og:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:title" content="Mise en œuvre sur R (Statistique descriptive)">
+<meta name="twitter:description" content="Statistique descriptive, chapitre 14. Si R a lu salaire comme un facteur, c’est qu’une ligne contient du texte — un espace, une virgule décimale, un « n.d. ».">
+<meta name="twitter:image" content="https://jmadkour.org/assets/og-jmadkour.png">
+<meta name="twitter:image:alt" content="Jaouad Madkour : cours de statistique, d'économétrie et de gestion des risques, de la Licence au Doctorat.">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://jmadkour.org/cours/statistique-descriptive/chapitres/mise-en-oeuvre-r.html">
 </head>
 
 <body class="nav-fixed quarto-dark"><script id="quarto-html-before-body" type="application/javascript">
@@ -601,32 +697,16 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
-
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Statistique descriptive</h1>
-<p class="subtitle lead">Mise en œuvre sur R</p>
-</div>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta column-page">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <div class="jm-lecteur">
 <div class="jm-lecteur-gauche">
-<div class="jm-lecteur-titre-cours">Statistique descriptive</div>
+<details class="jm-sommaire" open="">
+<summary class="jm-lecteur-titre-cours">Statistique descriptive</summary>
 <ul>
 <li><a class="jm-accueil" href="../../../cours/statistique-descriptive/index.html">Présentation du cours</a></li>
 <li><a class="" href="../../../cours/statistique-descriptive/chapitres/objet-de-la-statistique.html">Qu'est-ce que la statistique ?</a></li>
@@ -646,39 +726,26 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <li><a class="jm-actif" href="../../../cours/statistique-descriptive/chapitres/mise-en-oeuvre-r.html">Mise en œuvre sur R</a></li>
 <li><a class="" href="../../../cours/statistique-descriptive/chapitres/mise-en-oeuvre-python.html">Mise en œuvre sur Python</a></li>
 </ul>
+</details>
+<script>(function(){var d=document.currentScript.previousElementSibling,m=window.matchMedia("(max-width:991px)");if(!d)return;if(m.matches)d.removeAttribute("open");d.addEventListener("toggle",function(){if(!m.matches&&!d.open)d.open=true;});})();</script>
 </div>
 <div class="jm-lecteur-centre">
-
-<header class="quarto-title-block default" id="title-block-header">
-<div class="quarto-title">
-<h1 class="title">Statistique descriptive</h1>
-<p class="subtitle lead">Chapitre 14 : Mise en œuvre sur R</p>
-</div>
-<div class="quarto-title-meta-author column-page">
-<div class="quarto-title-meta-heading">Auteur·rice</div>
-<div class="quarto-title-meta-heading">Affiliation</div>
-<div class="quarto-title-meta-contents">
-<p class="author">Jaouad Madkour </p>
-</div>
-<div class="quarto-title-meta-contents">
-<p class="affiliation">
-            Faculté d’Économie et de Gestion de Tanger
-          </p>
-</div>
-</div>
-<div class="quarto-title-meta">
-<div>
-<div class="quarto-title-meta-heading">Date de publication</div>
-<div class="quarto-title-meta-contents">
-<p class="date">12 octobre 2026</p>
-</div>
-</div>
-</div>
+<header class="jm-entete-chapitre" data-etiquette="Chapitre 14">
+<p class="jm-surtitre"><a href="../../../cours/statistique-descriptive/index.html">Statistique descriptive</a>&nbsp;· Chapitre 14</p>
+<h1 class="jm-titre-chapitre">Mise en œuvre sur R</h1>
 </header>
+<nav class="jm-ressources-mobile" aria-label="Ressources du chapitre">
+<a class="jm-ressource" href="../slides/mise-en-oeuvre-r.pdf">Diapositives</a>
+<a class="jm-ressource" href="../ressources/mise-en-oeuvre-r-poly.pdf">Polycopié du chapitre</a>
+<a class="jm-ressource" href="../ressources/mise-en-oeuvre-r-exercices-corriges.pdf">Exercices corrigés</a>
+<a class="jm-ressource" href="../outils/mise-en-oeuvre-r.html">Application interactive</a>
+</nav>
+<!-- jm:contenu -->
+
 <section class="level1" id="refaire-toute-la-chaîne">
-<h1>Refaire toute la chaîne</h1>
+<h2 class="h1 anchored" data-anchor-id="refaire-toute-la-chaîne">Refaire toute la chaîne</h2>
 <section class="level2" id="le-programme">
-<h2 class="anchored" data-anchor-id="le-programme">Le programme</h2>
+<h3 class="h2 anchored" data-anchor-id="le-programme">Le programme</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Ce chapitre reprend les treize précédents</summary>
 <div class="pedago-body">
@@ -732,7 +799,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="avant-de-commencer">
-<h2 class="anchored" data-anchor-id="avant-de-commencer">Avant de commencer</h2>
+<h3 class="h2 anchored" data-anchor-id="avant-de-commencer">Avant de commencer</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Ce qu’il faut installer, une seule fois</summary>
 <div class="pedago-body">
@@ -752,9 +819,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="charger-et-explorer">
-<h1>Charger et explorer</h1>
+<h2 class="h1 anchored" data-anchor-id="charger-et-explorer">Charger et explorer</h2>
 <section class="level2" id="limport">
-<h2 class="anchored" data-anchor-id="limport">L’import</h2>
+<h3 class="h2 anchored" data-anchor-id="limport">L’import</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="co"># Les données : 500 salariés, six colonnes</span></span>
 <span id="cb1-2"><a aria-hidden="true" href="#cb1-2" tabindex="-1"></a>sal <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"salaires.csv"</span>, <span class="at">stringsAsFactors =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb1-3"><a aria-hidden="true" href="#cb1-3" tabindex="-1"></a><span class="fu">str</span>(sal)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
@@ -772,7 +839,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-premier-réflexe-vérifier-les-types">
-<h2 class="anchored" data-anchor-id="le-premier-réflexe-vérifier-les-types">Le premier réflexe : vérifier les types</h2>
+<h3 class="h2 anchored" data-anchor-id="le-premier-réflexe-vérifier-les-types">Le premier réflexe : vérifier les types</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">Factor pour les qualitatives, int ou num pour les quantitatives</summary>
 <div class="pedago-body">
@@ -790,7 +857,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="lire-summary">
-<h2 class="anchored" data-anchor-id="lire-summary">Lire summary()</h2>
+<h3 class="h2 anchored" data-anchor-id="lire-summary">Lire summary()</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a aria-hidden="true" href="#cb4-1" tabindex="-1"></a><span class="fu">summary</span>(sal[, <span class="fu">c</span>(<span class="st">"salaire"</span>, <span class="st">"anciennete"</span>, <span class="st">"diplome"</span>)])</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <details class="definitionbox" open="">
 <summary class="pedago-title">La sortie</summary>
@@ -812,7 +879,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-contrôle-des-manquants">
-<h2 class="anchored" data-anchor-id="le-contrôle-des-manquants">Le contrôle des manquants</h2>
+<h3 class="h2 anchored" data-anchor-id="le-contrôle-des-manquants">Le contrôle des manquants</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a aria-hidden="true" href="#cb6-1" tabindex="-1"></a><span class="fu">colSums</span>(<span class="fu">is.na</span>(sal))          <span class="co"># 0 partout : aucune valeur manquante</span></span>
 <span id="cb6-2"><a aria-hidden="true" href="#cb6-2" tabindex="-1"></a><span class="fu">nrow</span>(sal)                    <span class="co"># 500</span></span>
 <span id="cb6-3"><a aria-hidden="true" href="#cb6-3" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">unique</span>(sal<span class="sc">$</span>salaire))  <span class="co"># 381 valeurs distinctes</span></span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
@@ -831,9 +898,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="le-tableau-statistique">
-<h1>Le tableau statistique</h1>
+<h2 class="h1 anchored" data-anchor-id="le-tableau-statistique">Le tableau statistique</h2>
 <section class="level2" id="variable-qualitative">
-<h2 class="anchored" data-anchor-id="variable-qualitative">Variable qualitative</h2>
+<h3 class="h2 anchored" data-anchor-id="variable-qualitative">Variable qualitative</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a aria-hidden="true" href="#cb7-1" tabindex="-1"></a>n  <span class="ot">&lt;-</span> <span class="fu">nrow</span>(sal)</span>
 <span id="cb7-2"><a aria-hidden="true" href="#cb7-2" tabindex="-1"></a>ni <span class="ot">&lt;-</span> <span class="fu">table</span>(sal<span class="sc">$</span>diplome)                 <span class="co"># effectifs</span></span>
 <span id="cb7-3"><a aria-hidden="true" href="#cb7-3" tabindex="-1"></a>fi <span class="ot">&lt;-</span> <span class="fu">prop.table</span>(ni)                     <span class="co"># fréquences</span></span>
@@ -853,7 +920,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="variable-continue-le-découpage-en-classes">
-<h2 class="anchored" data-anchor-id="variable-continue-le-découpage-en-classes">Variable continue : le découpage en classes</h2>
+<h3 class="h2 anchored" data-anchor-id="variable-continue-le-découpage-en-classes">Variable continue : le découpage en classes</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a aria-hidden="true" href="#cb9-1" tabindex="-1"></a>bornes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2000</span>, <span class="dv">4000</span>, <span class="dv">6000</span>, <span class="dv">8000</span>, <span class="dv">10000</span>, <span class="dv">14000</span>, <span class="dv">20000</span>)</span>
 <span id="cb9-2"><a aria-hidden="true" href="#cb9-2" tabindex="-1"></a>cl <span class="ot">&lt;-</span> <span class="fu">cut</span>(sal<span class="sc">$</span>salaire, <span class="at">breaks =</span> bornes, <span class="at">right =</span> <span class="cn">FALSE</span>,</span>
 <span id="cb9-3"><a aria-hidden="true" href="#cb9-3" tabindex="-1"></a>          <span class="at">dig.lab =</span> <span class="dv">5</span>)                   <span class="co"># classes [a ; b[</span></span>
@@ -870,7 +937,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-tableau-de-référence-du-chapitre-3">
-<h2 class="anchored" data-anchor-id="le-tableau-de-référence-du-chapitre-3">Le tableau de référence du chapitre 3</h2>
+<h3 class="h2 anchored" data-anchor-id="le-tableau-de-référence-du-chapitre-3">Le tableau de référence du chapitre 3</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">La sortie de R</summary>
 <div class="pedago-body">
@@ -891,7 +958,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-piège-des-bornes">
-<h2 class="anchored" data-anchor-id="le-piège-des-bornes">Le piège des bornes</h2>
+<h3 class="h2 anchored" data-anchor-id="le-piège-des-bornes">Le piège des bornes</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">L’argument right = FALSE est essentiel</summary>
 <div class="pedago-body">
@@ -930,7 +997,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="sur-données-groupées-moyenne-et-écart-type">
-<h2 class="anchored" data-anchor-id="sur-données-groupées-moyenne-et-écart-type">Sur données groupées : moyenne et écart-type</h2>
+<h3 class="h2 anchored" data-anchor-id="sur-données-groupées-moyenne-et-écart-type">Sur données groupées : moyenne et écart-type</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a aria-hidden="true" href="#cb11-1" tabindex="-1"></a>ci <span class="ot">&lt;-</span> (<span class="fu">head</span>(bornes, <span class="sc">-</span><span class="dv">1</span>) <span class="sc">+</span> bornes[<span class="sc">-</span><span class="dv">1</span>]) <span class="sc">/</span> <span class="dv">2</span>   <span class="co"># centres des classes</span></span>
 <span id="cb11-2"><a aria-hidden="true" href="#cb11-2" tabindex="-1"></a>mg <span class="ot">&lt;-</span> <span class="fu">sum</span>(ni <span class="sc">*</span> ci) <span class="sc">/</span> n                       <span class="co"># 7210     moyenne groupée</span></span>
 <span id="cb11-3"><a aria-hidden="true" href="#cb11-3" tabindex="-1"></a>vg <span class="ot">&lt;-</span> <span class="fu">sum</span>(ni <span class="sc">*</span> ci<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> n <span class="sc">-</span> mg<span class="sc">^</span><span class="dv">2</span>              <span class="co"># 7685900  König-Huygens</span></span>
@@ -969,7 +1036,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="sur-données-groupées-mode-et-médiane">
-<h2 class="anchored" data-anchor-id="sur-données-groupées-mode-et-médiane">Sur données groupées : mode et médiane</h2>
+<h3 class="h2 anchored" data-anchor-id="sur-données-groupées-mode-et-médiane">Sur données groupées : mode et médiane</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a aria-hidden="true" href="#cb12-1" tabindex="-1"></a>k  <span class="ot">&lt;-</span> <span class="fu">which.max</span>(di)                          <span class="co"># classe modale : la 3e</span></span>
 <span id="cb12-2"><a aria-hidden="true" href="#cb12-2" tabindex="-1"></a>d1 <span class="ot">&lt;-</span> di[k] <span class="sc">-</span> di[k<span class="dv">-1</span>]; d2 <span class="ot">&lt;-</span> di[k] <span class="sc">-</span> di[k<span class="sc">+</span><span class="dv">1</span>]</span>
 <span id="cb12-3"><a aria-hidden="true" href="#cb12-3" tabindex="-1"></a>bornes[k] <span class="sc">+</span> ai[k] <span class="sc">*</span> d1 <span class="sc">/</span> (d1 <span class="sc">+</span> d2)           <span class="co"># 6187.5   mode</span></span>
@@ -985,9 +1052,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="les-graphiques">
-<h1>Les graphiques</h1>
+<h2 class="h1 anchored" data-anchor-id="les-graphiques">Les graphiques</h2>
 <section class="level2" id="les-quatre-représentations">
-<h2 class="anchored" data-anchor-id="les-quatre-représentations">Les quatre représentations</h2>
+<h3 class="h2 anchored" data-anchor-id="les-quatre-représentations">Les quatre représentations</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a aria-hidden="true" href="#cb13-1" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))            <span class="co"># quatre graphiques sur une page</span></span>
 <span id="cb13-2"><a aria-hidden="true" href="#cb13-2" tabindex="-1"></a></span>
 <span id="cb13-3"><a aria-hidden="true" href="#cb13-3" tabindex="-1"></a><span class="fu">barplot</span>(<span class="fu">table</span>(sal<span class="sc">$</span>diplome), <span class="at">col =</span> <span class="st">"steelblue"</span>,</span>
@@ -1002,10 +1069,10 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <span id="cb13-12"><a aria-hidden="true" href="#cb13-12" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"dirhams"</span>, <span class="at">ylab =</span> <span class="st">"F(x)"</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="level2" id="ce-que-r-affiche">
-<h2 class="anchored" data-anchor-id="ce-que-r-affiche">Ce que R affiche</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-que-r-affiche">Ce que R affiche</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="331" id="svg_1b32dc40c56e69c5b9f4" role="img" style="width:80.0%" viewbox="0 0 576 331" width="576">
+<p><svg height="331" id="svg_1b32dc40c56e69c5b9f4" role="img" style="width:80.0%" viewbox="0 0 576 331" width="576" aria-label="Figure 1 : Ce que R affiche">
 <defs>
 <g>
 <g id="svg_1b32dc40c56e69c5b9f4_glyph-0-0">
@@ -2334,10 +2401,10 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </div>
 </section>
 <section class="level2" id="largument-qui-compte-freq-false">
-<h2 class="anchored" data-anchor-id="largument-qui-compte-freq-false">L’argument qui compte : freq = FALSE</h2>
+<h3 class="h2 anchored" data-anchor-id="largument-qui-compte-freq-false">L’argument qui compte : freq = FALSE</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="216" id="svg_5b50674a3f3133c1ec48" role="img" style="width:86.0%" viewbox="0 0 576 216" width="576">
+<p><svg height="216" id="svg_5b50674a3f3133c1ec48" role="img" style="width:86.0%" viewbox="0 0 576 216" width="576" aria-label="Figure 2 : L’argument qui compte : freq = FALSE">
 <defs>
 <g>
 <g id="svg_5b50674a3f3133c1ec48_glyph-0-0">
@@ -2709,13 +2776,13 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-boîte-à-moustaches">
-<h2 class="anchored" data-anchor-id="la-boîte-à-moustaches">La boîte à moustaches</h2>
+<h3 class="h2 anchored" data-anchor-id="la-boîte-à-moustaches">La boîte à moustaches</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a aria-hidden="true" href="#cb14-1" tabindex="-1"></a><span class="fu">boxplot</span>(salaire <span class="sc">~</span> diplome, <span class="at">data =</span> sal,</span>
 <span id="cb14-2"><a aria-hidden="true" href="#cb14-2" tabindex="-1"></a>        <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"steelblue"</span>, <span class="st">"orange"</span>, <span class="st">"seagreen"</span>),</span>
 <span id="cb14-3"><a aria-hidden="true" href="#cb14-3" tabindex="-1"></a>        <span class="at">ylab =</span> <span class="st">"salaire (dirhams)"</span>)</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="244" id="svg_f3ec5592edf7183c7257" role="img" style="width:62.0%" viewbox="0 0 460 244" width="460">
+<p><svg height="244" id="svg_f3ec5592edf7183c7257" role="img" style="width:62.0%" viewbox="0 0 460 244" width="460" aria-label="Figure 3 : La boîte à moustaches">
 <defs>
 <g>
 <g id="svg_f3ec5592edf7183c7257_glyph-0-0">
@@ -2893,7 +2960,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </div>
 </section>
 <section class="level2" id="la-syntaxe-formule">
-<h2 class="anchored" data-anchor-id="la-syntaxe-formule">La syntaxe formule</h2>
+<h3 class="h2 anchored" data-anchor-id="la-syntaxe-formule">La syntaxe formule</h3>
 <details class="intuitionbox" open="">
 <summary class="pedago-title">y ~ x se lit « y selon x »</summary>
 <div class="pedago-body">
@@ -2913,9 +2980,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="les-indicateurs-univariés">
-<h1>Les indicateurs univariés</h1>
+<h2 class="h1 anchored" data-anchor-id="les-indicateurs-univariés">Les indicateurs univariés</h2>
 <section class="level2" id="tendance-centrale-et-dispersion">
-<h2 class="anchored" data-anchor-id="tendance-centrale-et-dispersion">Tendance centrale et dispersion</h2>
+<h3 class="h2 anchored" data-anchor-id="tendance-centrale-et-dispersion">Tendance centrale et dispersion</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a aria-hidden="true" href="#cb17-1" tabindex="-1"></a>x <span class="ot">&lt;-</span> sal<span class="sc">$</span>salaire</span>
 <span id="cb17-2"><a aria-hidden="true" href="#cb17-2" tabindex="-1"></a></span>
 <span id="cb17-3"><a aria-hidden="true" href="#cb17-3" tabindex="-1"></a><span class="fu">mean</span>(x)                        <span class="co"># 7158.26</span></span>
@@ -2934,7 +3001,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="le-piège-n-contre-n-1">
-<h2 class="anchored" data-anchor-id="le-piège-n-contre-n-1">Le piège n contre n − 1</h2>
+<h3 class="h2 anchored" data-anchor-id="le-piège-n-contre-n-1">Le piège n contre n − 1</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">R divise par n − 1, pas par n</summary>
 <div class="pedago-body">
@@ -2975,7 +3042,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-forme-sans-package">
-<h2 class="anchored" data-anchor-id="la-forme-sans-package">La forme, sans package</h2>
+<h3 class="h2 anchored" data-anchor-id="la-forme-sans-package">La forme, sans package</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a aria-hidden="true" href="#cb18-1" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">mean</span>(x)</span>
 <span id="cb18-2"><a aria-hidden="true" href="#cb18-2" tabindex="-1"></a><span class="fu">mean</span>((x <span class="sc">-</span> m)<span class="sc">^</span><span class="dv">3</span>) <span class="sc">/</span> <span class="fu">mean</span>((x <span class="sc">-</span> m)<span class="sc">^</span><span class="dv">2</span>)<span class="sc">^</span><span class="fl">1.5</span>     <span class="co"># 1.164   asymétrie</span></span>
 <span id="cb18-3"><a aria-hidden="true" href="#cb18-3" tabindex="-1"></a><span class="fu">mean</span>((x <span class="sc">-</span> m)<span class="sc">^</span><span class="dv">4</span>) <span class="sc">/</span> <span class="fu">mean</span>((x <span class="sc">-</span> m)<span class="sc">^</span><span class="dv">2</span>)<span class="sc">^</span><span class="dv">2</span>       <span class="co"># 4.837   aplatissement</span></span>
@@ -2996,7 +3063,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-concentration">
-<h2 class="anchored" data-anchor-id="la-concentration">La concentration</h2>
+<h3 class="h2 anchored" data-anchor-id="la-concentration">La concentration</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a aria-hidden="true" href="#cb19-1" tabindex="-1"></a>gini <span class="ot">&lt;-</span> <span class="cf">function</span>(v) {</span>
 <span id="cb19-2"><a aria-hidden="true" href="#cb19-2" tabindex="-1"></a>  v <span class="ot">&lt;-</span> <span class="fu">sort</span>(v); n <span class="ot">&lt;-</span> <span class="fu">length</span>(v)</span>
 <span id="cb19-3"><a aria-hidden="true" href="#cb19-3" tabindex="-1"></a>  <span class="dv">2</span> <span class="sc">*</span> <span class="fu">sum</span>(<span class="fu">seq_len</span>(n) <span class="sc">*</span> v) <span class="sc">/</span> (n <span class="sc">*</span> <span class="fu">sum</span>(v)) <span class="sc">-</span> (n <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">/</span> n</span>
@@ -3015,7 +3082,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-courbe-de-lorenz">
-<h2 class="anchored" data-anchor-id="la-courbe-de-lorenz">La courbe de Lorenz</h2>
+<h3 class="h2 anchored" data-anchor-id="la-courbe-de-lorenz">La courbe de Lorenz</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a aria-hidden="true" href="#cb20-1" tabindex="-1"></a>v <span class="ot">&lt;-</span> <span class="fu">sort</span>(x)</span>
 <span id="cb20-2"><a aria-hidden="true" href="#cb20-2" tabindex="-1"></a>F <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(n) <span class="sc">/</span> n                 <span class="co"># part cumulée des salariés</span></span>
 <span id="cb20-3"><a aria-hidden="true" href="#cb20-3" tabindex="-1"></a>Q <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(v) <span class="sc">/</span> <span class="fu">sum</span>(v)             <span class="co"># part cumulée de la masse</span></span>
@@ -3031,10 +3098,10 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="la-courbe-obtenue">
-<h2 class="anchored" data-anchor-id="la-courbe-obtenue">La courbe obtenue</h2>
+<h3 class="h2 anchored" data-anchor-id="la-courbe-obtenue">La courbe obtenue</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="273" id="svg_a8c5d34f9fbacd7a5060" role="img" style="width:52.0%" viewbox="0 0 302 273" width="302">
+<p><svg height="273" id="svg_a8c5d34f9fbacd7a5060" role="img" style="width:52.0%" viewbox="0 0 302 273" width="302" aria-label="Figure 4 : La courbe obtenue">
 <defs>
 <g>
 <g id="svg_a8c5d34f9fbacd7a5060_glyph-0-0">
@@ -3315,9 +3382,9 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </section>
 </section>
 <section class="level1" id="le-bivarié">
-<h1>Le bivarié</h1>
+<h2 class="h1 anchored" data-anchor-id="le-bivarié">Le bivarié</h2>
 <section class="level2" id="contingence">
-<h2 class="anchored" data-anchor-id="contingence">Contingence</h2>
+<h3 class="h2 anchored" data-anchor-id="contingence">Contingence</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a aria-hidden="true" href="#cb21-1" tabindex="-1"></a>T <span class="ot">&lt;-</span> <span class="fu">table</span>(sal<span class="sc">$</span>diplome, sal<span class="sc">$</span>region)</span>
 <span id="cb21-2"><a aria-hidden="true" href="#cb21-2" tabindex="-1"></a><span class="fu">addmargins</span>(T)                         <span class="co"># avec les marges</span></span>
 <span id="cb21-3"><a aria-hidden="true" href="#cb21-3" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">prop.table</span>(T, <span class="dv">1</span>), <span class="dv">3</span>)            <span class="co"># profils-lignes</span></span>
@@ -3335,7 +3402,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="largument-margin-de-prop.table">
-<h2 class="anchored" data-anchor-id="largument-margin-de-prop.table">L’argument margin de prop.table</h2>
+<h3 class="h2 anchored" data-anchor-id="largument-margin-de-prop.table">L’argument margin de prop.table</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">1, 2 ou rien</summary>
 <div class="pedago-body">
@@ -3355,7 +3422,7 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 </details>
 </section>
 <section class="level2" id="conditionnelles">
-<h2 class="anchored" data-anchor-id="conditionnelles">Conditionnelles</h2>
+<h3 class="h2 anchored" data-anchor-id="conditionnelles">Conditionnelles</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a aria-hidden="true" href="#cb24-1" tabindex="-1"></a><span class="co"># l'écart-type descriptif, en divisant par n</span></span>
 <span id="cb24-2"><a aria-hidden="true" href="#cb24-2" tabindex="-1"></a>sdd <span class="ot">&lt;-</span> <span class="cf">function</span>(v) <span class="fu">sqrt</span>(<span class="fu">mean</span>((v <span class="sc">-</span> <span class="fu">mean</span>(v))<span class="sc">^</span><span class="dv">2</span>))</span>
 <span id="cb24-3"><a aria-hidden="true" href="#cb24-3" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">n   =</span> <span class="fu">tapply</span>(x, sal<span class="sc">$</span>diplome, length),</span>
@@ -3378,7 +3445,7 @@ Bac+5 107 9534.393 2872.122</code></pre>
 </details>
 </section>
 <section class="level2" id="décomposition-de-la-variance">
-<h2 class="anchored" data-anchor-id="décomposition-de-la-variance">Décomposition de la variance</h2>
+<h3 class="h2 anchored" data-anchor-id="décomposition-de-la-variance">Décomposition de la variance</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a aria-hidden="true" href="#cb26-1" tabindex="-1"></a>g  <span class="ot">&lt;-</span> <span class="fu">split</span>(x, sal<span class="sc">$</span>diplome)</span>
 <span id="cb26-2"><a aria-hidden="true" href="#cb26-2" tabindex="-1"></a>nj <span class="ot">&lt;-</span> <span class="fu">sapply</span>(g, length)</span>
 <span id="cb26-3"><a aria-hidden="true" href="#cb26-3" tabindex="-1"></a>mj <span class="ot">&lt;-</span> <span class="fu">sapply</span>(g, mean)</span>
@@ -3395,7 +3462,7 @@ Bac+5 107 9534.393 2872.122</code></pre>
 </details>
 </section>
 <section class="level2" id="covariance-corrélation-ajustement">
-<h2 class="anchored" data-anchor-id="covariance-corrélation-ajustement">Covariance, corrélation, ajustement</h2>
+<h3 class="h2 anchored" data-anchor-id="covariance-corrélation-ajustement">Covariance, corrélation, ajustement</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a aria-hidden="true" href="#cb27-1" tabindex="-1"></a>y <span class="ot">&lt;-</span> sal<span class="sc">$</span>salaire</span>
 <span id="cb27-2"><a aria-hidden="true" href="#cb27-2" tabindex="-1"></a>z <span class="ot">&lt;-</span> sal<span class="sc">$</span>anciennete</span>
 <span id="cb27-3"><a aria-hidden="true" href="#cb27-3" tabindex="-1"></a></span>
@@ -3413,7 +3480,7 @@ Bac+5 107 9534.393 2872.122</code></pre>
 </details>
 </section>
 <section class="level2" id="la-sortie-de-lm">
-<h2 class="anchored" data-anchor-id="la-sortie-de-lm">La sortie de lm()</h2>
+<h3 class="h2 anchored" data-anchor-id="la-sortie-de-lm">La sortie de lm()</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Un extrait de summary(mod)</summary>
 <div class="pedago-body">
@@ -3434,7 +3501,7 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </details>
 </section>
 <section class="level2" id="le-graphique-final">
-<h2 class="anchored" data-anchor-id="le-graphique-final">Le graphique final</h2>
+<h3 class="h2 anchored" data-anchor-id="le-graphique-final">Le graphique final</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a aria-hidden="true" href="#cb29-1" tabindex="-1"></a><span class="fu">plot</span>(z, y, <span class="at">pch =</span> <span class="dv">20</span>, <span class="at">col =</span> <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="fl">0.35</span>),</span>
 <span id="cb29-2"><a aria-hidden="true" href="#cb29-2" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"ancienneté (années)"</span>, <span class="at">ylab =</span> <span class="st">"salaire (dirhams)"</span>)</span>
 <span id="cb29-3"><a aria-hidden="true" href="#cb29-3" tabindex="-1"></a><span class="fu">abline</span>(mod, <span class="at">col =</span> <span class="st">"orange"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
@@ -3453,10 +3520,10 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </details>
 </section>
 <section class="level2" id="le-nuage-et-sa-droite">
-<h2 class="anchored" data-anchor-id="le-nuage-et-sa-droite">Le nuage et sa droite</h2>
+<h3 class="h2 anchored" data-anchor-id="le-nuage-et-sa-droite">Le nuage et sa droite</h3>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><svg height="259" id="svg_a24fcf74105d086e1d77" role="img" style="width:78.0%" viewbox="0 0 460 259" width="460">
+<p><svg height="259" id="svg_a24fcf74105d086e1d77" role="img" style="width:78.0%" viewbox="0 0 460 259" width="460" aria-label="Figure 5 : Le nuage et sa droite">
 <defs>
 <g>
 <g id="svg_a24fcf74105d086e1d77_glyph-0-0">
@@ -4170,9 +4237,9 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </section>
 </section>
 <section class="level1" id="le-script-complet">
-<h1>Le script complet</h1>
+<h2 class="h1 anchored" data-anchor-id="le-script-complet">Le script complet</h2>
 <section class="level2" id="une-quinzaine-de-lignes">
-<h2 class="anchored" data-anchor-id="une-quinzaine-de-lignes">Une quinzaine de lignes</h2>
+<h3 class="h2 anchored" data-anchor-id="une-quinzaine-de-lignes">Une quinzaine de lignes</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a aria-hidden="true" href="#cb30-1" tabindex="-1"></a>sal <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"salaires.csv"</span>, <span class="at">stringsAsFactors =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb30-2"><a aria-hidden="true" href="#cb30-2" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(sal); x <span class="ot">&lt;-</span> sal<span class="sc">$</span>salaire; z <span class="ot">&lt;-</span> sal<span class="sc">$</span>anciennete</span>
 <span id="cb30-3"><a aria-hidden="true" href="#cb30-3" tabindex="-1"></a>sdd  <span class="ot">&lt;-</span> <span class="cf">function</span>(v) <span class="fu">sqrt</span>(<span class="fu">mean</span>((v <span class="sc">-</span> <span class="fu">mean</span>(v))<span class="sc">^</span><span class="dv">2</span>))</span>
@@ -4189,7 +4256,7 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 <span id="cb30-14"><a aria-hidden="true" href="#cb30-14" tabindex="-1"></a><span class="fu">coef</span>(<span class="fu">lm</span>(salaire <span class="sc">~</span> anciennete, <span class="at">data =</span> sal))</span></code><button class="code-copy-button" title="Copier vers le presse-papier"><i class="bi"></i></button></pre></div><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="level2" id="ce-que-ce-script-produit">
-<h2 class="anchored" data-anchor-id="ce-que-ce-script-produit">Ce que ce script produit</h2>
+<h3 class="h2 anchored" data-anchor-id="ce-que-ce-script-produit">Ce que ce script produit</h3>
 <details class="ecobox" open="">
 <summary class="pedago-title">Tout le cours</summary>
 <div class="pedago-body">
@@ -4206,9 +4273,9 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </section>
 </section>
 <section class="level1" id="sentraîner">
-<h1>S’entraîner</h1>
+<h2 class="h1 anchored" data-anchor-id="sentraîner">S’entraîner</h2>
 <section class="level2" id="exercice-1-n-ou-n-1-sur-dix-salariés">
-<h2 class="anchored" data-anchor-id="exercice-1-n-ou-n-1-sur-dix-salariés">Exercice 1 : n ou n − 1 sur dix salariés</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-1-n-ou-n-1-sur-dix-salariés">Exercice 1 : n ou n − 1 sur dix salariés</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Les dix salariés des chapitres 12 et 13</summary>
 <div class="pedago-body">
@@ -4226,7 +4293,7 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </details>
 </section>
 <section class="level2" id="exercice-1-solution">
-<h2 class="anchored" data-anchor-id="exercice-1-solution">Exercice 1 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-1-solution">Exercice 1 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Le facteur (n − 1)/n = 0,9</summary>
 <div class="pedago-body">
@@ -4239,7 +4306,7 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </details>
 </section>
 <section class="level2" id="exercice-2-la-région-explique-t-elle-le-salaire">
-<h2 class="anchored" data-anchor-id="exercice-2-la-région-explique-t-elle-le-salaire">Exercice 2 : la région explique-t-elle le salaire ?</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-2-la-région-explique-t-elle-le-salaire">Exercice 2 : la région explique-t-elle le salaire ?</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Une sortie de R à exploiter</summary>
 <div class="pedago-body">
@@ -4259,7 +4326,7 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </details>
 </section>
 <section class="level2" id="exercice-2-solution">
-<h2 class="anchored" data-anchor-id="exercice-2-solution">Exercice 2 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-2-solution">Exercice 2 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Variance inter et rapport de corrélation</summary>
 <div class="pedago-body">
@@ -4271,7 +4338,7 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </details>
 </section>
 <section class="level2" id="exercice-2-le-code-et-linterprétation">
-<h2 class="anchored" data-anchor-id="exercice-2-le-code-et-linterprétation">Exercice 2 : le code et l’interprétation</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-2-le-code-et-linterprétation">Exercice 2 : le code et l’interprétation</h3>
 <details class="solutionbox">
 <summary class="pedago-title">Le code et l’effet de structure</summary>
 <div class="pedago-body">
@@ -4291,7 +4358,7 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </details>
 </section>
 <section class="level2" id="exercice-3-cinq-erreurs-dans-un-script">
-<h2 class="anchored" data-anchor-id="exercice-3-cinq-erreurs-dans-un-script">Exercice 3 : cinq erreurs dans un script</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-3-cinq-erreurs-dans-un-script">Exercice 3 : cinq erreurs dans un script</h3>
 <details class="exercicebox" open="">
 <summary class="pedago-title">Chaque ligne s’exécute sans message d’erreur</summary>
 <div class="pedago-body">
@@ -4306,7 +4373,7 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </details>
 </section>
 <section class="level2" id="exercice-3-solution">
-<h2 class="anchored" data-anchor-id="exercice-3-solution">Exercice 3 : solution</h2>
+<h3 class="h2 anchored" data-anchor-id="exercice-3-solution">Exercice 3 : solution</h3>
 <details class="solutionbox">
 <summary class="pedago-title">(a), (b), (c)</summary>
 <div class="pedago-body">
@@ -4339,9 +4406,9 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </section>
 </section>
 <section class="level1" id="ce-quil-faut-retenir">
-<h1>Ce qu’il faut retenir</h1>
+<h2 class="h1 anchored" data-anchor-id="ce-quil-faut-retenir">Ce qu’il faut retenir</h2>
 <section class="level2" id="le-résumé-du-chapitre">
-<h2 class="anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h2>
+<h3 class="h2 anchored" data-anchor-id="le-résumé-du-chapitre">Le résumé du chapitre</h3>
 <details class="definitionbox" open="">
 <summary class="pedago-title">Sept points</summary>
 <div class="pedago-body">
@@ -4365,13 +4432,14 @@ Multiple R-squared:  0.4049,    Adjusted R-squared:  0.4037</code></pre>
 </section>
 </section>
 
+<!-- /jm:contenu -->
 <div class="jm-lecteur-nav">
 <a href="../../../cours/statistique-descriptive/chapitres/correlation-et-ajustement.html">← Chapitre précédent<span class="jm-nav-label">Corrélation et droite d'ajustement</span></a>
 <a class="jm-nav-suivant" href="../../../cours/statistique-descriptive/chapitres/mise-en-oeuvre-python.html">Chapitre suivant →<span class="jm-nav-label">Mise en œuvre sur Python</span></a>
 </div>
 </div>
 <div class="jm-lecteur-droite">
-<h3 class="anchored">Ressources du chapitre</h3>
+<h2 class="anchored">Ressources du chapitre</h2>
 <ul>
 <li><a class="jm-ressource" href="../slides/mise-en-oeuvre-r.pdf">Diapositives</a></li>
 <li><a class="jm-ressource" href="../ressources/mise-en-oeuvre-r-poly.pdf">Polycopié du chapitre</a></li>
