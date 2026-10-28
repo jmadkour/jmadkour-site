@@ -130,7 +130,9 @@ def fragment(chemin_html):
     main = soup.find("main", id="quarto-document-content")
     if main is None:
         raise SystemExit("%s : pas de <main id=quarto-document-content>" % chemin_html)
-    return main.decode_contents()
+    # Les marqueurs de synchronisation de l'atelier (<!-- sortie: verif/... -->)
+    # n'ont rien à faire dans une page publiée.
+    return re.sub(r"<!-- sortie: [^>]*? -->", "", main.decode_contents())
 
 
 def produire_fragments(atelier_cours, table, dossier):
@@ -299,7 +301,8 @@ def main():
     print("%s : %d chapitres, correspondance atelier/site vérifiée." % (args.cours, len(table)))
 
     index = lire(os.path.join(COURS, args.cours, "index.qmd"))
-    titre = re.search(r'^title:\s*"(.*)"\s*$', index, re.M).group(1)
+    # « pagetitle » depuis le 28/10/2026 (plus de bloc-titre Quarto), « title » avant.
+    titre = re.search(r'^(?:pagetitle|title):\s*"(.*)"\s*$', index, re.M).group(1)
 
     if args.fragments:
         produire_fragments(atelier_cours, table, args.fragments)

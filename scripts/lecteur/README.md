@@ -129,6 +129,37 @@ python scripts/lecteur/generer_lecteur.py --migres --verifier   # doit répondre
 python scripts/lecteur/verifier_reproduction.py          # doit répondre : 0 écart
 ```
 
+## Démonstrations dans les polycopiés et les pages
+
+Un chapitre de l'atelier peut contenir des démonstrations, dans un bloc
+`demonstrationbox` :
+
+```
+:::: {.demonstrationbox title="Pourquoi la pente vaut Sxy/Sxx"}
+Texte et maths de la preuve.
+::::
+```
+
+Le filtre `pedago-blocks.lua` (atelier) les traite selon le format :
+
+| Format | Rendu |
+|---|---|
+| Diapositives (Beamer, reveal.js) | supprimé : les diapositives sont inchangées |
+| Polycopié PDF | encadré gris, titre « Démonstration : … », terminé par ∎ |
+| Page de lecture | zone repliable fermée par défaut (`details.demonstrationbox`), terminée par ∎ ; styles dans `_includes/lecteur.html` |
+
+Règles : le bloc se place **dans la diapositive** (la section `##`) du résultat
+qu'il démontre, jamais seul sous un titre `##` (une page vide apparaîtrait dans
+les diapositives) ; pas de `\,` ni de `\;` dans l'attribut `title` (Pandoc les
+lit comme des échappements). Pour un nouveau cours : copier le filtre à jour et
+la définition de `demonstrationbox` de `preamble-article.tex`, puis régénérer
+polycopiés et pages (`rendre_atelier.py --fragments --polycopies`, puis
+`generer_lecteur.py`).
+
+Chaque preuve est vérifiée par un script de l'atelier (`verif/demonstrations.py` :
+identités exactes sur tirages aléatoires, calcul symbolique, simulations). Pilote
+du 28/10/2026 : chapitres 3, 4 et 5 d'Introduction à l'économétrie (10 preuves).
+
 ## Autres scripts liés (racine `scripts/`)
 
 - `generer-accueil.py` écrit la liste « Tous les cours » de la page d'accueil
