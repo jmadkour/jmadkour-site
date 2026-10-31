@@ -885,6 +885,15 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <p>Pour l’écart-type d’une population complète, il faut multiplier par <span class="math inline">\sqrt{(n-1)/n}</span> : R ne propose que la première formule, parce que c’est elle dont l’inférence a besoin.</p>
 </div>
 </details>
+<details class="demonstrationbox">
+<summary class="pedago-title">Démonstration : Pourquoi l’écart entre les deux écarts-types est de 1 pour cent à n égal 50</summary>
+<div class="pedago-body">
+<p>Notons <span class="math inline">\widehat\sigma^2 = \frac{1}{n}\sum_i (x_i - \overline{x})^2</span> (diviseur <span class="math inline">n</span>, celui de <code>numpy.std()</code>) et <span class="math inline">s^2 = \frac{1}{n-1}\sum_i (x_i - \overline{x})^2</span> (diviseur <span class="math inline">n-1</span>, celui de <code>sd()</code> et de <code>pandas.std()</code>). Les deux sommes sont les mêmes, donc <span class="math display">s^2 = \frac{n}{n-1}\,\widehat\sigma^2, \qquad s = \widehat\sigma\sqrt{\frac{n}{n-1}}, \qquad \frac{s}{\widehat\sigma} - 1 = \sqrt{\frac{n}{n-1}} - 1 \approx \frac{1}{2(n-1)}.</span> Le rapport est <span class="math inline">1{,}0102</span> pour <span class="math inline">n = 50</span> (<span class="math inline">1\,\%</span>) et <span class="math inline">1{,}0541</span> pour <span class="math inline">n = 10</span> (<span class="math inline">5\,\%</span>).</p>
+<p><em>Sur nos données.</em> <code>ech.salaire.std()</code> donne <span class="math inline">2\,250{,}976</span> et <code>np.std(ech.salaire)</code> donne <span class="math inline">2\,250{,}976 \times \sqrt{49/50} = 2\,228{,}353</span>. Pour la population de <span class="math inline">N = 500</span> salariés, <code>sd()</code> renvoie <span class="math inline">2\,600{,}70</span>, le diviseur étant <span class="math inline">N - 1</span> ; l’écart-type <span class="math inline">\sigma</span> du cours, qui divise par <span class="math inline">N</span>, est <span class="math inline">2\,600{,}70 \times \sqrt{499/500} = 2\,598{,}10</span>.</p>
+<p><strong>Ce que cela dit.</strong> Le diviseur <span class="math inline">n - 1</span> est celui du chapitre 5 : il rend <span class="math inline">s^2</span> sans biais pour <span class="math inline">\sigma^2</span>. Sur un échantillon on veut <span class="math inline">s</span> ; sur une population complète, qui n’a rien à estimer, on veut <span class="math inline">\sigma</span> avec le diviseur <span class="math inline">N</span>. Les deux outils font chacun l’un des deux calculs par défaut, d’où l’erreur la plus fréquente du passage de R à Python.</p>
+<p aria-hidden="true" class="demo-fin">∎</p>
+</div>
+</details>
 </section>
 <section class="level2" id="les-lois-du-cours">
 <h3 class="h2 anchored" data-anchor-id="les-lois-du-cours">Les lois du cours</h3>
@@ -1339,6 +1348,60 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <p><code>binom.test()</code> donne le test exact du chapitre 15, <span class="math inline">0{,}044</span>. Les trois sont défendables ; ce qui ne l’est pas, c’est de ne pas savoir lequel on emploie.</p>
 </div>
 </details>
+<details class="demonstrationbox">
+<summary class="pedago-title">Démonstration : Quatre réglages, quatre p-values pour les treize Bac+5</summary>
+<div class="pedago-body">
+<p>Avec <span class="math inline">n = 50</span>, <span class="math inline">13</span> succès, <span class="math inline">p_0 = 0{,}15</span> et <span class="math inline">f = 0{,}26</span>, voici ce que calcule chaque réglage.</p>
+
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">réglage</th>
+<th data-quarto-table-cell-role="th">calcul</th>
+<th data-quarto-table-cell-role="th"><span class="math inline">z</span> ou <span class="math inline">\chi^2</span></th>
+<th data-quarto-table-cell-role="th"><span class="math inline">p</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Wald (<code>proportions_ztest()</code> par défaut)</td>
+<td><span class="math inline">\dfrac{0{,}11}{\sqrt{0{,}26 \times 0{,}74/50}}</span></td>
+<td><span class="math inline">z = 1{,}773</span></td>
+<td><span class="math inline">0{,}0762</span></td>
+</tr>
+<tr class="even">
+<td>score (<code>prop.test(correct = FALSE)</code>, ou <code>prop_var=0.15</code>)</td>
+<td><span class="math inline">\dfrac{0{,}11}{\sqrt{0{,}15 \times 0{,}85/50}}</span></td>
+<td><span class="math inline">z = 2{,}178</span>, <span class="math inline">\chi^2 = 4{,}745</span></td>
+<td><span class="math inline">0{,}0294</span></td>
+</tr>
+<tr class="odd">
+<td>score avec correction de continuité (<code>prop.test()</code> par défaut)</td>
+<td><span class="math inline">\dfrac{0{,}11 - 0{,}01}{\sqrt{0{,}15 \times 0{,}85/50}}</span></td>
+<td><span class="math inline">z = 1{,}980</span>, <span class="math inline">\chi^2 = 3{,}922</span></td>
+<td><span class="math inline">0{,}0477</span></td>
+</tr>
+<tr class="even">
+<td>exact (<code>binom.test()</code>, <code>binomtest()</code>)</td>
+<td>somme des <span class="math inline">P(X = k) \leq P(X = 13)</span></td>
+<td></td>
+<td><span class="math inline">0{,}0442</span></td>
+</tr>
+</tbody>
+</table>
+
+<p><em>La correction de continuité.</em> Le nombre de succès est entier alors que la normale est continue : on retranche à <span class="math inline">|f - p_0|</span> la demi-unité <span class="math inline">\frac{1}{2n} = 0{,}01</span> (une demi-observation sur <span class="math inline">50</span>). C’est le calcul de la démonstration du chapitre 15, qui explique aussi pourquoi l’exact se situe entre les deux.</p>
+<p><em>Le dénominateur de Wald.</em> Il utilise <span class="math inline">f = 0{,}26</span> au lieu de <span class="math inline">p_0 = 0{,}15</span> : l’écart-type est <span class="math inline">0{,}0620</span> au lieu de <span class="math inline">0{,}0505</span>, d’où <span class="math inline">z</span> plus petit. C’est la figure des deux dénominateurs du chapitre 15, et le niveau exact de ce test est de <span class="math inline">5{,}9\,\%</span>, non de <span class="math inline">5\,\%</span>.</p>
+<p><strong>Ce que cela dit.</strong> Les quatre <span class="math inline">p</span>-values sont des calculs précis, chacun avec sa justification : seul le test de Wald donnerait un verdict différent à <span class="math inline">5\,\%</span>, et c’est celui dont le niveau réel s’écarte le plus de <span class="math inline">5\,\%</span>. Savoir lequel on lance, c’est savoir quelle option du logiciel retire ou garde une correction.</p>
+<p aria-hidden="true" class="demo-fin">∎</p>
+</div>
+</details>
 </section>
 <section class="level2" id="lintervalle-dune-variance">
 <h3 class="h2 anchored" data-anchor-id="lintervalle-dune-variance">L’intervalle d’une variance</h3>
@@ -1365,6 +1428,54 @@ body.quarto-dark .jm-lecteur-centre .quarto-figure img {
 <div class="pedago-body">
 <p><code>power.t.test()</code> calcule la puissance exacte par la loi de Student non centrale : <span class="math inline">0{,}549</span>, la valeur que la simulation du chapitre 13 avait trouvée.</p>
 <p>Pour <span class="math inline">80\,\%</span> de puissance, il faut <span class="math inline">98</span> observations, là où l’approximation normale du chapitre 13 en donnait <span class="math inline">97</span>.</p>
+</div>
+</details>
+<details class="demonstrationbox">
+<summary class="pedago-title">Démonstration : La puissance exacte du test de Student, loi non centrale</summary>
+<div class="pedago-body">
+<p>Si la vraie moyenne est <span class="math inline">m = m_0 + \delta</span>, la statistique du test s’écrit <span class="math display">T = \frac{\overline{X} - m_0}{S/\sqrt{n}} = \frac{Z + \lambda}{\sqrt{V/\nu}}, \qquad Z = \frac{\overline{X} - m}{\sigma/\sqrt{n}} \sim \mathcal{N}(0\,;1), \quad V = \frac{\nu S^2}{\sigma^2} \sim \chi^2_\nu, \quad \lambda = \frac{\delta\sqrt{n}}{\sigma},</span> avec <span class="math inline">\nu = n - 1</span>, <span class="math inline">Z</span> et <span class="math inline">V</span> indépendants (chapitre 4). Sous <span class="math inline">H_0</span>, <span class="math inline">\lambda = 0</span> et l’on retrouve Student ; sous <span class="math inline">H_1</span>, la loi est celle de Student <strong>non centrale</strong> (paramètre <span class="math inline">\lambda</span>). La puissance du test unilatéral est <span class="math inline">P(T &gt; t_{1-\alpha\,;\nu})</span> ; en conditionnant sur <span class="math inline">V</span>, <span class="math display">\pi = \int_0^{\infty}\Big[1 - \Phi\Big(t_{1-\alpha\,;\nu}\sqrt{v/\nu} - \lambda\Big)\Big]\,f_{\chi^2_\nu}(v)\,dv,</span> où <span class="math inline">f_{\chi^2_\nu}</span> est la densité du khi-deux. L’approximation normale du chapitre 13 revient à fixer <span class="math inline">V = \nu</span>, c’est-à-dire à remplacer <span class="math inline">S</span> par <span class="math inline">\sigma</span> : <span class="math inline">\pi \approx 1 - \Phi(z_{1-\alpha} - \lambda)</span>.</p>
+<p><em>Nos chiffres</em> (<span class="math inline">\delta = 658{,}26</span>, <span class="math inline">\sigma = 2\,598{,}10</span>, <span class="math inline">\alpha = 5\,\%</span>) :</p>
+
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"><span class="math inline">n</span></th>
+<th data-quarto-table-cell-role="th"><span class="math inline">\lambda</span></th>
+<th data-quarto-table-cell-role="th">approximation normale</th>
+<th data-quarto-table-cell-role="th">formule exacte</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">50</span></td>
+<td><span class="math inline">1{,}792</span></td>
+<td><span class="math inline">0{,}558</span></td>
+<td><span class="math inline">0{,}5485</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">97</span></td>
+<td><span class="math inline">2{,}495</span></td>
+<td></td>
+<td><span class="math inline">0{,}7975</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">98</span></td>
+<td><span class="math inline">2{,}508</span></td>
+<td></td>
+<td><span class="math inline">0{,}8012</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">100</span></td>
+<td><span class="math inline">2{,}534</span></td>
+<td></td>
+<td><span class="math inline">0{,}8082</span></td>
+</tr>
+</tbody>
+</table>
+
+<p>La puissance de <span class="math inline">80\,\%</span> est atteinte pour <span class="math inline">n = 97{,}68</span> (R accepte un <span class="math inline">n</span> non entier) : il faut donc <span class="math inline">98</span> observations avec Student, contre <span class="math inline">97</span> avec l’approximation normale.</p>
+<p><strong>Ce que cela dit.</strong> Le logiciel ne fait rien de plus que le calcul du chapitre 13 : il ne remplace <span class="math inline">S</span> par <span class="math inline">\sigma</span> qu’en moyenne, et non d’un coup. Cette fluctuation de <span class="math inline">S</span> rend la loi de <span class="math inline">T</span> plus dispersée que la normale et la puissance un peu plus basse (<span class="math inline">0{,}5485</span> au lieu de <span class="math inline">0{,}558</span>), d’où une observation de plus.</p>
+<p aria-hidden="true" class="demo-fin">∎</p>
 </div>
 </details>
 </section>
@@ -1550,6 +1661,14 @@ P value adjustment method: bonferroni</code></pre>
 <div class="pedago-body">
 <p>Pour un tableau <span class="math inline">2 \times 2</span>, <code>chisq.test()</code> applique par défaut la <strong>correction de Yates</strong> : <span class="math inline">\chi^2 = 0{,}020</span> au lieu de <span class="math inline">0{,}219</span>.</p>
 <p>La valeur du chapitre 18, égale au <span class="math inline">z^2</span> du chapitre 16, s’obtient avec <code>correct = FALSE</code>.</p>
+</div>
+</details>
+<details class="demonstrationbox">
+<summary class="pedago-title">Démonstration : La correction de Yates d’un tableau deux sur deux</summary>
+<div class="pedago-body">
+<p>La correction de Yates remplace chaque écart <span class="math inline">|O - E|</span> par <span class="math inline">|O - E| - \frac12</span>, la même demi-unité que la correction de continuité d’une proportion : <span class="math inline">\chi^2_{\text{Yates}} = \sum (|O - E| - \tfrac12)^2/E</span>. Dans un tableau <span class="math inline">2 \times 2</span> de cases <span class="math inline">a, b, c, d</span> et de total <span class="math inline">n</span>, les quatre écarts valent <span class="math inline">|ad - bc|/n</span> (démonstration du chapitre 18), donc <span class="math display">\chi^2_{\text{Yates}} = \Big(\frac{|ad - bc|}{n} - \frac12\Big)^2\sum_{ij}\frac{1}{E_{ij}} = \frac{n\,\big(|ad - bc| - \frac{n}{2}\big)^2}{n_{1\bullet}\,n_{2\bullet}\,n_{\bullet 1}\,n_{\bullet 2}}.</span> <em>Bac+5 selon le sexe.</em> Avec <span class="math inline">a = 5</span>, <span class="math inline">b = 8</span>, <span class="math inline">c = 17</span>, <span class="math inline">d = 20</span> et <span class="math inline">n = 50</span> : <span class="math inline">|ad - bc| = 36</span> et <span class="math inline">\frac{n}{2} = 25</span>, donc <span class="math display">\chi^2_{\text{Yates}} = \frac{50 \times (36 - 25)^2}{13 \times 37 \times 22 \times 28} = \frac{50 \times 121}{296\,296} = 0{,}0204, \qquad p = 0{,}886,</span> contre <span class="math inline">\chi^2 = 50 \times 36^2/296\,296 = 0{,}2187</span> sans la correction.</p>
+<p><strong>Ce que cela dit.</strong> La correction retire <span class="math inline">25</span> à un numérateur qui ne vaut que <span class="math inline">36</span> : elle en supprime plus des deux tiers, et la statistique est divisée par plus de dix. Elle protège quand les effectifs sont petits (c’est un test conservateur), mais elle empêche de retrouver le <span class="math inline">z^2</span> du chapitre 16 ; c’est pourquoi le cours demande <code>correct = FALSE</code>.</p>
+<p aria-hidden="true" class="demo-fin">∎</p>
 </div>
 </details>
 </section>
