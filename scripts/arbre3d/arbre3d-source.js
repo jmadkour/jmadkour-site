@@ -329,6 +329,9 @@ function croissance(mat, U, jeune, stencil) {
       .replace('#include <color_fragment>', `#include <color_fragment>
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.16, .26, .04), (1.0 - smoothstep(0.0, 1.1, vAge)) * ${jeune.toFixed(2)});`);
   };
+  // Three.js réutilise un programme dont la clé est identique : sans cette clé, le bois et les racines
+  // (même fonction, réglages différents) partageraient le même shader.
+  mat.customProgramCacheKey = () => 'croissance-' + jeune + (stencil ? '-coupe' : '');
   if (stencil) {                                        // racines : visibles seulement dans la fenêtre de coupe
     mat.stencilWrite = true; mat.stencilRef = 1; mat.stencilFunc = EqualStencilFunc;
     mat.stencilFail = mat.stencilZFail = mat.stencilZPass = KeepStencilOp;
