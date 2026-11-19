@@ -8,7 +8,7 @@
      pliée le long de sa nervure ; l'herbe, des brins qui ondulent ;
    - la croissance (racines, tronc, branches, feuilles qui se déploient, pousses vertes) et le vent
      sont calculés par la carte graphique, à partir de la date de naissance de chaque point ;
-   - la terre est un bloc vu en coupe : sa face avant est une fenêtre (tampon de stencil) à
+   - la terre est une motte ronde vue en coupe, qui tourne avec l'arbre : sa paroi avant est une fenêtre (tampon de stencil) à
      travers laquelle on voit les racines ;
    - les liens sont les <a> du HTML de la page (data-x, data-y dans le repère 1160 × 940 de
      l'arbre 2D) : on les replace à chaque image en projetant leur point d'ancrage.
@@ -19,14 +19,14 @@
        npx esbuild arbre3d-source.js --bundle --format=esm --minify --legal-comments=inline --outfile=arbre3d.js */
 import {
   WebGLRenderer, Scene, PerspectiveCamera, Group, BufferGeometry, BufferAttribute, InstancedMesh,
-  InstancedBufferAttribute, Mesh, MeshLambertMaterial, MeshBasicMaterial, HemisphereLight, DirectionalLight,
-  PlaneGeometry, CanvasTexture, Color, Matrix4, Vector3, DoubleSide, RepeatWrapping, SRGBColorSpace,
+  InstancedBufferAttribute, Mesh, MeshLambertMaterial, HemisphereLight, DirectionalLight,
+  CircleGeometry, CylinderGeometry, CanvasTexture, Color, Matrix4, Vector3, DoubleSide, RepeatWrapping, SRGBColorSpace,
   AlwaysStencilFunc, EqualStencilFunc, ReplaceStencilOp, KeepStencilOp
 } from 'three';
 
 const W = 1160, H = 940, GY = 570;
 const CY = 322, RX = 392, RY = 205, RZ = 290;        // houppier : ellipsoïde (y vers le haut, sol en y = 0)
-const BLOC = { x: 545, z: 330, h: 312 };             // bloc de terre vu en coupe
+const MOTTE = { r: 470, h: 300 };                    // motte de terre ronde, vue en coupe, qui tourne avec l'arbre
 const ZB = RZ * .42, ZF = RZ * .5, ZR = 150;         // profondeur des ancrages : branches, fruits, racines
 
 /* ---------- outils ---------- */
@@ -144,7 +144,7 @@ function dansHouppier(x, y, z) {
   const lobe = 1 + .06 * Math.sin(3 * th + 1.3) + .045 * Math.sin(5 * th + .4) + .04 * Math.sin(4 * ph + .7);
   return u * u + v * v + w * w <= lobe * lobe && y > 72;
 }
-const dansSol = (x, y, z) => Math.abs(x) < BLOC.x - 25 && y < -4 && y > -BLOC.h + 70 && Math.abs(z) < BLOC.z - 12;
+const dansSol = (x, y, z) => Math.hypot(x, z) < MOTTE.r - 22 && y < -4 && y > -MOTTE.h + 60;
 
 /* ---------- construction ---------- */
 function construire(graine, liens) {
@@ -266,8 +266,8 @@ function texEcorce() {
   });
   const t = new CanvasTexture(c); t.wrapS = t.wrapT = RepeatWrapping; t.colorSpace = SRGBColorSpace; return t;
 }
-function texCoupe() {                                  // face avant du bloc de terre
-  const c = toile(1090, 380, (g, w, h) => {
+function texCoupe() {                                  // paroi de la motte (coupe), répétée trois fois autour
+  const c = toile(1090, 300, (g, w, h) => {
     const R = hasard(7);
     const lg = g.createLinearGradient(0, 0, 0, h);
     lg.addColorStop(0, '#5e442a'); lg.addColorStop(.06, '#46321e'); lg.addColorStop(.5, '#2f2214'); lg.addColorStop(1, '#1b1209');
@@ -288,10 +288,10 @@ function texCoupe() {                                  // face avant du bloc de 
     const bord = g.createLinearGradient(0, 0, 0, 10); bord.addColorStop(0, 'rgba(110,85,55,.9)'); bord.addColorStop(1, 'rgba(110,85,55,0)');
     g.fillStyle = bord; g.fillRect(0, 0, w, 10);
   });
-  const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return t;
+  const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; t.wrapS = RepeatWrapping; t.repeat.set(3, 1); return t;
 }
-function texDessus() {                                 // dessus du bloc : terre et mousse
-  const c = toile(512, 320, (g, w, h) => {
+function texDessus() {                                 // dessus de la motte : terre et mousse
+  const c = toile(512, 512, (g, w, h) => {
     const R = hasard(9);
     g.fillStyle = '#4a3a22'; g.fillRect(0, 0, w, h);
     for (let i = 0; i < 2600; i++) {
@@ -457,7 +457,8 @@ function maillageHerbe(U, R) {
   const n = 4200, im = new InstancedMesh(g, mat, n), M = new Matrix4(), c = new Color(), q = new Matrix4();
   const verts = ['#2c6e38', '#3b8d48', '#245a31', '#4ea457', '#5f8f3a'];
   for (let i = 0; i < n; i++) {
-    let x = (R() * 2 - 1) * (BLOC.x - 6), z = (R() * 2 - 1) * (BLOC.z - 6);
+    const ra = (MOTTE.r - 8) * Math.sqrt(R()), th = R() * 6.2832;
+    let x = ra * Math.cos(th), z = ra * Math.sin(th);
     if (Math.hypot(x, z) < 34) { x += 40; }
     const h = (5 + 13 * R() * R()) * (R() < .06 ? 2 : 1);
     M.makeRotationY(R() * 6.28); q.makeScale(1.7, h, 1.7); M.multiply(q); M.setPosition(x, 0, z);
@@ -482,8 +483,10 @@ function demarrer() {
     const x = +el.getAttribute('data-x'), y = +el.getAttribute('data-y');
     const t = el.getAttribute('data-t');
     let y3 = GY - y;                                     // la coupe est moins haute que le sol de l'arbre 2D
-    if (t === 'sol') y3 = -236; else if (t === 'deco' && y3 < -250) y3 = -286;
-    return { el, t, x3: x - W / 2, y3, rev: 0 };
+    let x3 = x - W / 2;
+    if (t === 'sol') y3 = -228; else if (t === 'deco' && y3 < -250) y3 = -276;
+    if (t === 'deco' && y3 > -100) x3 = -MOTTE.r + 120;   // légende « Sol » : sur la paroi, à gauche
+    return { el, t, x3, y3, rev: 0 };
   });
 
   const toileGL = document.createElement('canvas');
@@ -512,14 +515,16 @@ function demarrer() {
   plante.add(racines);
   plante.add(maillageFeuilles(F, U));
 
-  /* bloc de terre : dessus, herbe, face de coupe (fenêtre) */
-  const dessus = new Mesh(new PlaneGeometry(BLOC.x * 2, BLOC.z * 2), new MeshLambertMaterial({ map: texDessus() }));
-  dessus.rotation.x = -Math.PI / 2; scene.add(dessus);
-  scene.add(maillageHerbe(U, hasard(graine + 3)));
-  const coupe = new Mesh(new PlaneGeometry(BLOC.x * 2, BLOC.h), new MeshBasicMaterial({ map: texCoupe(), depthWrite: false }));
-  coupe.position.set(0, -BLOC.h / 2, BLOC.z);
+  /* motte de terre : dessus, herbe, paroi en coupe. Elle tourne avec l'arbre ; seule la moitié de la
+     paroi tournée vers nous est dessinée (faces arrière éliminées) et sert de fenêtre sur les racines. */
+  const dessus = new Mesh(new CircleGeometry(MOTTE.r, 96), new MeshLambertMaterial({ map: texDessus() }));
+  dessus.rotation.x = -Math.PI / 2; plante.add(dessus);
+  plante.add(maillageHerbe(U, hasard(graine + 3)));
+  const coupe = new Mesh(new CylinderGeometry(MOTTE.r, MOTTE.r * .97, MOTTE.h, 128, 1, true),
+    new MeshLambertMaterial({ map: texCoupe(), emissive: 0x241a10, depthWrite: false }));
+  coupe.position.set(0, -MOTTE.h / 2, 0);
   Object.assign(coupe.material, { stencilWrite: true, stencilRef: 1, stencilFunc: AlwaysStencilFunc, stencilZPass: ReplaceStencilOp });
-  coupe.renderOrder = 1; scene.add(coupe);
+  coupe.renderOrder = 1; plante.add(coupe);
 
   /* caméra : presque de face, légèrement au-dessus (4,5°), de loin pour que le cadrage reprenne celui de l'arbre 2D */
   const D = 3000, el = 4.5 * Math.PI / 180, yc = 104;
@@ -537,7 +542,8 @@ function demarrer() {
       return { L, p, tourne: true };
     }
     if (L.t === 'tronc') return { L, p: new Vector3(0, L.y3, 40), tourne: true };
-    return { L, p: new Vector3(L.x3, L.y3, BLOC.z), tourne: false };   // sol, légendes : sur la face de coupe
+    const x = L.x3, z = Math.sqrt(Math.max(0, MOTTE.r * MOTTE.r - x * x));
+    return { L, p: new Vector3(x, L.y3, z), tourne: false };   // sol, légendes : sur l'avant de la paroi, fixes
   });
   const v = new Vector3();
   function placer() {
