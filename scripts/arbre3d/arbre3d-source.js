@@ -8,7 +8,7 @@
      pliée le long de sa nervure ; l'herbe, des brins qui ondulent ;
    - la croissance (racines, tronc, branches, feuilles qui se déploient, pousses vertes) et le vent
      sont calculés par la carte graphique, à partir de la date de naissance de chaque point ;
-   - la terre est une motte ronde vue en coupe, qui tourne avec l'arbre : sa paroi avant est une fenêtre (tampon de stencil) à
+   - la terre est une motte en forme de bol vue en coupe, qui tourne avec l'arbre : sa paroi avant est une fenêtre (tampon de stencil) à
      travers laquelle on voit les racines ;
    - les liens sont les <a> du HTML de la page (data-x, data-y dans le repère 1160 × 940 de
      l'arbre 2D) : on les replace à chaque image en projetant leur point d'ancrage.
@@ -20,14 +20,16 @@
 import {
   WebGLRenderer, Scene, PerspectiveCamera, Group, BufferGeometry, BufferAttribute, InstancedMesh,
   InstancedBufferAttribute, Mesh, MeshLambertMaterial, HemisphereLight, DirectionalLight,
-  CircleGeometry, CylinderGeometry, CanvasTexture, Color, Matrix4, Vector3, DoubleSide, RepeatWrapping, SRGBColorSpace,
+  CircleGeometry, LatheGeometry, Vector2, CanvasTexture, Color, Matrix4, Vector3, DoubleSide, RepeatWrapping, SRGBColorSpace,
   AlwaysStencilFunc, EqualStencilFunc, ReplaceStencilOp, KeepStencilOp
 } from 'three';
 
 const W = 1160, H = 940, GY = 570;
 const CY = 322, RX = 392, RY = 205, RZ = 290;        // houppier : ellipsoïde (y vers le haut, sol en y = 0)
-const MOTTE = { r: 470, h: 300 };                    // motte de terre ronde, vue en coupe, qui tourne avec l'arbre
-const ZB = RZ * .42, ZF = RZ * .5, ZR = 150;         // profondeur des ancrages : branches, fruits, racines
+const MOTTE = { r: 470, h: 360, p: 2.2 };            // motte de terre en forme de bol (vue en coupe), qui tourne avec l'arbre
+/* rayon du bol à la profondeur y (< 0) : |ρ/r|^p + |y/h|^p = 1, paroi verticale au bord, fond arrondi */
+const rayonBol = (y) => MOTTE.r * Math.pow(Math.max(0, 1 - Math.pow(Math.min(1, -y / MOTTE.h), MOTTE.p)), 1 / MOTTE.p);
+const ZB = RZ * .42, ZF = RZ * .5, ZR = 100;         // profondeur des ancrages : branches, fruits, racines
 
 /* ---------- outils ---------- */
 function hasard(a) {
@@ -144,7 +146,7 @@ function dansHouppier(x, y, z) {
   const lobe = 1 + .06 * Math.sin(3 * th + 1.3) + .045 * Math.sin(5 * th + .4) + .04 * Math.sin(4 * ph + .7);
   return u * u + v * v + w * w <= lobe * lobe && y > 72;
 }
-const dansSol = (x, y, z) => Math.hypot(x, z) < MOTTE.r - 22 && y < -4 && y > -MOTTE.h + 60;
+const dansSol = (x, y, z) => y < -4 && y > -MOTTE.h + 34 && Math.hypot(x, z) < rayonBol(y) - 20;
 
 /* ---------- construction ---------- */
 function construire(graine, liens) {
@@ -515,20 +517,24 @@ function demarrer() {
   plante.add(racines);
   plante.add(maillageFeuilles(F, U));
 
-  /* motte de terre : dessus, herbe, paroi en coupe. Elle tourne avec l'arbre ; seule la moitié de la
+  /* motte de terre en bol : dessus, herbe, paroi en coupe. Elle tourne avec l'arbre ; seule la moitié de la
      paroi tournée vers nous est dessinée (faces arrière éliminées) et sert de fenêtre sur les racines. */
   const dessus = new Mesh(new CircleGeometry(MOTTE.r, 96), new MeshLambertMaterial({ map: texDessus() }));
   dessus.rotation.x = -Math.PI / 2; plante.add(dessus);
   plante.add(maillageHerbe(U, hasard(graine + 3)));
-  const coupe = new Mesh(new CylinderGeometry(MOTTE.r, MOTTE.r * .97, MOTTE.h, 128, 1, true),
+  const profil = [];                                    // du fond (ρ = 0) au bord (ρ = r)
+  for (let k = 0; k <= 48; k++) {
+    const a = k / 48 * Math.PI / 2, e = 2 / MOTTE.p;
+    profil.push(new Vector2(MOTTE.r * Math.pow(Math.sin(a), e), -MOTTE.h * Math.pow(Math.cos(a), e)));
+  }
+  const coupe = new Mesh(new LatheGeometry(profil, 128),
     new MeshLambertMaterial({ map: texCoupe(), emissive: 0x241a10, depthWrite: false }));
-  coupe.position.set(0, -MOTTE.h / 2, 0);
   Object.assign(coupe.material, { stencilWrite: true, stencilRef: 1, stencilFunc: AlwaysStencilFunc, stencilZPass: ReplaceStencilOp });
   coupe.renderOrder = 1; plante.add(coupe);
 
   /* caméra : presque de face, légèrement au-dessus (4,5°), de loin pour que le cadrage reprenne celui de l'arbre 2D */
-  const D = 3000, el = 4.5 * Math.PI / 180, yc = 104;
-  const camera = new PerspectiveCamera(2 * Math.atan(H * 1.06 / 2 / D) * 180 / Math.PI, W / H, 100, 9000);
+  const D = 3000, el = 4.5 * Math.PI / 180, yc = 94;
+  const camera = new PerspectiveCamera(2 * Math.atan(H * 1.08 / 2 / D) * 180 / Math.PI, W / H, 100, 9000);
   camera.position.set(0, yc + D * Math.sin(el), D * Math.cos(el)); camera.lookAt(0, yc, 0);
 
   /* liens : projection des ancrages */
@@ -542,7 +548,7 @@ function demarrer() {
       return { L, p, tourne: true };
     }
     if (L.t === 'tronc') return { L, p: new Vector3(0, L.y3, 40), tourne: true };
-    const x = L.x3, z = Math.sqrt(Math.max(0, MOTTE.r * MOTTE.r - x * x));
+    const x = L.x3, rb = rayonBol(L.y3), z = Math.sqrt(Math.max(0, rb * rb - x * x));
     return { L, p: new Vector3(x, L.y3, z), tourne: false };   // sol, légendes : sur l'avant de la paroi, fixes
   });
   const v = new Vector3();
