@@ -30,6 +30,9 @@ Choix figés, à ne pas changer sans raison :
 - le volet gauche ne numérote pas les chapitres (demande du 25/09/2026) ;
 - les titres de chapitre sont échappés pour le HTML (html.escape), le
   titre du cours ne l'est pas (il ne contient jamais < ni &) ;
+- dans les titres (de chapitre, du contenu, des encadrés), l'espace avant ? ! ; : est
+  insécable (normaliser.insecables), pour que le signe ne passe jamais seul
+  à la ligne (demande du 19/11/2026) ;
 - une ressource absente reste visible, grisée (« — Diapositives »), pour
   que l'étudiant sache qu'elle viendra (sur téléphone, les puces ne
   montrent que les ressources présentes).
@@ -37,7 +40,7 @@ Choix figés, à ne pas changer sans raison :
 
 import html
 
-from normaliser import MARQUE_DEBUT, MARQUE_FIN
+from normaliser import MARQUE_DEBUT, MARQUE_FIN, insecables, insecables_titres
 
 INCLUDES_CHAPITRE = ("../../../_includes/masquer-titre.html",
                      "../../../_includes/lecteur.html")
@@ -79,7 +82,7 @@ def _yaml(texte):
 
 
 def _esc(texte):
-    return html.escape(texte, quote=True)
+    return insecables(html.escape(texte, quote=True))
 
 
 def entete(titre_page, includes, description=None):
@@ -206,7 +209,7 @@ def page_chapitre(titre_cours, chapitres, i, fragment, disponibles, video=None,
         + entete_chapitre(titre_cours, titre, etiquette) + "\n"
         + ressources_mobiles(slug, disponibles, video) + "\n"
         + MARQUE_DEBUT + "\n"
-        + fragment + "\n"
+        + insecables_titres(fragment) + "\n"
         + MARQUE_FIN + "\n"
         + nav_bas(chapitres, i) + "\n"
         + "</div>\n"

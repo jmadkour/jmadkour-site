@@ -43,6 +43,36 @@ def texte_brut(fragment_html):
     return re.sub(r"\s+", " ", html.unescape(t)).strip()
 
 
+# Typographie française : espace insécable (U+00A0) avant ? ! ; et :, pour que
+# le navigateur ne renvoie jamais le signe seul en début de ligne. Appliqué aux
+# titres seulement (titres de chapitre, <h1>…<h6> et titres des encadrés) ; les formules
+# (\( … \), \[ … \]) et le code ne sont pas touchés. Le rendu LaTeX (babel
+# french) fait déjà ce travail dans les diapositives et les polycopiés.
+_AVANT_PONCTUATION = re.compile(r"(?<=\S) (?=[?!;:])")
+_TITRE_HTML = re.compile(r"(<(h[1-6]|summary)\b[^>]*>)(.*?)(</\2>)", re.S)
+_PROTEGE = re.compile(r"<code\b.*?</code>|<[^>]*>|\\\(.*?\\\)|\\\[.*?\\\]", re.S)
+
+
+def insecables(texte):
+    """Espace ordinaire avant ? ! ; : -> espace insécable. Texte sans balises."""
+    return _AVANT_PONCTUATION.sub("\u00a0", texte)
+
+
+def _insecables_html(extrait):
+    """insecables() sur le texte d'un extrait HTML, hors balises, code et formules."""
+    proteges = [m.span() for m in _PROTEGE.finditer(extrait)]
+    def remplacer(m):
+        i = m.start()
+        return m.group(0) if any(a <= i < b for a, b in proteges) else "\u00a0"
+    return _AVANT_PONCTUATION.sub(remplacer, extrait)
+
+
+def insecables_titres(fragment):
+    """insecables() dans le texte des titres d'un fragment : <h1>…<h6> et <summary>
+    (titres des encadrés pédagogiques)."""
+    return _TITRE_HTML.sub(lambda m: m.group(1) + _insecables_html(m.group(3)) + m.group(4), fragment)
+
+
 def etiquette_depuis_entete(fragment_brut):
     """« Chapitre 14 », « Annexe A », « Introduction » ou None, d'après le
     sous-titre du bloc-titre d'un fragment brut."""
